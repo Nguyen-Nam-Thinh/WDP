@@ -37,6 +37,8 @@ const userSchema = new Schema(
     jockeyProfile: { type: jockeyProfileSchema },
     refereeProfile: { type: refereeProfileSchema },
     refreshToken: { type: String, select: false },
+    passwordResetCode: { type: String, select: false },
+    passwordResetExpires: { type: Date, select: false },
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true },
