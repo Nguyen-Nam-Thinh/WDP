@@ -8,13 +8,6 @@ import RaceManagement from './components/pages/RaceManagement';
 import RegistrationApproval from './components/pages/RegistrationApproval';
 import RefereeAssignment from './components/pages/RefereeAssignment';
 import ResultsPublishing from './components/pages/ResultsPublishing';
-import SpectatorPrediction from './components/pages/predictions/SpectatorPrediction';
-import CreatePrediction from './components/pages/predictions/CreatePrediction';
-import LivePrediction from './components/pages/predictions/LivePrediction';
-import PredictionLeaderboard from './components/pages/predictions/PredictionLeaderboard';
-import PredictionAnalytics from './components/pages/predictions/PredictionAnalytics';
-import MyPredictions from './components/pages/predictions/MyPredictions';
-import AdminPredictionControl from './components/pages/predictions/AdminPredictionControl';
 
 const theme = createTheme({
   palette: {
@@ -49,14 +42,7 @@ export default function App() {
               <Route path="/referees" element={<RefereeAssignment />} />
               <Route path="/results" element={<ResultsPublishing />} />
 
-              {/* Prediction System Routes */}
-              <Route path="/predictions" element={<SpectatorPrediction />} />
-              <Route path="/predictions/create" element={<CreatePrediction />} />
-              <Route path="/predictions/live" element={<LivePrediction />} />
-              <Route path="/predictions/leaderboard" element={<PredictionLeaderboard />} />
-              <Route path="/predictions/analytics" element={<PredictionAnalytics />} />
-              <Route path="/predictions/my-predictions" element={<MyPredictions />} />
-              <Route path="/predictions/admin" element={<AdminPredictionControl />} />
+
             </Routes>
           </AdminLayout>
         </div>

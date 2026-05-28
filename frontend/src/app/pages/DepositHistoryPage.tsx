@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
   ArrowLeft,
-  CheckCircle,
   Clock,
   Filter,
   Search,
@@ -52,7 +51,7 @@ export function DepositHistoryPage() {
   const [search, setSearch]           = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterMethod, setFilterMethod] = useState('all');
-  const [filterOpen, setFilterOpen]   = useState(false);
+  const [filterOpen, setFilterOpen]   = useState<string | false>(false);
 
   const totalDeposited = depositHistory.filter(d => d.status === 'success').reduce((s, d) => s + d.amount, 0);
   const pendingCount   = depositHistory.filter(d => d.status === 'pending').length;
@@ -130,14 +129,14 @@ export function DepositHistoryPage() {
           {/* Status filter */}
           <div className="relative">
             <button
-              onClick={() => setFilterOpen(filterOpen === 'status' ? false : 'status' as any)}
+              onClick={() => setFilterOpen(filterOpen === 'status' ? false : 'status')}
               className="flex items-center gap-2 bg-white/5 border border-white/10 hover:border-white/20 rounded-xl px-4 py-2.5 text-slate-300 text-sm font-medium transition-all"
             >
               <Filter className="w-4 h-4" />
               {filterStatus === 'all' ? 'Trạng Thái' : statusConfig[filterStatus]?.label}
               <ChevronDown className="w-4 h-4" />
             </button>
-            {filterOpen === ('status' as any) && (
+            {filterOpen === 'status' && (
               <div className="absolute right-0 top-full mt-1 bg-slate-900 border border-white/10 rounded-xl shadow-xl z-10 overflow-hidden min-w-36">
                 {[{ v: 'all', l: 'Tất Cả' }, { v: 'success', l: 'Thành Công' }, { v: 'pending', l: 'Đang Xử Lý' }, { v: 'failed', l: 'Thất Bại' }].map(opt => (
                   <button key={opt.v} onClick={() => { setFilterStatus(opt.v); setFilterOpen(false); }}
@@ -152,13 +151,13 @@ export function DepositHistoryPage() {
           {/* Method filter */}
           <div className="relative">
             <button
-              onClick={() => setFilterOpen(filterOpen === 'method' ? false : 'method' as any)}
+              onClick={() => setFilterOpen(filterOpen === 'method' ? false : 'method')}
               className="flex items-center gap-2 bg-white/5 border border-white/10 hover:border-white/20 rounded-xl px-4 py-2.5 text-slate-300 text-sm font-medium transition-all"
             >
               Phương Thức
               <ChevronDown className="w-4 h-4" />
             </button>
-            {filterOpen === ('method' as any) && (
+            {filterOpen === 'method' && (
               <div className="absolute right-0 top-full mt-1 bg-slate-900 border border-white/10 rounded-xl shadow-xl z-10 overflow-hidden min-w-40">
                 {[{ v: 'all', l: 'Tất Cả' }, { v: 'bank', l: 'Ngân Hàng' }, { v: 'card', l: 'Thẻ Tín Dụng' }, { v: 'ewallet', l: 'Ví Điện Tử' }, { v: 'crypto', l: 'Crypto' }].map(opt => (
                   <button key={opt.v} onClick={() => { setFilterMethod(opt.v); setFilterOpen(false); }}

@@ -24,6 +24,8 @@ import {
   MenuItem,
   Checkbox,
   FormControlLabel,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import { PersonAdd, Delete, Assignment, CheckCircle } from '@mui/icons-material';
 
@@ -107,8 +109,9 @@ export default function RefereeAssignment() {
   const [races] = useState<Race[]>(mockRaces);
   const [selectedRace, setSelectedRace] = useState<Race | null>(races[0]);
   const [openDialog, setOpenDialog] = useState(false);
+  const [tabValue, setTabValue] = useState(0);
 
-  const getRefereeStatusColor = (status: string) => {
+  const getRefereeStatusColor = (status: string): "success" | "warning" | "error" | "default" => {
     switch (status) {
       case 'available':
         return 'success';
@@ -146,7 +149,16 @@ export default function RefereeAssignment() {
         Phân công trọng tài
       </Typography>
 
-      <Grid container spacing={3}>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)}>
+          <Tab label="Phân công theo cuộc đua" />
+          <Tab label="Tổng quan trạng thái trọng tài" />
+        </Tabs>
+      </Box>
+
+      {tabValue === 0 && (
+        <>
+          <Grid container spacing={3}>
         <Grid item xs={12} md={5}>
           <Paper sx={{ p: 3, borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
@@ -248,44 +260,81 @@ export default function RefereeAssignment() {
                 ))}
               </List>
 
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
-                Trọng tài khả dụng
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, mt: 3, color: 'success.main' }}>
+                Trọng tài rảnh (Sẵn sàng)
               </Typography>
               <List>
                 {referees
-                  .filter((ref) => !selectedRace.assignedReferees.includes(ref.id))
+                  .filter((ref) => !selectedRace.assignedReferees.includes(ref.id) && ref.status === 'available')
                   .map((referee) => (
                     <ListItem
                       key={referee.id}
-                      sx={{
-                        bgcolor: '#fafafa',
-                        borderRadius: '8px',
-                        mb: 1,
-                      }}
+                      sx={{ bgcolor: '#fafafa', borderRadius: '8px', mb: 1 }}
                       secondaryAction={
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          startIcon={<Assignment />}
-                          sx={{ borderRadius: '8px' }}
-                        >
+                        <Button variant="outlined" size="small" startIcon={<Assignment />} sx={{ borderRadius: '8px' }}>
                           Phân công
                         </Button>
                       }
                     >
                       <ListItemAvatar>
-                        <Avatar sx={{ bgcolor: 'secondary.main' }}>{referee.name.charAt(0)}</Avatar>
+                        <Avatar sx={{ bgcolor: 'success.main' }}>{referee.name.charAt(0)}</Avatar>
                       </ListItemAvatar>
                       <ListItemText
                         primary={referee.name}
                         secondary={`${referee.experience} năm kinh nghiệm - ${referee.certificationLevel}`}
                       />
-                      <Chip
-                        label={getRefereeStatusLabel(referee.status)}
-                        size="small"
-                        color={getRefereeStatusColor(referee.status)}
-                        sx={{ mr: 2 }}
+                      <Chip label="Sẵn sàng" size="small" color="success" sx={{ mr: 2 }} />
+                    </ListItem>
+                  ))}
+              </List>
+
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, mt: 3, color: 'warning.main' }}>
+                Trọng tài đang tham gia (Chặng khác)
+              </Typography>
+              <List>
+                {referees
+                  .filter((ref) => !selectedRace.assignedReferees.includes(ref.id) && ref.status === 'assigned')
+                  .map((referee) => (
+                    <ListItem
+                      key={referee.id}
+                      sx={{ bgcolor: '#fafafa', borderRadius: '8px', mb: 1 }}
+                      secondaryAction={
+                        <Button variant="outlined" size="small" startIcon={<Assignment />} sx={{ borderRadius: '8px' }}>
+                          Phân công
+                        </Button>
+                      }
+                    >
+                      <ListItemAvatar>
+                        <Avatar sx={{ bgcolor: 'warning.main' }}>{referee.name.charAt(0)}</Avatar>
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={referee.name}
+                        secondary={`Đang tham gia ${referee.assignedRaces} chặng - ${referee.certificationLevel}`}
                       />
+                      <Chip label="Đang tham gia" size="small" color="warning" sx={{ mr: 2 }} />
+                    </ListItem>
+                  ))}
+              </List>
+
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, mt: 3, color: 'error.main' }}>
+                Trọng tài bận (Không khả dụng)
+              </Typography>
+              <List>
+                {referees
+                  .filter((ref) => !selectedRace.assignedReferees.includes(ref.id) && ref.status === 'unavailable')
+                  .map((referee) => (
+                    <ListItem
+                      key={referee.id}
+                      sx={{ bgcolor: '#fafafa', borderRadius: '8px', mb: 1, opacity: 0.6 }}
+                    >
+                      <ListItemAvatar>
+                        <Avatar sx={{ bgcolor: 'error.main' }}>{referee.name.charAt(0)}</Avatar>
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={referee.name}
+                        secondary={`Đang nghỉ phép - ${referee.certificationLevel}`}
+                      />
+                      <Chip label="Bận" size="small" color="error" sx={{ mr: 2 }} />
                     </ListItem>
                   ))}
               </List>
@@ -338,6 +387,50 @@ export default function RefereeAssignment() {
           </Button>
         </DialogActions>
       </Dialog>
+      </>
+      )}
+
+      {tabValue === 1 && (
+        <Paper sx={{ p: 3, borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
+            Danh sách toàn bộ trọng tài
+          </Typography>
+          <Grid container spacing={2}>
+            {referees.map((referee) => (
+              <Grid item xs={12} md={6} lg={4} key={referee.id}>
+                <Card variant="outlined" sx={{ borderRadius: '8px' }}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                      <Box sx={{ display: 'flex', gap: 2 }}>
+                        <Avatar sx={{ bgcolor: getRefereeStatusColor(referee.status) === 'default' ? 'grey.500' : `${getRefereeStatusColor(referee.status)}.main` }}>
+                          {referee.name.charAt(0)}
+                        </Avatar>
+                        <Box>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                            {referee.name}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {referee.experience} năm KN - {referee.certificationLevel}
+                          </Typography>
+                          <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
+                            Số chặng đang tham gia: <b>{referee.assignedRaces}</b>
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Chip 
+                        label={getRefereeStatusLabel(referee.status)} 
+                        color={getRefereeStatusColor(referee.status)} 
+                        size="small" 
+                        sx={{ fontWeight: 600 }}
+                      />
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </Paper>
+      )}
     </Box>
   );
 }
