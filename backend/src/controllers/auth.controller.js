@@ -37,4 +37,32 @@ async function logout(req, res, next) {
   }
 }
 
-module.exports = { register, login, refresh, logout };
+async function forgotPassword(req, res, next) {
+  try {
+    await authService.forgotPassword(req.body.email);
+    // Luôn trả về success để tránh email enumeration
+    sendSuccess(res, null, 200, 'If this email is registered, a reset code has been sent');
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function verifyResetCode(req, res, next) {
+  try {
+    const result = await authService.verifyResetCode(req.body.email, req.body.code);
+    sendSuccess(res, result, 200, 'Code verified');
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function resetPassword(req, res, next) {
+  try {
+    await authService.resetPassword(req.body.resetToken, req.body.newPassword);
+    sendSuccess(res, null, 200, 'Password reset successful');
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { register, login, refresh, logout, forgotPassword, verifyResetCode, resetPassword };

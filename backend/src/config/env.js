@@ -17,6 +17,11 @@ const env = {
   CLIENT_URL: process.env.CLIENT_URL ?? 'http://localhost:5173',
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY ?? '',
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET ?? '',
+  SMTP_HOST: process.env.SMTP_HOST ?? 'smtp.gmail.com',
+  SMTP_PORT: parseInt(process.env.SMTP_PORT ?? '587', 10),
+  SMTP_USER: process.env.SMTP_USER ?? '',
+  SMTP_PASS: process.env.SMTP_PASS ?? '',
+  EMAIL_FROM: process.env.EMAIL_FROM ?? 'HRTMS <no-reply@hrtms.com>',
 };
 
 module.exports = { env };

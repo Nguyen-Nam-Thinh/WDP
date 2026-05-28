@@ -19,4 +19,23 @@ function verifyRefreshToken(token) {
   return jwt.verify(token, env.JWT_REFRESH_SECRET);
 }
 
-module.exports = { signAccessToken, signRefreshToken, verifyAccessToken, verifyRefreshToken };
+function signResetToken(userId) {
+  return jwt.sign({ userId: userId.toString(), purpose: 'password_reset' }, env.JWT_ACCESS_SECRET, {
+    expiresIn: '15m',
+  });
+}
+
+function verifyResetToken(token) {
+  const payload = jwt.verify(token, env.JWT_ACCESS_SECRET);
+  if (payload.purpose !== 'password_reset') throw new Error('Invalid token purpose');
+  return payload;
+}
+
+module.exports = {
+  signAccessToken,
+  signRefreshToken,
+  verifyAccessToken,
+  verifyRefreshToken,
+  signResetToken,
+  verifyResetToken,
+};

@@ -2,7 +2,8 @@ const bcrypt = require('bcrypt');
 const mongoose = require('mongoose');
 const { User } = require('../models/user.model');
 const { createWallet } = require('./wallet.service');
-const { signAccessToken, signRefreshToken, verifyRefreshToken } = require('../utils/jwt');
+const { signAccessToken, signRefreshToken, verifyRefreshToken, signResetToken, verifyResetToken } = require('../utils/jwt');
+const { sendResetCodeEmail } = require('../config/email');
 const { AppError } = require('../middleware/error.middleware');
 
 const SALT_ROUNDS = 12;
@@ -94,4 +95,59 @@ async function logout(userId) {
   await User.findByIdAndUpdate(userId, { refreshToken: null });
 }
 
-module.exports = { register, login, refreshTokens, logout };
+async function forgotPassword(email) {
+  const user = await User.findOne({ email });
+  // Không tiết lộ email có tồn tại hay không
+  if (!user || !user.isActive) return;
+
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const codeHash = await bcrypt.hash(code, 10);
+  const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 phút
+
+  await User.findByIdAndUpdate(user._id, {
+    passwordResetCode: codeHash,
+    passwordResetExpires: expires,
+  });
+
+  await sendResetCodeEmail(email, code);
+}
+
+async function verifyResetCode(email, code) {
+  const user = await User.findOne({ email }).select('+passwordResetCode +passwordResetExpires');
+  if (!user || !user.passwordResetCode || !user.passwordResetExpires) {
+    throw new AppError(400, 'Invalid or expired reset code');
+  }
+
+  if (user.passwordResetExpires < new Date()) {
+    throw new AppError(400, 'Reset code has expired');
+  }
+
+  const valid = await bcrypt.compare(code, user.passwordResetCode);
+  if (!valid) throw new AppError(400, 'Invalid reset code');
+
+  // Xóa OTP sau khi verify thành công
+  await User.findByIdAndUpdate(user._id, {
+    passwordResetCode: null,
+    passwordResetExpires: null,
+  });
+
+  const resetToken = signResetToken(user._id);
+  return { resetToken };
+}
+
+async function resetPassword(resetToken, newPassword) {
+  let payload;
+  try {
+    payload = verifyResetToken(resetToken);
+  } catch {
+    throw new AppError(400, 'Invalid or expired reset token');
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+  await User.findByIdAndUpdate(payload.userId, {
+    passwordHash,
+    refreshToken: null, // invalidate tất cả session hiện tại
+  });
+}
+
+module.exports = { register, login, refreshTokens, logout, forgotPassword, verifyResetCode, resetPassword };
