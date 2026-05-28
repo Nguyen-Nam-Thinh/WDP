@@ -45,12 +45,18 @@ import { useAuth } from '../hooks/useAuth';
 
 export function SpectatorDashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('tournaments');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [predictionModalOpen, setPredictionModalOpen] = useState(false);
   const [tournamentDetailsModalOpen, setTournamentDetailsModalOpen] = useState(false);
   const [depositPortalOpen, setDepositPortalOpen] = useState(false);
-  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
   const [depositMethod, setDepositMethod] = useState('bank');
   const [depositAmountInput, setDepositAmountInput] = useState('');
   const [depositStep, setDepositStep] = useState(1);

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import {
   Plus,
@@ -33,6 +33,12 @@ import { useAuth } from '../hooks/useAuth';
 export function HorseOwnerDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
   const [activeTab, setActiveTab] = useState('horses');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
