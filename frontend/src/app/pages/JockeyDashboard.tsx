@@ -117,8 +117,8 @@ export function JockeyDashboard() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-lg border-b border-white/5">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#FFDE42] to-[#E6C21E] rounded-lg flex items-center justify-center shadow-lg shadow-[#FFDE42]/20">
-              <Crosshair className="w-6 h-6 text-white" />
+            <div className="cursor-pointer" onClick={() => navigate('/')}>
+              <img src="/images/logo.png" alt="RaceTrack Logo" className="w-12 h-12 object-contain drop-shadow-md" />
             </div>
             <div>
               <div className="text-white font-semibold flex items-center gap-2">
@@ -185,8 +185,7 @@ export function JockeyDashboard() {
           {[
             { id: 'invitations', label: 'Lời Mời Đua', icon: Clock, badge: 2 },
             { id: 'schedule', label: 'Lịch Đua', icon: Calendar },
-            { id: 'results', label: 'Kết Quả Quá Khứ', icon: Trophy },
-            { id: 'stats', label: 'Phân Tích Sự Nghiệp', icon: Target }
+            { id: 'results', label: 'Kết Quả Quá Khứ', icon: Trophy }
           ].map(tab => (
             <button
               key={tab.id}
@@ -448,88 +447,7 @@ export function JockeyDashboard() {
           </div>
         )}
 
-        {/* Content: Career Analytics */}
-        {activeTab === 'stats' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <h2 className="text-2xl font-bold text-white mb-6">Phân Tích Sự Nghiệp & Hiệu Suất</h2>
 
-            <div className="grid lg:grid-cols-3 gap-6 mb-6">
-              {/* Win Rate Chart */}
-              <div className="lg:col-span-2 bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-2xl p-6 shadow-xl">
-                <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-[#FFDE42]" />
-                  Xu Hướng Tỷ Lệ Thắng (2026)
-                </h3>
-                <div className="h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={performanceData}>
-                      <defs>
-                        <linearGradient id="colorWinRate" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#FFDE42" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="#FFDE42" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                      <XAxis dataKey="month" stroke="#64748b" axisLine={false} tickLine={false} tick={{fontSize: 12}} />
-                      <YAxis stroke="#64748b" axisLine={false} tickLine={false} tickFormatter={(val) => `${val}%`} tick={{fontSize: 12}} />
-                      <RechartsTooltip 
-                        contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '12px', color: 'white' }}
-                        itemStyle={{ color: '#FFDE42', fontWeight: 'bold' }}
-                      />
-                      <Area type="monotone" dataKey="winRate" stroke="#FFDE42" strokeWidth={3} fillOpacity={1} fill="url(#colorWinRate)" activeDot={{ r: 6, fill: '#FFDE42', strokeWidth: 2, stroke: '#0f172a' }} />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Ranking & Attributes */}
-              <div className="bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col">
-                <h3 className="text-lg font-bold text-white mb-4">Thứ Hạng Toàn Cầu</h3>
-                <div className="bg-gradient-to-br from-[#1B0C0C]/40 to-slate-900 rounded-xl p-6 border border-[#FFDE42]/20 text-center mb-6 relative overflow-hidden">
-                  <div className="absolute -right-4 -top-4 w-24 h-24 bg-[#FFDE42]/10 rounded-full blur-xl"></div>
-                  <div className="text-slate-400 text-xs uppercase font-bold tracking-wider mb-2 relative z-10">Hạng Hiện Tại</div>
-                  <div className="text-5xl font-extrabold text-white mb-2 relative z-10">
-                    <span className="text-[#FFDE42]">#</span>12
-                  </div>
-                  <div className="inline-flex items-center gap-1 text-teal-400 text-xs font-bold bg-teal-400/10 px-3 py-1 rounded-full border border-teal-400/20 relative z-10">
-                    <TrendingUp className="w-3 h-3" /> TĂNG 3 BẬC
-                  </div>
-                </div>
-
-                <h4 className="text-white font-bold mb-4 text-sm uppercase tracking-wider border-b border-white/5 pb-2">Biểu Đồ Kỹ Năng</h4>
-                <div className="flex-1 min-h-[200px] -mt-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-                      <PolarGrid stroke="rgba(255,255,255,0.1)" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 10 }} />
-                      <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                      <Radar name="Skills" dataKey="A" stroke="#FFDE42" strokeWidth={2} fill="#FFDE42" fillOpacity={0.3} />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
-
-            {/* Achievement Showcase */}
-            <div className="bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-2xl p-6 shadow-xl">
-              <h3 className="text-lg font-bold text-white mb-6">Phòng Cúp & Huy Hiệu</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                  { icon: Trophy, label: 'Vô Địch G1', desc: 'Thắng 5 cuộc đua Hạng 1', color: 'text-amber-400', bg: 'bg-amber-400/10', border: 'border-amber-400/20' },
-                  { icon: Flame, label: 'Ác Quỷ Tốc Độ', desc: 'Kỷ lục vòng nhanh nhất 2025', color: 'text-rose-400', bg: 'bg-rose-400/10', border: 'border-rose-400/20' },
-                  { icon: ShieldAlert, label: 'Phong Độ Hoàn Hảo', desc: '10 cuộc đua không vi phạm', color: 'text-teal-400', bg: 'bg-teal-400/10', border: 'border-teal-400/20' },
-                  { icon: Medal, label: 'Kỵ Sĩ Kỳ Cựu', desc: 'Hoàn thành 100+ cuộc đua', color: 'text-[#FFDE42]', bg: 'bg-emerald-400/10', border: 'border-emerald-400/20' },
-                ].map((badge, idx) => (
-                  <div key={idx} className={`rounded-xl p-5 border ${badge.border} ${badge.bg} text-center flex flex-col items-center justify-center transition-transform hover:-translate-y-1`}>
-                    <badge.icon className={`w-8 h-8 ${badge.color} mb-3`} />
-                    <div className="text-white font-bold mb-1">{badge.label}</div>
-                    <div className="text-xs text-slate-400">{badge.desc}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Horse Info Dialog */}

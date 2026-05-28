@@ -72,11 +72,9 @@ export function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 py-0 flex items-center justify-between h-[72px]">
           {/* Logo */}
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
-            <div className="w-9 h-9 bg-gradient-to-br from-[#FFDE42] to-[#B8860B] rounded-lg flex items-center justify-center shadow-lg shadow-[#FFDE42]/30">
-              <Trophy className="w-5 h-5 text-slate-950" />
-            </div>
+            <img src="/images/logo.png" alt="RaceTrack Pro" className="w-12 h-12 object-contain" />
             <span className="text-lg font-extrabold text-white tracking-tight">
-              RaceTrack<span className="text-[#FFDE42]">Pro</span>
+              Race<span className="text-[#FFDE42]">Track</span>
             </span>
           </div>
 
@@ -288,7 +286,7 @@ export function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <div className="inline-block px-4 py-1.5 bg-[#FFDE42]/10 border border-[#FFDE42]/20 rounded-full mb-6">
-              <span className="text-sm font-medium text-[#FFDE42]">Tại Sao Chọn RaceTrackPro</span>
+              <span className="text-sm font-medium text-[#FFDE42]">Tại Sao Chọn RaceTrack</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
               Mọi Thứ Bạn Cần Để <br className="hidden md:block" />
@@ -493,7 +491,7 @@ export function LandingPage() {
               Sẵn Sàng Tham Gia Tương Lai?
             </h2>
             <p className="text-xl text-emerald-50 mb-10 max-w-2xl mx-auto leading-relaxed">
-              Tham gia cùng hàng nghìn chủ ngựa, kỵ sĩ, trọng tài và người hâm mộ đã sử dụng RaceTrackPro để quản lý và trải nghiệm đua ngựa chưa từng có.
+              Tham gia cùng hàng nghìn chủ ngựa, kỵ sĩ, trọng tài và người hâm mộ đã sử dụng RaceTrack để quản lý và trải nghiệm đua ngựa chưa từng có.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -563,11 +561,9 @@ export function LandingPage() {
           <div className="grid md:grid-cols-4 gap-12 mb-12">
             {/* Brand */}
             <div className="md:col-span-1">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-lg flex items-center justify-center shadow-lg shadow-[#FFDE42]/50">
-                  <Trophy className="w-6 h-6 text-white" />
-                </div>
-                <span className="text-xl font-bold text-white">RaceTrack<span className="text-emerald-500">Pro</span></span>
+              <div className="flex items-center gap-3 mb-4">
+                <img src="/images/logo.png" alt="RaceTrack Pro" className="w-16 h-16 object-contain" />
+                <span className="text-xl font-bold text-white">RaceTrack<span className="text-[#FFDE42]">Pro</span></span>
               </div>
               <p className="text-sm text-slate-400 leading-relaxed">
                 Nền tảng tất cả trong một cho quản lý đua ngựa chuyên nghiệp và tương tác khán giả.
@@ -611,7 +607,7 @@ export function LandingPage() {
           {/* Bottom Bar */}
           <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-slate-500">
-              © 2026 RaceTrackPro. Đã đăng ký bản quyền.
+              © 2026 RaceTrack. Đã đăng ký bản quyền.
             </p>
             <div className="flex items-center gap-6">
               <a href="#" className="text-slate-400 hover:text-[#FFDE42] transition-colors">

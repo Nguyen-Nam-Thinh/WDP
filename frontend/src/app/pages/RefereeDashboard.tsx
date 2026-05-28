@@ -112,8 +112,8 @@ export function RefereeDashboard() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-lg border-b border-white/5">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#FFDE42] to-[#1B0C0C] rounded-lg flex items-center justify-center shadow-lg shadow-[#FFDE42]/50">
-              <Shield className="w-6 h-6 text-white" />
+            <div className="cursor-pointer" onClick={() => navigate('/')}>
+              <img src="/images/logo.png" alt="RaceTrack Logo" className="w-12 h-12 object-contain drop-shadow-md" />
             </div>
             <div>
               <div className="text-white font-semibold flex items-center gap-2">
