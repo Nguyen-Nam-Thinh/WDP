@@ -248,7 +248,6 @@ export function RefereeDashboard() {
                             sx={{
                               background: race.status === 'Pre-Check Pending' ? '#FFDE42' : '#334155',
                               color: race.status === 'Pre-Check Pending' ? '#1B0C0C' : 'white',
-                              color: 'white',
                               textTransform: 'none',
                               fontWeight: 600,
                               '&:hover': { background: '#059669' }
@@ -414,7 +413,6 @@ export function RefereeDashboard() {
                       sx={{
                         background: '#FFDE42',
                         color: '#1B0C0C',
-                        color: 'white',
                         textTransform: 'none',
                         fontWeight: 600,
                         '&:hover': { background: '#059669' }

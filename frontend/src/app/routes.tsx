@@ -9,6 +9,10 @@ import { Register } from "./pages/Register";
 import { TournamentsPage } from "./pages/TournamentsPage";
 import { RankingsPage } from "./pages/RankingsPage";
 import { PredictionsPage } from "./pages/PredictionsPage";
+import { BetHistoryPage } from "./pages/BetHistoryPage";
+import { DepositHistoryPage } from "./pages/DepositHistoryPage";
+import { ProfilePage } from "./pages/ProfilePage";
+import { DepositPortalPage } from "./pages/DepositPortalPage";
 
 export const router = createBrowserRouter([
   {
@@ -51,4 +55,21 @@ export const router = createBrowserRouter([
     path: "/predictions",
     element: <PredictionsPage />,
   },
+  {
+    path: "/spectator/bet-history",
+    element: <BetHistoryPage />,
+  },
+  {
+    path: "/spectator/deposit-history",
+    element: <DepositHistoryPage />,
+  },
+  {
+    path: "/spectator/profile",
+    element: <ProfilePage />,
+  },
+  {
+    path: "/spectator/deposit",
+    element: <DepositPortalPage />,
+  },
 ]);
+
