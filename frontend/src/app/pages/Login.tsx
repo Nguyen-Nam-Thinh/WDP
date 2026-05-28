@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Trophy, ArrowLeft } from 'lucide-react';
-import { TextField, Button, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
+import { Trophy, ArrowLeft, Mail, Lock, User, ChevronDown } from 'lucide-react';
 
 export function Login() {
   const navigate = useNavigate();
@@ -12,114 +11,120 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
-      <div className="w-full max-w-md">
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center gap-2 text-slate-400 hover:text-white mb-8 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Về Trang Chủ
-        </button>
+    <div className="min-h-screen flex bg-[#0a0a0a] font-sans">
+      <style>{`
+        @keyframes slideInLeft {
+          from { opacity: 0; transform: translateX(-50px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+      `}</style>
 
-        <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-8 shadow-xl shadow-black/50">
-          <div className="flex items-center justify-center gap-3 mb-8">
-            <div className="w-12 h-12 bg-gradient-to-br from-[#FFDE42] to-[#1B0C0C] rounded-xl flex items-center justify-center shadow-lg shadow-[#FFDE42]/50">
-              <Trophy className="w-7 h-7 text-white" />
-            </div>
-            <span className="text-2xl font-bold text-white tracking-tight">RaceTrack Pro</span>
+      {/* Form Section - Left */}
+      <div 
+        className="w-full lg:w-1/2 flex flex-col justify-center p-6 lg:p-8 relative z-10"
+        style={{ animation: 'slideInLeft 0.6s ease-out forwards' }}
+      >
+        {/* Dynamic Background Effects for Mobile */}
+        <div className="absolute top-0 left-0 w-96 h-96 bg-[#FFDE42] rounded-full mix-blend-screen filter blur-[150px] opacity-10 lg:hidden"></div>
+
+        <div className="w-full max-w-md mx-auto relative flex flex-col justify-center min-h-[calc(100vh-3rem)] lg:min-h-0">
+          <button
+            onClick={() => navigate('/')}
+            className="group flex items-center gap-2 text-slate-400 hover:text-[#FFDE42] mb-6 transition-colors text-sm font-medium"
+          >
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            Về Trang Chủ
+          </button>
+
+          <div className="mb-8">
+            <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-2">Chào mừng trở lại</h2>
+            <p className="text-sm text-slate-400">Đăng nhập vào tài khoản RaceTrack Pro của bạn</p>
           </div>
 
-          <h2 className="text-2xl font-semibold text-white text-center mb-8">Chào Mừng Trở Lại</h2>
+          <div className="space-y-4">
+            {/* User Type */}
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">Đăng nhập với tư cách</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <User className="h-4 w-4 text-slate-500" />
+                </div>
+                <select
+                  value={userType}
+                  onChange={(e) => setUserType(e.target.value)}
+                  className="block w-full pl-10 pr-8 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-[#FFDE42]/50 focus:border-[#FFDE42] transition-all cursor-pointer"
+                >
+                  <option value="horse-owner" className="bg-slate-900">Chủ Ngựa</option>
+                  <option value="jockey" className="bg-slate-900">Kỵ Sĩ</option>
+                  <option value="referee" className="bg-slate-900">Trọng Tài</option>
+                  <option value="spectator" className="bg-slate-900">Khán Giả</option>
+                </select>
+                <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
+                  <ChevronDown className="h-4 w-4 text-slate-500" />
+                </div>
+              </div>
+            </div>
 
-          <div className="space-y-5">
-            <FormControl fullWidth>
-              <InputLabel sx={{ color: '#94a3b8' }}>Loại Người Dùng</InputLabel>
-              <Select
-                value={userType}
-                onChange={(e) => setUserType(e.target.value)}
-                label="Loại Người Dùng"
-                sx={{
-                  color: 'white',
-                  '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.1)' },
-                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.2)' },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#FFDE42' },
-                  '.MuiSvgIcon-root': { color: '#94a3b8' }
-                }}
-              >
-                <MenuItem key="horse-owner" value="horse-owner">Chủ Ngựa</MenuItem>
-                <MenuItem key="jockey" value="jockey">Kỵ Sĩ</MenuItem>
-                <MenuItem key="referee" value="referee">Trọng Tài</MenuItem>
-                <MenuItem key="spectator" value="spectator">Khán Giả</MenuItem>
-              </Select>
-            </FormControl>
+            {/* Email */}
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">Email</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <Mail className="h-4 w-4 text-slate-500" />
+                </div>
+                <input
+                  type="email"
+                  placeholder="email@example.com"
+                  className="block w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#FFDE42]/50 focus:border-[#FFDE42] transition-all"
+                />
+              </div>
+            </div>
 
-            <TextField
-              fullWidth
-              label="Email"
-              type="email"
-              placeholder="email@example.com"
-              sx={{
-                '& .MuiInputLabel-root': { color: '#94a3b8' },
-                '& .MuiOutlinedInput-root': {
-                  color: 'white',
-                  '& fieldset': { borderColor: 'rgba(255,255,255,0.1)' },
-                  '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
-                  '&.Mui-focused fieldset': { borderColor: '#FFDE42' }
-                }
-              }}
-            />
+            {/* Password */}
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">Mật khẩu</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <Lock className="h-4 w-4 text-slate-500" />
+                </div>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  className="block w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#FFDE42]/50 focus:border-[#FFDE42] transition-all"
+                />
+              </div>
+              <div className="flex justify-end mt-1.5">
+                <button className="text-xs text-[#FFDE42] hover:text-amber-400 transition-colors">
+                  Quên mật khẩu?
+                </button>
+              </div>
+            </div>
 
-            <TextField
-              fullWidth
-              label="Mật Khẩu"
-              type="password"
-              placeholder="••••••••"
-              sx={{
-                '& .MuiInputLabel-root': { color: '#94a3b8' },
-                '& .MuiOutlinedInput-root': {
-                  color: 'white',
-                  '& fieldset': { borderColor: 'rgba(255,255,255,0.1)' },
-                  '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
-                  '&.Mui-focused fieldset': { borderColor: '#FFDE42' }
-                }
-              }}
-            />
-
-            <Button
-              fullWidth
-              variant="contained"
-              size="large"
+            <button
               onClick={handleLogin}
-              sx={{
-                background: 'linear-gradient(135deg, #FFDE42 0%, #1B0C0C 100%)',
-                padding: '12px',
-                marginTop: '24px',
-                fontWeight: 600,
-                textTransform: 'none',
-                fontSize: '1rem',
-                borderRadius: '0.75rem',
-                boxShadow: '0 4px 6px -1px rgba(255, 222, 66, 0.2), 0 2px 4px -1px rgba(255, 222, 66, 0.1)',
-                '&:hover': { background: 'linear-gradient(135deg, #FFDE42 0%, #4C5C2D 100%)' }
-              }}
+              className="w-full relative group overflow-hidden rounded-xl bg-[#FFDE42] text-black font-bold py-2.5 mt-5 transition-all hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(255,222,66,0.4)] active:scale-[0.98]"
             >
-              Đăng Nhập
-            </Button>
+              <span className="relative z-10 text-sm">Đăng Nhập</span>
+            </button>
 
-            <div className="relative mt-8 mb-6">
+            <div className="relative py-4">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-white/10"></div>
               </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 text-slate-400 text-xs uppercase tracking-widest" style={{ background: '#111827' /* Approx modal background color */}}>
-                  Hoặc đăng nhập với
+              <div className="relative flex justify-center text-xs">
+                <span className="px-3 text-slate-500 uppercase tracking-wider bg-[#0a0a0a]">
+                  Hoặc tiếp tục với
                 </span>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <button className="flex items-center justify-center gap-2 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors text-white font-medium text-sm">
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
+            <div className="grid grid-cols-2 gap-3">
+              <button className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors text-white font-medium text-sm group">
+                <svg className="w-4 h-4 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
                   <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.16v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
                   <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.16C1.43 8.55 1 10.22 1 12s.43 3.45 1.16 4.93l2.85-2.22.83-.62z" fill="#FBBC05" />
@@ -127,24 +132,49 @@ export function Login() {
                 </svg>
                 Google
               </button>
-              <button className="flex items-center justify-center gap-2 py-3 rounded-xl border border-[#1877F2]/30 bg-[#1877F2]/10 hover:bg-[#1877F2]/20 transition-colors text-white font-medium text-sm">
-                <svg className="w-5 h-5 text-[#1877F2]" fill="currentColor" viewBox="0 0 24 24">
+              <button className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-[#1877F2]/20 hover:border-[#1877F2]/50 transition-all text-white font-medium text-sm group">
+                <svg className="w-4 h-4 text-[#1877F2] group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                 </svg>
                 Facebook
               </button>
             </div>
-          </div>
 
-          <div className="mt-8 text-center">
-            <span className="text-slate-400">Chưa có tài khoản? </span>
-            <button
-              onClick={() => navigate('/register')}
-              className="text-[#FFDE42] hover:text-[#E6C21E] font-medium transition-colors"
-            >
-              Đăng ký ngay
-            </button>
+            <div className="mt-6 text-center">
+              <span className="text-slate-400 text-sm">Chưa có tài khoản? </span>
+              <button
+                onClick={() => navigate('/register')}
+                className="text-[#FFDE42] hover:text-amber-400 font-semibold transition-colors text-sm"
+              >
+                Đăng ký ngay
+              </button>
+            </div>
           </div>
+        </div>
+      </div>
+
+      {/* Branding Section - Right */}
+      <div 
+        className="hidden lg:flex lg:w-1/2 relative items-end justify-center overflow-hidden pb-12 px-12"
+        style={{ animation: 'fadeIn 1s ease-out forwards' }}
+      >
+        <div className="absolute inset-0 bg-[url('/images/login-bg.png')] bg-cover bg-center transition-transform duration-[10000ms] hover:scale-105"></div>
+        {/* Soft edge gradient to blend with the form on the left */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a] via-transparent to-transparent opacity-90"></div>
+        {/* Bottom gradient just enough to make the text readable */}
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/40 to-transparent"></div>
+        
+        <div className="relative z-10 w-full text-left">
+          <div className="flex items-center gap-3 mb-6">
+             <img src="/images/logo.png" alt="RaceTrack Pro" className="w-12 h-12 object-contain" />
+             <span className="text-white font-bold tracking-wide text-lg drop-shadow-md">RaceTrack Pro</span>
+          </div>
+          <h1 className="text-2xl xl:text-3xl font-bold text-white mb-2 leading-tight drop-shadow-lg">
+            Trải nghiệm đua ngựa<br/>đẳng cấp quốc tế
+          </h1>
+          <p className="text-sm text-slate-300 max-w-md drop-shadow-md">
+            Nền tảng quản lý và theo dõi đua ngựa chuyên nghiệp. Cập nhật kết quả trực tiếp và thống kê chi tiết.
+          </p>
         </div>
       </div>
     </div>

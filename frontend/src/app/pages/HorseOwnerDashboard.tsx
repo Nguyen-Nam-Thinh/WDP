@@ -90,8 +90,8 @@ export function HorseOwnerDashboard() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-lg border-b border-white/5">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#FFDE42] to-[#1B0C0C] rounded-lg flex items-center justify-center shadow-lg shadow-[#FFDE42]/50">
-              <Trophy className="w-6 h-6 text-white" />
+            <div className="cursor-pointer" onClick={() => navigate('/')}>
+              <img src="/images/logo.png" alt="RaceTrack Logo" className="w-12 h-12 object-contain drop-shadow-md" />
             </div>
             <div>
               <div className="text-white font-semibold">Cổng Chủ Ngựa</div>
@@ -321,7 +321,7 @@ export function HorseOwnerDashboard() {
                 </div>
               </div>
 
-              <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-6 h-fit">
+              {/* <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-6 h-fit">
                 <h3 className="text-xl font-bold text-white mb-6">Kỵ Sĩ Ưa Thích</h3>
                 <div className="space-y-4">
                   {preferredJockeys.map(jockey => (
@@ -347,7 +347,7 @@ export function HorseOwnerDashboard() {
                     </div>
                   ))}
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         )}
@@ -476,7 +476,7 @@ export function HorseOwnerDashboard() {
                 </div>
               </div>
 
-              <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-6">
+              {/* <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-6">
                 <h3 className="text-lg font-bold text-white mb-6">Tiến Độ Điểm</h3>
                 <div className="h-72">
                   <ResponsiveContainer width="100%" height="100%">
@@ -489,7 +489,7 @@ export function HorseOwnerDashboard() {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-              </div>
+              </div> */}
             </div>
 
             <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-6">
@@ -557,7 +557,7 @@ export function HorseOwnerDashboard() {
                   </div>
                 </div>
 
-                <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-6">
+                {/* <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-6">
                   <h3 className="text-lg font-bold text-white mb-4">Thống Kê Nhanh</h3>
                   <div className="space-y-4">
                     <div className="flex justify-between items-center pb-4 border-b border-white/5">
@@ -573,7 +573,7 @@ export function HorseOwnerDashboard() {
                       <span className="text-red-400 font-medium">$49,200</span>
                     </div>
                   </div>
-                </div>
+                </div> */}
               </div>
 
               <div className="md:col-span-2 bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-6">
