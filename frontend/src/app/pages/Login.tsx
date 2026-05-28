@@ -1,14 +1,43 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Trophy, ArrowLeft, Mail, Lock, User, ChevronDown, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Mail, Lock, User, ChevronDown, Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import { authApi } from '../api/auth';
+
+import { toast } from 'sonner';
 
 export function Login() {
   const navigate = useNavigate();
-  const [userType, setUserType] = useState('horse-owner');
+  const { login } = useAuth();
+  
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleLogin = () => {
-    navigate(`/${userType}`);
+  const handleLogin = async () => {
+    if (!email || !password) {
+      toast.error('Vui lòng nhập email và mật khẩu');
+      setError('Vui lòng nhập email và mật khẩu');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const data = await authApi.login(email, password);
+      login(data.user, data.accessToken);
+      toast.success('Đăng nhập thành công! Chào mừng ' + data.user.fullName);
+      
+      const rolePath = data.user.role === 'owner' ? 'horse-owner' : data.user.role === 'spectator' ? '' : data.user.role;
+      navigate(`/${rolePath}`);
+    } catch (err: any) {
+      const errorMsg = err.message || 'Đăng nhập thất bại';
+      toast.error(errorMsg);
+      setError(errorMsg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -44,32 +73,10 @@ export function Login() {
           <div className="mb-8">
             <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-2">Chào mừng trở lại</h2>
             <p className="text-sm text-slate-400">Đăng nhập vào tài khoản RaceTrack Pro của bạn</p>
+            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
           </div>
 
           <div className="space-y-4">
-            {/* User Type */}
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">Đăng nhập với tư cách</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                  <User className="h-4 w-4 text-slate-500" />
-                </div>
-                <select
-                  value={userType}
-                  onChange={(e) => setUserType(e.target.value)}
-                  className="block w-full pl-10 pr-8 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-[#FFDE42]/50 focus:border-[#FFDE42] transition-all cursor-pointer"
-                >
-                  <option value="horse-owner" className="bg-slate-900">Chủ Ngựa</option>
-                  <option value="jockey" className="bg-slate-900">Kỵ Sĩ</option>
-                  <option value="referee" className="bg-slate-900">Trọng Tài</option>
-                  <option value="spectator" className="bg-slate-900">Khán Giả</option>
-                </select>
-                <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
-                  <ChevronDown className="h-4 w-4 text-slate-500" />
-                </div>
-              </div>
-            </div>
-
             {/* Email */}
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1.5">Email</label>
@@ -79,6 +86,8 @@ export function Login() {
                 </div>
                 <input
                   type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="email@example.com"
                   className="block w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#FFDE42]/50 focus:border-[#FFDE42] transition-all"
                 />
@@ -94,6 +103,8 @@ export function Login() {
                 </div>
                 <input
                   type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="block w-full pl-10 pr-10 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#FFDE42]/50 focus:border-[#FFDE42] transition-all"
                 />
@@ -117,9 +128,10 @@ export function Login() {
 
             <button
               onClick={handleLogin}
-              className="w-full relative group overflow-hidden rounded-xl bg-[#FFDE42] text-black font-bold py-2.5 mt-5 transition-all hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(255,222,66,0.4)] active:scale-[0.98] cursor-pointer"
+              disabled={loading}
+              className="w-full relative group overflow-hidden rounded-xl bg-[#FFDE42] text-black font-bold py-2.5 mt-5 transition-all hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(255,222,66,0.4)] active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span className="relative z-10 text-sm">Đăng Nhập</span>
+              <span className="relative z-10 text-sm">{loading ? 'Đang Xử Lý...' : 'Đăng Nhập'}</span>
             </button>
 
             <div className="relative py-4">

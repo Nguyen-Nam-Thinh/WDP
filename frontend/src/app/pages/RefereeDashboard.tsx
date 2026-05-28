@@ -27,9 +27,10 @@ import {
 } from 'lucide-react';
 import {
   Button, Chip, Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, Select, MenuItem, FormControl, InputLabel,
   FormControlLabel, Checkbox, FormGroup, Divider
 } from '@mui/material';
+import { ProfileDropdown } from '../components/ProfileDropdown';
+import { useAuth } from '../hooks/useAuth';
 
 const refereeProfile = {
   name: 'Nguyễn Văn Hoàng',
@@ -44,6 +45,7 @@ const refereeProfile = {
 
 export function RefereeDashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('pre-check');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -231,35 +233,8 @@ export function RefereeDashboard() {
               Hệ Thống Hoạt Động
             </div>
 
-            {/* Profile Button */}
-            <button
-              onClick={() => setProfileOpen(true)}
-              className="flex items-center gap-2.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#FFDE42]/40 rounded-xl px-3 py-2 transition-all group"
-            >
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#FFDE42] to-amber-600 flex items-center justify-center shadow-lg">
-                <User className="w-4 h-4 text-slate-900" />
-              </div>
-              <div className="text-left">
-                <div className="text-white text-sm font-semibold leading-none">{refereeProfile.name}</div>
-                <div className="text-slate-400 text-xs mt-0.5">Trọng Tài</div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-[#FFDE42] transition-colors" />
-            </button>
-
-            <Button
-              variant="outlined"
-              startIcon={<LogOut />}
-              onClick={() => navigate('/')}
-              size="small"
-              sx={{
-                borderColor: 'rgba(255,255,255,0.1)',
-                color: '#94a3b8',
-                textTransform: 'none',
-                '&:hover': { borderColor: 'rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.05)' }
-              }}
-            >
-              Đăng Xuất
-            </Button>
+            {/* Profile Dropdown */}
+            <ProfileDropdown />
           </div>
 
           <button className="md:hidden text-white" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>

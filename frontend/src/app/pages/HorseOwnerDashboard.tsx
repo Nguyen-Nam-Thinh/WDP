@@ -27,9 +27,12 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar
 } from 'recharts';
+import { ProfileDropdown } from '../components/ProfileDropdown';
+import { useAuth } from '../hooks/useAuth';
 
 export function HorseOwnerDashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('horses');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
@@ -100,23 +103,7 @@ export function HorseOwnerDashboard() {
           </div>
 
           <div className="hidden md:flex items-center gap-4">
-            <div className="bg-white/5 px-4 py-2 rounded-lg flex items-center gap-2 border border-white/5">
-              <Wallet className="w-4 h-4 text-[#FFDE42]" />
-              <span className="text-white font-medium">$45,800</span>
-            </div>
-            <Button
-              variant="outlined"
-              startIcon={<LogOut />}
-              onClick={() => navigate('/')}
-              sx={{
-                borderColor: 'rgba(255,255,255,0.1)',
-                color: '#94a3b8',
-                textTransform: 'none',
-                '&:hover': { borderColor: 'rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.05)' }
-              }}
-            >
-              Đăng Xuất
-            </Button>
+            <ProfileDropdown />
           </div>
 
           <button className="md:hidden text-white" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>

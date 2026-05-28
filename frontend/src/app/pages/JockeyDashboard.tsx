@@ -27,12 +27,14 @@ import {
   Avatar, LinearProgress, Box, Typography 
 } from '@mui/material';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   AreaChart, Area, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, RadarChart
 } from 'recharts';
+import { ProfileDropdown } from '../components/ProfileDropdown';
+import { useAuth } from '../hooks/useAuth';
 
 export function JockeyDashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('invitations');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [horseInfoOpen, setHorseInfoOpen] = useState(false);
@@ -130,30 +132,7 @@ export function JockeyDashboard() {
           </div>
 
           <div className="hidden md:flex items-center gap-6">
-            <div className="flex items-center gap-3 bg-white/5 px-4 py-2 rounded-xl border border-white/10 hover:bg-white/10 transition-colors cursor-pointer">
-              <div className="relative">
-                <Avatar src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop" sx={{ width: 36, height: 36, border: '2px solid #FFDE42' }} />
-                <div className="absolute bottom-0 right-0 w-3 h-3 bg-[#FFDE42] rounded-full border-2 border-slate-900"></div>
-              </div>
-              <div className="text-sm">
-                <div className="text-white font-bold">Mike Johnson</div>
-                <div className="text-[#FFDE42] text-xs font-medium">Sẵn Sàng Nhận Việc</div>
-              </div>
-            </div>
-            <Button
-              variant="outlined"
-              startIcon={<LogOut className="w-4 h-4" />}
-              onClick={() => navigate('/')}
-              sx={{
-                borderColor: 'rgba(255,255,255,0.1)',
-                color: '#94a3b8',
-                textTransform: 'none',
-                borderRadius: '8px',
-                '&:hover': { borderColor: '#ef4444', color: '#ef4444', backgroundColor: 'rgba(239,68,68,0.05)' }
-              }}
-            >
-              Đăng Xuất
-            </Button>
+            <ProfileDropdown />
           </div>
 
           <button className="md:hidden text-white" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>

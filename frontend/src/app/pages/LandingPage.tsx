@@ -23,9 +23,20 @@ import {
 } from 'lucide-react';
 import { Button } from '@mui/material';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
+import { useAuth } from '../hooks/useAuth';
+import { ProfileDropdown } from '../components/ProfileDropdown';
+import { useEffect } from 'react';
 
 export function LandingPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user && user.role !== 'spectator') {
+      const rolePath = user.role === 'owner' ? 'horse-owner' : user.role;
+      navigate(`/${rolePath}`, { replace: true });
+    }
+  }, [user, navigate]);
 
   const features = [
     {
@@ -121,42 +132,48 @@ export function LandingPage() {
 
           {/* Auth Buttons */}
           <div className="flex items-center gap-3">
-            <Button
-              variant="text"
-              onClick={() => navigate('/login')}
-              sx={{
-                color: '#94a3b8',
-                textTransform: 'none',
-                fontWeight: 600,
-                fontSize: '14px',
-                px: 2,
-                '&:hover': { color: '#FFDE42', backgroundColor: 'transparent' }
-              }}
-            >
-              Đăng Nhập
-            </Button>
-            <Button
-              variant="contained"
-              onClick={() => navigate('/register')}
-              sx={{
-                background: 'linear-gradient(135deg, #FFDE42 0%, #B8860B 100%)',
-                color: '#1a0a00',
-                textTransform: 'none',
-                fontWeight: 700,
-                fontSize: '14px',
-                borderRadius: '10px',
-                px: 3,
-                py: 1,
-                boxShadow: '0 4px 14px 0 rgba(255, 222, 66, 0.35)',
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #FFE862 0%, #D4A420 100%)',
-                  boxShadow: '0 6px 20px 0 rgba(255, 222, 66, 0.5)',
-                  transform: 'translateY(-1px)'
-                }
-              }}
-            >
-              Bắt Đầu Ngay
-            </Button>
+            {user ? (
+              <ProfileDropdown />
+            ) : (
+              <>
+                <Button
+                  variant="text"
+                  onClick={() => navigate('/login')}
+                  sx={{
+                    color: '#94a3b8',
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    fontSize: '14px',
+                    px: 2,
+                    '&:hover': { color: '#FFDE42', backgroundColor: 'transparent' }
+                  }}
+                >
+                  Đăng Nhập
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={() => navigate('/register')}
+                  sx={{
+                    background: 'linear-gradient(135deg, #FFDE42 0%, #B8860B 100%)',
+                    color: '#1a0a00',
+                    textTransform: 'none',
+                    fontWeight: 700,
+                    fontSize: '14px',
+                    borderRadius: '10px',
+                    px: 3,
+                    py: 1,
+                    boxShadow: '0 4px 14px 0 rgba(255, 222, 66, 0.35)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #FFE862 0%, #D4A420 100%)',
+                      boxShadow: '0 6px 20px 0 rgba(255, 222, 66, 0.5)',
+                      transform: 'translateY(-1px)'
+                    }
+                  }}
+                >
+                  Bắt Đầu Ngay
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -204,7 +221,7 @@ export function LandingPage() {
                 <Button
                   variant="contained"
                   size="large"
-                  onClick={() => navigate('/register')}
+                  onClick={() => navigate(user ? '/spectator' : '/register')}
                   endIcon={<ArrowRight />}
                   sx={{
                     background: 'linear-gradient(135deg, #FFDE42 0%, #1B0C0C 100%)',
@@ -220,7 +237,7 @@ export function LandingPage() {
                     }
                   }}
                 >
-                  Bắt Đầu Miễn Phí
+                  {user ? 'Vào Dashboard' : 'Bắt Đầu Miễn Phí'}
                 </Button>
                 <Button
                   variant="outlined"
@@ -498,7 +515,7 @@ export function LandingPage() {
               <Button
                 variant="contained"
                 size="large"
-                onClick={() => navigate('/register')}
+                onClick={() => navigate(user ? '/spectator' : '/register')}
                 endIcon={<ArrowRight />}
                 sx={{
                   background: 'white',
@@ -516,29 +533,31 @@ export function LandingPage() {
                   }
                 }}
               >
-                Bắt Đầu Miễn Phí
+                {user ? 'Vào Dashboard' : 'Bắt Đầu Miễn Phí'}
               </Button>
-              <Button
-                variant="outlined"
-                size="large"
-                onClick={() => navigate('/login')}
-                sx={{
-                  borderColor: 'rgba(255,255,255,0.3)',
-                  color: 'white',
-                  padding: '16px 48px',
-                  fontSize: '18px',
-                  fontWeight: 600,
-                  textTransform: 'none',
-                  borderRadius: '14px',
-                  backdropFilter: 'blur(10px)',
-                  '&:hover': {
-                    borderColor: 'rgba(255,255,255,0.5)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)'
-                  }
-                }}
-              >
-                Đăng Nhập
-              </Button>
+              {!user && (
+                <Button
+                  variant="outlined"
+                  size="large"
+                  onClick={() => navigate('/login')}
+                  sx={{
+                    borderColor: 'rgba(255,255,255,0.3)',
+                    color: 'white',
+                    padding: '16px 48px',
+                    fontSize: '18px',
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    borderRadius: '14px',
+                    backdropFilter: 'blur(10px)',
+                    '&:hover': {
+                      borderColor: 'rgba(255,255,255,0.5)',
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                    }
+                  }}
+                >
+                  Đăng Nhập
+                </Button>
+              )}
             </div>
 
             <div className="mt-12 flex items-center justify-center gap-8 text-slate-100">

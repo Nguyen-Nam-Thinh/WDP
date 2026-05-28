@@ -1,29 +1,84 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { ArrowLeft, Mail, Lock, KeyRound, Eye, EyeOff } from 'lucide-react';
+import { authApi } from '../api/auth';
+import { toast } from 'sonner';
 
 export function ForgotPassword() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
+  const [resetToken, setResetToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const handleSendCode = () => {
-    if (email) setStep(2);
+  const handleSendCode = async () => {
+    if (!email) {
+      setError('Vui lòng nhập email');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      await authApi.forgotPassword(email);
+      setSuccess('Mã xác nhận đã được gửi đến email của bạn');
+      toast.success('Mã xác nhận đã được gửi đến email của bạn');
+      setStep(2);
+    } catch (err: any) {
+      const errorMsg = err.message || 'Lỗi gửi mã xác nhận';
+      setError(errorMsg);
+      toast.error(errorMsg);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleVerifyCode = () => {
-    if (code) setStep(3);
+  const handleVerifyCode = async () => {
+    if (!code) {
+      setError('Vui lòng nhập mã xác nhận');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      const data = await authApi.verifyResetCode(email, code);
+      setResetToken(data.resetToken);
+      toast.success('Xác nhận thành công!');
+      setStep(3);
+    } catch (err: any) {
+      const errorMsg = err.message || 'Mã xác nhận không hợp lệ';
+      setError(errorMsg);
+      toast.error(errorMsg);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleResetPassword = () => {
-    if (newPassword && newPassword === confirmPassword) {
-      // Password reset successful, navigate to login
-      navigate('/login');
+  const handleResetPassword = async () => {
+    if (!newPassword || newPassword !== confirmPassword) {
+      setError('Mật khẩu không khớp hoặc chưa nhập');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      await authApi.resetPassword(resetToken, newPassword);
+      setSuccess('Mật khẩu đã được thay đổi thành công');
+      toast.success('Mật khẩu đã được thay đổi thành công');
+      setTimeout(() => navigate('/login'), 2000);
+    } catch (err: any) {
+      const errorMsg = err.message || 'Lỗi đổi mật khẩu';
+      setError(errorMsg);
+      toast.error(errorMsg);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -64,6 +119,8 @@ export function ForgotPassword() {
               {step === 2 && 'Nhập mã xác nhận đã được gửi đến email của bạn'}
               {step === 3 && 'Tạo mật khẩu mới cho tài khoản của bạn'}
             </p>
+            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+            {success && <p className="text-emerald-500 text-sm mt-2">{success}</p>}
           </div>
 
           <div className="space-y-4">
@@ -87,9 +144,10 @@ export function ForgotPassword() {
 
                 <button
                   onClick={handleSendCode}
-                  className="w-full relative group overflow-hidden rounded-xl bg-[#FFDE42] text-black font-bold py-2.5 mt-5 transition-all hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(255,222,66,0.4)] active:scale-[0.98]"
+                  disabled={loading}
+                  className="w-full relative group overflow-hidden rounded-xl bg-[#FFDE42] text-black font-bold py-2.5 mt-5 transition-all hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(255,222,66,0.4)] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <span className="relative z-10 text-sm">Gửi Mã Xác Nhận</span>
+                  <span className="relative z-10 text-sm">{loading ? 'Đang Xử Lý...' : 'Gửi Mã Xác Nhận'}</span>
                 </button>
               </>
             )}
@@ -114,9 +172,10 @@ export function ForgotPassword() {
 
                 <button
                   onClick={handleVerifyCode}
-                  className="w-full relative group overflow-hidden rounded-xl bg-[#FFDE42] text-black font-bold py-2.5 mt-5 transition-all hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(255,222,66,0.4)] active:scale-[0.98]"
+                  disabled={loading}
+                  className="w-full relative group overflow-hidden rounded-xl bg-[#FFDE42] text-black font-bold py-2.5 mt-5 transition-all hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(255,222,66,0.4)] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <span className="relative z-10 text-sm">Xác Nhận Mã</span>
+                  <span className="relative z-10 text-sm">{loading ? 'Đang Xử Lý...' : 'Xác Nhận Mã'}</span>
                 </button>
               </>
             )}
@@ -171,9 +230,10 @@ export function ForgotPassword() {
 
                 <button
                   onClick={handleResetPassword}
-                  className="w-full relative group overflow-hidden rounded-xl bg-[#FFDE42] text-black font-bold py-2.5 mt-5 transition-all hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(255,222,66,0.4)] active:scale-[0.98]"
+                  disabled={loading}
+                  className="w-full relative group overflow-hidden rounded-xl bg-[#FFDE42] text-black font-bold py-2.5 mt-5 transition-all hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(255,222,66,0.4)] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <span className="relative z-10 text-sm">Đổi Mật Khẩu</span>
+                  <span className="relative z-10 text-sm">{loading ? 'Đang Xử Lý...' : 'Đổi Mật Khẩu'}</span>
                 </button>
               </>
             )}

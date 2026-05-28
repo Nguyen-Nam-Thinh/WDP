@@ -1,14 +1,48 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Trophy, ArrowLeft, Mail, Lock, User, Phone, ChevronDown, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Mail, Lock, User, Phone, ChevronDown, Eye, EyeOff } from 'lucide-react';
+import { useAuth, UserRole } from '../hooks/useAuth';
+import { authApi } from '../api/auth';
+
+import { toast } from 'sonner';
 
 export function Register() {
   const navigate = useNavigate();
-  const [userType, setUserType] = useState('horse-owner');
+  const { login } = useAuth();
+  
+  const role: UserRole = 'spectator';
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleRegister = () => {
-    navigate(`/${userType}`);
+  const handleRegister = async () => {
+    if (!email || !password || !fullName) {
+      toast.error('Vui lòng điền đầy đủ thông tin bắt buộc');
+      setError('Vui lòng điền đầy đủ thông tin bắt buộc');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const data = await authApi.register({
+        email, password, fullName, phone, role
+      });
+      login(data.user, data.accessToken);
+      toast.success('Đăng ký tài khoản thành công!');
+      const rolePath = data.user.role === 'owner' ? 'horse-owner' : data.user.role === 'spectator' ? '' : data.user.role;
+      navigate(`/${rolePath}`);
+    } catch (err: any) {
+      const errorMsg = err.message || 'Đăng ký thất bại';
+      toast.error(errorMsg);
+      setError(errorMsg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -69,31 +103,10 @@ export function Register() {
           <div className="mb-6 ">
             <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-2">Tạo tài khoản</h2>
             <p className="text-sm text-slate-400">Điền thông tin để gia nhập cộng đồng</p>
+            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
           </div>
 
           <div className="space-y-3">
-            {/* User Type */}
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">Đăng ký với tư cách</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                  <User className="h-4 w-4 text-slate-500" />
-                </div>
-                <select
-                  value={userType}
-                  onChange={(e) => setUserType(e.target.value)}
-                  className="block w-full pl-10 pr-8 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-[#FFDE42]/50 focus:border-[#FFDE42] transition-all cursor-pointer"
-                >
-                  <option value="horse-owner" className="bg-slate-900">Chủ Ngựa</option>
-                  <option value="jockey" className="bg-slate-900">Kỵ Sĩ</option>
-                  <option value="referee" className="bg-slate-900">Trọng Tài</option>
-                  <option value="spectator" className="bg-slate-900">Khán Giả</option>
-                </select>
-                <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
-                  <ChevronDown className="h-4 w-4 text-slate-500" />
-                </div>
-              </div>
-            </div>
 
             {/* Name */}
             <div>
@@ -104,6 +117,8 @@ export function Register() {
                 </div>
                 <input
                   type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
                   placeholder="Nguyễn Văn A"
                   className="block w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#FFDE42]/50 focus:border-[#FFDE42] transition-all"
                 />
@@ -119,6 +134,8 @@ export function Register() {
                 </div>
                 <input
                   type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="email@example.com"
                   className="block w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#FFDE42]/50 focus:border-[#FFDE42] transition-all"
                 />
@@ -134,6 +151,8 @@ export function Register() {
                 </div>
                 <input
                   type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
                   placeholder="+84 123 456 789"
                   className="block w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#FFDE42]/50 focus:border-[#FFDE42] transition-all"
                 />
@@ -149,6 +168,8 @@ export function Register() {
                 </div>
                 <input
                   type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="block w-full pl-10 pr-10 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#FFDE42]/50 focus:border-[#FFDE42] transition-all"
                 />
@@ -164,9 +185,10 @@ export function Register() {
 
             <button
               onClick={handleRegister}
-              className="w-full relative group overflow-hidden rounded-xl bg-[#FFDE42] text-black font-bold py-2.5 mt-4 transition-all hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(255,222,66,0.4)] active:scale-[0.98] cursor-pointer"
+              disabled={loading}
+              className="w-full relative group overflow-hidden rounded-xl bg-[#FFDE42] text-black font-bold py-2.5 mt-4 transition-all hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(255,222,66,0.4)] active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span className="relative z-10 text-sm">Tạo Tài Khoản</span>
+              <span className="relative z-10 text-sm">{loading ? 'Đang Xử Lý...' : 'Tạo Tài Khoản'}</span>
             </button>
 
             <div className="relative py-3">
