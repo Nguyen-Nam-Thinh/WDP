@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Trophy, ArrowLeft, Mail, Lock, User, Phone, ChevronDown } from 'lucide-react';
+import { Trophy, ArrowLeft, Mail, Lock, User, Phone, ChevronDown, Eye, EyeOff } from 'lucide-react';
 
 export function Register() {
   const navigate = useNavigate();
   const [userType, setUserType] = useState('horse-owner');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleRegister = () => {
     navigate(`/${userType}`);
@@ -65,7 +66,7 @@ export function Register() {
             Về Trang Chủ
           </button>
 
-          <div className="mb-6">
+          <div className="mb-6 ">
             <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-2">Tạo tài khoản</h2>
             <p className="text-sm text-slate-400">Điền thông tin để gia nhập cộng đồng</p>
           </div>
@@ -147,16 +148,23 @@ export function Register() {
                   <Lock className="h-4 w-4 text-slate-500" />
                 </div>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className="block w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#FFDE42]/50 focus:border-[#FFDE42] transition-all"
+                  className="block w-full pl-10 pr-10 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#FFDE42]/50 focus:border-[#FFDE42] transition-all"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
             </div>
 
             <button
               onClick={handleRegister}
-              className="w-full relative group overflow-hidden rounded-xl bg-[#FFDE42] text-black font-bold py-2.5 mt-4 transition-all hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(255,222,66,0.4)] active:scale-[0.98]"
+              className="w-full relative group overflow-hidden rounded-xl bg-[#FFDE42] text-black font-bold py-2.5 mt-4 transition-all hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(255,222,66,0.4)] active:scale-[0.98] cursor-pointer"
             >
               <span className="relative z-10 text-sm">Tạo Tài Khoản</span>
             </button>
@@ -173,7 +181,7 @@ export function Register() {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <button className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors text-white font-medium text-sm group">
+              <button className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors text-white font-medium text-sm group cursor-pointer">
                 <svg className="w-4 h-4 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
                   <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.16v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
@@ -182,7 +190,7 @@ export function Register() {
                 </svg>
                 Google
               </button>
-              <button className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-[#1877F2]/20 hover:border-[#1877F2]/50 transition-all text-white font-medium text-sm group">
+              <button className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-[#1877F2]/20 hover:border-[#1877F2]/50 transition-all text-white font-medium text-sm group cursor-pointer">
                 <svg className="w-4 h-4 text-[#1877F2] group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                 </svg>
@@ -194,7 +202,7 @@ export function Register() {
               <span className="text-slate-400 text-sm">Đã có tài khoản? </span>
               <button
                 onClick={() => navigate('/login')}
-                className="text-[#FFDE42] hover:text-amber-400 font-semibold transition-colors text-sm"
+                className=" cursor-pointer text-[#FFDE42] hover:text-amber-400 font-semibold transition-colors text-sm"
               >
                 Đăng nhập ngay
               </button>

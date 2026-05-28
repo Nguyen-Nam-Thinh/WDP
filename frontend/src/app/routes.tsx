@@ -13,6 +13,7 @@ import { BetHistoryPage } from "./pages/BetHistoryPage";
 import { DepositHistoryPage } from "./pages/DepositHistoryPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { DepositPortalPage } from "./pages/DepositPortalPage";
+import { ForgotPassword } from "./pages/ForgotPassword";
 
 export const router = createBrowserRouter([
   {
@@ -70,6 +71,10 @@ export const router = createBrowserRouter([
   {
     path: "/spectator/deposit",
     element: <DepositPortalPage />,
+  },
+  {
+    path: "/forgot-password",
+    element: <ForgotPassword />,
   },
 ]);
 
