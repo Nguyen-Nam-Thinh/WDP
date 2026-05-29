@@ -71,6 +71,22 @@ export const authApi = {
     return json.data;
   },
 
+  changePassword: async (token: string, currentPassword: string, newPassword: string) => {
+    const response = await fetch(`${API_URL}/auth/change-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error((errorData as any).message || 'Failed to change password');
+    }
+    return;
+  },
+
   logout: async (token: string) => {
     const response = await fetch(`${API_URL}/auth/logout`, {
       method: 'POST',

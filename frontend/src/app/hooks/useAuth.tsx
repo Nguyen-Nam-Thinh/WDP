@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authApi } from '../api/auth';
+import { userApi } from '../api/user';
 import { toast } from 'sonner';
 
 export type UserRole = 'owner' | 'jockey' | 'referee' | 'spectator';
@@ -10,6 +11,7 @@ export interface User {
   fullName: string;
   role: UserRole;
   avatar?: string;
+  avatarUrl?: string;
   balance?: string;
   level?: string;
 }
@@ -19,6 +21,7 @@ interface AuthContextType {
   token: string | null;
   login: (user: User, token: string) => void;
   logout: () => Promise<void>;
+  updateUser: (patch: Partial<User>) => void;
   isAuthenticated: boolean;
 }
 
@@ -30,7 +33,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // Load from local storage on mount
     const storedToken = localStorage.getItem('accessToken');
     const storedUser = localStorage.getItem('user');
 
@@ -41,8 +43,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (e) {
         console.error('Failed to parse stored user', e);
       }
+      // Refresh user data from API to get latest avatarUrl, etc.
+      userApi.getMe(storedToken)
+        .then((fresh) => {
+          const patch = {
+            avatarUrl: fresh.avatarUrl ?? undefined,
+            fullName: fresh.fullName,
+          };
+          setUser((prev) => {
+            if (!prev) return prev;
+            const updated = { ...prev, ...patch };
+            localStorage.setItem('user', JSON.stringify(updated));
+            return updated;
+          });
+        })
+        .catch(() => {/* silently ignore — token may be expired */})
+        .finally(() => setIsReady(true));
+    } else {
+      setIsReady(true);
     }
-    setIsReady(true);
   }, []);
 
   const login = (newUser: User, newToken: string) => {
@@ -50,6 +69,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(newToken);
     localStorage.setItem('accessToken', newToken);
     localStorage.setItem('user', JSON.stringify(newUser));
+  };
+
+  const updateUser = (patch: Partial<User>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...patch };
+      localStorage.setItem('user', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const logout = async () => {
@@ -70,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   if (!isReady) return null; // or a loading spinner
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token }}>
+    <AuthContext.Provider value={{ user, token, login, logout, updateUser, isAuthenticated: !!token }}>
       {children}
     </AuthContext.Provider>
   );

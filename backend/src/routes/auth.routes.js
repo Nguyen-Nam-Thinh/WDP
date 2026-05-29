@@ -37,11 +37,17 @@ const resetPasswordSchema = z.object({
   newPassword: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8, 'Password must be at least 8 characters'),
+});
+
 router.post('/register', validate(registerSchema), authController.register);
 router.post('/login', validate(loginSchema), authController.login);
 router.post('/refresh', validate(refreshSchema), authController.refresh);
 router.post('/logout', authenticate, authController.logout);
 
+router.post('/change-password', authenticate, validate(changePasswordSchema), authController.changePassword);
 router.post('/forgot-password', validate(forgotPasswordSchema), authController.forgotPassword);
 router.post('/verify-reset-code', validate(verifyResetCodeSchema), authController.verifyResetCode);
 router.post('/reset-password', validate(resetPasswordSchema), authController.resetPassword);

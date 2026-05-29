@@ -45,4 +45,13 @@ async function getMyTransactions(req, res, next) {
   }
 }
 
-module.exports = { getMe, updateMe, getMyWallet, getMyTransactions };
+async function uploadAvatar(req, res, next) {
+  try {
+    const user = await userService.uploadAvatar(req.user._id, req.file.buffer);
+    sendSuccess(res, user, 200, 'Avatar uploaded successfully');
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { getMe, updateMe, getMyWallet, getMyTransactions, uploadAvatar };

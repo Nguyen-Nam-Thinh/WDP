@@ -54,7 +54,11 @@ async function deactivateHorse(req, res, next) {
 
 async function addRegularJockey(req, res, next) {
   try {
-    const horse = await horseService.addRegularJockey(req.params.id, req.user._id, req.params.jockeyId);
+    const horse = await horseService.addRegularJockey(
+      req.params.id,
+      req.user._id,
+      req.params.jockeyId,
+    );
     sendSuccess(res, horse, 200, 'Regular jockey added');
   } catch (error) {
     next(error);
@@ -63,8 +67,51 @@ async function addRegularJockey(req, res, next) {
 
 async function removeRegularJockey(req, res, next) {
   try {
-    const horse = await horseService.removeRegularJockey(req.params.id, req.user._id, req.params.jockeyId);
+    const horse = await horseService.removeRegularJockey(
+      req.params.id,
+      req.user._id,
+      req.params.jockeyId,
+    );
     sendSuccess(res, horse, 200, 'Regular jockey removed');
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function uploadImages(req, res, next) {
+  try {
+    const horse = await horseService.uploadImages(
+      req.params.id,
+      req.user._id,
+      req.files.map((f) => f.buffer),
+    );
+    sendSuccess(res, horse, 200, 'Images uploaded successfully');
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function setPrimaryImage(req, res, next) {
+  try {
+    const { imageUrl } = req.body;
+    if (!imageUrl) {
+      return res.status(400).json({ success: false, message: 'imageUrl is required' });
+    }
+    const horse = await horseService.setPrimaryImage(req.params.id, req.user._id, imageUrl);
+    sendSuccess(res, horse, 200, 'Primary image set successfully');
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function deleteImage(req, res, next) {
+  try {
+    const { imageUrl } = req.body;
+    if (!imageUrl) {
+      return res.status(400).json({ success: false, message: 'imageUrl is required' });
+    }
+    const horse = await horseService.deleteImage(req.params.id, req.user._id, imageUrl);
+    sendSuccess(res, horse, 200, 'Image deleted successfully');
   } catch (error) {
     next(error);
   }
@@ -78,4 +125,7 @@ module.exports = {
   deactivateHorse,
   addRegularJockey,
   removeRegularJockey,
+  uploadImages,
+  setPrimaryImage,
+  deleteImage,
 };

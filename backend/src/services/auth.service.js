@@ -38,7 +38,7 @@ async function register(data) {
     return {
       accessToken,
       refreshToken,
-      user: { _id: user._id, email: user.email, fullName: user.fullName, role: user.role },
+      user: { _id: user._id, email: user.email, fullName: user.fullName, role: user.role, avatarUrl: user.avatarUrl ?? null },
     };
   } catch (error) {
     await session.abortTransaction();
@@ -64,7 +64,7 @@ async function login(email, password) {
   return {
     accessToken,
     refreshToken,
-    user: { _id: user._id, email: user.email, fullName: user.fullName, role: user.role },
+    user: { _id: user._id, email: user.email, fullName: user.fullName, role: user.role, avatarUrl: user.avatarUrl ?? null },
   };
 }
 
@@ -150,4 +150,15 @@ async function resetPassword(resetToken, newPassword) {
   });
 }
 
-module.exports = { register, login, refreshTokens, logout, forgotPassword, verifyResetCode, resetPassword };
+async function changePassword(userId, currentPassword, newPassword) {
+  const user = await User.findById(userId).select('+passwordHash');
+  if (!user) throw new AppError(404, 'User not found');
+
+  const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!valid) throw new AppError(400, 'Current password is incorrect');
+
+  const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+  await User.findByIdAndUpdate(userId, { passwordHash, refreshToken: null });
+}
+
+module.exports = { register, login, refreshTokens, logout, forgotPassword, verifyResetCode, resetPassword, changePassword };

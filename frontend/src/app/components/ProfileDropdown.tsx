@@ -27,7 +27,6 @@ export function ProfileDropdown() {
   // If there's no user logged in, we shouldn't render the dropdown
   if (!user) return null;
 
-  // Use the user's data or fallback values
   const avatarText = user.avatar || user.fullName.substring(0, 2).toUpperCase();
   const level = user.level || 'Thành Viên Vàng';
   const balance = user.balance || '$0';
@@ -51,14 +50,15 @@ export function ProfileDropdown() {
       >
         {/* Avatar */}
         <div className="relative">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FFDE42] to-amber-600 flex items-center justify-center text-sm font-bold text-slate-900 shadow-lg">
-            {avatarText}
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FFDE42] to-amber-600 flex items-center justify-center text-sm font-bold text-slate-900 shadow-lg overflow-hidden">
+            {user.avatarUrl
+              ? <img src={user.avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+              : avatarText}
           </div>
           <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-950"></div>
         </div>
         <div className="text-left hidden lg:block">
-          <div className="text-white text-sm font-semibold leading-none mb-0.5">{user.fullName}</div>
-          <div className="text-[#FFDE42] text-xs">{level}</div>
+          <div className="text-white text-sm font-semibold leading-none">{user.fullName}</div>
         </div>
         <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${profileMenuOpen ? 'rotate-180' : ''}`} />
       </button>
@@ -70,8 +70,10 @@ export function ProfileDropdown() {
           <div className="p-5 bg-gradient-to-br from-[#FFDE42]/10 to-transparent border-b border-white/5">
             <div className="flex items-center gap-4 mb-4">
               <div className="relative">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#FFDE42] to-amber-600 flex items-center justify-center text-xl font-bold text-slate-900 shadow-xl">
-                  {avatarText}
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#FFDE42] to-amber-600 flex items-center justify-center text-xl font-bold text-slate-900 shadow-xl overflow-hidden">
+                  {user.avatarUrl
+                    ? <img src={user.avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+                    : avatarText}
                 </div>
                 <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center border-2 border-slate-900">
                   <Shield className="w-2.5 h-2.5 text-white" />
@@ -81,7 +83,6 @@ export function ProfileDropdown() {
                 <div className="flex items-center gap-2">
                   <span className="text-white font-bold text-base">{user.fullName}</span>
                 </div>
-                <div className="text-slate-400 text-xs mt-0.5">{user.email}</div>
                 <div className="mt-1.5">
                   <span className="text-xs bg-[#FFDE42]/20 text-[#FFDE42] px-2 py-0.5 rounded-full font-semibold border border-[#FFDE42]/30">{level}</span>
                 </div>

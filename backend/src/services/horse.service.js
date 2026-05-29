@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const { Horse } = require('../models/horse.model');
 const { User } = require('../models/user.model');
 const { AppError } = require('../middleware/error.middleware');
+const cloudinaryService = require('./cloudinary.service');
 
 async function createHorse(ownerId, data) {
   const horse = await Horse.create({ ...data, ownerId });
@@ -27,7 +28,10 @@ async function getMyHorses(ownerId, { page = 1, limit = 10, isActive, grade } = 
 }
 
 async function getHorseById(horseId, requesterId, requesterRole) {
-  const horse = await Horse.findById(horseId).populate('regularJockeys', 'fullName email jockeyProfile');
+  const horse = await Horse.findById(horseId).populate(
+    'regularJockeys',
+    'fullName email jockeyProfile',
+  );
   if (!horse) throw new AppError(404, 'Horse not found');
 
   if (requesterRole !== 'admin' && horse.ownerId.toString() !== requesterId) {
@@ -41,7 +45,16 @@ async function updateHorse(horseId, ownerId, data) {
   const horse = await Horse.findOne({ _id: horseId, ownerId });
   if (!horse) throw new AppError(404, 'Horse not found or access denied');
 
-  const IMMUTABLE = ['ownerId', 'totalPoints', 'totalEarnings', 'raceCount', 'winCount', 'currentGrade', 'regularJockeys', 'violations'];
+  const IMMUTABLE = [
+    'ownerId',
+    'totalPoints',
+    'totalEarnings',
+    'raceCount',
+    'winCount',
+    'currentGrade',
+    'regularJockeys',
+    'violations',
+  ];
   IMMUTABLE.forEach((field) => delete data[field]);
 
   Object.assign(horse, data);
@@ -81,7 +94,66 @@ async function removeRegularJockey(horseId, ownerId, jockeyId) {
 
   const before = horse.regularJockeys.length;
   horse.regularJockeys = horse.regularJockeys.filter((id) => id.toString() !== jockeyId);
-  if (horse.regularJockeys.length === before) throw new AppError(404, 'Jockey not in regular jockeys list');
+  if (horse.regularJockeys.length === before)
+    throw new AppError(404, 'Jockey not in regular jockeys list');
+
+  await horse.save();
+  return horse;
+}
+
+async function uploadImages(horseId, ownerId, fileBuffers) {
+  const horse = await Horse.findOne({ _id: horseId, ownerId, isActive: true });
+  if (!horse) throw new AppError(404, 'Horse not found or access denied');
+
+  // Upload files to Cloudinary
+  const uploadedImages = await cloudinaryService.uploadMultiple(fileBuffers, 'hrtms/horses/images');
+  const imageUrls = uploadedImages.map((img) => img.url);
+
+  // Add to imageUrls array
+  horse.imageUrls = [...(horse.imageUrls || []), ...imageUrls];
+
+  // Set primary image if not set
+  if (!horse.primaryImageUrl && horse.imageUrls.length > 0) {
+    horse.primaryImageUrl = horse.imageUrls[0];
+  }
+
+  await horse.save();
+  return horse;
+}
+
+async function setPrimaryImage(horseId, ownerId, imageUrl) {
+  const horse = await Horse.findOne({ _id: horseId, ownerId, isActive: true });
+  if (!horse) throw new AppError(404, 'Horse not found or access denied');
+
+  if (!horse.imageUrls.includes(imageUrl)) {
+    throw new AppError(400, 'Image not found in horse gallery');
+  }
+
+  horse.primaryImageUrl = imageUrl;
+  await horse.save();
+  return horse;
+}
+
+async function deleteImage(horseId, ownerId, imageUrl) {
+  const horse = await Horse.findOne({ _id: horseId, ownerId, isActive: true });
+  if (!horse) throw new AppError(404, 'Horse not found or access denied');
+
+  const index = horse.imageUrls.indexOf(imageUrl);
+  if (index === -1) throw new AppError(404, 'Image not found in horse gallery');
+
+  // Delete from Cloudinary
+  const publicId = cloudinaryService.extractPublicId(imageUrl);
+  if (publicId) {
+    await cloudinaryService.deleteFile(publicId);
+  }
+
+  // Remove from array
+  horse.imageUrls.splice(index, 1);
+
+  // Reset primary image if deleted
+  if (horse.primaryImageUrl === imageUrl) {
+    horse.primaryImageUrl = horse.imageUrls.length > 0 ? horse.imageUrls[0] : null;
+  }
 
   await horse.save();
   return horse;
@@ -95,4 +167,7 @@ module.exports = {
   deactivateHorse,
   addRegularJockey,
   removeRegularJockey,
+  uploadImages,
+  setPrimaryImage,
+  deleteImage,
 };

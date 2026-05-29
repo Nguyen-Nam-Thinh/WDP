@@ -3,6 +3,7 @@ const { z } = require('zod');
 const userController = require('../controllers/user.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 const { validate } = require('../middleware/validate.middleware');
+const { uploadSingle } = require('../middleware/upload.middleware');
 
 const router = Router();
 
@@ -30,6 +31,7 @@ router.use(authenticate);
 
 router.get('/me', userController.getMe);
 router.patch('/me', validate(updateProfileSchema), userController.updateMe);
+router.post('/me/upload-avatar', uploadSingle, userController.uploadAvatar);
 router.get('/me/wallet', userController.getMyWallet);
 router.get('/me/transactions', userController.getMyTransactions);
 

@@ -65,4 +65,13 @@ async function resetPassword(req, res, next) {
   }
 }
 
-module.exports = { register, login, refresh, logout, forgotPassword, verifyResetCode, resetPassword };
+async function changePassword(req, res, next) {
+  try {
+    await authService.changePassword(req.user._id.toString(), req.body.currentPassword, req.body.newPassword);
+    sendSuccess(res, null, 200, 'Password changed successfully');
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { register, login, refresh, logout, forgotPassword, verifyResetCode, resetPassword, changePassword };

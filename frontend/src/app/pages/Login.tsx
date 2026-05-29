@@ -14,16 +14,13 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
   const handleLogin = async () => {
     if (!email || !password) {
       toast.error('Vui lòng nhập email và mật khẩu');
-      setError('Vui lòng nhập email và mật khẩu');
       return;
     }
     setLoading(true);
-    setError('');
     try {
       const data = await authApi.login(email, password);
       login(data.user, data.accessToken);
@@ -32,9 +29,8 @@ export function Login() {
       const rolePath = data.user.role === 'owner' ? 'horse-owner' : data.user.role === 'spectator' ? '' : data.user.role;
       navigate(`/${rolePath}`);
     } catch (err: any) {
-      const errorMsg = err.message || 'Đăng nhập thất bại';
+      const errorMsg = 'Thông tin đăng nhập không chính xác. Vui lòng kiểm tra lại email và mật khẩu.';
       toast.error(errorMsg);
-      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -73,7 +69,6 @@ export function Login() {
           <div className="mb-8">
             <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-2">Chào mừng trở lại</h2>
             <p className="text-sm text-slate-400">Đăng nhập vào tài khoản RaceTrack Pro của bạn</p>
-            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
           </div>
 
           <div className="space-y-4">

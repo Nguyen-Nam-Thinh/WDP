@@ -21,7 +21,8 @@ const horseSchema = new Schema(
     birthDate: { type: Date, required: true },
     weight: { type: Number, required: true },
     color: { type: String, trim: true },
-    imageUrl: { type: String },
+    primaryImageUrl: { type: String },
+    imageUrls: [{ type: String }],
     currentGrade: {
       type: String,
       enum: ['Maiden', 'G3', 'G2', 'G1'],
