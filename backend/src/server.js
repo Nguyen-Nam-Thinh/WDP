@@ -6,6 +6,7 @@ const { env } = require('./config/env');
 const { connectDB } = require('./config/database');
 const apiRoutes = require('./routes');
 const { errorHandler, notFound } = require('./middleware/error.middleware');
+const { startRaceStatusJob } = require('./jobs/raceStatus.job');
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use(errorHandler);
 
 async function bootstrap() {
   await connectDB();
+  startRaceStatusJob();
   app.listen(env.PORT, () => {
     console.log(`Server running on port ${env.PORT} [${env.NODE_ENV}]`);
   });
