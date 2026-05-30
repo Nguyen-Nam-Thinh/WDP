@@ -28,6 +28,21 @@ export interface UserProfile {
   updatedAt: string;
 }
 
+export interface JockeyListItem {
+  _id: string;
+  fullName: string;
+  avatarUrl?: string;
+  isActive: boolean;
+  jockeyProfile?: {
+    experienceYears: number;
+    winCount: number;
+    raceCount: number;
+    weight: number;
+    height: number;
+    bio?: string;
+  };
+}
+
 export interface UpdateProfileData {
   fullName?: string;
   phone?: string;
@@ -101,6 +116,23 @@ export const userApi = {
       throw new Error(
         (errorData as any).message || "Failed to fetch transactions",
       );
+    }
+    const json = await response.json();
+    return json.data;
+  },
+
+  getJockeys: async (
+    token: string,
+    page = 1,
+    limit = 20,
+  ): Promise<{ jockeys: JockeyListItem[]; total: number; page: number; limit: number }> => {
+    const response = await fetch(
+      `${API_URL}/users/jockeys?page=${page}&limit=${limit}`,
+      { headers: authHeader(token) },
+    );
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error((errorData as any).message || "Failed to fetch jockeys");
     }
     const json = await response.json();
     return json.data;

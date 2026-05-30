@@ -52,6 +52,10 @@ import {
 import { ProfileDropdown } from "../components/ProfileDropdown";
 import { useAuth } from "../hooks/useAuth";
 import { horseApi, Horse } from "../api/horse";
+import { userApi, JockeyListItem } from "../api/user";
+import { tournamentApi, Tournament } from "../api/tournament";
+import { raceApi, Race } from "../api/race";
+import { invitationApi } from "../api/invitation";
 
 const GRADE_COLORS: Record<string, string> = {
   Maiden: "#64748b",
@@ -75,6 +79,15 @@ export function HorseOwnerDashboard() {
   const [addHorseOpen, setAddHorseOpen] = useState(false);
   const [registerRaceOpen, setRegisterRaceOpen] = useState(false);
   const [inviteJockeyOpen, setInviteJockeyOpen] = useState(false);
+  const [invitingJockey, setInvitingJockey] = useState<JockeyListItem | null>(null);
+  const [inviteForm, setInviteForm] = useState({ tournamentId: "", raceId: "", horseId: "", message: "" });
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [loadingTournaments, setLoadingTournaments] = useState(false);
+  const [racesForTournament, setRacesForTournament] = useState<Race[]>([]);
+  const [loadingRaces, setLoadingRaces] = useState(false);
+  const [submittingInvite, setSubmittingInvite] = useState(false);
+  const [viewJockeyOpen, setViewJockeyOpen] = useState(false);
+  const [viewingJockey, setViewingJockey] = useState<JockeyListItem | null>(null);
   const [topupOpen, setTopupOpen] = useState(false);
 
   // Horses — real API
@@ -97,6 +110,78 @@ export function HorseOwnerDashboard() {
   useEffect(() => {
     loadHorses();
   }, [token]);
+
+  // Jockeys — real API
+  const [jockeys, setJockeys] = useState<JockeyListItem[]>([]);
+  const [loadingJockeys, setLoadingJockeys] = useState(false);
+
+  const loadJockeys = async () => {
+    if (!token) return;
+    setLoadingJockeys(true);
+    try {
+      const result = await userApi.getJockeys(token);
+      setJockeys(result.jockeys);
+    } catch (err: any) {
+      toast.error(err.message || "Không thể tải danh sách kỵ sĩ");
+    } finally {
+      setLoadingJockeys(false);
+    }
+  };
+
+  useEffect(() => {
+    loadJockeys();
+  }, [token]);
+
+  // Invite dialog — load tournaments when dialog opens
+  useEffect(() => {
+    if (!inviteJockeyOpen || !token) return;
+    setInviteForm({ tournamentId: "", raceId: "", horseId: "", message: "" });
+    setRacesForTournament([]);
+    setLoadingTournaments(true);
+    tournamentApi.getTournaments(token)
+      .then((res) => setTournaments(res.tournaments ?? []))
+      .catch((err: any) => toast.error(err.message || "Không thể tải danh sách giải đấu"))
+      .finally(() => setLoadingTournaments(false));
+  }, [inviteJockeyOpen, token]);
+
+  // Invite dialog — load races when tournament changes
+  useEffect(() => {
+    if (!inviteForm.tournamentId || !token) return;
+    setInviteForm((prev) => ({ ...prev, raceId: "", horseId: "" }));
+    setRacesForTournament([]);
+    setLoadingRaces(true);
+    raceApi.getRaces(token, { tournamentId: inviteForm.tournamentId })
+      .then((res) => {
+        const active = (res.races ?? []).filter(
+          (r) => !["running", "finished", "cancelled"].includes(r.status),
+        );
+        setRacesForTournament(active);
+      })
+      .catch((err: any) => toast.error(err.message || "Không thể tải danh sách race"))
+      .finally(() => setLoadingRaces(false));
+  }, [inviteForm.tournamentId, token]);
+
+  const handleSubmitInvite = async () => {
+    if (!invitingJockey || !inviteForm.raceId || !inviteForm.horseId) {
+      toast.error("Vui lòng chọn đầy đủ thông tin");
+      return;
+    }
+    setSubmittingInvite(true);
+    try {
+      await invitationApi.createInvitation(token!, {
+        jockeyId: invitingJockey._id,
+        raceId: inviteForm.raceId,
+        horseId: inviteForm.horseId,
+        message: inviteForm.message || undefined,
+      });
+      toast.success(`Đã gửi lời mời đến ${invitingJockey.fullName}`);
+      setInviteJockeyOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || "Không thể gửi lời mời");
+    } finally {
+      setSubmittingInvite(false);
+    }
+  };
 
   // Add Horse form state
   const [horseForm, setHorseForm] = useState({
@@ -269,45 +354,6 @@ export function HorseOwnerDashboard() {
     setEditHorseOpen(true);
   };
 
-  const jockeys = [
-    {
-      id: 1,
-      name: "Nguyễn Văn A",
-      experience: "12 năm",
-      wins: 156,
-      winRate: "25%",
-      status: "Sẵn Sàng",
-      ranking: "A",
-    },
-    {
-      id: 2,
-      name: "Trần Thị B",
-      experience: "8 năm",
-      wins: 98,
-      winRate: "18%",
-      status: "Đang Thi Đấu",
-      ranking: "B",
-    },
-    {
-      id: 3,
-      name: "Lê Văn C",
-      experience: "15 năm",
-      wins: 203,
-      winRate: "28%",
-      status: "Sẵn Sàng",
-      ranking: "S",
-    },
-  ];
-
-  const preferredJockeys = [
-    {
-      id: 1,
-      name: "Nguyễn Văn A",
-      racesTogether: 10,
-      winsTogether: 5,
-      winRate: "50%",
-    },
-  ];
 
   const upcomingRaces = [
     {
@@ -687,72 +733,89 @@ export function HorseOwnerDashboard() {
                     Kỵ Sĩ Có Sẵn
                   </h3>
                   <div className="space-y-4">
-                    {jockeys.map((jockey) => (
-                      <div
-                        key={jockey.id}
-                        className="flex flex-col md:flex-row items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-white/5 hover:border-white/10 transition-colors"
-                      >
-                        <div className="flex items-center gap-4 mb-4 md:mb-0 w-full md:w-auto">
-                          <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-lg font-bold text-white">
-                            {jockey.name.charAt(0)}
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="text-white font-medium">
-                                {jockey.name}
-                              </h4>
+                    {loadingJockeys ? (
+                      <div className="flex items-center justify-center py-8 text-slate-400">
+                        <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                        Đang tải...
+                      </div>
+                    ) : jockeys.length === 0 ? (
+                      <div className="text-center py-8 text-slate-400">
+                        Chưa có kỵ sĩ nào trong hệ thống
+                      </div>
+                    ) : (
+                      jockeys.map((jockey) => {
+                        const winCount = jockey.jockeyProfile?.winCount ?? 0;
+                        const raceCount = jockey.jockeyProfile?.raceCount ?? 0;
+                        const winRate = raceCount > 0
+                          ? `${Math.round((winCount / raceCount) * 100)}%`
+                          : "N/A";
+                        const experienceYears = jockey.jockeyProfile?.experienceYears ?? 0;
+                        const statusLabel = jockey.isActive ? "Sẵn Sàng" : "Không Hoạt Động";
+                        return (
+                          <div
+                            key={jockey._id}
+                            className="flex flex-col md:flex-row items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-white/5 hover:border-white/10 transition-colors"
+                          >
+                            <div className="flex items-center gap-4 mb-4 md:mb-0 w-full md:w-auto">
+                              <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-lg font-bold text-white overflow-hidden">
+                                {jockey.avatarUrl ? (
+                                  <img src={jockey.avatarUrl} alt={jockey.fullName} className="w-full h-full object-cover" />
+                                ) : (
+                                  jockey.fullName.charAt(0)
+                                )}
+                              </div>
+                              <div>
+                                <h4 className="text-white font-medium">
+                                  {jockey.fullName}
+                                </h4>
+                                <div className="text-sm text-slate-400 mt-1">
+                                  {experienceYears} năm kinh nghiệm • {winCount} thắng ({winRate})
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 w-full md:w-auto">
                               <Chip
-                                label={`Hạng ${jockey.ranking}`}
+                                label={statusLabel}
                                 size="small"
                                 sx={{
-                                  height: "20px",
-                                  fontSize: "0.7rem",
-                                  backgroundColor: "#f59e0b",
-                                  color: "white",
+                                  backgroundColor: jockey.isActive
+                                    ? "rgba(255, 222, 66, 0.2)"
+                                    : "rgba(100, 116, 139, 0.2)",
+                                  color: jockey.isActive ? "#FFDE42" : "#94a3b8",
+                                  border: `1px solid ${jockey.isActive ? "#FFDE42" : "#475569"}`,
                                 }}
                               />
-                            </div>
-                            <div className="text-sm text-slate-400 mt-1">
-                              {jockey.experience} kinh nghiệm • {jockey.wins}{" "}
-                              thắng ({jockey.winRate})
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                onClick={() => { setViewingJockey(jockey); setViewJockeyOpen(true); }}
+                                sx={{
+                                  borderColor: "rgba(255,255,255,0.15)",
+                                  color: "#94a3b8",
+                                  textTransform: "none",
+                                  "&:hover": { borderColor: "rgba(255,255,255,0.3)", color: "white" },
+                                }}
+                              >
+                                Hồ sơ
+                              </Button>
+                              <Button
+                                variant="contained"
+                                size="small"
+                                disabled={!jockey.isActive}
+                                onClick={() => { setInvitingJockey(jockey); setInviteJockeyOpen(true); }}
+                                sx={{
+                                  background: jockey.isActive ? "#FFDE42" : "#334155",
+                                  textTransform: "none",
+                                  "&:hover": { background: "#E6C21E" },
+                                }}
+                              >
+                                Thuê
+                              </Button>
                             </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-3 w-full md:w-auto">
-                          <Chip
-                            label={jockey.status}
-                            size="small"
-                            sx={{
-                              backgroundColor:
-                                jockey.status === "Sẵn Sàng"
-                                  ? "rgba(255, 222, 66, 0.2)"
-                                  : "rgba(100, 116, 139, 0.2)",
-                              color:
-                                jockey.status === "Sẵn Sàng"
-                                  ? "#FFDE42"
-                                  : "#94a3b8",
-                              border: `1px solid ${jockey.status === "Sẵn Sàng" ? "#FFDE42" : "#475569"}`,
-                            }}
-                          />
-                          <Button
-                            variant="contained"
-                            size="small"
-                            disabled={jockey.status !== "Sẵn Sàng"}
-                            onClick={() => setInviteJockeyOpen(true)}
-                            sx={{
-                              background:
-                                jockey.status === "Sẵn Sàng"
-                                  ? "#FFDE42"
-                                  : "#334155",
-                              textTransform: "none",
-                              "&:hover": { background: "#E6C21E" },
-                            }}
-                          >
-                            Thuê
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                        );
+                      })
+                    )}
                   </div>
                 </div>
               </div>
@@ -1810,10 +1873,137 @@ export function HorseOwnerDashboard() {
         </DialogActions>
       </Dialog>
 
+      {/* Jockey Profile Dialog */}
+      <Dialog
+        open={viewJockeyOpen}
+        onClose={() => setViewJockeyOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          style: {
+            backgroundColor: "#0f172a",
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: "16px",
+            overflow: "hidden",
+          },
+        }}
+      >
+        {viewingJockey && (() => {
+          const wc = viewingJockey.jockeyProfile?.winCount ?? 0;
+          const rc = viewingJockey.jockeyProfile?.raceCount ?? 0;
+          const wr = rc > 0 ? `${Math.round((wc / rc) * 100)}%` : "N/A";
+          const exp = viewingJockey.jockeyProfile?.experienceYears ?? 0;
+          const weight = viewingJockey.jockeyProfile?.weight;
+          const height = viewingJockey.jockeyProfile?.height;
+          const bio = viewingJockey.jockeyProfile?.bio;
+          return (
+            <>
+              {/* Header gradient */}
+              <div className="relative bg-gradient-to-br from-indigo-900/80 to-purple-900/80 px-6 pt-8 pb-16">
+                <button
+                  onClick={() => setViewJockeyOpen(false)}
+                  className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-3xl font-bold text-white overflow-hidden mb-3 ring-4 ring-white/10">
+                    {viewingJockey.avatarUrl ? (
+                      <img src={viewingJockey.avatarUrl} alt={viewingJockey.fullName} className="w-full h-full object-cover" />
+                    ) : (
+                      viewingJockey.fullName.charAt(0)
+                    )}
+                  </div>
+                  <h2 className="text-xl font-bold text-white">{viewingJockey.fullName}</h2>
+                  <Chip
+                    label={viewingJockey.isActive ? "Sẵn Sàng" : "Không Hoạt Động"}
+                    size="small"
+                    sx={{
+                      mt: 1,
+                      backgroundColor: viewingJockey.isActive ? "rgba(255,222,66,0.2)" : "rgba(100,116,139,0.2)",
+                      color: viewingJockey.isActive ? "#FFDE42" : "#94a3b8",
+                      border: `1px solid ${viewingJockey.isActive ? "#FFDE42" : "#475569"}`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Stats cards — overlap header */}
+              <div className="px-6 -mt-8">
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { label: "Số trận", value: rc },
+                    { label: "Số thắng", value: wc },
+                    { label: "Tỷ lệ thắng", value: wr },
+                  ].map((stat) => (
+                    <div
+                      key={stat.label}
+                      className="bg-slate-800/90 backdrop-blur rounded-xl p-3 text-center border border-white/5"
+                    >
+                      <div className="text-[#FFDE42] text-lg font-bold">{stat.value}</div>
+                      <div className="text-slate-400 text-xs mt-0.5">{stat.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Details */}
+              <DialogContent sx={{ px: 3, pt: 3, pb: 0 }}>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-slate-900/60 rounded-xl p-3 border border-white/5">
+                      <div className="text-slate-400 text-xs mb-1">Kinh nghiệm</div>
+                      <div className="text-white font-semibold">{exp} năm</div>
+                    </div>
+                    <div className="bg-slate-900/60 rounded-xl p-3 border border-white/5">
+                      <div className="text-slate-400 text-xs mb-1">Cân nặng</div>
+                      <div className="text-white font-semibold">{weight ? `${weight} kg` : "—"}</div>
+                    </div>
+                    <div className="bg-slate-900/60 rounded-xl p-3 border border-white/5">
+                      <div className="text-slate-400 text-xs mb-1">Chiều cao</div>
+                      <div className="text-white font-semibold">{height ? `${height} cm` : "—"}</div>
+                    </div>
+                  </div>
+                  {bio && (
+                    <div className="bg-slate-900/60 rounded-xl p-4 border border-white/5">
+                      <div className="text-slate-400 text-xs mb-2">Giới thiệu</div>
+                      <p className="text-slate-300 text-sm leading-relaxed">{bio}</p>
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+
+              <DialogActions sx={{ px: 3, py: 2.5, borderTop: "1px solid rgba(255,255,255,0.08)", mt: 3 }}>
+                <Button
+                  onClick={() => setViewJockeyOpen(false)}
+                  sx={{ color: "#94a3b8", textTransform: "none" }}
+                >
+                  Đóng
+                </Button>
+                <Button
+                  variant="contained"
+                  disabled={!viewingJockey.isActive}
+                  onClick={() => { setViewJockeyOpen(false); setInvitingJockey(viewingJockey); setInviteJockeyOpen(true); }}
+                  sx={{
+                    background: viewingJockey.isActive ? "#FFDE42" : "#334155",
+                    color: viewingJockey.isActive ? "#0f172a" : "#64748b",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    "&:hover": { background: "#E6C21E" },
+                  }}
+                >
+                  Thuê kỵ sĩ này
+                </Button>
+              </DialogActions>
+            </>
+          );
+        })()}
+      </Dialog>
+
       {/* Invite Jockey Dialog */}
       <Dialog
         open={inviteJockeyOpen}
-        onClose={() => setInviteJockeyOpen(false)}
+        onClose={() => !submittingInvite && setInviteJockeyOpen(false)}
         maxWidth="sm"
         fullWidth
         PaperProps={{
@@ -1824,82 +2014,202 @@ export function HorseOwnerDashboard() {
           },
         }}
       >
-        <DialogTitle
-          sx={{
-            color: "white",
-            borderBottom: "1px solid rgba(255,255,255,0.1)",
-            pb: 2,
-          }}
-        >
-          Thuê Kỵ Sĩ
-        </DialogTitle>
-        <DialogContent sx={{ paddingTop: "24px !important" }}>
-          <div className="space-y-4">
-            <FormControl
-              fullWidth
-              sx={{
-                "& .MuiInputLabel-root": { color: "#94a3b8" },
-                "& .MuiOutlinedInput-root": {
-                  color: "white",
-                  "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
-                  "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
-                  "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
-                  "& .MuiSelect-icon": { color: "#94a3b8" },
-                },
-              }}
-            >
-              <InputLabel>Chọn Ngựa</InputLabel>
-              <Select label="Chọn Ngựa" defaultValue="">
-                {horses.map((h) => (
-                  <MenuItem key={h.id} value={h.id}>
-                    {h.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControl
-              fullWidth
-              sx={{
-                "& .MuiInputLabel-root": { color: "#94a3b8" },
-                "& .MuiOutlinedInput-root": {
-                  color: "white",
-                  "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
-                  "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
-                  "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
-                  "& .MuiSelect-icon": { color: "#94a3b8" },
-                },
-              }}
-            >
-              <InputLabel>Chọn Giải Đấu</InputLabel>
-              <Select label="Chọn Giải Đấu" defaultValue="">
-                <MenuItem value="1">Giải Vô Địch Mùa Xuân</MenuItem>
-                <MenuItem value="2">Cúp Vàng</MenuItem>
-              </Select>
-            </FormControl>
+        {/* Jockey being invited — header info */}
+        {invitingJockey && (
+          <div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-white/10">
+            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm overflow-hidden shrink-0">
+              {invitingJockey.avatarUrl
+                ? <img src={invitingJockey.avatarUrl} alt={invitingJockey.fullName} className="w-full h-full object-cover" />
+                : invitingJockey.fullName.charAt(0)}
+            </div>
+            <div>
+              <p className="text-xs text-slate-400">Gửi lời mời đến</p>
+              <p className="text-white font-semibold leading-tight">{invitingJockey.fullName}</p>
+            </div>
           </div>
+        )}
+
+        <DialogContent sx={{ pt: "20px !important", pb: 1 }}>
+          {(() => {
+            const darkSelect = {
+              "& .MuiInputLabel-root": { color: "#94a3b8" },
+              "& .MuiInputLabel-root.Mui-focused": { color: "#FFDE42" },
+              "& .MuiOutlinedInput-root": {
+                color: "white",
+                "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
+                "&:hover fieldset": { borderColor: "rgba(255,255,255,0.25)" },
+                "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
+                "& .MuiSelect-icon": { color: "#94a3b8" },
+              },
+              "& .MuiOutlinedInput-root.Mui-disabled": {
+                "& fieldset": { borderColor: "rgba(255,255,255,0.05)" },
+              },
+            };
+            const menuProps = {
+              PaperProps: {
+                sx: {
+                  bgcolor: "#1e293b",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  "& .MuiMenuItem-root": { color: "white", "&:hover": { bgcolor: "rgba(255,255,255,0.05)" }, "&.Mui-selected": { bgcolor: "rgba(255,222,66,0.15)", color: "#FFDE42" } },
+                },
+              },
+            };
+
+            const selectedRace = racesForTournament.find((r) => r._id === inviteForm.raceId);
+            const eligibleHorses = selectedRace
+              ? horses.filter((h) => {
+                  const allowed = selectedRace.eligibility?.allowedGrades ?? [];
+                  return allowed.length === 0 || allowed.includes(h.currentGrade);
+                })
+              : [];
+
+            return (
+              <div className="space-y-4">
+                {/* 1. Tournament */}
+                <FormControl fullWidth sx={darkSelect}>
+                  <InputLabel>Giải đấu</InputLabel>
+                  <Select
+                    label="Giải đấu"
+                    value={inviteForm.tournamentId}
+                    disabled={loadingTournaments}
+                    onChange={(e) => setInviteForm((p) => ({ ...p, tournamentId: e.target.value }))}
+                    MenuProps={menuProps}
+                  >
+                    {loadingTournaments ? (
+                      <MenuItem disabled value="">Đang tải...</MenuItem>
+                    ) : tournaments.length === 0 ? (
+                      <MenuItem disabled value="">Chưa có giải đấu</MenuItem>
+                    ) : (
+                      tournaments.map((t) => (
+                        <MenuItem key={t._id} value={t._id}>{t.name}</MenuItem>
+                      ))
+                    )}
+                  </Select>
+                </FormControl>
+
+                {/* 2. Race */}
+                <FormControl fullWidth sx={darkSelect}>
+                  <InputLabel>Race</InputLabel>
+                  <Select
+                    label="Race"
+                    value={inviteForm.raceId}
+                    disabled={!inviteForm.tournamentId || loadingRaces}
+                    onChange={(e) => setInviteForm((p) => ({ ...p, raceId: e.target.value, horseId: "" }))}
+                    MenuProps={menuProps}
+                  >
+                    {loadingRaces ? (
+                      <MenuItem disabled value="">Đang tải...</MenuItem>
+                    ) : !inviteForm.tournamentId ? (
+                      <MenuItem disabled value="">Chọn giải đấu trước</MenuItem>
+                    ) : racesForTournament.length === 0 ? (
+                      <MenuItem disabled value="">Không có race đang mở</MenuItem>
+                    ) : (
+                      racesForTournament.map((r) => (
+                        <MenuItem key={r._id} value={r._id}>
+                          <div>
+                            <span className="font-medium">{r.name}</span>
+                            <span className="text-slate-400 text-xs ml-2">
+                              {r.grade} · {new Date(r.scheduledTime).toLocaleDateString("vi-VN")}
+                            </span>
+                          </div>
+                        </MenuItem>
+                      ))
+                    )}
+                  </Select>
+                </FormControl>
+
+                {/* Race eligibility hint */}
+                {selectedRace && (
+                  <div className="flex items-center gap-2 -mt-1">
+                    <span className="text-xs text-slate-400">Yêu cầu ngựa:</span>
+                    {(selectedRace.eligibility?.allowedGrades ?? []).length > 0
+                      ? selectedRace.eligibility.allowedGrades.map((g) => (
+                          <span key={g} className="text-xs px-2 py-0.5 rounded-full border border-white/10 text-slate-300">{g}</span>
+                        ))
+                      : <span className="text-xs text-slate-400">Mọi hạng</span>}
+                    <span className="text-xs text-slate-400 ml-1">· Phí: {selectedRace.registrationFee.toLocaleString()} coin</span>
+                  </div>
+                )}
+
+                {/* 3. Horse */}
+                <FormControl fullWidth sx={darkSelect}>
+                  <InputLabel>Ngựa tham gia</InputLabel>
+                  <Select
+                    label="Ngựa tham gia"
+                    value={inviteForm.horseId}
+                    disabled={!inviteForm.raceId}
+                    onChange={(e) => setInviteForm((p) => ({ ...p, horseId: e.target.value }))}
+                    MenuProps={menuProps}
+                  >
+                    {!inviteForm.raceId ? (
+                      <MenuItem disabled value="">Chọn race trước</MenuItem>
+                    ) : eligibleHorses.length === 0 ? (
+                      <MenuItem disabled value="">Không có ngựa đủ điều kiện</MenuItem>
+                    ) : (
+                      eligibleHorses.map((h) => (
+                        <MenuItem key={h._id} value={h._id}>
+                          <div>
+                            <span className="font-medium">{h.name}</span>
+                            <span className="text-slate-400 text-xs ml-2">{h.currentGrade} · {h.totalPoints} pts</span>
+                          </div>
+                        </MenuItem>
+                      ))
+                    )}
+                  </Select>
+                </FormControl>
+
+                {/* 4. Optional message */}
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={3}
+                  label="Lời nhắn (tùy chọn)"
+                  value={inviteForm.message}
+                  onChange={(e) => setInviteForm((p) => ({ ...p, message: e.target.value }))}
+                  inputProps={{ maxLength: 500 }}
+                  sx={{
+                    "& .MuiInputLabel-root": { color: "#94a3b8" },
+                    "& .MuiInputLabel-root.Mui-focused": { color: "#FFDE42" },
+                    "& .MuiOutlinedInput-root": {
+                      color: "white",
+                      "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
+                      "&:hover fieldset": { borderColor: "rgba(255,255,255,0.25)" },
+                      "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
+                    },
+                  }}
+                />
+              </div>
+            );
+          })()}
         </DialogContent>
-        <DialogActions
-          sx={{
-            borderTop: "1px solid rgba(255,255,255,0.1)",
-            padding: "16px 24px",
-          }}
-        >
+
+        <DialogActions sx={{ borderTop: "1px solid rgba(255,255,255,0.08)", px: 3, py: 2 }}>
           <Button
             onClick={() => setInviteJockeyOpen(false)}
+            disabled={submittingInvite}
             sx={{ color: "#94a3b8", textTransform: "none" }}
           >
             Hủy
           </Button>
           <Button
             variant="contained"
-            onClick={() => setInviteJockeyOpen(false)}
+            disabled={!inviteForm.raceId || !inviteForm.horseId || submittingInvite}
+            onClick={handleSubmitInvite}
             sx={{
-              background: "#10b981",
+              background: "#FFDE42",
+              color: "#0f172a",
               textTransform: "none",
-              "&:hover": { background: "#059669" },
+              fontWeight: 600,
+              minWidth: 120,
+              "&:hover": { background: "#E6C21E" },
+              "&.Mui-disabled": { background: "#334155", color: "#64748b" },
             }}
           >
-            Gửi Lời Mời
+            {submittingInvite ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" /> Đang gửi...
+              </span>
+            ) : "Gửi lời mời"}
           </Button>
         </DialogActions>
       </Dialog>

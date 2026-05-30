@@ -53,4 +53,17 @@ async function uploadAvatar(userId, fileBuffer) {
   return User.findById(userId).populate('walletId', 'balance');
 }
 
-module.exports = { getUserById, updateProfile, uploadAvatar };
+async function getJockeys(page = 1, limit = 20) {
+  const skip = (page - 1) * limit;
+  const [jockeys, total] = await Promise.all([
+    User.find({ role: 'jockey' })
+      .select('fullName avatarUrl jockeyProfile isActive')
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    User.countDocuments({ role: 'jockey' }),
+  ]);
+  return { jockeys, total, page, limit };
+}
+
+module.exports = { getUserById, updateProfile, uploadAvatar, getJockeys };

@@ -34,5 +34,6 @@ router.patch('/me', validate(updateProfileSchema), userController.updateMe);
 router.post('/me/upload-avatar', uploadSingle, userController.uploadAvatar);
 router.get('/me/wallet', userController.getMyWallet);
 router.get('/me/transactions', userController.getMyTransactions);
+router.get('/jockeys', userController.getJockeys);
 
 module.exports = router;

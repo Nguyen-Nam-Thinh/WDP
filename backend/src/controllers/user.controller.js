@@ -54,4 +54,15 @@ async function uploadAvatar(req, res, next) {
   }
 }
 
-module.exports = { getMe, updateMe, getMyWallet, getMyTransactions, uploadAvatar };
+async function getJockeys(req, res, next) {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const result = await userService.getJockeys(page, limit);
+    sendSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { getMe, updateMe, getMyWallet, getMyTransactions, uploadAvatar, getJockeys };
