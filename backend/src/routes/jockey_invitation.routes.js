@@ -9,6 +9,7 @@ const router = Router();
 const createInvitationSchema = z.object({
   jockeyId: z.string().min(1),
   horseId: z.string().min(1),
+  raceId: z.string().min(1),
   message: z.string().max(500).optional(),
 });
 
