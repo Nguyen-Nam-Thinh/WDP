@@ -20,7 +20,9 @@ import {
   ChevronRight,
   Wallet,
   Target,
-  Crosshair
+  Crosshair,
+  AlertTriangle,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { 
   Button, Chip, Dialog, DialogTitle, DialogContent, DialogActions, 
@@ -31,10 +33,19 @@ import {
 } from 'recharts';
 import { ProfileDropdown } from '../components/ProfileDropdown';
 import { useAuth } from '../hooks/useAuth';
+import { invitationApi, JockeyInvitation } from '../api/invitation';
+import { toast } from 'sonner';
+
+const GRADE_COLORS: Record<string, string> = {
+  Maiden: '#64748b',
+  G3: '#3b82f6',
+  G2: '#8b5cf6',
+  G1: '#f59e0b',
+};
 
 export function JockeyDashboard() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
 
   useEffect(() => {
     if (!user) {
@@ -45,12 +56,57 @@ export function JockeyDashboard() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [horseInfoOpen, setHorseInfoOpen] = useState(false);
   const [selectedHorse, setSelectedHorse] = useState<any>(null);
+  const [viewHorseActiveImage, setViewHorseActiveImage] = useState<string>('');
 
-  // MOCK DATA
-  const invitations = [
-    { id: 1, horse: 'Thunder Strike', horseGrade: 'G1', owner: 'John Smith', tournament: 'Spring Championship', date: '2026-05-25', time: '14:00', message: "Would love to have you ride Thunder Strike. Excellent form recently.", status: 'Pending', fee: '$500', prizeShare: '10%' },
-    { id: 2, horse: 'Lightning Bolt', horseGrade: 'G2', owner: 'Emily Brown', tournament: 'Golden Cup', date: '2026-05-28', time: '15:30', message: "We need a speed specialist for this race.", status: 'Pending', fee: '$300', prizeShare: '8%' },
-  ];
+  // Invitations — real API
+  const [invitations, setInvitations] = useState<JockeyInvitation[]>([]);
+  const [loadingInvitations, setLoadingInvitations] = useState(false);
+  const [processingId, setProcessingId] = useState<string | null>(null);
+
+  const loadInvitations = async () => {
+    if (!token) return;
+    setLoadingInvitations(true);
+    try {
+      const result = await invitationApi.getInvitations(token, { status: 'pending', limit: 50 });
+      setInvitations(result.invitations);
+    } catch (err: any) {
+      toast.error(err.message || 'Không thể tải danh sách lời mời');
+    } finally {
+      setLoadingInvitations(false);
+    }
+  };
+
+  useEffect(() => {
+    loadInvitations();
+  }, [token]);
+
+  const handleAccept = async (invitationId: string) => {
+    if (!token) return;
+    setProcessingId(invitationId);
+    try {
+      await invitationApi.acceptInvitation(token, invitationId);
+      toast.success('Đã chấp nhận lời mời');
+      setInvitations((prev) => prev.filter((i) => i._id !== invitationId));
+    } catch (err: any) {
+      toast.error(err.message || 'Không thể chấp nhận lời mời');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleReject = async (invitationId: string) => {
+    if (!token) return;
+    setProcessingId(invitationId);
+    try {
+      await invitationApi.rejectInvitation(token, invitationId);
+      toast.success('Đã từ chối lời mời');
+      setInvitations((prev) => prev.filter((i) => i._id !== invitationId));
+    } catch (err: any) {
+      toast.error(err.message || 'Không thể từ chối lời mời');
+    } finally {
+      setProcessingId(null);
+    }
+  };
 
   const assignedRaces = [
     { id: 1, date: '2026-05-25', time: '14:00', tournament: 'Spring Championship', horse: 'Thunder Strike', owner: 'John Smith', location: 'Emerald Track', status: 'Confirmed', distance: '2400m', grade: 'G1' },
@@ -101,8 +157,12 @@ export function JockeyDashboard() {
     recentForm: [1, 2, 1, 1, 3]
   };
 
-  const handleViewHorse = (horseName: string) => {
-    setSelectedHorse({ ...horseData, name: horseName });
+  const handleViewHorse = (horse: any) => {
+    setSelectedHorse(horse);
+    const images: string[] = horse.imageUrls?.length
+      ? horse.imageUrls
+      : horse.primaryImageUrl ? [horse.primaryImageUrl] : [];
+    setViewHorseActiveImage(images[0] ?? '');
     setHorseInfoOpen(true);
   };
 
@@ -168,7 +228,7 @@ export function JockeyDashboard() {
         {/* Tabs */}
         <div className="flex gap-3 mb-8 overflow-x-auto pb-2 scrollbar-hide">
           {[
-            { id: 'invitations', label: 'Lời Mời Đua', icon: Clock, badge: 2 },
+            { id: 'invitations', label: 'Lời Mời Đua', icon: Clock, badge: invitations.length || null },
             { id: 'schedule', label: 'Lịch Đua', icon: Calendar },
             { id: 'results', label: 'Kết Quả Quá Khứ', icon: Trophy }
           ].map(tab => (
@@ -202,92 +262,118 @@ export function JockeyDashboard() {
               </div>
             </div>
 
-            {invitations.length > 0 ? (
+            {loadingInvitations ? (
+              <div className="flex items-center justify-center py-16 text-slate-400">
+                <div className="w-6 h-6 border-2 border-[#FFDE42]/30 border-t-[#FFDE42] rounded-full animate-spin mr-3" />
+                Đang tải lời mời...
+              </div>
+            ) : invitations.length > 0 ? (
               <div className="space-y-5">
-                {invitations.map(invitation => (
-                  <div key={invitation.id} className="bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-2xl p-6 hover:border-[#FFDE42]/50 transition-all group">
-                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-5 border-b border-white/5 pb-5">
-                          <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 bg-slate-800 rounded-2xl flex items-center justify-center border border-white/10 group-hover:border-[#FFDE42]/50 transition-colors">
-                              <Star className="w-7 h-7 text-[#FFDE42]" />
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <h3 className="text-xl font-bold text-white">{invitation.horse}</h3>
-                                <Chip label={invitation.horseGrade} size="small" sx={{ height: '22px', fontSize: '0.7rem', bgcolor: '#f59e0b', color: 'white', fontWeight: 'bold' }} />
+                {invitations.map(invitation => {
+                  const horse = invitation.horseId;
+                  const owner = invitation.ownerId;
+                  const race = invitation.raceId;
+                  const scheduledDate = new Date(race.scheduledTime);
+                  const isProcessing = processingId === invitation._id;
+                  return (
+                    <div key={invitation._id} className="bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-2xl p-6 hover:border-[#FFDE42]/50 transition-all group">
+                      <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+                        <div className="flex-1">
+                          {/* Header */}
+                          <div className="flex items-center justify-between mb-5 border-b border-white/5 pb-5">
+                            <div className="flex items-center gap-4">
+                              <div className="w-14 h-14 bg-slate-800 rounded-2xl flex items-center justify-center border border-white/10 group-hover:border-[#FFDE42]/50 transition-colors overflow-hidden">
+                                {horse.imageUrl
+                                  ? <img src={horse.imageUrl} alt={horse.name} className="w-full h-full object-cover" />
+                                  : <Star className="w-7 h-7 text-[#FFDE42]" />}
                               </div>
-                              <div className="text-sm text-slate-400">Được mời bởi <span className="text-[#FFDE42] font-medium">{invitation.owner}</span></div>
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h3 className="text-xl font-bold text-white">{horse.name}</h3>
+                                  <Chip label={horse.currentGrade} size="small" sx={{ height: '22px', fontSize: '0.7rem', bgcolor: '#f59e0b', color: 'white', fontWeight: 'bold' }} />
+                                </div>
+                                <div className="text-sm text-slate-400">Được mời bởi <span className="text-[#FFDE42] font-medium">{owner.fullName}</span></div>
+                              </div>
+                            </div>
+                            {/* Race grade badge */}
+                            <div className="text-right hidden sm:block bg-[#FFDE42]/10 border border-[#FFDE42]/20 px-4 py-2 rounded-xl">
+                              <div className="text-[#FFDE42] font-bold text-lg">{race.grade}</div>
+                              <div className="text-[10px] text-[#FFDE42]/70 uppercase font-bold tracking-wider">{race.name}</div>
                             </div>
                           </div>
-                          <div className="text-right hidden sm:block bg-[#FFDE42]/10 border border-[#FFDE42]/20 px-4 py-2 rounded-xl">
-                            <div className="text-[#FFDE42] font-bold text-lg">{invitation.fee} <span className="text-sm text-[#FFDE42]/70 font-normal">+ {invitation.prizeShare} Giải Thưởng</span></div>
-                            <div className="text-[10px] text-[#FFDE42]/70 uppercase font-bold tracking-wider">Giá Trị Hợp Đồng</div>
-                          </div>
-                        </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-5">
-                          <div className="bg-slate-950/50 p-3 rounded-xl border border-white/5">
-                            <div className="text-slate-500 text-xs uppercase font-bold mb-1 flex items-center gap-1"><Trophy className="w-3 h-3"/> Sự Kiện</div>
-                            <div className="text-white font-medium truncate">{invitation.tournament}</div>
+                          {/* Info grid */}
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-5">
+                            <div className="bg-slate-950/50 p-3 rounded-xl border border-white/5">
+                              <div className="text-slate-500 text-xs uppercase font-bold mb-1 flex items-center gap-1"><Trophy className="w-3 h-3"/> Giải Đấu</div>
+                              <div className="text-white font-medium truncate">{race.tournamentId?.name ?? '—'}</div>
+                            </div>
+                            <div className="bg-slate-950/50 p-3 rounded-xl border border-white/5">
+                              <div className="text-slate-500 text-xs uppercase font-bold mb-1 flex items-center gap-1"><Calendar className="w-3 h-3"/> Ngày Đua</div>
+                              <div className="text-white font-medium">{scheduledDate.toLocaleDateString('vi-VN')}</div>
+                            </div>
+                            <div className="bg-slate-950/50 p-3 rounded-xl border border-white/5">
+                              <div className="text-slate-500 text-xs uppercase font-bold mb-1 flex items-center gap-1"><Clock className="w-3 h-3"/> Giờ Đua</div>
+                              <div className="text-white font-medium">{scheduledDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
+                            </div>
+                            <div className="flex items-center justify-center">
+                              <Button
+                                fullWidth
+                                variant="outlined"
+                                onClick={() => handleViewHorse(horse)}
+                                sx={{
+                                  borderColor: 'rgba(255,222,66,0.3)', color: '#FFDE42', textTransform: 'none', height: '100%', borderRadius: '12px',
+                                  '&:hover': { borderColor: '#FFDE42', background: 'rgba(255,222,66,0.05)' }
+                                }}
+                              >
+                                Hồ Sơ Ngựa
+                              </Button>
+                            </div>
                           </div>
-                          <div className="bg-slate-950/50 p-3 rounded-xl border border-white/5">
-                            <div className="text-slate-500 text-xs uppercase font-bold mb-1 flex items-center gap-1"><Calendar className="w-3 h-3"/> Ngày</div>
-                            <div className="text-white font-medium">{invitation.date}</div>
-                          </div>
-                          <div className="bg-slate-950/50 p-3 rounded-xl border border-white/5">
-                            <div className="text-slate-500 text-xs uppercase font-bold mb-1 flex items-center gap-1"><Clock className="w-3 h-3"/> Giờ</div>
-                            <div className="text-white font-medium">{invitation.time}</div>
-                          </div>
-                          <div className="flex items-center justify-center">
+
+                          {/* Message */}
+                          {invitation.message && (
+                            <div className="bg-slate-950/80 p-4 rounded-xl border border-white/5 mb-6 relative overflow-hidden">
+                              <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#FFDE42]"></div>
+                              <div className="text-xs text-slate-500 uppercase font-bold mb-1">Lời Nhắn Từ Chủ Ngựa</div>
+                              <p className="text-slate-300 italic text-sm">"{invitation.message}"</p>
+                            </div>
+                          )}
+
+                          {/* Actions */}
+                          <div className="flex gap-4">
                             <Button
-                              fullWidth
-                              variant="outlined"
-                              onClick={() => handleViewHorse(invitation.horse)}
+                              variant="contained"
+                              disabled={isProcessing}
+                              startIcon={<CheckCircle className="w-5 h-5" />}
+                              onClick={() => handleAccept(invitation._id)}
                               sx={{
-                                borderColor: 'rgba(255,222,66,0.3)', color: '#FFDE42', textTransform: 'none', height: '100%', borderRadius: '12px',
-                                '&:hover': { borderColor: '#FFDE42', background: 'rgba(255,222,66,0.05)' }
+                                background: '#FFDE42', color: '#1B0C0C', textTransform: 'none', fontWeight: 700, px: 4, py: 1.5, borderRadius: '10px',
+                                '&:hover': { background: '#E6C21E' },
+                                '&.Mui-disabled': { background: '#334155', color: '#64748b' },
                               }}
                             >
-                              Hồ Sơ Ngựa
+                              {isProcessing ? 'Đang xử lý...' : 'Chấp Nhận'}
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              disabled={isProcessing}
+                              startIcon={<XCircle className="w-5 h-5" />}
+                              onClick={() => handleReject(invitation._id)}
+                              sx={{
+                                borderColor: 'rgba(244,63,94,0.3)', color: '#f43f5e', textTransform: 'none', fontWeight: 600, px: 4, py: 1.5, borderRadius: '10px',
+                                '&:hover': { borderColor: '#f43f5e', backgroundColor: 'rgba(244,63,94,0.1)' },
+                                '&.Mui-disabled': { borderColor: 'rgba(255,255,255,0.05)', color: '#475569' },
+                              }}
+                            >
+                              Từ Chối
                             </Button>
                           </div>
                         </div>
-
-                        <div className="bg-slate-950/80 p-4 rounded-xl border border-white/5 mb-6 relative overflow-hidden">
-                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#FFDE42]"></div>
-                          <div className="text-xs text-slate-500 uppercase font-bold mb-1">Lời Nhắn Từ Chủ Ngựa</div>
-                          <p className="text-slate-300 italic text-sm">"{invitation.message}"</p>
-                        </div>
-
-                        <div className="flex gap-4">
-                          <Button
-                            variant="contained"
-                            startIcon={<CheckCircle className="w-5 h-5" />}
-                            sx={{
-                              background: '#FFDE42', color: '#1B0C0C', textTransform: 'none', fontWeight: 700, px: 4, py: 1.5, borderRadius: '10px',
-                              boxShadow: '0 4px 14px rgba(16,185,129,0.3)',
-                              '&:hover': { background: '#059669', boxShadow: '0 6px 20px rgba(16,185,129,0.4)' }
-                            }}
-                          >
-                            Chấp Nhận
-                          </Button>
-                          <Button
-                            variant="outlined"
-                            startIcon={<XCircle className="w-5 h-5" />}
-                            sx={{
-                              borderColor: 'rgba(244,63,94,0.3)', color: '#f43f5e', textTransform: 'none', fontWeight: 600, px: 4, py: 1.5, borderRadius: '10px',
-                              '&:hover': { borderColor: '#f43f5e', backgroundColor: 'rgba(244,63,94,0.1)' }
-                            }}
-                          >
-                            Từ Chối
-                          </Button>
-                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-16 text-center backdrop-blur-md">
@@ -361,7 +447,7 @@ export function JockeyDashboard() {
                           <Button
                             size="small"
                             variant="text"
-                            onClick={() => handleViewHorse(race.horse)}
+                            onClick={() => handleViewHorse({ name: race.horse })}
                             endIcon={<ChevronRight className="w-4 h-4" />}
                             sx={{ color: '#FFDE42', textTransform: 'none', fontWeight: 600, '&:hover': { background: 'rgba(255,222,66,0.1)' } }}
                           >
@@ -444,72 +530,101 @@ export function JockeyDashboard() {
         PaperProps={{ style: { backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', backgroundImage: 'linear-gradient(to bottom right, rgba(16,185,129,0.05), transparent)' } }}
       >
         <DialogTitle sx={{ color: 'white', borderBottom: '1px solid rgba(255,255,255,0.1)', pb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div className="flex items-center gap-2 font-bold">
-            <Activity className="w-5 h-5 text-[#FFDE42]" />
-            Hồ Sơ Ngựa
-          </div>
-          <Chip label={selectedHorse?.grade} sx={{ backgroundColor: '#f59e0b', color: 'white', fontWeight: 'bold' }} />
+          Thông Tin Chi Tiết Ngựa
+          <button onClick={() => setHorseInfoOpen(false)} className="text-slate-400 hover:text-white transition-colors">
+            <X className="w-5 h-5" />
+          </button>
         </DialogTitle>
         <DialogContent sx={{ paddingTop: '24px !important' }}>
           {selectedHorse && (
             <div className="space-y-6">
-              <div className="flex items-center gap-6">
-                <div className="w-24 h-24 rounded-2xl bg-slate-900 border border-white/10 shadow-inner flex items-center justify-center flex-shrink-0 relative overflow-hidden">
-                  <Star className="w-10 h-10 text-[#FFDE42]/50" />
-                  <div className="absolute inset-0 bg-gradient-to-tr from-[#FFDE42]/10 to-transparent"></div>
+              {/* Image */}
+              <div className="flex flex-col items-center">
+                <div className="w-full max-w-sm aspect-[4/3] rounded-xl border-2 border-slate-700 overflow-hidden mb-4 bg-slate-900 flex items-center justify-center relative shadow-lg">
+                  {viewHorseActiveImage ? (
+                    <>
+                      <div className="absolute inset-0 opacity-40 blur-xl scale-110" style={{ backgroundImage: `url(${viewHorseActiveImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+                      <img src={viewHorseActiveImage} alt={selectedHorse.name} className="relative z-10 w-full h-full object-contain drop-shadow-2xl" />
+                    </>
+                  ) : (
+                    <ImageIcon className="relative z-10 w-16 h-16 text-slate-600" />
+                  )}
                 </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-white mb-1">{selectedHorse.name}</h2>
-                  <div className="text-slate-400 text-sm font-medium">{selectedHorse.breed} • {selectedHorse.age} Tuổi</div>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div className="bg-slate-900/80 border border-white/5 p-4 rounded-xl text-center shadow-sm">
-                  <div className="text-slate-500 text-xs font-bold mb-1 uppercase tracking-wider">Cân Nặng</div>
-                  <div className="text-white font-bold text-lg">{selectedHorse.weight}</div>
-                </div>
-                <div className="bg-slate-900/80 border border-white/5 p-4 rounded-xl text-center shadow-sm">
-                  <div className="text-slate-500 text-xs font-bold mb-1 uppercase tracking-wider">Tổng Thắng</div>
-                  <div className="text-white font-bold text-lg text-[#FFDE42]">{selectedHorse.totalWins}</div>
-                </div>
-                <div className="bg-slate-900/80 border border-white/5 p-4 rounded-xl text-center shadow-sm">
-                  <div className="text-slate-500 text-xs font-bold mb-1 uppercase tracking-wider">Xếp Hạng</div>
-                  <div className="text-white font-bold text-lg">{selectedHorse.points}</div>
-                </div>
-              </div>
-
-              <div className="bg-emerald-900/10 border border-[#FFDE42]/20 p-5 rounded-xl">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-white font-bold flex items-center gap-2">
-                    <Target className="w-4 h-4 text-[#FFDE42]" />
-                    Điểm Tương Thích Kỵ Sĩ
-                  </h4>
-                  <span className="text-[#FFDE42] font-bold">{selectedHorse.compatibility}%</span>
-                </div>
-                <LinearProgress
-                  variant="determinate"
-                  value={selectedHorse.compatibility}
-                  sx={{ height: 8, borderRadius: 4, bgcolor: 'rgba(255,255,255,0.05)', '& .MuiLinearProgress-bar': { bgcolor: '#FFDE42', borderRadius: 4 } }}
-                />
-                <p className="text-xs text-slate-400 mt-3 font-medium">Dựa trên phong cách cưỡi ngựa của bạn (Nước Rút) và mô hình nhịp độ lịch sử của ngựa này.</p>
-              </div>
-
-              <div>
-                <h4 className="text-white font-bold mb-3 uppercase tracking-wider text-sm text-slate-400 border-b border-white/5 pb-2">Phong Độ Gần Đây (5 Cuộc Gần Nhất)</h4>
-                <div className="flex gap-3">
-                  {selectedHorse.recentForm.map((pos: number, i: number) => (
-                    <div key={i} className={`flex-1 py-2 text-center rounded-lg text-sm font-bold border
-                      ${pos === 1 ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' :
-                        pos === 2 ? 'bg-slate-300/10 text-slate-300 border-slate-400/30' :
-                        pos === 3 ? 'bg-orange-700/10 text-orange-400 border-orange-700/30' :
-                        'bg-slate-800 text-slate-400 border-slate-700'}`}
-                    >
-                      {pos}
+                {(() => {
+                  const images: string[] = selectedHorse.imageUrls?.length
+                    ? selectedHorse.imageUrls
+                    : selectedHorse.primaryImageUrl ? [selectedHorse.primaryImageUrl] : [];
+                  if (images.length <= 1) return null;
+                  return (
+                    <div className="flex gap-3 mb-4 overflow-x-auto max-w-full pb-2 justify-center">
+                      {images.map((imgUrl: string, idx: number) => (
+                        <button key={idx} onClick={() => setViewHorseActiveImage(imgUrl)}
+                          className={`w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${viewHorseActiveImage === imgUrl ? 'border-[#FFDE42] scale-105' : 'border-transparent opacity-50 hover:opacity-100 hover:scale-105'}`}>
+                          <img src={imgUrl} alt="thumbnail" className="w-full h-full object-cover bg-slate-800" />
+                        </button>
+                      ))}
                     </div>
-                  ))}
+                  );
+                })()}
+
+                <h3 className="text-2xl font-bold text-white text-center">{selectedHorse.name}</h3>
+                <div className="flex items-center gap-2 mt-2">
+                  {selectedHorse.isActive !== undefined && (
+                    <Chip label={selectedHorse.isActive ? 'Hoạt Động' : 'Không Hoạt Động'} size="small"
+                      sx={{ backgroundColor: selectedHorse.isActive ? '#10b981' : '#64748b', color: 'white', fontWeight: 500 }} />
+                  )}
+                  {selectedHorse.currentGrade && (
+                    <Chip label={selectedHorse.currentGrade} size="small"
+                      sx={{ backgroundColor: GRADE_COLORS[selectedHorse.currentGrade] ?? '#f59e0b', color: 'white', fontWeight: 600 }} />
+                  )}
                 </div>
               </div>
+
+              {/* Stats */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                  <h4 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider">Thể Chất</h4>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex justify-between"><span className="text-slate-500">Giới tính:</span> <span className="text-white font-medium">{selectedHorse.gender === 'male' ? 'Đực' : selectedHorse.gender === 'female' ? 'Cái' : '—'}</span></li>
+                    <li className="flex justify-between"><span className="text-slate-500">Giống:</span> <span className="text-white font-medium">{selectedHorse.breed || '—'}</span></li>
+                    <li className="flex justify-between"><span className="text-slate-500">Màu sắc:</span> <span className="text-white font-medium">{selectedHorse.color || '—'}</span></li>
+                    <li className="flex justify-between"><span className="text-slate-500">Cân nặng:</span> <span className="text-white font-medium">{selectedHorse.weight ? `${selectedHorse.weight} kg` : '—'}</span></li>
+                    <li className="flex justify-between"><span className="text-slate-500">Ngày sinh:</span> <span className="text-white font-medium">{selectedHorse.birthDate ? new Date(selectedHorse.birthDate).toLocaleDateString('vi-VN') : '—'}</span></li>
+                  </ul>
+                </div>
+                <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                  <h4 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider">Sự Nghiệp</h4>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex justify-between"><span className="text-slate-500">Tổng số trận:</span> <span className="text-white font-medium">{selectedHorse.raceCount ?? 0} trận</span></li>
+                    <li className="flex justify-between"><span className="text-slate-500">Số trận thắng:</span> <span className="text-[#FFDE42] font-bold">{selectedHorse.winCount ?? 0} trận</span></li>
+                    <li className="flex justify-between"><span className="text-slate-500">Tỷ lệ thắng:</span> <span className="text-white font-medium">{selectedHorse.raceCount > 0 ? Math.round((selectedHorse.winCount / selectedHorse.raceCount) * 100) : 0}%</span></li>
+                    <li className="flex justify-between"><span className="text-slate-500">Tổng điểm:</span> <span className="text-emerald-400 font-bold">{selectedHorse.totalPoints ?? 0} pts</span></li>
+                    <li className="flex justify-between"><span className="text-slate-500">Tiền thưởng:</span> <span className="text-[#10b981] font-bold">${(selectedHorse.totalEarnings ?? 0).toLocaleString()}</span></li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Violations */}
+              {selectedHorse.violations?.length > 0 && (
+                <div className="bg-red-950/30 p-4 rounded-xl border border-red-900/50">
+                  <h4 className="text-sm font-semibold text-red-400 mb-3 uppercase tracking-wider flex items-center">
+                    <AlertTriangle className="w-4 h-4 mr-2" /> Lịch Sử Vi Phạm
+                  </h4>
+                  <div className="space-y-3">
+                    {selectedHorse.violations.map((v: any, i: number) => (
+                      <div key={i} className="text-sm border-l-2 border-red-500/50 pl-3">
+                        <div className="text-white font-medium">{v.name}</div>
+                        <div className="text-slate-400 text-xs mt-1">
+                          {v.handling && `Xử lý: ${v.handling}`}
+                          {v.penaltyDate && ` • Phạt: ${new Date(v.penaltyDate).toLocaleDateString('vi-VN')}`}
+                        </div>
+                        {v.note && <div className="text-slate-500 text-xs italic mt-1">Ghi chú: {v.note}</div>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
