@@ -30,6 +30,8 @@ export interface JockeyInvitation {
     grade: string;
     scheduledTime: string;
     tournamentId: { _id: string; name: string };
+    distance?: number;
+    status?: string;
   };
   status: "pending" | "accepted" | "rejected" | "cancelled";
   message?: string;

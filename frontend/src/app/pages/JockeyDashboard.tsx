@@ -23,6 +23,7 @@ import {
   Crosshair,
   AlertTriangle,
   Image as ImageIcon,
+  Ban,
 } from 'lucide-react';
 import { 
   Button, Chip, Dialog, DialogTitle, DialogContent, DialogActions, 
@@ -63,6 +64,14 @@ export function JockeyDashboard() {
   const [loadingInvitations, setLoadingInvitations] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
+  const [scheduleSubTab, setScheduleSubTab] = useState<'accepted' | 'rejected'>('accepted');
+
+  const [acceptedInvitations, setAcceptedInvitations] = useState<JockeyInvitation[]>([]);
+  const [loadingSchedule, setLoadingSchedule] = useState(false);
+
+  const [rejectedInvitations, setRejectedInvitations] = useState<JockeyInvitation[]>([]);
+  const [loadingRejected, setLoadingRejected] = useState(false);
+
   const loadInvitations = async () => {
     if (!token) return;
     setLoadingInvitations(true);
@@ -76,9 +85,42 @@ export function JockeyDashboard() {
     }
   };
 
+  const loadSchedule = async () => {
+    if (!token) return;
+    setLoadingSchedule(true);
+    try {
+      const result = await invitationApi.getInvitations(token, { status: 'accepted', limit: 100 });
+      setAcceptedInvitations(result.invitations);
+    } catch (err: any) {
+      toast.error(err.message || 'Không thể tải lịch đua');
+    } finally {
+      setLoadingSchedule(false);
+    }
+  };
+
+  const loadRejected = async () => {
+    if (!token) return;
+    setLoadingRejected(true);
+    try {
+      const result = await invitationApi.getInvitations(token, { status: 'rejected', limit: 100 });
+      setRejectedInvitations(result.invitations);
+    } catch (err: any) {
+      toast.error(err.message || 'Không thể tải lời mời đã từ chối');
+    } finally {
+      setLoadingRejected(false);
+    }
+  };
+
   useEffect(() => {
     loadInvitations();
   }, [token]);
+
+  useEffect(() => {
+    if (activeTab === 'schedule') {
+      loadSchedule();
+      loadRejected();
+    }
+  }, [activeTab, token]);
 
   const handleAccept = async (invitationId: string) => {
     if (!token) return;
@@ -87,6 +129,7 @@ export function JockeyDashboard() {
       await invitationApi.acceptInvitation(token, invitationId);
       toast.success('Đã chấp nhận lời mời');
       setInvitations((prev) => prev.filter((i) => i._id !== invitationId));
+      loadSchedule();
     } catch (err: any) {
       toast.error(err.message || 'Không thể chấp nhận lời mời');
     } finally {
@@ -107,12 +150,6 @@ export function JockeyDashboard() {
       setProcessingId(null);
     }
   };
-
-  const assignedRaces = [
-    { id: 1, date: '2026-05-25', time: '14:00', tournament: 'Spring Championship', horse: 'Thunder Strike', owner: 'John Smith', location: 'Emerald Track', status: 'Confirmed', distance: '2400m', grade: 'G1' },
-    { id: 2, date: '2026-05-28', time: '15:30', tournament: 'Golden Cup', horse: 'Storm Runner', owner: 'Michael Lee', location: 'Sapphire Arena', status: 'Confirmed', distance: '1600m', grade: 'G2' },
-    { id: 3, date: '2026-06-02', time: '13:00', tournament: 'Summer Derby', horse: 'Wild Fire', owner: 'Sarah Johnson', location: 'Emerald Track', status: 'Pending', distance: '2000m', grade: 'G1' },
-  ];
 
   const recentResults = [
     { race: 'Spring Classic', date: '2026-05-15', horse: 'Thunder Strike', position: 1, prize: '$5,000', points: 100, violations: 0 },
@@ -273,6 +310,7 @@ export function JockeyDashboard() {
                   const horse = invitation.horseId;
                   const owner = invitation.ownerId;
                   const race = invitation.raceId;
+                  if (!race || !horse || !owner) return null;
                   const scheduledDate = new Date(race.scheduledTime);
                   const isProcessing = processingId === invitation._id;
                   return (
@@ -387,79 +425,216 @@ export function JockeyDashboard() {
           </div>
         )}
 
-        {/* Content: Schedule */}
+        {/* Content: Schedule + Rejected (merged) */}
         {activeTab === 'schedule' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Header + sub-tab toggle */}
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-2xl font-bold text-white mb-1">Lịch Đã Xác Nhận</h2>
-                <p className="text-slate-400 text-sm">Các cuộc đua sắp tới và địa điểm đường đua của bạn</p>
+                <h2 className="text-2xl font-bold text-white mb-1">Lịch Đua</h2>
+                <p className="text-slate-400 text-sm">Quản lý lịch đua và lời mời đã từ chối</p>
               </div>
+              <button
+                onClick={() => { loadSchedule(); loadRejected(); }}
+                className="text-slate-400 hover:text-[#FFDE42] transition-colors p-2 rounded-lg hover:bg-white/5"
+              >
+                <Activity className="w-5 h-5" />
+              </button>
             </div>
 
-            <div className="space-y-4">
-              {assignedRaces.map(race => (
-                <div key={race.id} className="bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-2xl p-6 hover:border-[#FFDE42]/30 transition-all">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-4 mb-5 border-b border-white/5 pb-4">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${race.status === 'Confirmed' ? 'bg-[#FFDE42]/10 border-emerald-500/30 text-[#FFDE42]' : 'bg-amber-500/10 border-amber-500/30 text-amber-400'}`}>
-                          <Flame className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-bold text-white mb-1">{race.tournament}</h3>
-                          <div className="text-slate-400 text-sm flex items-center gap-2">
-                            <span className="font-medium text-slate-300">{race.date} • {race.time}</span>
-                            <span>|</span>
-                            <span className="flex items-center gap-1 text-[#FFDE42]"><MapPin className="w-3 h-3"/> {race.location}</span>
-                          </div>
-                        </div>
-                        <Chip
-                          label={race.status === 'Confirmed' ? 'Đã Xác Nhận' : 'Đang Chờ'}
-                          size="small"
-                          icon={race.status === 'Confirmed' ? <CheckCircle className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
-                          sx={{
-                            ml: 'auto', height: '24px', fontWeight: 'bold',
-                            backgroundColor: race.status === 'Confirmed' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                            color: race.status === 'Confirmed' ? '#FFDE42' : '#fbbf24',
-                            border: `1px solid ${race.status === 'Confirmed' ? '#FFDE42' : '#f59e0b'}`,
-                            '& .MuiChip-icon': { color: 'inherit' }
-                          }}
-                        />
-                      </div>
+            {/* Sub-tab buttons */}
+            <div className="flex gap-2 mb-6 bg-slate-900/60 p-1.5 rounded-xl border border-white/5 w-fit">
+              <button
+                onClick={() => setScheduleSubTab('accepted')}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                  scheduleSubTab === 'accepted'
+                    ? 'bg-[#FFDE42] text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <CheckCircle className="w-4 h-4" />
+                Đã Xác Nhận
+                {acceptedInvitations.length > 0 && (
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${scheduleSubTab === 'accepted' ? 'bg-slate-900/40 text-slate-950' : 'bg-[#FFDE42]/20 text-[#FFDE42]'}`}>
+                    {acceptedInvitations.length}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setScheduleSubTab('rejected')}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                  scheduleSubTab === 'rejected'
+                    ? 'bg-red-500/20 text-red-400 shadow-sm border border-red-500/30'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Ban className="w-4 h-4" />
+                Đã Từ Chối
+                {rejectedInvitations.length > 0 && (
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${scheduleSubTab === 'rejected' ? 'bg-red-500/20 text-red-400' : 'bg-red-500/10 text-red-400'}`}>
+                    {rejectedInvitations.length}
+                  </span>
+                )}
+              </button>
+            </div>
 
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-950/50 p-4 rounded-xl border border-white/5">
-                        <div>
-                          <div className="text-slate-500 text-xs uppercase font-bold mb-1">Ngựa Được Chỉ Định</div>
-                          <div className="text-white font-medium flex items-center gap-2">
-                            {race.horse} <Chip label={race.grade} size="small" sx={{ height: '16px', fontSize: '0.6rem', bgcolor: '#475569', color: 'white', fontWeight: 'bold' }} />
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-slate-500 text-xs uppercase font-bold mb-1">Chủ Ngựa</div>
-                          <div className="text-white font-medium">{race.owner}</div>
-                        </div>
-                        <div>
-                          <div className="text-slate-500 text-xs uppercase font-bold mb-1">Quãng Đường</div>
-                          <div className="text-white font-medium">{race.distance}</div>
-                        </div>
-                        <div className="flex items-center justify-end">
-                          <Button
-                            size="small"
-                            variant="text"
-                            onClick={() => handleViewHorse({ name: race.horse })}
-                            endIcon={<ChevronRight className="w-4 h-4" />}
-                            sx={{ color: '#FFDE42', textTransform: 'none', fontWeight: 600, '&:hover': { background: 'rgba(255,222,66,0.1)' } }}
-                          >
-                            Chi Tiết Ngựa
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+            {/* Sub-tab: Accepted */}
+            {scheduleSubTab === 'accepted' && (
+              loadingSchedule ? (
+                <div className="flex items-center justify-center py-16 text-slate-400">
+                  <div className="w-6 h-6 border-2 border-[#FFDE42]/30 border-t-[#FFDE42] rounded-full animate-spin mr-3" />
+                  Đang tải lịch đua...
                 </div>
-              ))}
-            </div>
+              ) : acceptedInvitations.length > 0 ? (
+                <div className="space-y-4">
+                  {acceptedInvitations.map(inv => {
+                    const race = inv.raceId;
+                    const horse = inv.horseId;
+                    const owner = inv.ownerId;
+                    if (!race || !horse || !owner) return null;
+                    const scheduledDate = new Date(race.scheduledTime);
+                    const raceStatus = race.status ?? 'open';
+                    const isUpcoming = scheduledDate > new Date();
+
+                    const raceStatusLabel: Record<string, string> = {
+                      open: 'Đang Mở', closed: 'Đã Đóng', pre_check: 'Kiểm Tra',
+                      running: 'Đang Chạy', finished: 'Đã Kết Thúc', cancelled: 'Đã Hủy',
+                    };
+                    const raceStatusColor: Record<string, string> = {
+                      open: '#10b981', closed: '#f59e0b', pre_check: '#8b5cf6',
+                      running: '#3b82f6', finished: '#64748b', cancelled: '#f43f5e',
+                    };
+
+                    return (
+                      <div key={inv._id} className="bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-2xl p-6 hover:border-[#FFDE42]/30 transition-all">
+                        <div className="flex flex-col md:flex-row md:items-start gap-6">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-4 mb-5 border-b border-white/5 pb-4">
+                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${isUpcoming ? 'bg-[#FFDE42]/10 border-[#FFDE42]/30 text-[#FFDE42]' : 'bg-slate-700/50 border-white/10 text-slate-400'}`}>
+                                <Flame className="w-6 h-6" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="text-xl font-bold text-white mb-1 truncate">{race.tournamentId?.name ?? race.name}</h3>
+                                <div className="text-slate-400 text-sm flex items-center gap-2 flex-wrap">
+                                  <span className="font-medium text-slate-300">
+                                    {scheduledDate.toLocaleDateString('vi-VN')} • {scheduledDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                  <span className="text-[#FFDE42] font-medium">{race.name}</span>
+                                </div>
+                              </div>
+                              <Chip
+                                label={raceStatusLabel[raceStatus] ?? raceStatus}
+                                size="small"
+                                sx={{
+                                  ml: 'auto', height: '24px', fontWeight: 'bold', flexShrink: 0,
+                                  backgroundColor: `${raceStatusColor[raceStatus] ?? '#64748b'}22`,
+                                  color: raceStatusColor[raceStatus] ?? '#64748b',
+                                  border: `1px solid ${raceStatusColor[raceStatus] ?? '#64748b'}55`,
+                                }}
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-950/50 p-4 rounded-xl border border-white/5">
+                              <div>
+                                <div className="text-slate-500 text-xs uppercase font-bold mb-1">Ngựa</div>
+                                <div className="text-white font-medium flex items-center gap-2">
+                                  {horse.name}
+                                  <Chip label={horse.currentGrade} size="small" sx={{ height: '16px', fontSize: '0.6rem', bgcolor: GRADE_COLORS[horse.currentGrade] ?? '#475569', color: 'white', fontWeight: 'bold' }} />
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-slate-500 text-xs uppercase font-bold mb-1">Chủ Ngựa</div>
+                                <div className="text-white font-medium">{owner.fullName}</div>
+                              </div>
+                              <div>
+                                <div className="text-slate-500 text-xs uppercase font-bold mb-1">Hạng Đua</div>
+                                <div className="font-bold" style={{ color: GRADE_COLORS[race.grade] ?? '#64748b' }}>{race.grade}</div>
+                              </div>
+                              <div className="flex items-center justify-end">
+                                <Button
+                                  size="small"
+                                  variant="text"
+                                  onClick={() => handleViewHorse(horse)}
+                                  endIcon={<ChevronRight className="w-4 h-4" />}
+                                  sx={{ color: '#FFDE42', textTransform: 'none', fontWeight: 600, '&:hover': { background: 'rgba(255,222,66,0.1)' } }}
+                                >
+                                  Chi Tiết Ngựa
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-16 text-center backdrop-blur-md">
+                  <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/5">
+                    <Calendar className="w-10 h-10 text-slate-500" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">Chưa có lịch đua</h3>
+                  <p className="text-slate-400 max-w-md mx-auto">Chấp nhận lời mời từ Chủ Ngựa để thấy lịch đua xuất hiện tại đây.</p>
+                </div>
+              )
+            )}
+
+            {/* Sub-tab: Rejected */}
+            {scheduleSubTab === 'rejected' && (
+              loadingRejected ? (
+                <div className="flex items-center justify-center py-16 text-slate-400">
+                  <div className="w-6 h-6 border-2 border-[#FFDE42]/30 border-t-[#FFDE42] rounded-full animate-spin mr-3" />
+                  Đang tải...
+                </div>
+              ) : rejectedInvitations.length > 0 ? (
+                <div className="space-y-4">
+                  {rejectedInvitations.map(inv => {
+                    const horse = inv.horseId;
+                    const owner = inv.ownerId;
+                    const race = inv.raceId;
+                    if (!race || !horse || !owner) return null;
+                    const scheduledDate = new Date(race.scheduledTime);
+                    return (
+                      <div key={inv._id} className="bg-slate-900/80 backdrop-blur-md border border-red-900/20 rounded-2xl p-6">
+                        <div className="flex items-start gap-4">
+                          <div className="w-12 h-12 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <XCircle className="w-6 h-6 text-red-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <h3 className="text-lg font-bold text-white">{horse.name}</h3>
+                              <Chip label={horse.currentGrade} size="small" sx={{ height: '18px', fontSize: '0.65rem', bgcolor: GRADE_COLORS[horse.currentGrade] ?? '#475569', color: 'white', fontWeight: 'bold' }} />
+                              <span className="text-slate-500 text-sm">từ <span className="text-slate-300">{owner.fullName}</span></span>
+                            </div>
+                            <div className="text-slate-400 text-sm flex items-center gap-3 flex-wrap mb-3">
+                              <span className="flex items-center gap-1"><Trophy className="w-3 h-3 text-[#FFDE42]" /> {race.tournamentId?.name ?? '—'}</span>
+                              <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {scheduledDate.toLocaleDateString('vi-VN')}</span>
+                              <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {scheduledDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+                              <span className="font-medium" style={{ color: GRADE_COLORS[race.grade] ?? '#64748b' }}>{race.grade} — {race.name}</span>
+                            </div>
+                            {inv.rejectionNote && (
+                              <div className="bg-slate-950/60 border border-red-900/20 rounded-lg px-3 py-2 text-sm text-slate-400 italic">
+                                Lý do: "{inv.rejectionNote}"
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-xs text-slate-600 whitespace-nowrap flex-shrink-0">
+                            {new Date(inv.createdAt ?? '').toLocaleDateString('vi-VN')}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-16 text-center backdrop-blur-md">
+                  <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/5">
+                    <Ban className="w-10 h-10 text-slate-500" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">Chưa từ chối lời mời nào</h3>
+                  <p className="text-slate-400 max-w-md mx-auto">Các lời mời bạn từ chối sẽ được lưu lại tại đây.</p>
+                </div>
+              )
+            )}
           </div>
         )}
 
