@@ -199,7 +199,55 @@ async function getRaceRegistrations(raceId, { page = 1, limit = 20 } = {}) {
   return { registrations, total, page, limit, totalPages: Math.ceil(total / limit) };
 }
 
+// Public endpoint — only exposes horse/jockey info for betting (no owner/fee data)
+async function getRaceHorses(raceId) {
+  const race = await Race.findById(raceId)
+    .populate('tournamentId', 'name')
+    .populate('refereeId', 'fullName');
+  if (!race) throw new AppError(404, 'Race not found');
+
+  const { Registration } = require('../models/registration.model');
+  const registrations = await Registration.find({ raceId, status: 'active' })
+    .populate('horseId', 'name breed gender currentGrade totalPoints winCount raceCount imageUrl')
+    .populate('jockeyId', 'fullName jockeyProfile')
+    .sort({ registeredAt: 1 });
+
+  const horses = registrations.map(reg => ({
+    registrationId: reg._id,
+    horseId: reg.horseId?._id,
+    horseName: reg.horseId?.name,
+    breed: reg.horseId?.breed,
+    gender: reg.horseId?.gender,
+    currentGrade: reg.horseId?.currentGrade,
+    totalPoints: reg.horseId?.totalPoints,
+    winRate: reg.horseId?.raceCount > 0
+      ? Math.round((reg.horseId.winCount / reg.horseId.raceCount) * 100)
+      : 0,
+    imageUrl: reg.horseId?.imageUrl,
+    jockeyId: reg.jockeyId?._id || null,
+    jockeyName: reg.jockeyId?.fullName || null,
+    jockeyExperience: reg.jockeyId?.jockeyProfile?.experienceYears || 0,
+  }));
+
+  return {
+    race: {
+      _id: race._id,
+      name: race.name,
+      grade: race.grade,
+      distance: race.distance,
+      purse: race.purse,
+      registrationFee: race.registrationFee,
+      scheduledTime: race.scheduledTime,
+      cutoffTime: race.cutoffTime,
+      status: race.status,
+      tournament: race.tournamentId,
+    },
+    horses,
+    total: horses.length,
+  };
+}
+
 module.exports = {
   createRace, getRaces, getRaceById, updateRace,
-  cancelRace, assignReferee, updateRaceStatus, getRaceRegistrations,
+  cancelRace, assignReferee, updateRaceStatus, getRaceRegistrations, getRaceHorses,
 };
