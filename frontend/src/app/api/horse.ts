@@ -1,4 +1,5 @@
 import { API_URL } from "./auth";
+import { fetchWithAuth } from "../utils/apiClient";
 
 export interface Horse {
   _id: string;
@@ -41,7 +42,7 @@ export const horseApi = {
     if (isActive !== undefined) params.append("isActive", isActive.toString());
     if (grade) params.append("grade", grade);
 
-    const response = await fetch(`${API_URL}/horses?${params}`, {
+    const response = await fetchWithAuth(`${API_URL}/horses?${params}`, {
       headers: authHeader(token),
     });
     if (!response.ok) {
@@ -53,7 +54,7 @@ export const horseApi = {
   },
 
   getHorseById: async (token: string, horseId: string): Promise<Horse> => {
-    const response = await fetch(`${API_URL}/horses/${horseId}`, {
+    const response = await fetchWithAuth(`${API_URL}/horses/${horseId}`, {
       headers: authHeader(token),
     });
     if (!response.ok) {
@@ -65,7 +66,7 @@ export const horseApi = {
   },
 
   createHorse: async (token: string, data: any): Promise<Horse> => {
-    const response = await fetch(`${API_URL}/horses`, {
+    const response = await fetchWithAuth(`${API_URL}/horses`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -86,7 +87,7 @@ export const horseApi = {
     horseId: string,
     data: any,
   ): Promise<Horse> => {
-    const response = await fetch(`${API_URL}/horses/${horseId}`, {
+    const response = await fetchWithAuth(`${API_URL}/horses/${horseId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -103,7 +104,7 @@ export const horseApi = {
   },
 
   deactivateHorse: async (token: string, horseId: string): Promise<Horse> => {
-    const response = await fetch(`${API_URL}/horses/${horseId}`, {
+    const response = await fetchWithAuth(`${API_URL}/horses/${horseId}`, {
       method: "DELETE",
       headers: authHeader(token),
     });
@@ -125,7 +126,7 @@ export const horseApi = {
     const formData = new FormData();
     files.forEach((file) => formData.append("files", file));
 
-    const response = await fetch(`${API_URL}/horses/${horseId}/upload-images`, {
+    const response = await fetchWithAuth(`${API_URL}/horses/${horseId}/upload-images`, {
       method: "POST",
       headers: authHeader(token),
       body: formData,
@@ -143,7 +144,7 @@ export const horseApi = {
     horseId: string,
     imageUrl: string,
   ): Promise<Horse> => {
-    const response = await fetch(`${API_URL}/horses/${horseId}/primary-image`, {
+    const response = await fetchWithAuth(`${API_URL}/horses/${horseId}/primary-image`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -166,7 +167,7 @@ export const horseApi = {
     horseId: string,
     imageUrl: string,
   ): Promise<Horse> => {
-    const response = await fetch(`${API_URL}/horses/${horseId}/image`, {
+    const response = await fetchWithAuth(`${API_URL}/horses/${horseId}/image`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
@@ -187,7 +188,7 @@ export const horseApi = {
     horseId: string,
     jockeyId: string,
   ): Promise<Horse> => {
-    const response = await fetch(
+    const response = await fetchWithAuth(
       `${API_URL}/horses/${horseId}/regular-jockeys/${jockeyId}`,
       {
         method: "POST",
@@ -209,7 +210,7 @@ export const horseApi = {
     horseId: string,
     jockeyId: string,
   ): Promise<Horse> => {
-    const response = await fetch(
+    const response = await fetchWithAuth(
       `${API_URL}/horses/${horseId}/regular-jockeys/${jockeyId}`,
       {
         method: "DELETE",
