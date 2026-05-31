@@ -1,4 +1,5 @@
 import { API_URL } from "./auth";
+import { fetchWithAuth } from "../utils/apiClient";
 
 export interface UserProfile {
   _id: string;
@@ -66,7 +67,7 @@ const authHeader = (token: string) => ({
 
 export const userApi = {
   getMe: async (token: string): Promise<UserProfile> => {
-    const response = await fetch(`${API_URL}/users/me`, {
+    const response = await fetchWithAuth(`${API_URL}/users/me`, {
       headers: authHeader(token),
     });
     if (!response.ok) {
@@ -81,7 +82,7 @@ export const userApi = {
     token: string,
     data: UpdateProfileData,
   ): Promise<UserProfile> => {
-    const response = await fetch(`${API_URL}/users/me`, {
+    const response = await fetchWithAuth(`${API_URL}/users/me`, {
       method: "PATCH",
       headers: authHeader(token),
       body: JSON.stringify(data),
@@ -95,7 +96,7 @@ export const userApi = {
   },
 
   getMyWallet: async (token: string) => {
-    const response = await fetch(`${API_URL}/users/me/wallet`, {
+    const response = await fetchWithAuth(`${API_URL}/users/me/wallet`, {
       headers: authHeader(token),
     });
     if (!response.ok) {
@@ -107,7 +108,7 @@ export const userApi = {
   },
 
   getMyTransactions: async (token: string, page = 1, limit = 20) => {
-    const response = await fetch(
+    const response = await fetchWithAuth(
       `${API_URL}/users/me/transactions?page=${page}&limit=${limit}`,
       { headers: authHeader(token) },
     );
@@ -126,7 +127,7 @@ export const userApi = {
     page = 1,
     limit = 20,
   ): Promise<{ jockeys: JockeyListItem[]; total: number; page: number; limit: number }> => {
-    const response = await fetch(
+    const response = await fetchWithAuth(
       `${API_URL}/users/jockeys?page=${page}&limit=${limit}`,
       { headers: authHeader(token) },
     );
@@ -142,7 +143,7 @@ export const userApi = {
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await fetch(`${API_URL}/users/me/upload-avatar`, {
+    const response = await fetchWithAuth(`${API_URL}/users/me/upload-avatar`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,

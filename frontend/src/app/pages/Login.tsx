@@ -23,7 +23,7 @@ export function Login() {
     setLoading(true);
     try {
       const data = await authApi.login(email, password);
-      login(data.user, data.accessToken);
+      login(data.user, data.accessToken, data.refreshToken);
       toast.success('Đăng nhập thành công! Chào mừng ' + data.user.fullName);
       
       const rolePath = data.user.role === 'owner' ? 'horse-owner' : data.user.role === 'spectator' ? '' : data.user.role;

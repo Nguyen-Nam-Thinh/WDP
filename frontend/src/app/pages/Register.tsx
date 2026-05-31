@@ -30,9 +30,13 @@ export function Register() {
     setError('');
     try {
       const data = await authApi.register({
-        email, password, fullName, phone, role
+        fullName,
+        email,
+        phone,
+        password,
+        role,
       });
-      login(data.user, data.accessToken);
+      login(data.user, data.accessToken, data.refreshToken);
       toast.success('Đăng ký tài khoản thành công!');
       const rolePath = data.user.role === 'owner' ? 'horse-owner' : data.user.role === 'spectator' ? '' : data.user.role;
       navigate(`/${rolePath}`);

@@ -1,4 +1,5 @@
 import { API_URL } from "./auth";
+import { fetchWithAuth } from "../utils/apiClient";
 
 export interface InvitationHorse {
   _id: string;
@@ -30,6 +31,8 @@ export interface JockeyInvitation {
     grade: string;
     scheduledTime: string;
     tournamentId: { _id: string; name: string };
+    distance?: number;
+    status?: string;
   };
   status: "pending" | "accepted" | "rejected" | "cancelled";
   message?: string;
@@ -54,7 +57,7 @@ export const invitationApi = {
     token: string,
     data: CreateInvitationData,
   ): Promise<JockeyInvitation> => {
-    const response = await fetch(`${API_URL}/invitations`, {
+    const response = await fetchWithAuth(`${API_URL}/invitations`, {
       method: "POST",
       headers: authHeader(token),
       body: JSON.stringify(data),
@@ -76,7 +79,7 @@ export const invitationApi = {
     query.append("limit", String(params.limit ?? 10));
     if (params.status) query.append("status", params.status);
 
-    const response = await fetch(`${API_URL}/invitations?${query}`, {
+    const response = await fetchWithAuth(`${API_URL}/invitations?${query}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!response.ok) {
@@ -88,7 +91,7 @@ export const invitationApi = {
   },
 
   acceptInvitation: async (token: string, invitationId: string): Promise<JockeyInvitation> => {
-    const response = await fetch(`${API_URL}/invitations/${invitationId}/accept`, {
+    const response = await fetchWithAuth(`${API_URL}/invitations/${invitationId}/accept`, {
       method: "PATCH",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -105,7 +108,7 @@ export const invitationApi = {
     invitationId: string,
     rejectionNote?: string,
   ): Promise<JockeyInvitation> => {
-    const response = await fetch(`${API_URL}/invitations/${invitationId}/reject`, {
+    const response = await fetchWithAuth(`${API_URL}/invitations/${invitationId}/reject`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ rejectionNote }),
@@ -119,7 +122,7 @@ export const invitationApi = {
   },
 
   cancelInvitation: async (token: string, invitationId: string): Promise<void> => {
-    const response = await fetch(`${API_URL}/invitations/${invitationId}`, {
+    const response = await fetchWithAuth(`${API_URL}/invitations/${invitationId}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });

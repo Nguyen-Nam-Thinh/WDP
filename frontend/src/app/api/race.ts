@@ -1,4 +1,5 @@
 import { API_URL } from "./auth";
+import { fetchWithAuth } from "../utils/apiClient";
 
 export interface RaceEligibility {
   allowedGrades: ("Maiden" | "G3" | "G2" | "G1")[];
@@ -37,7 +38,7 @@ export const raceApi = {
     query.append("page", String(params.page ?? 1));
     query.append("limit", String(params.limit ?? 50));
 
-    const response = await fetch(`${API_URL}/races?${query}`, {
+    const response = await fetchWithAuth(`${API_URL}/races?${query}`, {
       headers: authHeader(token),
     });
     if (!response.ok) {

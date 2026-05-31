@@ -101,4 +101,18 @@ export const authApi = {
     }
     return;
   },
+
+  refreshToken: async (refreshToken: string) => {
+    const response = await fetch(`${API_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to refresh token');
+    }
+    const json = await response.json();
+    return json.data;
+  },
 };

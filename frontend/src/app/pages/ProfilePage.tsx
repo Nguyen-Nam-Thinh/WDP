@@ -10,7 +10,6 @@ import {
   Calendar,
   MapPin,
   Edit2,
-  CheckCircle,
   Trophy,
   TrendingUp,
   Coins,
@@ -26,6 +25,8 @@ import {
   Clock,
   Gift,
   Medal,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { userApi } from "../api/user";
@@ -122,6 +123,11 @@ export function ProfilePage() {
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
+  });
+  const [showPasswordFields, setShowPasswordFields] = useState({
+    currentPassword: false,
+    newPassword: false,
+    confirmPassword: false,
   });
   const [notifBet, setNotifBet] = useState(true);
   const [notifDeposit, setNotifDeposit] = useState(true);
@@ -446,11 +452,6 @@ export function ProfilePage() {
             <span className="text-xs bg-[#FFDE42]/20 text-[#FFDE42] px-2.5 py-1 rounded-full font-semibold border border-[#FFDE42]/30">
               {user.level}
             </span>
-            {user.verified && (
-              <span className="text-xs bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full font-semibold border border-emerald-500/20 flex items-center gap-1">
-                <CheckCircle className="w-3 h-3" /> Đã Xác Minh
-              </span>
-            )}
           </div>
           <p className="text-slate-400 text-sm mt-1.5 max-w-xl">{user.bio}</p>
           <div className="flex flex-wrap gap-4 mt-3 text-xs text-slate-500">
@@ -922,18 +923,36 @@ export function ProfilePage() {
                 <label className="text-xs text-slate-400 font-semibold uppercase tracking-wide mb-1.5 block">
                   {field.label}
                 </label>
-                <input
-                  type="password"
-                  placeholder={field.placeholder}
-                  value={passwordForm[field.key]}
-                  onChange={(e) =>
-                    setPasswordForm((prev) => ({
-                      ...prev,
-                      [field.key]: e.target.value,
-                    }))
-                  }
-                  className="w-full bg-slate-800/60 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-[#FFDE42]/60 focus:ring-1 focus:ring-[#FFDE42]/20 transition-all"
-                />
+                <div className="relative">
+                  <input
+                    type={showPasswordFields[field.key] ? "text" : "password"}
+                    placeholder={field.placeholder}
+                    value={passwordForm[field.key]}
+                    onChange={(e) =>
+                      setPasswordForm((prev) => ({
+                        ...prev,
+                        [field.key]: e.target.value,
+                      }))
+                    }
+                    className="w-full bg-slate-800/60 border border-white/10 rounded-xl px-4 py-3 pr-11 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-[#FFDE42]/60 focus:ring-1 focus:ring-[#FFDE42]/20 transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowPasswordFields((prev) => ({
+                        ...prev,
+                        [field.key]: !prev[field.key],
+                      }))
+                    }
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
+                  >
+                    {showPasswordFields[field.key] ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
               </div>
             ))}
 

@@ -55,7 +55,7 @@ async function getInvitations(userId, role, { page = 1, limit = 10, status } = {
       .populate('ownerId', 'fullName email')
       .populate('jockeyId', 'fullName email jockeyProfile')
       .populate('horseId', 'name breed gender birthDate weight color primaryImageUrl imageUrls currentGrade totalPoints totalEarnings raceCount winCount violations isActive')
-      .populate({ path: 'raceId', select: 'name grade scheduledTime tournamentId', populate: { path: 'tournamentId', select: 'name' } })
+      .populate({ path: 'raceId', select: 'name grade scheduledTime tournamentId distance status', populate: { path: 'tournamentId', select: 'name' } })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),
