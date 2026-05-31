@@ -47,4 +47,23 @@ export const raceApi = {
     const json = await response.json();
     return json.data;
   },
+
+  getRaceById: async (token: string, id: string): Promise<Race> => {
+    const res = await fetch(`${API_URL}/races/${id}`, { headers: authHeader(token) });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || "Failed to fetch race");
+    return json.data;
+  },
+
+  getRaceRegistrations: async (
+    token: string,
+    raceId: string,
+    params: { page?: number; limit?: number } = {},
+  ): Promise<{ registrations: any[]; total: number }> => {
+    const q = new URLSearchParams({ page: String(params.page ?? 1), limit: String(params.limit ?? 50) });
+    const res = await fetch(`${API_URL}/races/${raceId}/registrations?${q}`, { headers: authHeader(token) });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || "Failed to fetch registrations");
+    return json.data;
+  },
 };

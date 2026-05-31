@@ -66,4 +66,32 @@ async function getJockeys(page = 1, limit = 20) {
   return { jockeys, total, page, limit };
 }
 
-module.exports = { getUserById, updateProfile, uploadAvatar, getJockeys };
+async function getReferees(page = 1, limit = 50) {
+  const skip = (page - 1) * limit;
+  const [users, total] = await Promise.all([
+    User.find({ role: 'referee', isActive: true })
+      .select('fullName email avatarUrl refereeProfile isActive')
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    User.countDocuments({ role: 'referee', isActive: true }),
+  ]);
+  return { users, total, page, limit, totalPages: Math.ceil(total / limit) };
+}
+
+async function getUsers(page = 1, limit = 20, role) {
+  const filter = {};
+  if (role) filter.role = role;
+  const skip = (page - 1) * limit;
+  const [users, total] = await Promise.all([
+    User.find(filter)
+      .select('fullName email avatarUrl role isActive jockeyProfile refereeProfile createdAt')
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    User.countDocuments(filter),
+  ]);
+  return { users, total, page, limit, totalPages: Math.ceil(total / limit) };
+}
+
+module.exports = { getUserById, updateProfile, uploadAvatar, getJockeys, getReferees, getUsers };

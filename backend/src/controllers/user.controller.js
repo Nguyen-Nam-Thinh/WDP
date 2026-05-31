@@ -65,4 +65,27 @@ async function getJockeys(req, res, next) {
   }
 }
 
-module.exports = { getMe, updateMe, getMyWallet, getMyTransactions, uploadAvatar, getJockeys };
+async function getReferees(req, res, next) {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const result = await userService.getReferees(page, limit);
+    sendSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function getUsers(req, res, next) {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const { role } = req.query;
+    const result = await userService.getUsers(page, limit, role);
+    sendSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { getMe, updateMe, getMyWallet, getMyTransactions, uploadAvatar, getJockeys, getReferees, getUsers };
