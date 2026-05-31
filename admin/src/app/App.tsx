@@ -9,6 +9,7 @@ import RaceManagement from './components/pages/RaceManagement';
 import RegistrationApproval from './components/pages/RegistrationApproval';
 import RefereeAssignment from './components/pages/RefereeAssignment';
 import ResultsPublishing from './components/pages/ResultsPublishing';
+import BetManagement from './components/pages/BetManagement';
 import Login from './pages/Login';
 import { AdminAuthProvider, useAdminAuth } from './context/AdminAuthContext';
 
@@ -61,6 +62,7 @@ export default function App() {
                 <Route path="/registrations" element={<RegistrationApproval />} />
                 <Route path="/referees" element={<RefereeAssignment />} />
                 <Route path="/results" element={<ResultsPublishing />} />
+                <Route path="/bets" element={<BetManagement />} />
               </Route>
             </Routes>
           </div>

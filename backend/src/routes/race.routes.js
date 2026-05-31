@@ -58,6 +58,7 @@ router.patch('/:id', authorize('admin'), validate(updateRaceSchema), raceControl
 router.delete('/:id', authorize('admin'), raceController.cancelRace);
 router.patch('/:id/assign-referee', authorize('admin'), validate(assignRefereeSchema), raceController.assignReferee);
 router.patch('/:id/status', authorize('admin'), validate(statusSchema), raceController.updateRaceStatus);
-router.get('/:id/registrations', authorize('owner', 'admin', 'referee'), raceController.getRaceRegistrations);
+router.get('/:id/registrations', raceController.getRaceRegistrations);
+router.get('/:id/horses', raceController.getRaceHorses);
 
 module.exports = router;

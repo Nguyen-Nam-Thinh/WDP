@@ -1,295 +1,275 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
-  Box,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Button,
-  Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Grid,
-  Typography,
-  Card,
-  CardContent,
-  IconButton,
-  InputAdornment,
+  Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Button, Chip, Dialog, DialogTitle, DialogContent, DialogActions,
+  Grid, Typography, Card, CardContent, CircularProgress, Alert,
 } from '@mui/material';
-import {
-  Publish,
-  Edit,
-  EmojiEvents,
-  Timer,
-  Speed,
-  Visibility,
-} from '@mui/icons-material';
+import { EmojiEvents, Visibility, AttachMoney } from '@mui/icons-material';
+import { toast } from 'sonner';
+import { raceApi, type Race, type Registration } from '../../api/race';
 
-interface RaceResult {
-  id: number;
-  raceName: string;
-  date: string;
-  tournament: string;
-  status: 'pending' | 'published';
-  participants: number;
+// Admin-level bet API (re-use the pattern)
+import { apiRequest } from '../../api/client';
+
+interface BetSummary {
+  _id: string;
+  spectatorId: { _id: string; fullName: string; email: string };
+  horseId: { _id: string; name: string };
+  betType: 'win' | 'place' | 'show';
+  amount: number;
+  multiplier: number;
+  status: string;
+  payoutAmount: number;
+  createdAt: string;
 }
 
-interface Participant {
-  position: number;
-  horseName: string;
-  jockeyName: string;
-  time: string;
-  speed: string;
-  prize?: string;
-}
+const BET_TYPE_LABEL: Record<string, string> = { win: 'Thắng', place: 'Top 2', show: 'Top 3' };
+const STATUS_COLOR: Record<string, any> = { pending: 'warning', won: 'success', lost: 'error', cancelled: 'default', refunded: 'info' };
+const STATUS_LABEL: Record<string, string> = { pending: 'Chờ', won: 'Thắng', lost: 'Thua', cancelled: 'Hủy', refunded: 'Hoàn' };
 
-const mockResults: RaceResult[] = [
-  {
-    id: 1,
-    raceName: 'Vòng 1 - Sprint Championship',
-    date: '2026-06-15',
-    tournament: 'Giải Vô Địch Quốc Gia 2026',
-    status: 'pending',
-    participants: 12,
-  },
-  {
-    id: 2,
-    raceName: 'Vòng Final - Cúp Mùa Xuân',
-    date: '2026-03-15',
-    tournament: 'Cúp Mùa Xuân',
-    status: 'published',
-    participants: 10,
-  },
-];
-
-const mockParticipants: Participant[] = [
-  {
-    position: 1,
-    horseName: 'Thunder Bolt',
-    jockeyName: 'Nguyễn Văn An',
-    time: '1:12.45',
-    speed: '65.2 km/h',
-    prize: '500,000,000 VNĐ',
-  },
-  {
-    position: 2,
-    horseName: 'Lightning Star',
-    jockeyName: 'Trần Thị Mai',
-    time: '1:12.89',
-    speed: '64.8 km/h',
-    prize: '300,000,000 VNĐ',
-  },
-  {
-    position: 3,
-    horseName: 'Golden Wind',
-    jockeyName: 'Lê Văn Hùng',
-    time: '1:13.23',
-    speed: '64.3 km/h',
-    prize: '200,000,000 VNĐ',
-  },
-];
+const fmtDateTime = (d: string) => d ? new Date(d).toLocaleString('vi-VN') : '-';
 
 export default function ResultsPublishing() {
-  const [results] = useState<RaceResult[]>(mockResults);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [selectedResult, setSelectedResult] = useState<RaceResult | null>(null);
+  const [finishedRaces, setFinishedRaces] = useState<Race[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleViewDetails = (result: RaceResult) => {
-    setSelectedResult(result);
-    setOpenDialog(true);
-  };
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedRace, setSelectedRace] = useState<Race | null>(null);
+  const [raceBets, setRaceBets] = useState<BetSummary[]>([]);
+  const [raceRegs, setRaceRegs] = useState<Registration[]>([]);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [settling, setSettling] = useState(false);
 
-  const getMedalEmoji = (position: number) => {
-    switch (position) {
-      case 1:
-        return '🥇';
-      case 2:
-        return '🥈';
-      case 3:
-        return '🥉';
-      default:
-        return `${position}`;
+  const loadFinishedRaces = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await raceApi.list({ status: 'finished', limit: 50 });
+      setFinishedRaces(res.races);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadFinishedRaces(); }, [loadFinishedRaces]);
+
+  const handleViewDetails = async (race: Race) => {
+    setSelectedRace(race);
+    setDetailOpen(true);
+    setLoadingDetail(true);
+    try {
+      const [betsRes, regsRes] = await Promise.all([
+        apiRequest<{ bets: BetSummary[]; total: number }>(`/bets/race/${race._id}?limit=100`),
+        raceApi.getRegistrations(race._id),
+      ]);
+      setRaceBets(betsRes.bets ?? []);
+      setRaceRegs(regsRes.registrations ?? []);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setLoadingDetail(false);
     }
   };
 
+  const handleSettleBets = async () => {
+    if (!selectedRace) return;
+    setSettling(true);
+    try {
+      const result = await apiRequest<{ settled: number; won: number; lost: number }>(
+        `/bets/race/${selectedRace._id}/settle`,
+        { method: 'POST' },
+      );
+      toast.success(`Đã quyết toán ${result.settled} cược: ${result.won} thắng, ${result.lost} thua`);
+      // Reload bets
+      const betsRes = await apiRequest<{ bets: BetSummary[]; total: number }>(`/bets/race/${selectedRace._id}?limit=100`);
+      setRaceBets(betsRes.bets ?? []);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSettling(false);
+    }
+  };
+
+  const pendingBets = raceBets.filter(b => b.status === 'pending').length;
+  const totalBetAmount = raceBets.reduce((s, b) => s + b.amount, 0);
+  const totalPayout = raceBets.filter(b => b.status === 'won').reduce((s, b) => s + b.payoutAmount, 0);
+
   return (
     <Box>
-      <Typography variant="h5" sx={{ fontWeight: 600, mb: 3 }}>
-        Công bố kết quả thi đấu
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h5" sx={{ fontWeight: 600 }}>Kết Quả & Quyết Toán Cược</Typography>
+        <Button variant="outlined" onClick={loadFinishedRaces} disabled={loading}>Làm mới</Button>
+      </Box>
 
-      <Grid container spacing={3}>
-        {results.map((result) => (
-          <Grid item xs={12} md={6} key={result.id}>
-            <Card sx={{ borderRadius: '12px', border: '1px solid #e0e0e0' }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 2 }}>
-                  <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-                      {result.raceName}
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>
+      ) : finishedRaces.length === 0 ? (
+        <Paper sx={{ p: 6, textAlign: 'center', borderRadius: '12px' }}>
+          <EmojiEvents sx={{ fontSize: 48, color: '#ccc', mb: 2 }} />
+          <Typography color="text.secondary">Chưa có cuộc đua nào kết thúc</Typography>
+        </Paper>
+      ) : (
+        <Grid container spacing={3}>
+          {finishedRaces.map(race => {
+            const tName = typeof race.tournamentId === 'object' ? race.tournamentId.name : '-';
+            return (
+              <Grid size={{ xs: 12, md: 6 }} key={race._id}>
+                <Card sx={{ borderRadius: '12px', border: '1px solid #e0e0e0', height: '100%' }}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 2 }}>
+                      <Box>
+                        <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>{race.name}</Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>{tName}</Typography>
+                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                          <Chip label={race.grade} size="small" variant="outlined" />
+                          <Chip label="Đã kết thúc" size="small" color="success" />
+                        </Box>
+                      </Box>
+                      <EmojiEvents sx={{ fontSize: 40, color: '#ffd700' }} />
+                    </Box>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                      📅 {fmtDateTime(race.scheduledTime)}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                      {result.tournament}
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      💰 Giải thưởng: ${race.purse?.toLocaleString()}
                     </Typography>
-                    <Chip
-                      label={result.status === 'published' ? 'Đã công bố' : 'Chờ công bố'}
-                      size="small"
-                      color={result.status === 'published' ? 'success' : 'warning'}
-                    />
-                  </Box>
-                  <EmojiEvents sx={{ fontSize: 40, color: result.status === 'published' ? '#ffd700' : '#ccc' }} />
-                </Box>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  📅 {result.date}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  👥 {result.participants} ngựa tham gia
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    startIcon={<Visibility />}
-                    onClick={() => handleViewDetails(result)}
-                    sx={{ borderRadius: '8px' }}
-                  >
-                    Xem chi tiết
-                  </Button>
-                  {result.status === 'pending' && (
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      startIcon={<Publish />}
-                      sx={{ borderRadius: '8px' }}
-                    >
-                      Công bố
+                    <Button fullWidth variant="outlined" startIcon={<Visibility />} onClick={() => handleViewDetails(race)} sx={{ borderRadius: '8px' }}>
+                      Xem kết quả & cược
                     </Button>
-                  )}
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+                  </CardContent>
+                </Card>
+              </Grid>
+            );
+          })}
+        </Grid>
+      )}
 
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth>
+      {/* Detail Dialog */}
+      <Dialog open={detailOpen} onClose={() => setDetailOpen(false)} maxWidth="lg" fullWidth>
         <DialogTitle>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">{selectedResult?.raceName}</Typography>
-            {selectedResult?.status === 'pending' && (
-              <Button variant="outlined" startIcon={<Edit />} size="small">
-                Chỉnh sửa
+            <Typography variant="h6">{selectedRace?.name}</Typography>
+            {pendingBets > 0 && (
+              <Button variant="contained" startIcon={settling ? <CircularProgress size={18} /> : <AttachMoney />}
+                onClick={handleSettleBets} disabled={settling}
+                sx={{ background: '#10b981', '&:hover': { background: '#059669' } }}>
+                Quyết Toán {pendingBets} Cược Chờ
               </Button>
             )}
           </Box>
         </DialogTitle>
         <DialogContent>
-          <Paper sx={{ p: 2, mb: 3, bgcolor: '#f5f5f5', borderRadius: '8px' }}>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="caption" color="text.secondary">
-                  Giải đấu
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  {selectedResult?.tournament}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="caption" color="text.secondary">
-                  Ngày thi đấu
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  {selectedResult?.date}
-                </Typography>
-              </Grid>
-            </Grid>
-          </Paper>
-
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 600 }}>Hạng</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Ngựa đua</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Jockey</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Thời gian</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Tốc độ</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Giải thưởng</TableCell>
-                  {selectedResult?.status === 'pending' && (
-                    <TableCell sx={{ fontWeight: 600 }}>Hành động</TableCell>
-                  )}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {mockParticipants.map((participant) => (
-                  <TableRow key={participant.position}>
-                    <TableCell>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        {getMedalEmoji(participant.position)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {participant.horseName}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>{participant.jockeyName}</TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Timer fontSize="small" color="action" />
-                        {selectedResult?.status === 'pending' ? (
-                          <TextField
-                            defaultValue={participant.time}
-                            size="small"
-                            sx={{ width: '100px' }}
-                            InputProps={{
-                              endAdornment: <InputAdornment position="end">s</InputAdornment>,
-                            }}
-                          />
-                        ) : (
-                          participant.time
-                        )}
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Speed fontSize="small" color="action" />
-                        {participant.speed}
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Chip label={participant.prize} size="small" color="primary" />
-                    </TableCell>
-                    {selectedResult?.status === 'pending' && (
-                      <TableCell>
-                        <IconButton size="small">
-                          <Edit fontSize="small" />
-                        </IconButton>
-                      </TableCell>
-                    )}
-                  </TableRow>
+          {loadingDetail ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>
+          ) : (
+            <>
+              {/* Bet Stats */}
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                {[
+                  { label: 'Tổng Cược', value: raceBets.length, color: 'primary.main' },
+                  { label: 'Tổng Tiền Cược', value: `$${totalBetAmount.toLocaleString()}`, color: 'warning.main' },
+                  { label: 'Tiền Đã Trả', value: `$${totalPayout.toLocaleString()}`, color: 'success.main' },
+                  { label: 'Cược Chờ QT', value: pendingBets, color: pendingBets > 0 ? 'error.main' : 'success.main' },
+                ].map((s, i) => (
+                  <Grid size={{ xs: 6, sm: 3 }} key={i}>
+                    <Paper sx={{ p: 2, textAlign: 'center', borderRadius: '8px', bgcolor: '#f9f9f9' }}>
+                      <Typography variant="h5" sx={{ fontWeight: 700, color: s.color }}>{s.value}</Typography>
+                      <Typography variant="caption" color="text.secondary">{s.label}</Typography>
+                    </Paper>
+                  </Grid>
                 ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+              </Grid>
+
+              {pendingBets > 0 && (
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                  Có {pendingBets} cược chưa được quyết toán. Race cần có kết quả (race_results) để tự động quyết toán.
+                </Alert>
+              )}
+
+              {/* Registrations */}
+              {raceRegs.length > 0 && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>Ngựa Tham Gia</Typography>
+                  <TableContainer>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Ngựa</TableCell>
+                          <TableCell>Jockey</TableCell>
+                          <TableCell>Kết quả kiểm tra</TableCell>
+                          <TableCell>Trạng thái</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {raceRegs.map(reg => (
+                          <TableRow key={reg._id}>
+                            <TableCell><Typography variant="body2" sx={{ fontWeight: 500 }}>
+                              {typeof reg.horseId === 'object' ? reg.horseId.name : '-'}
+                            </Typography></TableCell>
+                            <TableCell>{typeof reg.jockeyId === 'object' && reg.jockeyId ? reg.jockeyId.fullName : 'N/A'}</TableCell>
+                            <TableCell>
+                              <Chip label={reg.preCheckResult?.status === 'passed' ? 'Đạt' : reg.preCheckResult?.status === 'failed' ? 'Loại' : 'Chờ'} size="small"
+                                color={reg.preCheckResult?.status === 'passed' ? 'success' : reg.preCheckResult?.status === 'failed' ? 'error' : 'warning'} />
+                            </TableCell>
+                            <TableCell>
+                              <Chip label={reg.status} size="small" color={reg.status === 'active' ? 'success' : 'error'} />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Box>
+              )}
+
+              {/* Bets */}
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>Danh Sách Cược ({raceBets.length})</Typography>
+              {raceBets.length === 0 ? (
+                <Typography color="text.secondary" sx={{ py: 2 }}>Không có cược nào cho cuộc đua này</Typography>
+              ) : (
+                <TableContainer>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Người Cược</TableCell>
+                        <TableCell>Ngựa</TableCell>
+                        <TableCell>Loại</TableCell>
+                        <TableCell>Số Tiền</TableCell>
+                        <TableCell>Hệ Số</TableCell>
+                        <TableCell>Trạng Thái</TableCell>
+                        <TableCell>Tiền Nhận</TableCell>
+                        <TableCell>Thời Gian</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {raceBets.map(bet => (
+                        <TableRow key={bet._id} hover>
+                          <TableCell>
+                            <Typography variant="body2">{typeof bet.spectatorId === 'object' ? bet.spectatorId.fullName : '-'}</Typography>
+                          </TableCell>
+                          <TableCell>{typeof bet.horseId === 'object' ? bet.horseId.name : '-'}</TableCell>
+                          <TableCell><Chip label={BET_TYPE_LABEL[bet.betType] || bet.betType} size="small" variant="outlined" /></TableCell>
+                          <TableCell>${bet.amount.toLocaleString()}</TableCell>
+                          <TableCell>{bet.multiplier}x</TableCell>
+                          <TableCell><Chip label={STATUS_LABEL[bet.status] || bet.status} size="small" color={STATUS_COLOR[bet.status] || 'default'} /></TableCell>
+                          <TableCell>
+                            {bet.status === 'won'
+                              ? <Typography variant="body2" sx={{ fontWeight: 700, color: 'success.main' }}>${bet.payoutAmount?.toLocaleString()}</Typography>
+                              : <Typography variant="body2" color="text.secondary">—</Typography>}
+                          </TableCell>
+                          <TableCell><Typography variant="caption">{fmtDateTime(bet.createdAt)}</Typography></TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </>
+          )}
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          {selectedResult?.status === 'pending' ? (
-            <>
-              <Button onClick={() => setOpenDialog(false)}>Hủy</Button>
-              <Button variant="contained" startIcon={<Publish />} onClick={() => setOpenDialog(false)}>
-                Công bố kết quả
-              </Button>
-            </>
-          ) : (
-            <Button onClick={() => setOpenDialog(false)}>Đóng</Button>
-          )}
+          <Button onClick={() => setDetailOpen(false)}>Đóng</Button>
         </DialogActions>
       </Dialog>
     </Box>

@@ -42,10 +42,13 @@ import {
 import { Button, Chip, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { ProfileDropdown } from '../components/ProfileDropdown';
 import { useAuth } from '../hooks/useAuth';
+import { raceApi, type Race } from '../api/race';
+import { betApi, type Bet, type BetType, BET_MULTIPLIERS } from '../api/bet';
+import { toast } from 'sonner';
 
 export function SpectatorDashboard() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [activeTab, setActiveTab] = useState('tournaments');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [predictionModalOpen, setPredictionModalOpen] = useState(false);
@@ -57,6 +60,53 @@ export function SpectatorDashboard() {
       navigate('/');
     }
   }, [user, navigate]);
+
+  // ── Real races for Schedule tab ──
+  const [liveRacesData, setLiveRacesData] = useState<Race[]>([]);
+  const [scheduleRaces, setScheduleRaces] = useState<Race[]>([]);
+  const [loadingSchedule, setLoadingSchedule] = useState(false);
+  const [selectedRaceRegistrations, setSelectedRaceRegistrations] = useState<any[]>([]);
+
+  // ── Real bets ──
+  const [myBets, setMyBets] = useState<Bet[]>([]);
+  const [loadingBets, setLoadingBets] = useState(false);
+  const [placingBet, setPlacingBet] = useState(false);
+  const [cancellingBetId, setCancellingBetId] = useState<string | null>(null);
+
+  const loadSchedule = async () => {
+    if (!token) return;
+    setLoadingSchedule(true);
+    try {
+      const [openRes, runningRes] = await Promise.all([
+        raceApi.getRaces(token, { status: 'open', limit: 30 }),
+        raceApi.getRaces(token, { status: 'running', limit: 10 }),
+      ]);
+      setScheduleRaces(openRes.races ?? []);
+      setLiveRacesData(runningRes.races ?? []);
+    } catch (err: any) {
+      toast.error(err.message || 'Không thể tải lịch đua');
+    } finally {
+      setLoadingSchedule(false);
+    }
+  };
+
+  const loadMyBets = async () => {
+    if (!token) return;
+    setLoadingBets(true);
+    try {
+      const res = await betApi.getMyBets(token, { limit: 50 });
+      setMyBets(res.bets ?? []);
+    } catch (err: any) {
+      toast.error(err.message || 'Không thể tải lịch sử cược');
+    } finally {
+      setLoadingBets(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'schedule') loadSchedule();
+    if (activeTab === 'predictions') loadMyBets();
+  }, [activeTab, token]);
   const [depositMethod, setDepositMethod] = useState('bank');
   const [depositAmountInput, setDepositAmountInput] = useState('');
   const [depositStep, setDepositStep] = useState(1);
@@ -312,9 +362,21 @@ export function SpectatorDashboard() {
     { label: 'Tổng Tiền Thắng', value: '+$1,350', icon: Gift, color: 'from-purple-500 to-purple-600' }
   ];
 
-  const handleOpenPrediction = (race: any) => {
+  const handleOpenPrediction = async (race: any) => {
     setSelectedRace(race);
+    setSelectedHorse('');
+    setBetAmount('');
+    setBetType('win');
+    setSelectedRaceRegistrations([]);
     setPredictionModalOpen(true);
+    if (token) {
+      try {
+        const res = await raceApi.getRaceHorses(token, race._id);
+        setSelectedRaceRegistrations(res.horses ?? []);
+      } catch {
+        // silently ignore
+      }
+    }
   };
 
   const handleOpenTournamentDetails = (tournament: any) => {
@@ -322,14 +384,43 @@ export function SpectatorDashboard() {
     setTournamentDetailsModalOpen(true);
   };
 
-  const handleSubmitPrediction = () => {
-    // Validation logic would go here
-    console.log('Prediction submitted:', { race: selectedRace, betType, selectedHorse, betAmount });
-    setPredictionModalOpen(false);
-    // Reset form
-    setBetType('win');
-    setSelectedHorse('');
-    setBetAmount('');
+  const handleSubmitPrediction = async () => {
+    if (!token || !selectedRace || !selectedHorse || !betAmount) return;
+    const amount = Number(betAmount);
+    if (isNaN(amount) || amount < 1) { toast.error('Số tiền cược tối thiểu là 1'); return; }
+    setPlacingBet(true);
+    try {
+      await betApi.place(token, {
+        raceId: selectedRace._id,
+        horseId: selectedHorse,
+        betType: betType as BetType,
+        amount,
+      });
+      toast.success(`Đặt cược thành công! Tiềm năng thắng: $${Math.floor(amount * BET_MULTIPLIERS[betType as BetType])}`);
+      setPredictionModalOpen(false);
+      setBetType('win');
+      setSelectedHorse('');
+      setBetAmount('');
+      if (activeTab === 'predictions') loadMyBets();
+    } catch (err: any) {
+      toast.error(err.message || 'Đặt cược thất bại');
+    } finally {
+      setPlacingBet(false);
+    }
+  };
+
+  const handleCancelBet = async (betId: string) => {
+    if (!token || !confirm('Hủy cược? Bạn sẽ được hoàn 100% tiền.')) return;
+    setCancellingBetId(betId);
+    try {
+      await betApi.cancel(token, betId);
+      toast.success('Đã hủy cược, tiền đã được hoàn trả');
+      loadMyBets();
+    } catch (err: any) {
+      toast.error(err.message || 'Hủy cược thất bại');
+    } finally {
+      setCancellingBetId(null);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -652,106 +743,82 @@ export function SpectatorDashboard() {
         {activeTab === 'schedule' && (
           <div>
             <div className="mb-6">
-              <h2 className="text-3xl font-bold text-white mb-2">Lịch Trình Đua</h2>
-              <p className="text-slate-400">Các cuộc đua sắp tới với đếm ngược và tùy chọn đặt cược</p>
+              <h2 className="text-3xl font-bold text-white mb-2">Lịch Trình Đua & Đặt Cược</h2>
+              <p className="text-slate-400">Các cuộc đua đang mở — đặt cược trước khi hết hạn</p>
             </div>
 
-            <div className="space-y-4">
-              {upcomingRaces.map(race => (
-                <div key={race.id} className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-6 hover:border-[#FFDE42]/30 transition-all">
-                  <div className="flex flex-col lg:flex-row gap-6">
-                    <div className="flex-1">
-                      <div className="flex flex-wrap items-center gap-3 mb-4">
-                        <Trophy className="w-5 h-5 text-[#FFDE42]" />
-                        <h3 className="text-xl font-bold text-white">{race.raceName}</h3>
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(race.status)}`}>
-                          {race.status}
-                        </span>
-                        {race.predicted && (
-                          <Chip
-                            label="Đã Dự Đoán"
-                            size="small"
-                            icon={<CheckCircle className="w-4 h-4" />}
-                            sx={{ backgroundColor: '#FFDE42', color: '#1B0C0C' }}
-                          />
-                        )}
-                      </div>
+            {loadingSchedule ? (
+              <div className="flex justify-center py-16">
+                <div className="w-8 h-8 border-2 border-[#FFDE42] border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : scheduleRaces.length === 0 ? (
+              <div className="bg-white/5 border border-white/5 rounded-2xl p-12 text-center">
+                <Trophy className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                <p className="text-slate-400">Hiện không có cuộc đua nào đang mở đặt cược</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {scheduleRaces.map(race => {
+                  const bettingCutoff = new Date(new Date(race.scheduledTime).getTime() - 60 * 60 * 1000);
+                  const cutoffPassed = new Date() > bettingCutoff;
+                  const myBetOnRace = myBets.some(b => (b.raceId as any)?._id === race._id && b.status === 'pending');
+                  const canBet = race.status === 'open' && !cutoffPassed;
 
-                      <p className="text-sm text-slate-400 mb-4">{race.tournament}</p>
-
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
-                        <div>
-                          <div className="text-slate-500 text-xs mb-1">Ngày & Giờ</div>
-                          <div className="text-white font-medium">{race.date} {race.time}</div>
-                        </div>
-                        <div>
-                          <div className="text-slate-500 text-xs mb-1">Cấp Độ</div>
-                          <div className="text-[#FFDE42] font-medium">{race.grade}</div>
-                        </div>
-                        <div>
-                          <div className="text-slate-500 text-xs mb-1">Cự Ly</div>
-                          <div className="text-white font-medium">{race.distance}</div>
-                        </div>
-                        <div>
-                          <div className="text-slate-500 text-xs mb-1">Trọng Tài</div>
-                          <div className="text-white font-medium">{race.referee}</div>
-                        </div>
-                      </div>
-
-                      <div className="bg-white/5 rounded-xl p-4">
-                        <div className="text-xs text-slate-400 mb-2">Ngựa Tham Gia</div>
-                        <div className="flex flex-wrap gap-2">
-                          {race.horses.map((horse) => (
-                            <div key={horse.id} className="bg-slate-800/50 px-3 py-1.5 rounded-lg text-xs">
-                              <span className="text-white font-medium">{horse.name}</span>
-                              <span className="text-slate-400 ml-2">({horse.jockey})</span>
-                              <span className="text-[#FFDE42] ml-2 font-semibold">{horse.odds}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col justify-center gap-3 lg:w-48">
-                      {race.status === 'Đang Mở' && (
-                        <>
-                          <div className="bg-[#FFDE42]/10 border border-[#FFDE42]/30 rounded-xl p-3 text-center">
-                            <Clock className="w-5 h-5 text-[#FFDE42] mx-auto mb-1" />
-                            <div className="text-xs text-slate-400">Đếm Ngược</div>
-                            <div className="text-lg font-bold text-white">00:45:23</div>
+                  return (
+                    <div key={race._id} className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-6 hover:border-[#FFDE42]/30 transition-all">
+                      <div className="flex flex-col lg:flex-row gap-6">
+                        <div className="flex-1">
+                          <div className="flex flex-wrap items-center gap-3 mb-4">
+                            <Trophy className="w-5 h-5 text-[#FFDE42]" />
+                            <h3 className="text-xl font-bold text-white">{race.name}</h3>
+                            <Chip label={race.grade} size="small" sx={{ bgcolor: 'rgba(245,158,11,0.2)', color: '#fbbf24', border: '1px solid #f59e0b', fontWeight: 'bold', fontSize: '0.7rem' }} />
+                            {myBetOnRace && (
+                              <Chip label="✓ Đã Đặt Cược" size="small" sx={{ bgcolor: '#FFDE42', color: '#1B0C0C', fontWeight: 'bold', fontSize: '0.7rem' }} />
+                            )}
                           </div>
-                          <Button
-                            fullWidth
-                            variant="contained"
-                            startIcon={<Target />}
-                            disabled={race.predicted}
-                            onClick={() => handleOpenPrediction(race)}
-                            sx={{
-                              background: race.predicted ? 'rgba(100,116,139,0.3)' : 'linear-gradient(135deg, #FFDE42 0%, #E6C21E 100%)',
-                              borderRadius: '12px',
-                              py: 1.5,
-                              fontWeight: 600,
-                              '&:hover': {
-                                background: race.predicted ? 'rgba(100,116,139,0.3)' : 'linear-gradient(135deg, #FFDE42 0%, #C29D13 100%)'
-                              }
-                            }}
-                          >
-                            {race.predicted ? 'Đã Dự Đoán' : 'Đặt Cược'}
-                          </Button>
-                        </>
-                      )}
-                      {race.status === 'Kiểm Tra Trước' && (
-                        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 text-center">
-                          <AlertCircle className="w-6 h-6 text-amber-400 mx-auto mb-2" />
-                          <div className="text-xs text-amber-400 font-medium">Đã Đóng Cược</div>
-                          <div className="text-xs text-slate-400 mt-1">Đang kiểm tra trước đua</div>
+
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
+                            <div>
+                              <div className="text-slate-500 text-xs mb-1">Thời Gian Đua</div>
+                              <div className="text-white font-medium">{new Date(race.scheduledTime).toLocaleString('vi-VN')}</div>
+                            </div>
+                            <div>
+                              <div className="text-slate-500 text-xs mb-1">Cự Ly</div>
+                              <div className="text-white font-medium">{race.distance}m</div>
+                            </div>
+                            <div>
+                              <div className="text-slate-500 text-xs mb-1">Giải Thưởng</div>
+                              <div className="text-[#FFDE42] font-semibold">${race.purse?.toLocaleString()}</div>
+                            </div>
+                            <div>
+                              <div className="text-slate-500 text-xs mb-1">Hạn Đặt Cược</div>
+                              <div className={`font-medium text-sm ${cutoffPassed ? 'text-red-400' : 'text-emerald-400'}`}>
+                                {bettingCutoff.toLocaleString('vi-VN')}
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                      )}
+
+                        <div className="flex flex-col justify-center gap-3 lg:w-44">
+                          {canBet ? (
+                            <Button fullWidth variant="contained" startIcon={<Target />}
+                              onClick={() => handleOpenPrediction(race)}
+                              sx={{ background: 'linear-gradient(135deg, #FFDE42 0%, #E6C21E 100%)', color: '#1B0C0C', borderRadius: '12px', py: 1.5, fontWeight: 700, textTransform: 'none', '&:hover': { background: 'linear-gradient(135deg, #FFDE42 0%, #C29D13 100%)' } }}>
+                              Đặt Cược
+                            </Button>
+                          ) : (
+                            <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-center">
+                              <AlertCircle className="w-5 h-5 text-amber-400 mx-auto mb-1" />
+                              <div className="text-xs text-amber-400 font-medium">Đã Đóng Cược</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -859,78 +926,102 @@ export function SpectatorDashboard() {
           <div>
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
               <div>
-                <h2 className="text-3xl font-bold text-white mb-2">Dự Đoán Của Tôi</h2>
-                <p className="text-slate-400">Theo dõi lịch sử đặt cược và kết quả của bạn</p>
+                <h2 className="text-3xl font-bold text-white mb-2">Lịch Sử Đặt Cược</h2>
+                <p className="text-slate-400">Theo dõi các cược của bạn</p>
               </div>
-              <div className="flex gap-6">
-                <div className="text-right">
-                  <div className="text-sm text-slate-400">Tỷ Lệ Chính Xác</div>
-                  <div className="text-3xl font-bold text-[#FFDE42]">{accuracyRate}%</div>
+              {myBets.length > 0 && (
+                <div className="flex gap-6">
+                  <div className="text-right">
+                    <div className="text-sm text-slate-400">Thắng / Tổng</div>
+                    <div className="text-2xl font-bold text-[#FFDE42]">{myBets.filter(b => b.status === 'won').length} / {myBets.length}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm text-slate-400">Tổng Tiền Thắng</div>
+                    <div className="text-2xl font-bold text-[#FFDE42]">+${myBets.reduce((s, b) => s + (b.payoutAmount || 0), 0).toLocaleString()}</div>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm text-slate-400">Tổng Tiền Thắng</div>
-                  <div className="text-3xl font-bold text-[#FFDE42]">+${myPredictions.reduce((sum, p) => sum + p.reward, 0)}</div>
-                </div>
-              </div>
+              )}
             </div>
 
-            <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-slate-900/50">
-                    <tr>
-                      <th className="text-left px-6 py-4 text-sm font-semibold text-slate-300">Cuộc Đua</th>
-                      <th className="text-left px-6 py-4 text-sm font-semibold text-slate-300">Ngày</th>
-                      <th className="text-left px-6 py-4 text-sm font-semibold text-slate-300">Loại</th>
-                      <th className="text-left px-6 py-4 text-sm font-semibold text-slate-300">Dự Đoán</th>
-                      <th className="text-left px-6 py-4 text-sm font-semibold text-slate-300">Kết Quả</th>
-                      <th className="text-left px-6 py-4 text-sm font-semibold text-slate-300">Số Tiền</th>
-                      <th className="text-left px-6 py-4 text-sm font-semibold text-slate-300">Trạng Thái</th>
-                      <th className="text-left px-6 py-4 text-sm font-semibold text-slate-300">Phần Thưởng</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {myPredictions.map((prediction) => (
-                      <tr key={prediction.id} className="border-t border-white/5 hover:bg-white/5 transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="text-white font-medium">{prediction.race}</div>
-                          <div className="text-xs text-slate-400">{prediction.tournament}</div>
-                        </td>
-                        <td className="px-6 py-4 text-slate-300">{prediction.date}</td>
-                        <td className="px-6 py-4">
-                          <span className="px-2 py-1 bg-blue-500/10 text-blue-400 rounded text-xs font-medium">
-                            {prediction.betType}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-blue-400 font-medium">{prediction.predicted}</td>
-                        <td className="px-6 py-4 text-amber-400 font-medium">{prediction.actual}</td>
-                        <td className="px-6 py-4 text-white">${prediction.amount}</td>
-                        <td className="px-6 py-4">
-                          <Chip
-                            label={prediction.status === 'won' ? 'Thắng' : 'Thua'}
-                            size="small"
-                            icon={prediction.status === 'won' ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-                            sx={{
-                              backgroundColor: prediction.status === 'won' ? '#FFDE42' : '#ef4444',
-                              color: 'white',
-                              fontWeight: 600
-                            }}
-                          />
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`font-bold ${prediction.status === 'won' ? 'text-[#FFDE42]' : 'text-slate-500'}`}>
-                            {prediction.status === 'won' ? `+$${prediction.reward}` : '-'}
-                          </span>
-                          {prediction.status === 'won' && (
-                            <div className="text-xs text-slate-400">{prediction.multiplier}</div>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            {loadingBets ? (
+              <div className="flex justify-center py-16">
+                <div className="w-8 h-8 border-2 border-[#FFDE42] border-t-transparent rounded-full animate-spin" />
               </div>
-            </div>
+            ) : myBets.length === 0 ? (
+              <div className="bg-white/5 border border-white/5 rounded-2xl p-12 text-center">
+                <Target className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                <p className="text-slate-400">Bạn chưa đặt cược nào. Vào tab Lịch Trình để đặt cược!</p>
+              </div>
+            ) : (
+              <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-slate-900/50">
+                      <tr>
+                        <th className="text-left px-5 py-4 text-sm font-semibold text-slate-300">Cuộc Đua</th>
+                        <th className="text-left px-5 py-4 text-sm font-semibold text-slate-300">Ngày</th>
+                        <th className="text-left px-5 py-4 text-sm font-semibold text-slate-300">Loại Cược</th>
+                        <th className="text-left px-5 py-4 text-sm font-semibold text-slate-300">Ngựa</th>
+                        <th className="text-left px-5 py-4 text-sm font-semibold text-slate-300">Tiền Cược</th>
+                        <th className="text-left px-5 py-4 text-sm font-semibold text-slate-300">Hệ Số</th>
+                        <th className="text-left px-5 py-4 text-sm font-semibold text-slate-300">Trạng Thái</th>
+                        <th className="text-left px-5 py-4 text-sm font-semibold text-slate-300">Kết Quả</th>
+                        <th className="px-5 py-4 text-sm font-semibold text-slate-300"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {myBets.map(bet => {
+                        const statusMap: Record<string, { label: string; color: string }> = {
+                          pending: { label: 'Chờ kết quả', color: 'bg-amber-500/20 text-amber-300' },
+                          won: { label: 'Thắng', color: 'bg-emerald-500/20 text-emerald-300' },
+                          lost: { label: 'Thua', color: 'bg-red-500/20 text-red-400' },
+                          cancelled: { label: 'Đã hủy', color: 'bg-slate-500/20 text-slate-400' },
+                          refunded: { label: 'Đã hoàn', color: 'bg-blue-500/20 text-blue-400' },
+                        };
+                        const st = statusMap[bet.status] || statusMap.pending;
+                        const betTypeLabel: Record<string, string> = { win: 'Thắng (1st)', place: 'Top 2', show: 'Top 3' };
+                        const race = bet.raceId as any;
+                        const horse = bet.horseId as any;
+                        return (
+                          <tr key={bet._id} className="border-t border-white/5 hover:bg-white/5 transition-colors">
+                            <td className="px-5 py-4">
+                              <div className="text-white font-medium">{race?.name || '-'}</div>
+                              <div className="text-xs text-slate-400">{race?.grade}</div>
+                            </td>
+                            <td className="px-5 py-4 text-slate-300 text-sm">{new Date(bet.createdAt).toLocaleDateString('vi-VN')}</td>
+                            <td className="px-5 py-4">
+                              <span className="px-2 py-1 bg-blue-500/10 text-blue-400 rounded text-xs font-medium">{betTypeLabel[bet.betType]}</span>
+                            </td>
+                            <td className="px-5 py-4 text-slate-200 font-medium">{horse?.name || '-'}</td>
+                            <td className="px-5 py-4 text-white">${bet.amount.toLocaleString()}</td>
+                            <td className="px-5 py-4 text-[#FFDE42] font-semibold">{bet.multiplier}x</td>
+                            <td className="px-5 py-4">
+                              <span className={`px-2 py-1 rounded text-xs font-semibold ${st.color}`}>{st.label}</span>
+                            </td>
+                            <td className="px-5 py-4">
+                              <span className={`font-bold ${bet.status === 'won' ? 'text-[#FFDE42]' : 'text-slate-500'}`}>
+                                {bet.status === 'won' ? `+$${bet.payoutAmount?.toLocaleString()}` : '-'}
+                              </span>
+                            </td>
+                            <td className="px-5 py-4">
+                              {bet.status === 'pending' && (
+                                <button
+                                  disabled={cancellingBetId === bet._id}
+                                  onClick={() => handleCancelBet(bet._id)}
+                                  className="text-xs text-red-400 hover:text-red-300 border border-red-500/30 px-2 py-1 rounded transition-colors disabled:opacity-50"
+                                >
+                                  {cancellingBetId === bet._id ? '...' : 'Hủy'}
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1245,96 +1336,63 @@ export function SpectatorDashboard() {
         <DialogTitle sx={{ color: 'white', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="flex items-center gap-3">
             <Target className="w-6 h-6 text-[#FFDE42]" />
-            <span>Đặt Dự Đoán Của Bạn</span>
+            <span>Đặt Cược</span>
           </div>
         </DialogTitle>
         <DialogContent sx={{ mt: 3 }}>
           {selectedRace && (
             <div>
               <div className="bg-white/5 rounded-xl p-4 mb-6">
-                <h3 className="text-white font-bold mb-2">{selectedRace.raceName}</h3>
-                <p className="text-sm text-slate-400">{selectedRace.tournament}</p>
-                <div className="flex gap-4 mt-2 text-sm">
-                  <span className="text-slate-400">Ngày: <span className="text-white">{selectedRace.date} {selectedRace.time}</span></span>
-                  <span className="text-slate-400">Cự Ly: <span className="text-white">{selectedRace.distance}</span></span>
+                <h3 className="text-white font-bold mb-1">{selectedRace.name}</h3>
+                <div className="flex flex-wrap gap-4 mt-2 text-sm">
+                  <span className="text-slate-400">Hạng: <span className="text-[#FFDE42] font-medium">{selectedRace.grade}</span></span>
+                  <span className="text-slate-400">Cự Ly: <span className="text-white">{selectedRace.distance}m</span></span>
+                  <span className="text-slate-400">Giải Thưởng: <span className="text-[#FFDE42] font-medium">${selectedRace.purse?.toLocaleString()}</span></span>
                 </div>
               </div>
 
               <div className="space-y-4">
                 <FormControl fullWidth>
                   <InputLabel sx={{ color: '#94a3b8' }}>Loại Cược</InputLabel>
-                  <Select
-                    value={betType}
-                    onChange={(e) => setBetType(e.target.value)}
-                    label="Loại Cược"
-                    sx={{
-                      color: 'white',
-                      '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.1)' },
-                      '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.2)' },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#FFDE42' },
-                      '.MuiSvgIcon-root': { color: '#94a3b8' }
-                    }}
-                  >
-                    <MenuItem key="win" value="win">Thắng (Top 1) - hệ số 3.0x</MenuItem>
-                    <MenuItem key="place" value="place">Về Đích Top 3 (Top 1-2) - hệ số 2.0x</MenuItem>
-                    <MenuItem key="show" value="show">Về Đích Top 5 (Top 1-3) - hệ số 1.5x</MenuItem>
+                  <Select value={betType} onChange={(e) => setBetType(e.target.value)} label="Loại Cược"
+                    sx={{ color: 'white', '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.1)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.2)' }, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#FFDE42' }, '.MuiSvgIcon-root': { color: '#94a3b8' } }}>
+                    <MenuItem value="win">Thắng — ngựa về 1st (hệ số 3.0x)</MenuItem>
+                    <MenuItem value="place">Place — ngựa về Top 2 (hệ số 2.0x)</MenuItem>
+                    <MenuItem value="show">Show — ngựa về Top 3 (hệ số 1.5x)</MenuItem>
                   </Select>
                 </FormControl>
 
                 <FormControl fullWidth>
-                  <InputLabel sx={{ color: '#94a3b8' }}>Chọn Ngựa</InputLabel>
-                  <Select
-                    value={selectedHorse}
-                    onChange={(e) => setSelectedHorse(e.target.value)}
-                    label="Chọn Ngựa"
-                    sx={{
-                      color: 'white',
-                      '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.1)' },
-                      '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.2)' },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#FFDE42' },
-                      '.MuiSvgIcon-root': { color: '#94a3b8' }
-                    }}
-                  >
-                    {selectedRace.horses.map((horse: any) => (
-                      <MenuItem key={horse.id} value={horse.name}>
-                        {horse.name} ({horse.jockey}) - {horse.odds}
-                      </MenuItem>
-                    ))}
+                  <InputLabel sx={{ color: '#94a3b8' }}>Chọn Ngựa *</InputLabel>
+                  <Select value={selectedHorse} onChange={(e) => setSelectedHorse(e.target.value)} label="Chọn Ngựa *"
+                    sx={{ color: 'white', '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.1)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.2)' }, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#FFDE42' }, '.MuiSvgIcon-root': { color: '#94a3b8' } }}>
+                    {selectedRaceRegistrations.length > 0
+                      ? selectedRaceRegistrations.map((h: any) => (
+                          <MenuItem key={h.horseId} value={h.horseId}>
+                            {h.horseName} ({h.currentGrade} · {h.totalPoints} điểm){h.jockeyName ? ` — ${h.jockeyName}` : ''}
+                          </MenuItem>
+                        ))
+                      : <MenuItem disabled value="">Đang tải danh sách ngựa...</MenuItem>
+                    }
                   </Select>
                 </FormControl>
 
-                <TextField
-                  fullWidth
-                  label="Số Tiền Cược (xu)"
-                  type="number"
-                  value={betAmount}
-                  onChange={(e) => setBetAmount(e.target.value)}
-                  placeholder="Nhập số tiền"
-                  sx={{
-                    '& .MuiInputLabel-root': { color: '#94a3b8' },
-                    '& .MuiOutlinedInput-root': {
-                      color: 'white',
-                      '& fieldset': { borderColor: 'rgba(255,255,255,0.1)' },
-                      '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
-                      '&.Mui-focused fieldset': { borderColor: '#10b981' }
-                    }
-                  }}
-                />
+                <TextField fullWidth label="Số Tiền Cược ($) *" type="number" value={betAmount}
+                  onChange={(e) => setBetAmount(e.target.value)} placeholder="Nhập số tiền (tối thiểu 1)"
+                  sx={{ '& .MuiInputLabel-root': { color: '#94a3b8' }, '& .MuiOutlinedInput-root': { color: 'white', '& fieldset': { borderColor: 'rgba(255,255,255,0.1)' }, '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.2)' }, '&.Mui-focused fieldset': { borderColor: '#10b981' } } }} />
 
                 <div className="bg-[#FFDE42]/10 border border-[#FFDE42]/30 rounded-xl p-4">
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-slate-400">Phần Thưởng Tiềm Năng:</span>
-                    <span className="text-[#FFDE42] font-bold">
-                      {betAmount && !isNaN(Number(betAmount))
-                        ? `$${(Number(betAmount) * (betType === 'win' ? 3 : betType === 'place' ? 2 : 1.5)).toFixed(0)}`
+                    <span className="text-slate-400">Tiềm năng thắng:</span>
+                    <span className="text-[#FFDE42] font-bold text-lg">
+                      {betAmount && !isNaN(Number(betAmount)) && Number(betAmount) > 0
+                        ? `$${Math.floor(Number(betAmount) * BET_MULTIPLIERS[betType as BetType]).toLocaleString()}`
                         : '$0'}
                     </span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-400">Số Dư Sau Khi Cược:</span>
-                    <span className="text-white font-medium">
-                      ${betAmount && !isNaN(Number(betAmount)) ? (1350 - Number(betAmount)).toFixed(0) : '1,350'}
-                    </span>
+                  <div className="flex justify-between text-xs text-slate-500">
+                    <span>Hệ số: {BET_MULTIPLIERS[betType as BetType]}x</span>
+                    <span>Phí sẽ trừ ngay từ ví</span>
                   </div>
                 </div>
               </div>
@@ -1342,22 +1400,11 @@ export function SpectatorDashboard() {
           )}
         </DialogContent>
         <DialogActions sx={{ p: 3, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-          <Button
-            onClick={() => setPredictionModalOpen(false)}
-            sx={{ color: '#94a3b8' }}
-          >
-            Hủy
-          </Button>
-          <Button
-            onClick={handleSubmitPrediction}
-            variant="contained"
-            disabled={!selectedHorse || !betAmount}
-            sx={{
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              '&:hover': { background: 'linear-gradient(135deg, #FFDE42 0%, #4C5C2D 100%)' }
-            }}
-          >
-            Xác Nhận Cược
+          <Button onClick={() => setPredictionModalOpen(false)} sx={{ color: '#94a3b8' }}>Hủy</Button>
+          <Button onClick={handleSubmitPrediction} variant="contained"
+            disabled={!selectedHorse || !betAmount || placingBet}
+            sx={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', textTransform: 'none', fontWeight: 700, '&:hover': { background: 'linear-gradient(135deg, #FFDE42 0%, #b8960a 100%)' } }}>
+            {placingBet ? '...' : 'Xác Nhận Đặt Cược'}
           </Button>
         </DialogActions>
       </Dialog>

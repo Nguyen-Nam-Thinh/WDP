@@ -67,4 +67,29 @@ export const raceApi = {
     if (!res.ok) throw new Error(json.message || "Failed to fetch registrations");
     return json.data;
   },
+
+  // Public horse list for betting (spectator-safe — no owner/fee data)
+  getRaceHorses: async (token: string, raceId: string): Promise<{
+    race: Race;
+    horses: Array<{
+      registrationId: string;
+      horseId: string;
+      horseName: string;
+      breed?: string;
+      gender?: string;
+      currentGrade: string;
+      totalPoints: number;
+      winRate: number;
+      imageUrl?: string;
+      jockeyId?: string;
+      jockeyName?: string;
+      jockeyExperience?: number;
+    }>;
+    total: number;
+  }> => {
+    const res = await fetch(`${API_URL}/races/${raceId}/horses`, { headers: authHeader(token) });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || "Failed to fetch horses");
+    return json.data;
+  },
 };

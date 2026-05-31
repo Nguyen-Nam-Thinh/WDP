@@ -84,7 +84,16 @@ async function getRaceRegistrations(req, res, next) {
   }
 }
 
+async function getRaceHorses(req, res, next) {
+  try {
+    const result = await raceService.getRaceHorses(req.params.id);
+    sendSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   createRace, getRaces, getRaceById, updateRace,
-  cancelRace, assignReferee, updateRaceStatus, getRaceRegistrations,
+  cancelRace, assignReferee, updateRaceStatus, getRaceRegistrations, getRaceHorses,
 };
