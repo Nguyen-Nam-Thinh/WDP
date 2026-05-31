@@ -1,436 +1,302 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
-  Box,
-  Paper,
-  Grid,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Chip,
-  Avatar,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Checkbox,
-  FormControlLabel,
-  Tabs,
-  Tab,
+  Box, Paper, Grid, Card, CardContent, Typography, Button, Chip, Avatar,
+  List, ListItem, ListItemAvatar, ListItemText, IconButton, Dialog,
+  DialogTitle, DialogContent, DialogActions, Tabs, Tab, CircularProgress, FormControl,
+  InputLabel, Select, MenuItem,
 } from '@mui/material';
-import { PersonAdd, Delete, Assignment, CheckCircle } from '@mui/icons-material';
-
-interface Referee {
-  id: number;
-  name: string;
-  experience: number;
-  certificationLevel: string;
-  assignedRaces: number;
-  status: 'available' | 'assigned' | 'unavailable';
-}
-
-interface Race {
-  id: number;
-  name: string;
-  date: string;
-  time: string;
-  tournament: string;
-  assignedReferees: number[];
-  requiredReferees: number;
-}
-
-const mockReferees: Referee[] = [
-  {
-    id: 1,
-    name: 'Phạm Văn A',
-    experience: 15,
-    certificationLevel: 'Quốc tế',
-    assignedRaces: 2,
-    status: 'available',
-  },
-  {
-    id: 2,
-    name: 'Nguyễn Thị B',
-    experience: 10,
-    certificationLevel: 'Quốc gia',
-    assignedRaces: 3,
-    status: 'assigned',
-  },
-  {
-    id: 3,
-    name: 'Trần Văn C',
-    experience: 8,
-    certificationLevel: 'Quốc gia',
-    assignedRaces: 1,
-    status: 'available',
-  },
-  {
-    id: 4,
-    name: 'Lê Thị D',
-    experience: 12,
-    certificationLevel: 'Quốc tế',
-    assignedRaces: 0,
-    status: 'available',
-  },
-];
-
-const mockRaces: Race[] = [
-  {
-    id: 1,
-    name: 'Vòng 1 - Sprint Championship',
-    date: '2026-06-15',
-    time: '09:00',
-    tournament: 'Giải Vô Địch Quốc Gia 2026',
-    assignedReferees: [1, 2],
-    requiredReferees: 3,
-  },
-  {
-    id: 2,
-    name: 'Vòng 2 - Classic Race',
-    date: '2026-06-16',
-    time: '14:00',
-    tournament: 'Giải Vô Địch Quốc Gia 2026',
-    assignedReferees: [2],
-    requiredReferees: 3,
-  },
-];
+import { PersonAdd, Assignment, CheckCircle, Refresh } from '@mui/icons-material';
+import { toast } from 'sonner';
+import { raceApi, type Race } from '../../api/race';
+import { refereeAdminApi, type AdminUser } from '../../api/user';
 
 export default function RefereeAssignment() {
-  const [referees] = useState<Referee[]>(mockReferees);
-  const [races] = useState<Race[]>(mockRaces);
-  const [selectedRace, setSelectedRace] = useState<Race | null>(races[0]);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [tabValue, setTabValue] = useState(0);
+  const [tab, setTab] = useState(0);
 
-  const getRefereeStatusColor = (status: string): "success" | "warning" | "error" | "default" => {
-    switch (status) {
-      case 'available':
-        return 'success';
-      case 'assigned':
-        return 'warning';
-      case 'unavailable':
-        return 'error';
-      default:
-        return 'default';
+  // Race list
+  const [races, setRaces] = useState<Race[]>([]);
+  const [loadingRaces, setLoadingRaces] = useState(true);
+  const [selectedRace, setSelectedRace] = useState<Race | null>(null);
+
+  // Referees list
+  const [referees, setReferees] = useState<AdminUser[]>([]);
+  const [loadingRefs, setLoadingRefs] = useState(true);
+
+  // Assign dialog
+  const [assignDialog, setAssignDialog] = useState(false);
+  const [selectedRefId, setSelectedRefId] = useState('');
+  const [assigning, setAssigning] = useState(false);
+
+  const loadRaces = useCallback(async () => {
+    setLoadingRaces(true);
+    try {
+      const res = await raceApi.list({ limit: 100 });
+      const active = res.races.filter(r => !['finished', 'cancelled'].includes(r.status));
+      setRaces(active);
+      if (!selectedRace && active.length) setSelectedRace(active[0]);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setLoadingRaces(false);
+    }
+  }, []);
+
+  const loadReferees = useCallback(async () => {
+    setLoadingRefs(true);
+    try {
+      const res = await refereeAdminApi.listReferees();
+      setReferees(res.users);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setLoadingRefs(false);
+    }
+  }, []);
+
+  useEffect(() => { loadRaces(); loadReferees(); }, [loadRaces, loadReferees]);
+
+  const handleAssign = async () => {
+    if (!selectedRace || !selectedRefId) return;
+    setAssigning(true);
+    try {
+      const updated = await raceApi.assignReferee(selectedRace._id, selectedRefId);
+      toast.success('Phân công trọng tài thành công');
+      setSelectedRace(updated);
+      setAssignDialog(false);
+      setSelectedRefId('');
+      loadRaces();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setAssigning(false);
     }
   };
 
-  const getRefereeStatusLabel = (status: string) => {
-    switch (status) {
-      case 'available':
-        return 'Sẵn sàng';
-      case 'assigned':
-        return 'Đã phân công';
-      case 'unavailable':
-        return 'Không khả dụng';
-      default:
-        return status;
-    }
-  };
+  const assignedRef = selectedRace && typeof selectedRace.refereeId === 'object' && selectedRace.refereeId
+    ? referees.find(r => r._id === (selectedRace.refereeId as any)?._id) || selectedRace.refereeId
+    : null;
 
-  const getAssignedReferees = (raceId: number) => {
-    const race = races.find((r) => r.id === raceId);
-    if (!race) return [];
-    return referees.filter((ref) => race.assignedReferees.includes(ref.id));
-  };
+  const fmtDateTime = (d: string) => d ? new Date(d).toLocaleString('vi-VN') : '-';
 
   return (
     <Box>
-      <Typography variant="h5" sx={{ fontWeight: 600, mb: 3 }}>
-        Phân công trọng tài
-      </Typography>
-
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)}>
-          <Tab label="Phân công theo cuộc đua" />
-          <Tab label="Tổng quan trạng thái trọng tài" />
-        </Tabs>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h5" sx={{ fontWeight: 600 }}>Phân công trọng tài</Typography>
+        <Button startIcon={<Refresh />} onClick={() => { loadRaces(); loadReferees(); }} variant="outlined">Làm mới</Button>
       </Box>
 
-      {tabValue === 0 && (
-        <>
-          <Grid container spacing={3}>
-        <Grid item xs={12} md={5}>
-          <Paper sx={{ p: 3, borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-              Danh sách cuộc đua
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {races.map((race) => (
-                <Card
-                  key={race.id}
-                  sx={{
-                    cursor: 'pointer',
-                    border: selectedRace?.id === race.id ? '2px solid #2196f3' : '1px solid #e0e0e0',
-                    bgcolor: selectedRace?.id === race.id ? '#e3f2fd' : 'white',
-                  }}
-                  onClick={() => setSelectedRace(race)}
-                >
-                  <CardContent>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-                      {race.name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                      {race.tournament}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                      📅 {race.date} - {race.time}
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      <Chip
-                        label={`${race.assignedReferees.length}/${race.requiredReferees} trọng tài`}
-                        size="small"
-                        color={
-                          race.assignedReferees.length >= race.requiredReferees ? 'success' : 'warning'
-                        }
-                      />
-                    </Box>
-                  </CardContent>
-                </Card>
-              ))}
-            </Box>
-          </Paper>
-        </Grid>
+      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tab label="Phân công theo cuộc đua" />
+        <Tab label="Danh sách trọng tài" />
+      </Tabs>
 
-        <Grid item xs={12} md={7}>
-          {selectedRace && (
+      {/* ── Tab 0: Assign by race ── */}
+      {tab === 0 && (
+        <Grid container spacing={3}>
+          {/* Race list */}
+          <Grid item xs={12} md={5}>
             <Paper sx={{ p: 3, borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-                    {selectedRace.name}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Trọng tài đã phân công: {selectedRace.assignedReferees.length}/
-                    {selectedRace.requiredReferees}
-                  </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Danh sách cuộc đua</Typography>
+              {loadingRaces ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>
+              ) : races.length === 0 ? (
+                <Typography color="text.secondary" align="center" sx={{ py: 4 }}>Không có cuộc đua nào đang hoạt động</Typography>
+              ) : (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {races.map(race => {
+                    const hasReferee = !!(typeof race.refereeId === 'object' && race.refereeId);
+                    return (
+                      <Card
+                        key={race._id}
+                        sx={{
+                          cursor: 'pointer',
+                          border: selectedRace?._id === race._id ? '2px solid #2196f3' : '1px solid #e0e0e0',
+                          bgcolor: selectedRace?._id === race._id ? '#e3f2fd' : 'white',
+                        }}
+                        onClick={() => setSelectedRace(race)}
+                      >
+                        <CardContent sx={{ pb: '12px !important' }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>{race.name}</Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                            {typeof race.tournamentId === 'object' ? race.tournamentId.name : '-'}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                            📅 {fmtDateTime(race.scheduledTime)}
+                          </Typography>
+                          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                            <Chip label={race.grade} size="small" variant="outlined" />
+                            <Chip
+                              label={hasReferee ? '✓ Đã phân công' : '⚠ Chưa phân công'}
+                              size="small"
+                              color={hasReferee ? 'success' : 'warning'}
+                            />
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </Box>
-                <Button
-                  variant="contained"
-                  startIcon={<PersonAdd />}
-                  onClick={() => setOpenDialog(true)}
-                  sx={{ borderRadius: '8px' }}
-                >
-                  Thêm trọng tài
-                </Button>
-              </Box>
+              )}
+            </Paper>
+          </Grid>
 
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
-                Trọng tài đã phân công
-              </Typography>
-              <List sx={{ mb: 3 }}>
-                {getAssignedReferees(selectedRace.id).map((referee) => (
-                  <ListItem
-                    key={referee.id}
-                    sx={{
-                      bgcolor: '#f5f5f5',
-                      borderRadius: '8px',
-                      mb: 1,
-                    }}
-                    secondaryAction={
-                      <IconButton edge="end" color="error">
-                        <Delete />
-                      </IconButton>
-                    }
+          {/* Detail panel */}
+          <Grid item xs={12} md={7}>
+            {selectedRace ? (
+              <Paper sx={{ p: 3, borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>{selectedRace.name}</Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                      {fmtDateTime(selectedRace.scheduledTime)} · {selectedRace.distance}m · {selectedRace.grade}
+                    </Typography>
+                  </Box>
+                  <Button
+                    variant="contained" startIcon={<PersonAdd />}
+                    onClick={() => { setSelectedRefId(''); setAssignDialog(true); }}
+                    sx={{ borderRadius: '8px' }}
                   >
+                    {assignedRef ? 'Đổi trọng tài' : 'Gán trọng tài'}
+                  </Button>
+                </Box>
+
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>Trọng tài được phân công</Typography>
+                {assignedRef ? (
+                  <ListItem sx={{ bgcolor: '#f5f5f5', borderRadius: '8px', mb: 1 }}>
                     <ListItemAvatar>
-                      <Avatar sx={{ bgcolor: 'primary.main' }}>{referee.name.charAt(0)}</Avatar>
+                      <Avatar sx={{ bgcolor: 'success.main' }}>
+                        {(typeof assignedRef === 'object' && 'fullName' in assignedRef ? assignedRef.fullName : '?')[0]}
+                      </Avatar>
                     </ListItemAvatar>
                     <ListItemText
-                      primary={referee.name}
-                      secondary={`${referee.experience} năm kinh nghiệm - ${referee.certificationLevel}`}
+                      primary={typeof assignedRef === 'object' && 'fullName' in assignedRef ? assignedRef.fullName : '-'}
+                      secondary={typeof assignedRef === 'object' && 'email' in assignedRef ? assignedRef.email : '-'}
                     />
-                    <Chip
-                      icon={<CheckCircle />}
-                      label="Đã phân công"
-                      size="small"
-                      color="success"
-                      sx={{ mr: 2 }}
-                    />
+                    <Chip icon={<CheckCircle />} label="Đã phân công" size="small" color="success" />
                   </ListItem>
-                ))}
-              </List>
+                ) : (
+                  <Typography color="text.secondary" sx={{ py: 2, px: 2, bgcolor: '#fafafa', borderRadius: 1 }}>
+                    Chưa phân công trọng tài cho cuộc đua này
+                  </Typography>
+                )}
 
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, mt: 3, color: 'success.main' }}>
-                Trọng tài rảnh (Sẵn sàng)
-              </Typography>
-              <List>
-                {referees
-                  .filter((ref) => !selectedRace.assignedReferees.includes(ref.id) && ref.status === 'available')
-                  .map((referee) => (
-                    <ListItem
-                      key={referee.id}
-                      sx={{ bgcolor: '#fafafa', borderRadius: '8px', mb: 1 }}
-                      secondaryAction={
-                        <Button variant="outlined" size="small" startIcon={<Assignment />} sx={{ borderRadius: '8px' }}>
-                          Phân công
-                        </Button>
-                      }
-                    >
-                      <ListItemAvatar>
-                        <Avatar sx={{ bgcolor: 'success.main' }}>{referee.name.charAt(0)}</Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={referee.name}
-                        secondary={`${referee.experience} năm kinh nghiệm - ${referee.certificationLevel}`}
-                      />
-                      <Chip label="Sẵn sàng" size="small" color="success" sx={{ mr: 2 }} />
-                    </ListItem>
-                  ))}
-              </List>
-
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, mt: 3, color: 'warning.main' }}>
-                Trọng tài đang tham gia (Chặng khác)
-              </Typography>
-              <List>
-                {referees
-                  .filter((ref) => !selectedRace.assignedReferees.includes(ref.id) && ref.status === 'assigned')
-                  .map((referee) => (
-                    <ListItem
-                      key={referee.id}
-                      sx={{ bgcolor: '#fafafa', borderRadius: '8px', mb: 1 }}
-                      secondaryAction={
-                        <Button variant="outlined" size="small" startIcon={<Assignment />} sx={{ borderRadius: '8px' }}>
-                          Phân công
-                        </Button>
-                      }
-                    >
-                      <ListItemAvatar>
-                        <Avatar sx={{ bgcolor: 'warning.main' }}>{referee.name.charAt(0)}</Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={referee.name}
-                        secondary={`Đang tham gia ${referee.assignedRaces} chặng - ${referee.certificationLevel}`}
-                      />
-                      <Chip label="Đang tham gia" size="small" color="warning" sx={{ mr: 2 }} />
-                    </ListItem>
-                  ))}
-              </List>
-
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, mt: 3, color: 'error.main' }}>
-                Trọng tài bận (Không khả dụng)
-              </Typography>
-              <List>
-                {referees
-                  .filter((ref) => !selectedRace.assignedReferees.includes(ref.id) && ref.status === 'unavailable')
-                  .map((referee) => (
-                    <ListItem
-                      key={referee.id}
-                      sx={{ bgcolor: '#fafafa', borderRadius: '8px', mb: 1, opacity: 0.6 }}
-                    >
-                      <ListItemAvatar>
-                        <Avatar sx={{ bgcolor: 'error.main' }}>{referee.name.charAt(0)}</Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={referee.name}
-                        secondary={`Đang nghỉ phép - ${referee.certificationLevel}`}
-                      />
-                      <Chip label="Bận" size="small" color="error" sx={{ mr: 2 }} />
-                    </ListItem>
-                  ))}
-              </List>
-            </Paper>
-          )}
+                {/* Available referees */}
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, mt: 3 }}>Trọng tài sẵn sàng</Typography>
+                {loadingRefs ? (
+                  <CircularProgress size={24} />
+                ) : (
+                  <List>
+                    {referees
+                      .filter(r => {
+                        const assignedId = typeof selectedRace.refereeId === 'object' && selectedRace.refereeId
+                          ? (selectedRace.refereeId as any)._id
+                          : selectedRace.refereeId;
+                        return r._id !== assignedId;
+                      })
+                      .map(referee => (
+                        <ListItem key={referee._id} sx={{ bgcolor: '#fafafa', borderRadius: '8px', mb: 1 }}
+                          secondaryAction={
+                            <Button variant="outlined" size="small" startIcon={<Assignment />}
+                              onClick={async () => {
+                                setAssigning(true);
+                                try {
+                                  const updated = await raceApi.assignReferee(selectedRace._id, referee._id);
+                                  toast.success(`Đã phân công ${referee.fullName}`);
+                                  setSelectedRace(updated);
+                                  loadRaces();
+                                } catch (err: any) {
+                                  toast.error(err.message);
+                                } finally {
+                                  setAssigning(false);
+                                }
+                              }}
+                              disabled={assigning}
+                              sx={{ borderRadius: '8px' }}
+                            >
+                              Phân công
+                            </Button>
+                          }
+                        >
+                          <ListItemAvatar>
+                            <Avatar sx={{ bgcolor: 'primary.main' }}>{referee.fullName[0]}</Avatar>
+                          </ListItemAvatar>
+                          <ListItemText
+                            primary={referee.fullName}
+                            secondary={`${referee.refereeProfile?.yearsOfService ?? 0} năm KN · ${referee.refereeProfile?.licenseNumber || 'N/A'}`}
+                          />
+                        </ListItem>
+                      ))}
+                  </List>
+                )}
+              </Paper>
+            ) : (
+              <Paper sx={{ p: 6, borderRadius: '12px', textAlign: 'center' }}>
+                <Typography color="text.secondary">Chọn một cuộc đua để xem chi tiết</Typography>
+              </Paper>
+            )}
+          </Grid>
         </Grid>
-      </Grid>
+      )}
 
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Phân công trọng tài</DialogTitle>
+      {/* ── Tab 1: All Referees ── */}
+      {tab === 1 && (
+        <Paper sx={{ p: 3, borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>Danh sách toàn bộ trọng tài</Typography>
+          {loadingRefs ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>
+          ) : referees.length === 0 ? (
+            <Typography color="text.secondary" align="center" sx={{ py: 4 }}>Không có trọng tài nào</Typography>
+          ) : (
+            <Grid container spacing={2}>
+              {referees.map(referee => (
+                <Grid item xs={12} md={6} lg={4} key={referee._id}>
+                  <Card variant="outlined" sx={{ borderRadius: '8px' }}>
+                    <CardContent>
+                      <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+                        <Avatar sx={{ bgcolor: 'primary.main', width: 48, height: 48 }}>{referee.fullName[0]}</Avatar>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{referee.fullName}</Typography>
+                          <Typography variant="body2" color="text.secondary">{referee.email}</Typography>
+                          <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
+                            {referee.refereeProfile?.yearsOfService ?? 0} năm KN
+                            {referee.refereeProfile?.licenseNumber ? ` · ${referee.refereeProfile.licenseNumber}` : ''}
+                          </Typography>
+                        </Box>
+                        <Chip label="Trọng tài" size="small" color="info" />
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          )}
+        </Paper>
+      )}
+
+      {/* Assign Dialog */}
+      <Dialog open={assignDialog} onClose={() => setAssignDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Phân công trọng tài cho: {selectedRace?.name}</DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 2 }}>
-            <FormControl fullWidth sx={{ mb: 3 }}>
-              <InputLabel>Chọn cuộc đua</InputLabel>
-              <Select defaultValue={selectedRace?.id} label="Chọn cuộc đua">
-                {races.map((race) => (
-                  <MenuItem key={race.id} value={race.id}>
-                    {race.name}
+            <FormControl fullWidth>
+              <InputLabel>Chọn trọng tài</InputLabel>
+              <Select value={selectedRefId} label="Chọn trọng tài" onChange={e => setSelectedRefId(e.target.value)}>
+                {referees.map(r => (
+                  <MenuItem key={r._id} value={r._id}>
+                    {r.fullName} — {r.refereeProfile?.yearsOfService ?? 0} năm KN
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
-
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
-              Chọn trọng tài
-            </Typography>
-            {referees.map((referee) => (
-              <FormControlLabel
-                key={referee.id}
-                control={<Checkbox />}
-                label={
-                  <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                      {referee.name}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {referee.experience} năm kinh nghiệm - {referee.certificationLevel}
-                    </Typography>
-                  </Box>
-                }
-                sx={{ width: '100%', mb: 1 }}
-              />
-            ))}
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setOpenDialog(false)}>Hủy</Button>
-          <Button variant="contained" onClick={() => setOpenDialog(false)}>
-            Xác nhận
+          <Button onClick={() => setAssignDialog(false)} disabled={assigning}>Hủy</Button>
+          <Button variant="contained" onClick={handleAssign} disabled={!selectedRefId || assigning}>
+            {assigning ? <CircularProgress size={20} /> : 'Xác nhận phân công'}
           </Button>
         </DialogActions>
       </Dialog>
-      </>
-      )}
-
-      {tabValue === 1 && (
-        <Paper sx={{ p: 3, borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
-            Danh sách toàn bộ trọng tài
-          </Typography>
-          <Grid container spacing={2}>
-            {referees.map((referee) => (
-              <Grid item xs={12} md={6} lg={4} key={referee.id}>
-                <Card variant="outlined" sx={{ borderRadius: '8px' }}>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                      <Box sx={{ display: 'flex', gap: 2 }}>
-                        <Avatar sx={{ bgcolor: getRefereeStatusColor(referee.status) === 'default' ? 'grey.500' : `${getRefereeStatusColor(referee.status)}.main` }}>
-                          {referee.name.charAt(0)}
-                        </Avatar>
-                        <Box>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                            {referee.name}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {referee.experience} năm KN - {referee.certificationLevel}
-                          </Typography>
-                          <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
-                            Số chặng đang tham gia: <b>{referee.assignedRaces}</b>
-                          </Typography>
-                        </Box>
-                      </Box>
-                      <Chip 
-                        label={getRefereeStatusLabel(referee.status)} 
-                        color={getRefereeStatusColor(referee.status)} 
-                        size="small" 
-                        sx={{ fontWeight: 600 }}
-                      />
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        </Paper>
-      )}
     </Box>
   );
 }

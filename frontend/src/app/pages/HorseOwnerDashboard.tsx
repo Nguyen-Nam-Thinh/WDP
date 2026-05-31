@@ -56,6 +56,7 @@ import { userApi, JockeyListItem } from "../api/user";
 import { tournamentApi, Tournament } from "../api/tournament";
 import { raceApi, Race } from "../api/race";
 import { invitationApi } from "../api/invitation";
+import { registrationApi, Registration } from "../api/registration";
 
 const GRADE_COLORS: Record<string, string> = {
   Maiden: "#64748b",
@@ -355,38 +356,75 @@ export function HorseOwnerDashboard() {
   };
 
 
-  const upcomingRaces = [
-    {
-      id: 1,
-      date: "2026-05-25",
-      time: "14:00",
-      tournament: "Giải Vô Địch Mùa Xuân",
-      horse: "Tia Chớp",
-      jockey: "Nguyễn Văn A",
-      status: "Đã Xác Nhận",
-      fee: "$500",
-    },
-    {
-      id: 2,
-      date: "2026-05-28",
-      time: "15:30",
-      tournament: "Cúp Vàng",
-      horse: "Mũi Tên Vàng",
-      jockey: "Đang Chờ",
-      status: "Đang Mở Đăng Ký",
-      fee: "$300",
-    },
-    {
-      id: 3,
-      date: "2026-06-02",
-      time: "13:00",
-      tournament: "Giải Derby Mùa Hè",
-      horse: "Thần Gió",
-      jockey: "Trần Thị B",
-      status: "Chờ Xác Nhận",
-      fee: "$200",
-    },
-  ];
+  // ── Schedule: real API state ──────────────────────────────────────────────
+  const [openRaces, setOpenRaces] = useState<Race[]>([]);
+  const [myRegistrations, setMyRegistrations] = useState<Registration[]>([]);
+  const [loadingSchedule, setLoadingSchedule] = useState(false);
+  const [selectedRaceForReg, setSelectedRaceForReg] = useState<Race | null>(null);
+  const [regHorseId, setRegHorseId] = useState("");
+  const [submittingReg, setSubmittingReg] = useState(false);
+  const [cancellingRegId, setCancellingRegId] = useState<string | null>(null);
+
+  const loadScheduleData = async () => {
+    if (!token) return;
+    setLoadingSchedule(true);
+    try {
+      const [racesRes, regsRes] = await Promise.all([
+        raceApi.getRaces(token, { status: "open", limit: 50 }),
+        registrationApi.getMyRegistrations(token, { limit: 50 }),
+      ]);
+      setOpenRaces(racesRes.races ?? []);
+      setMyRegistrations(regsRes.registrations ?? []);
+    } catch (err: any) {
+      toast.error(err.message || "Không thể tải dữ liệu lịch đua");
+    } finally {
+      setLoadingSchedule(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "schedule") loadScheduleData();
+  }, [activeTab, token]);
+
+  const handleOpenRegisterDialog = (race: Race) => {
+    setSelectedRaceForReg(race);
+    setRegHorseId(horses[0]?._id || "");
+    setRegisterRaceOpen(true);
+  };
+
+  const handleSubmitRegistration = async () => {
+    if (!selectedRaceForReg || !regHorseId || !token) return;
+    setSubmittingReg(true);
+    try {
+      await registrationApi.register(token, { raceId: selectedRaceForReg._id, horseId: regHorseId });
+      toast.success(`Đăng ký thành công! Phí $${selectedRaceForReg.registrationFee} đã được trừ.`);
+      setRegisterRaceOpen(false);
+      setSelectedRaceForReg(null);
+      await loadScheduleData();
+    } catch (err: any) {
+      toast.error(err.message || "Đăng ký thất bại");
+    } finally {
+      setSubmittingReg(false);
+    }
+  };
+
+  const handleCancelRegistration = async (regId: string) => {
+    if (!token || !confirm("Hủy đăng ký? Bạn sẽ được hoàn 40% phí.")) return;
+    setCancellingRegId(regId);
+    try {
+      await registrationApi.cancel(token, regId);
+      toast.success("Đã hủy đăng ký, 40% phí đã được hoàn trả");
+      await loadScheduleData();
+    } catch (err: any) {
+      toast.error(err.message || "Hủy đăng ký thất bại");
+    } finally {
+      setCancellingRegId(null);
+    }
+  };
+
+  // Check if horse is already registered in a race
+  const isHorseRegistered = (raceId: string) =>
+    myRegistrations.some(r => (r.raceId as any)?._id === raceId && r.status === "active");
 
   const performanceData = [
     { month: "T1", earnings: 15000, points: 200 },
@@ -854,144 +892,177 @@ export function HorseOwnerDashboard() {
         {/* Content: Schedule */}
         {activeTab === "schedule" && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-3xl font-bold text-white mb-2">Lịch Đua</h2>
-                <p className="text-slate-400">
-                  Quản lý đăng ký và xác nhận tham gia
-                </p>
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold text-white mb-2">Lịch Đua & Đăng Ký</h2>
+              <p className="text-slate-400">Đăng ký ngựa vào cuộc đua và quản lý các đăng ký của bạn</p>
+            </div>
+
+            {loadingSchedule ? (
+              <div className="flex justify-center py-16">
+                <Loader2 className="w-8 h-8 text-[#FFDE42] animate-spin" />
               </div>
-              <Button
-                variant="contained"
-                onClick={() => setRegisterRaceOpen(true)}
-                sx={{
-                  background:
-                    "linear-gradient(135deg, #FFDE42 0%, #1B0C0C 100%)",
-                  textTransform: "none",
-                  fontWeight: 600,
-                  boxShadow: "0 4px 6px -1px rgba(255, 222, 66, 0.2)",
-                  "&:hover": {
-                    background:
-                      "linear-gradient(135deg, #FFDE42 0%, #4C5C2D 100%)",
-                  },
-                }}
-              >
-                Đăng Ký Tham Gia
-              </Button>
-            </div>
-
-            <div className="space-y-4">
-              {upcomingRaces.map((race) => (
-                <div
-                  key={race.id}
-                  className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-6 hover:border-[#FFDE42]/30 transition-all"
-                >
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center">
-                          <Calendar className="w-5 h-5 text-[#FFDE42]" />
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-bold text-white">
-                            {race.tournament}
-                          </h3>
-                          <div className="text-slate-400 text-sm">
-                            {race.date} at {race.time}
-                          </div>
-                        </div>
-                        <Chip
-                          label={race.status}
-                          size="small"
-                          icon={
-                            race.status === "Đã Xác Nhận" ? (
-                              <CheckCircle className="w-4 h-4" />
-                            ) : (
-                              <Clock className="w-4 h-4" />
-                            )
-                          }
-                          sx={{
-                            ml: "auto",
-                            backgroundColor:
-                              race.status === "Đã Xác Nhận"
-                                ? "rgba(255, 222, 66, 0.2)"
-                                : "rgba(245, 158, 11, 0.2)",
-                            color:
-                              race.status === "Đã Xác Nhận"
-                                ? "#FFDE42"
-                                : "#fbbf24",
-                            border: `1px solid ${race.status === "Đã Xác Nhận" ? "#FFDE42" : "#f59e0b"}`,
-                            "& .MuiChip-icon": { color: "inherit" },
-                          }}
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                        <div>
-                          <div className="text-slate-400 text-sm mb-1">
-                            Ngựa Đã Chọn
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Sparkles className="w-4 h-4 text-[#FFDE42]" />
-                            <span className="text-white font-medium">
-                              {race.horse}
-                            </span>
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-slate-400 text-sm mb-1">
-                            Kỵ Sĩ
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Users className="w-4 h-4 text-blue-400" />
-                            <span className="text-white font-medium">
-                              {race.jockey}
-                            </span>
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-slate-400 text-sm mb-1">
-                            Phí Tham Gia
-                          </div>
-                          <div className="text-white font-medium">
-                            {race.fee}
-                          </div>
-                        </div>
-                      </div>
+            ) : (
+              <>
+                {/* ── My Registrations ── */}
+                <div className="mb-8">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 bg-[#FFDE42]/10 rounded-lg flex items-center justify-center">
+                      <CheckCircle className="w-4 h-4 text-[#FFDE42]" />
                     </div>
-
-                    <div className="flex flex-col gap-3 min-w-[140px]">
-                      {race.status === "Chờ Xác Nhận" && (
-                        <Button
-                          variant="contained"
-                          fullWidth
-                          sx={{
-                            background: "#FFDE42",
-                            color: "#1B0C0C",
-                            textTransform: "none",
-                            "&:hover": { background: "#E6C21E" },
-                          }}
-                        >
-                          Xác Nhận
-                        </Button>
-                      )}
-                      <Button
-                        variant="outlined"
-                        fullWidth
-                        sx={{
-                          borderColor: "rgba(255,255,255,0.1)",
-                          color: "white",
-                          textTransform: "none",
-                          "&:hover": { borderColor: "rgba(255,255,255,0.3)" },
-                        }}
-                      >
-                        Chi Tiết
-                      </Button>
-                    </div>
+                    <h3 className="text-xl font-bold text-white">Đăng Ký Của Tôi ({myRegistrations.filter(r => r.status === "active").length})</h3>
                   </div>
+
+                  {myRegistrations.filter(r => r.status === "active").length === 0 ? (
+                    <div className="bg-white/3 border border-white/5 rounded-2xl p-8 text-center">
+                      <Calendar className="w-10 h-10 text-slate-600 mx-auto mb-3" />
+                      <p className="text-slate-500">Bạn chưa đăng ký cuộc đua nào</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {myRegistrations.filter(r => r.status === "active").map(reg => {
+                        const race = reg.raceId as any;
+                        const horse = reg.horseId as any;
+                        const jockey = reg.jockeyId as any;
+                        const preStatus = reg.preCheckResult?.status;
+                        return (
+                          <div key={reg._id} className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-5 hover:border-[#FFDE42]/20 transition-all">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-3 flex-wrap">
+                                  <div className="w-9 h-9 bg-slate-800 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <Calendar className="w-4 h-4 text-[#FFDE42]" />
+                                  </div>
+                                  <div>
+                                    <h4 className="text-white font-bold">{race?.name}</h4>
+                                    <div className="text-slate-400 text-xs">{race?.scheduledTime ? new Date(race.scheduledTime).toLocaleString("vi-VN") : ""}</div>
+                                  </div>
+                                  <Chip label={race?.grade} size="small" sx={{ height: "20px", fontSize: "0.65rem", bgcolor: "rgba(245,158,11,0.2)", color: "#fbbf24", border: "1px solid #f59e0b", fontWeight: "bold" }} />
+                                  <Chip label={race?.status === "open" ? "Mở ĐK" : race?.status === "closed" ? "Đóng ĐK" : race?.status === "pre_check" ? "Kiểm tra" : race?.status} size="small" sx={{ height: "20px", fontSize: "0.65rem", bgcolor: "rgba(99,102,241,0.15)", color: "#a5b4fc", border: "1px solid #6366f1" }} />
+                                  {preStatus && preStatus !== "pending" && (
+                                    <Chip label={preStatus === "passed" ? "✓ Đã duyệt" : "✗ Bị loại"} size="small" sx={{ height: "20px", fontSize: "0.65rem", bgcolor: preStatus === "passed" ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)", color: preStatus === "passed" ? "#34d399" : "#f87171", border: `1px solid ${preStatus === "passed" ? "#10b981" : "#ef4444"}` }} />
+                                  )}
+                                </div>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                  <div>
+                                    <div className="text-slate-500 text-xs mb-1">Ngựa</div>
+                                    <div className="text-white font-medium flex items-center gap-1"><Sparkles className="w-3 h-3 text-[#FFDE42]" />{horse?.name}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-slate-500 text-xs mb-1">Kỵ Sĩ</div>
+                                    <div className={`font-medium flex items-center gap-1 ${jockey ? "text-white" : "text-slate-500 italic"}`}>
+                                      <Users className="w-3 h-3 text-blue-400" />
+                                      {jockey ? jockey.fullName : "Chưa gán"}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <div className="text-slate-500 text-xs mb-1">Phí đã nộp</div>
+                                    <div className="text-white font-medium">${reg.feePaid?.toLocaleString()}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-slate-500 text-xs mb-1">Đăng ký lúc</div>
+                                    <div className="text-slate-300 text-xs">{new Date(reg.registeredAt).toLocaleDateString("vi-VN")}</div>
+                                  </div>
+                                </div>
+                              </div>
+                              {race?.status === "open" && (
+                                <Button variant="outlined" size="small" disabled={cancellingRegId === reg._id}
+                                  onClick={() => handleCancelRegistration(reg._id)}
+                                  sx={{ borderColor: "rgba(239,68,68,0.4)", color: "#f87171", textTransform: "none", whiteSpace: "nowrap", "&:hover": { borderColor: "#ef4444", bgcolor: "rgba(239,68,68,0.1)" } }}>
+                                  {cancellingRegId === reg._id ? <Loader2 className="w-4 h-4 animate-spin" /> : "Hủy (hoàn 40%)"}
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
+
+                {/* ── Open Races ── */}
+                <div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 bg-emerald-500/10 rounded-lg flex items-center justify-center">
+                      <Trophy className="w-4 h-4 text-emerald-400" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white">Cuộc Đua Đang Mở ({openRaces.length})</h3>
+                  </div>
+
+                  {openRaces.length === 0 ? (
+                    <div className="bg-white/3 border border-white/5 rounded-2xl p-8 text-center">
+                      <Trophy className="w-10 h-10 text-slate-600 mx-auto mb-3" />
+                      <p className="text-slate-500">Hiện không có cuộc đua nào đang mở đăng ký</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {openRaces.map(race => {
+                        const alreadyRegistered = isHorseRegistered(race._id);
+                        const cutoffPassed = new Date() > new Date(race.cutoffTime);
+                        return (
+                          <div key={race._id} className={`bg-white/5 backdrop-blur-md border rounded-2xl p-6 transition-all ${alreadyRegistered ? "border-[#FFDE42]/30" : "border-white/5 hover:border-[#FFDE42]/20"}`}>
+                            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-4 flex-wrap">
+                                  <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <Trophy className="w-5 h-5 text-emerald-400" />
+                                  </div>
+                                  <div>
+                                    <h4 className="text-xl font-bold text-white">{race.name}</h4>
+                                    <div className="text-slate-400 text-sm">{new Date(race.scheduledTime).toLocaleString("vi-VN")}</div>
+                                  </div>
+                                  <Chip label={race.grade} size="small" sx={{ height: "20px", fontSize: "0.65rem", bgcolor: "rgba(245,158,11,0.2)", color: "#fbbf24", border: "1px solid #f59e0b", fontWeight: "bold" }} />
+                                  {alreadyRegistered && <Chip label="✓ Đã đăng ký" size="small" sx={{ height: "20px", fontSize: "0.65rem", bgcolor: "rgba(255,222,66,0.15)", color: "#FFDE42", border: "1px solid #FFDE42" }} />}
+                                </div>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-900/40 rounded-xl p-4 border border-white/5">
+                                  <div>
+                                    <div className="text-slate-500 text-xs uppercase mb-1 flex items-center gap-1"><Activity className="w-3 h-3" /> Cự Ly</div>
+                                    <div className="text-white font-semibold">{race.distance}m</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-slate-500 text-xs uppercase mb-1 flex items-center gap-1"><Trophy className="w-3 h-3" /> Giải Thưởng</div>
+                                    <div className="text-[#FFDE42] font-semibold">${race.purse?.toLocaleString()}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-slate-500 text-xs uppercase mb-1 flex items-center gap-1"><DollarSign className="w-3 h-3" /> Phí ĐK</div>
+                                    <div className="text-white font-semibold">${race.registrationFee?.toLocaleString()}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-slate-500 text-xs uppercase mb-1 flex items-center gap-1"><Clock className="w-3 h-3" /> Hạn ĐK</div>
+                                    <div className={`font-semibold text-sm ${cutoffPassed ? "text-red-400" : "text-slate-300"}`}>
+                                      {new Date(race.cutoffTime).toLocaleDateString("vi-VN")}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="md:ml-4 flex-shrink-0">
+                                {alreadyRegistered ? (
+                                  <Button disabled variant="outlined" sx={{ borderColor: "rgba(255,222,66,0.3)", color: "#FFDE42", textTransform: "none", opacity: 0.7, whiteSpace: "nowrap" }}>
+                                    Đã đăng ký
+                                  </Button>
+                                ) : cutoffPassed ? (
+                                  <Button disabled variant="outlined" sx={{ borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.3)", textTransform: "none", whiteSpace: "nowrap" }}>
+                                    Hết hạn ĐK
+                                  </Button>
+                                ) : horses.length === 0 ? (
+                                  <Button disabled variant="outlined" sx={{ borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.3)", textTransform: "none", whiteSpace: "nowrap" }}>
+                                    Bạn chưa có ngựa
+                                  </Button>
+                                ) : (
+                                  <Button variant="contained" onClick={() => handleOpenRegisterDialog(race)}
+                                    sx={{ background: "#FFDE42", color: "#1B0C0C", textTransform: "none", fontWeight: 700, whiteSpace: "nowrap", "&:hover": { background: "#E6C21E" } }}>
+                                    Đăng Ký Ngay
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         )}
 
@@ -2217,93 +2288,52 @@ export function HorseOwnerDashboard() {
       {/* Register Race Dialog */}
       <Dialog
         open={registerRaceOpen}
-        onClose={() => setRegisterRaceOpen(false)}
+        onClose={() => { setRegisterRaceOpen(false); setSelectedRaceForReg(null); }}
         maxWidth="sm"
         fullWidth
-        PaperProps={{
-          style: {
-            backgroundColor: "#0f172a",
-            border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: "16px",
-          },
-        }}
+        PaperProps={{ style: { backgroundColor: "#0f172a", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "16px" } }}
       >
-        <DialogTitle
-          sx={{
-            color: "white",
-            borderBottom: "1px solid rgba(255,255,255,0.1)",
-            pb: 2,
-          }}
-        >
-          Đăng Ký Tham Gia Giải Đấu
+        <DialogTitle sx={{ color: "white", borderBottom: "1px solid rgba(255,255,255,0.1)", pb: 2 }}>
+          Đăng Ký Tham Gia Cuộc Đua
         </DialogTitle>
         <DialogContent sx={{ paddingTop: "24px !important" }}>
           <div className="space-y-4">
-            <FormControl
-              fullWidth
-              sx={{
-                "& .MuiInputLabel-root": { color: "#94a3b8" },
-                "& .MuiOutlinedInput-root": {
-                  color: "white",
-                  "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
-                  "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
-                  "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
-                  "& .MuiSelect-icon": { color: "#94a3b8" },
-                },
-              }}
+            {selectedRaceForReg && (
+              <div className="bg-slate-800/60 rounded-xl p-4 border border-white/5">
+                <div className="text-white font-bold mb-2">{selectedRaceForReg.name}</div>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div><span className="text-slate-400">Hạng: </span><span className="text-white">{selectedRaceForReg.grade}</span></div>
+                  <div><span className="text-slate-400">Cự ly: </span><span className="text-white">{selectedRaceForReg.distance}m</span></div>
+                  <div><span className="text-slate-400">Giải thưởng: </span><span className="text-[#FFDE42] font-bold">${selectedRaceForReg.purse?.toLocaleString()}</span></div>
+                  <div><span className="text-slate-400">Phí đăng ký: </span><span className="text-red-400 font-bold">${selectedRaceForReg.registrationFee?.toLocaleString()}</span></div>
+                </div>
+                <div className="mt-2 text-xs text-amber-400 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  Phí sẽ được trừ ngay từ ví. Hủy đăng ký chỉ hoàn 40%.
+                </div>
+              </div>
+            )}
+            <FormControl fullWidth
+              sx={{ "& .MuiInputLabel-root": { color: "#94a3b8" }, "& .MuiOutlinedInput-root": { color: "white", "& fieldset": { borderColor: "rgba(255,255,255,0.1)" }, "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" }, "&.Mui-focused fieldset": { borderColor: "#FFDE42" }, "& .MuiSelect-icon": { color: "#94a3b8" } } }}
             >
-              <InputLabel>Chọn Giải Đấu</InputLabel>
-              <Select label="Chọn Giải Đấu" defaultValue="">
-                <MenuItem value="1">Giải Vô Địch Cao Cấp 2026</MenuItem>
-                <MenuItem value="2">Giải Derby Mùa Hè</MenuItem>
-              </Select>
-            </FormControl>
-            <FormControl
-              fullWidth
-              sx={{
-                "& .MuiInputLabel-root": { color: "#94a3b8" },
-                "& .MuiOutlinedInput-root": {
-                  color: "white",
-                  "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
-                  "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
-                  "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
-                  "& .MuiSelect-icon": { color: "#94a3b8" },
-                },
-              }}
-            >
-              <InputLabel>Chọn Ngựa</InputLabel>
-              <Select label="Chọn Ngựa" defaultValue="">
-                {horses.map((h) => (
-                  <MenuItem key={h.id} value={h.id}>
-                    {h.name}
+              <InputLabel>Chọn Ngựa *</InputLabel>
+              <Select label="Chọn Ngựa *" value={regHorseId} onChange={e => setRegHorseId(e.target.value)}>
+                {horses.map(h => (
+                  <MenuItem key={h._id} value={h._id}>
+                    {h.name} — {h.currentGrade} ({h.totalPoints} điểm)
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
           </div>
         </DialogContent>
-        <DialogActions
-          sx={{
-            borderTop: "1px solid rgba(255,255,255,0.1)",
-            padding: "16px 24px",
-          }}
-        >
-          <Button
-            onClick={() => setRegisterRaceOpen(false)}
-            sx={{ color: "#94a3b8", textTransform: "none" }}
-          >
+        <DialogActions sx={{ borderTop: "1px solid rgba(255,255,255,0.1)", padding: "16px 24px" }}>
+          <Button onClick={() => { setRegisterRaceOpen(false); setSelectedRaceForReg(null); }} sx={{ color: "#94a3b8", textTransform: "none" }}>
             Hủy
           </Button>
-          <Button
-            variant="contained"
-            onClick={() => setRegisterRaceOpen(false)}
-            sx={{
-              background: "#10b981",
-              textTransform: "none",
-              "&:hover": { background: "#059669" },
-            }}
-          >
-            Xác Nhận Đăng Ký
+          <Button variant="contained" onClick={handleSubmitRegistration} disabled={!regHorseId || submittingReg}
+            sx={{ background: "#10b981", textTransform: "none", fontWeight: 700, "&:hover": { background: "#059669" } }}>
+            {submittingReg ? <Loader2 className="w-4 h-4 animate-spin" /> : "Xác Nhận Đăng Ký"}
           </Button>
         </DialogActions>
       </Dialog>

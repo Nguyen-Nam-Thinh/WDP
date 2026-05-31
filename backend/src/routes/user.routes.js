@@ -35,5 +35,7 @@ router.post('/me/upload-avatar', uploadSingle, userController.uploadAvatar);
 router.get('/me/wallet', userController.getMyWallet);
 router.get('/me/transactions', userController.getMyTransactions);
 router.get('/jockeys', userController.getJockeys);
+router.get('/referees', userController.getReferees);
+router.get('/', userController.getUsers);
 
 module.exports = router;
