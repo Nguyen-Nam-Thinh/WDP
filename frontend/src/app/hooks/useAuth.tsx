@@ -19,7 +19,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (user: User, token: string) => void;
+  login: (user: User, token: string, refreshToken?: string) => void;
   logout: () => Promise<void>;
   updateUser: (patch: Partial<User>) => void;
   isAuthenticated: boolean;
@@ -64,10 +64,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const login = (newUser: User, newToken: string) => {
+  const login = (newUser: User, newToken: string, newRefreshToken?: string) => {
     setUser(newUser);
     setToken(newToken);
     localStorage.setItem('accessToken', newToken);
+    if (newRefreshToken) {
+      localStorage.setItem('refreshToken', newRefreshToken);
+    }
     localStorage.setItem('user', JSON.stringify(newUser));
   };
 
@@ -92,6 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setToken(null);
     localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
   };
 

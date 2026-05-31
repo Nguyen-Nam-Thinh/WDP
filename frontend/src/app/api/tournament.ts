@@ -1,4 +1,5 @@
 import { API_URL } from "./auth";
+import { fetchWithAuth } from "../utils/apiClient";
 
 export interface Tournament {
   _id: string;
@@ -22,7 +23,7 @@ export const tournamentApi = {
     limit = 50,
   ): Promise<{ tournaments: Tournament[]; total: number }> => {
     const params = new URLSearchParams({ page: String(page), limit: String(limit) });
-    const response = await fetch(`${API_URL}/tournaments?${params}`, {
+    const response = await fetchWithAuth(`${API_URL}/tournaments?${params}`, {
       headers: authHeader(token),
     });
     if (!response.ok) {
