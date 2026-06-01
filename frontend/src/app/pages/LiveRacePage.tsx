@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import {
   Trophy, Clock, Medal, Star, ChevronLeft, Activity,
-  CheckCircle, XCircle, Coins, Play, Flag, Users,
+  CheckCircle, XCircle, Coins, Play, Flag, Users, Zap,
 } from 'lucide-react';
 import { Chip } from '@mui/material';
 import { toast } from 'sonner';
@@ -80,7 +80,7 @@ export function LiveRacePage() {
   const [dbResults, setDbResults] = useState<RaceResultEntry[]>([]);
   const [myBets, setMyBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
-  // Stable color mapping: horseId → colorIdx (set once on first horse list)
+  const [simulating, setSimulating] = useState(false);
   const [colorMap, setColorMap] = useState<Record<string, number>>({});
   const confettiFired = useRef(false);
 
@@ -151,6 +151,19 @@ export function LiveRacePage() {
   }, [phase, raceId, token, socketResults, myBets]);
 
   useEffect(() => { if (!user) navigate('/login'); }, [user, navigate]);
+
+  const handleForceSimulate = async () => {
+    if (!raceId || !token) return;
+    setSimulating(true);
+    try {
+      await raceApi.forceSimulate(token, raceId);
+      toast.success('Simulation đã bắt đầu — chờ socket events');
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSimulating(false);
+    }
+  };
 
   // ── Derived data ──────────────────────────────────────────────────────────────
 
@@ -333,6 +346,16 @@ export function LiveRacePage() {
                 <p className="text-slate-400 text-xs">Các ngựa đang chờ tín hiệu xuất phát</p>
               </div>
             </div>
+            {(user?.role as string) === 'admin' && (
+              <button
+                onClick={handleForceSimulate}
+                disabled={simulating}
+                className="w-full mb-4 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-semibold text-sm hover:bg-amber-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Zap className="w-4 h-4" />
+                {simulating ? 'Đang khởi động...' : 'Force Simulate (Admin)'}
+              </button>
+            )}
             {lineup.length > 0 && (
               <div>
                 <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3 flex items-center gap-2">

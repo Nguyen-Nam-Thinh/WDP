@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { motion } from 'motion/react'; // kept for pulse glow only
 
 // ─── Track geometry ────────────────────────────────────────────────────────────
 const SVG_W = 700;
@@ -165,11 +165,10 @@ export function RaceTrack({
           const r = horse.isMyBet ? 12 : 9;
 
           return (
-            <motion.g
+            // No transition — positions update at 60fps via rAF, direct SVG transform
+            <g
               key={horse.horseId}
-              initial={{ x: getXY(0, laneShift).x, y: getXY(0, laneShift).y }}
-              animate={{ x, y }}
-              transition={{ duration: 0.45, ease: 'linear' }}
+              transform={`translate(${x}, ${y})`}
             >
               {/* Pulsing glow for user's bet horse */}
               {horse.isMyBet && (
@@ -234,7 +233,7 @@ export function RaceTrack({
                   {horse.horseName.slice(0, 9)}
                 </text>
               ) : null}
-            </motion.g>
+            </g>
           );
         })}
       </svg>

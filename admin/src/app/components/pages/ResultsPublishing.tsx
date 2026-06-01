@@ -4,7 +4,7 @@ import {
   Button, Chip, Dialog, DialogTitle, DialogContent, DialogActions,
   Grid, Typography, Card, CardContent, CircularProgress, Alert,
 } from '@mui/material';
-import { EmojiEvents, Visibility, AttachMoney } from '@mui/icons-material';
+import { EmojiEvents, Visibility, AttachMoney, PlayArrow, Bolt } from '@mui/icons-material';
 import { toast } from 'sonner';
 import { raceApi, type Race, type Registration } from '../../api/race';
 
@@ -29,9 +29,21 @@ const STATUS_LABEL: Record<string, string> = { pending: 'Chờ', won: 'Thắng',
 
 const fmtDateTime = (d: string) => d ? new Date(d).toLocaleString('vi-VN') : '-';
 
+const STATUS_BADGE: Record<string, { label: string; color: 'default' | 'warning' | 'info' | 'primary' | 'success' | 'error' }> = {
+  open:      { label: 'Mở',       color: 'primary' },
+  closed:    { label: 'Đóng',     color: 'warning' },
+  pre_check: { label: 'Chuẩn bị', color: 'info' },
+  running:   { label: 'Đang chạy',color: 'success' },
+};
+
 export default function ResultsPublishing() {
   const [finishedRaces, setFinishedRaces] = useState<Race[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // ── Simulatable races (not finished/cancelled) ──
+  const [simRaces, setSimRaces] = useState<Race[]>([]);
+  const [loadingSim, setLoadingSim] = useState(true);
+  const [simulatingId, setSimulatingId] = useState<string | null>(null);
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedRace, setSelectedRace] = useState<Race | null>(null);
@@ -52,7 +64,45 @@ export default function ResultsPublishing() {
     }
   }, []);
 
-  useEffect(() => { loadFinishedRaces(); }, [loadFinishedRaces]);
+  const loadSimRaces = useCallback(async () => {
+    setLoadingSim(true);
+    try {
+      const [openRes, closedRes, preRes, runRes] = await Promise.all([
+        raceApi.list({ status: 'open',      limit: 20 }),
+        raceApi.list({ status: 'closed',    limit: 20 }),
+        raceApi.list({ status: 'pre_check', limit: 20 }),
+        raceApi.list({ status: 'running',   limit: 20 }),
+      ]);
+      setSimRaces([
+        ...openRes.races,
+        ...closedRes.races,
+        ...preRes.races,
+        ...runRes.races,
+      ]);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setLoadingSim(false);
+    }
+  }, []);
+
+  const handleForceSimulate = async (race: Race) => {
+    setSimulatingId(race._id);
+    try {
+      await raceApi.forceSimulate(race._id);
+      toast.success(`Simulation "${race.name}" đã bắt đầu`);
+      loadSimRaces();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSimulatingId(null);
+    }
+  };
+
+  useEffect(() => {
+    loadFinishedRaces();
+    loadSimRaces();
+  }, [loadFinishedRaces, loadSimRaces]);
 
   const handleViewDetails = async (race: Race) => {
     setSelectedRace(race);
@@ -97,6 +147,81 @@ export default function ResultsPublishing() {
 
   return (
     <Box>
+      {/* ── Force Simulate Section ── */}
+      <Box sx={{ mb: 5 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Bolt sx={{ color: '#f59e0b' }} />
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>Chạy Simulation</Typography>
+            <Chip label={`${simRaces.length} race`} size="small" color="warning" />
+          </Box>
+          <Button size="small" variant="outlined" onClick={loadSimRaces} disabled={loadingSim}>
+            Làm mới
+          </Button>
+        </Box>
+
+        {loadingSim ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}><CircularProgress size={24} /></Box>
+        ) : simRaces.length === 0 ? (
+          <Paper sx={{ p: 3, textAlign: 'center', borderRadius: '12px', bgcolor: '#fafafa' }}>
+            <Typography color="text.secondary" variant="body2">Không có race nào đang chờ simulation</Typography>
+          </Paper>
+        ) : (
+          <Grid container spacing={2}>
+            {simRaces.map(race => {
+              const badge = STATUS_BADGE[race.status] ?? { label: race.status, color: 'default' as const };
+              const isRunning = simulatingId === race._id;
+              const tournamentName = typeof race.tournamentId === 'object' ? race.tournamentId.name : '';
+              return (
+                <Grid item xs={12} sm={6} md={4} key={race._id}>
+                  <Card variant="outlined" sx={{ borderRadius: '12px', borderColor: race.status === 'running' ? '#22c55e' : undefined }}>
+                    <CardContent sx={{ pb: '12px !important' }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.3 }}>
+                          {race.name}
+                        </Typography>
+                        <Chip label={badge.label} size="small" color={badge.color} />
+                      </Box>
+                      {tournamentName && (
+                        <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+                          {tournamentName}
+                        </Typography>
+                      )}
+                      <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+                        <Chip label={race.grade} size="small" variant="outlined" />
+                        <Chip label={`${race.distance}m`} size="small" variant="outlined" />
+                        <Chip label={`$${race.purse.toLocaleString()}`} size="small" variant="outlined" color="success" />
+                      </Box>
+                      <Button
+                        fullWidth
+                        variant="contained"
+                        size="small"
+                        startIcon={isRunning ? <CircularProgress size={14} color="inherit" /> : <PlayArrow />}
+                        disabled={isRunning || race.status === 'running'}
+                        onClick={() => handleForceSimulate(race)}
+                        sx={{
+                          bgcolor: race.status === 'running' ? '#22c55e' : '#f59e0b',
+                          '&:hover': { bgcolor: race.status === 'running' ? '#16a34a' : '#d97706' },
+                          textTransform: 'none',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {race.status === 'running'
+                          ? 'Đang chạy...'
+                          : isRunning
+                          ? 'Đang khởi động'
+                          : 'Force Simulate'}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              );
+            })}
+          </Grid>
+        )}
+      </Box>
+
+      {/* ── Results Section ── */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h5" sx={{ fontWeight: 600 }}>Kết Quả & Quyết Toán Cược</Typography>
         <Button variant="outlined" onClick={loadFinishedRaces} disabled={loading}>Làm mới</Button>

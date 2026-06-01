@@ -103,6 +103,16 @@ export const raceApi = {
     return json.data;
   },
 
+  forceSimulate: async (token: string, raceId: string): Promise<{ message: string; raceId: string }> => {
+    const res = await fetchWithAuth(`${API_URL}/races/${raceId}/force-simulate`, {
+      method: 'POST',
+      headers: authHeader(token),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || 'Failed to start simulation');
+    return json.data;
+  },
+
   getRaceResults: async (token: string, raceId: string): Promise<{ race: Race; results: RaceResultEntry[] }> => {
     const res = await fetchWithAuth(`${API_URL}/races/${raceId}/results`, { headers: authHeader(token) });
     const json = await res.json();
