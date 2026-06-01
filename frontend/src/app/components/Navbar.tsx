@@ -1,10 +1,13 @@
 import { useNavigate, useLocation } from 'react-router';
 import { Trophy, Medal, TrendingUp } from 'lucide-react';
 import { Button } from '@mui/material';
+import { useAuth } from '../hooks/useAuth';
+import { ProfileDropdown } from './ProfileDropdown';
 
 export function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const isActive = (path: string) => location.pathname === path;
 
   return (
@@ -77,44 +80,50 @@ export function Navbar() {
 
         </div>
 
-        {/* Auth Buttons */}
+        {/* Auth Buttons / Profile */}
         <div className="flex items-center gap-3">
-          <Button
-            variant="text"
-            onClick={() => navigate('/login')}
-            sx={{
-              color: '#94a3b8',
-              textTransform: 'none',
-              fontWeight: 600,
-              fontSize: '14px',
-              px: 2,
-              '&:hover': { color: '#FFDE42', backgroundColor: 'transparent' }
-            }}
-          >
-            Đăng Nhập
-          </Button>
-          <Button
-            variant="contained"
-            onClick={() => navigate('/register')}
-            sx={{
-              background: 'linear-gradient(135deg, #FFDE42 0%, #B8860B 100%)',
-              color: '#1a0a00',
-              textTransform: 'none',
-              fontWeight: 700,
-              fontSize: '14px',
-              borderRadius: '10px',
-              px: 3,
-              py: 1,
-              boxShadow: '0 4px 14px 0 rgba(255, 222, 66, 0.35)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #FFE862 0%, #D4A420 100%)',
-                boxShadow: '0 6px 20px 0 rgba(255, 222, 66, 0.5)',
-                transform: 'translateY(-1px)'
-              }
-            }}
-          >
-            Bắt Đầu Ngay
-          </Button>
+          {user ? (
+            <ProfileDropdown />
+          ) : (
+            <>
+              <Button
+                variant="text"
+                onClick={() => navigate('/login')}
+                sx={{
+                  color: '#94a3b8',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  px: 2,
+                  '&:hover': { color: '#FFDE42', backgroundColor: 'transparent' }
+                }}
+              >
+                Đăng Nhập
+              </Button>
+              <Button
+                variant="contained"
+                onClick={() => navigate('/register')}
+                sx={{
+                  background: 'linear-gradient(135deg, #FFDE42 0%, #B8860B 100%)',
+                  color: '#1a0a00',
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  fontSize: '14px',
+                  borderRadius: '10px',
+                  px: 3,
+                  py: 1,
+                  boxShadow: '0 4px 14px 0 rgba(255, 222, 66, 0.35)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #FFE862 0%, #D4A420 100%)',
+                    boxShadow: '0 6px 20px 0 rgba(255, 222, 66, 0.5)',
+                    transform: 'translateY(-1px)'
+                  }
+                }}
+              >
+                Bắt Đầu Ngay
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </nav>

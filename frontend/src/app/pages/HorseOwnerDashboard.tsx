@@ -24,6 +24,7 @@ import {
   Send,
   Loader2,
   AlertTriangle,
+  Coins,
 } from "lucide-react";
 import {
   Button,
@@ -51,6 +52,7 @@ import {
 } from "recharts";
 import { ProfileDropdown } from "../components/ProfileDropdown";
 import { useAuth } from "../hooks/useAuth";
+import { useWallet } from "../hooks/useWallet";
 import { horseApi, Horse } from "../api/horse";
 import { userApi, JockeyListItem } from "../api/user";
 import { tournamentApi, Tournament } from "../api/tournament";
@@ -68,6 +70,7 @@ const GRADE_COLORS: Record<string, string> = {
 export function HorseOwnerDashboard() {
   const navigate = useNavigate();
   const { user, token } = useAuth();
+  const { formatted: walletBalance } = useWallet();
 
   useEffect(() => {
     if (!user) navigate("/");
@@ -512,12 +515,17 @@ export function HorseOwnerDashboard() {
             <div>
               <div className="text-white font-semibold">Cổng Chủ Ngựa</div>
               <div className="text-sm text-slate-400">
-                Xin chào, Nguyễn Văn A
+                Xin chào, {user?.fullName || 'Chủ Ngựa'}
               </div>
             </div>
           </div>
 
           <div className="hidden md:flex items-center gap-4">
+            {/* Wallet Balance Badge */}
+            <div className="flex items-center gap-2 bg-[#FFDE42]/10 border border-[#FFDE42]/20 px-4 py-2 rounded-xl">
+              <Coins className="w-4 h-4 text-[#FFDE42]" />
+              <span className="text-[#FFDE42] font-bold text-sm">{walletBalance ?? user?.balance ?? '...'}</span>
+            </div>
             <ProfileDropdown />
           </div>
 

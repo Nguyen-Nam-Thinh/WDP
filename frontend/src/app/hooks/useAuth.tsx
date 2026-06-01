@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { authApi } from '../api/auth';
 import { userApi } from '../api/user';
 import { toast } from 'sonner';
@@ -74,14 +74,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('user', JSON.stringify(newUser));
   };
 
-  const updateUser = (patch: Partial<User>) => {
+  const updateUser = useCallback((patch: Partial<User>) => {
     setUser((prev) => {
       if (!prev) return prev;
       const updated = { ...prev, ...patch };
       localStorage.setItem('user', JSON.stringify(updated));
       return updated;
     });
-  };
+  }, []);
 
   const logout = async () => {
     if (token) {
