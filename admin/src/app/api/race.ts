@@ -89,4 +89,7 @@ export const raceApi = {
     const q = new URLSearchParams({ page: String(page), limit: String(limit) });
     return apiRequest<{ registrations: Registration[]; total: number }>(`/races/${raceId}/registrations?${q}`);
   },
+
+  forceSimulate: (id: string) =>
+    apiRequest<{ message: string; raceId: string }>(`/races/${id}/force-simulate`, { method: 'POST' }),
 };

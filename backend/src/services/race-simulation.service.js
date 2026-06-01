@@ -51,47 +51,7 @@ function getUpgradedGrade(currentGrade, totalPoints) {
   return currentGrade;
 }
 
-// Emit staged progress updates (10 ticks × 3s = 30s simulation window)
-// Winner's progress rate is higher, gradually reveals true finish order
-async function emitStagedProgress(raceId, ordered) {
-  let io;
-  try { io = getIO(); } catch { return; }
-
-  const TICKS = 60;
-  const TICK_MS = 500;
-  const n = ordered.length;
-
-  const state = ordered.map((entry) => ({
-    horseId: entry.horseId.toString(),
-    horseName: entry.horseName,
-    baseRate: 1.0 - ((entry.position - 1) / Math.max(n - 1, 1)) * 0.3,
-    progress: 0,
-  }));
-
-  for (let tick = 1; tick <= TICKS; tick++) {
-    await new Promise((res) => setTimeout(res, TICK_MS));
-
-    state.forEach((h) => {
-      // Smaller noise per tick to match higher frequency
-      const step = (100 / TICKS) * h.baseRate + gaussianNoise(0.3);
-      h.progress = Math.min(100, Math.max(0, h.progress + step));
-    });
-
-    const ranked = [...state].sort((a, b) => b.progress - a.progress);
-
-    io.to(`race:${raceId}`).emit('race:progress', {
-      raceId,
-      elapsed: tick * TICK_MS / 1000,
-      total: (TICKS * TICK_MS) / 1000,
-      positions: ranked.map((h, idx) => ({
-        rank: idx + 1,
-        horseId: h.horseId,
-        horseName: h.horseName,
-        progressPct: Math.round(h.progress * 10) / 10,
-      })),
-    });
-  }
-}
+const RACE_DURATION_MS = 30_000;
 
 // Atomic DB write: results + prizes + points + grade upgrades + bet settlement
 async function finalizeRace(race, ordered) {
@@ -241,23 +201,31 @@ async function runRaceSimulation(raceId) {
       finishTime: 60000 + idx * 500 + Math.floor(Math.random() * 300),
     }));
 
-  // Emit race:started with starting lineup
+  // Emit race:started with animation params — frontend animates locally at 60fps
+  const n = ordered.length;
   let io;
   try {
     io = getIO();
     io.to(`race:${raceId}`).emit('race:started', {
       raceId,
       raceName: race.name,
+      raceDurationMs: RACE_DURATION_MS,
       horses: ordered.map((e) => ({
-        horseId: e.horseId,
+        horseId: e.horseId.toString(),
         horseName: e.horseName,
         jockeyName: e.jockeyName,
+        // speedFactor: winner=1.0, last≈0.75 — frontend uses this for local animation
+        speedFactor: 1.0 - (e.position - 1) / Math.max(n - 1, 1) * 0.25,
+        // Noise params: make mid-race positions dynamic, converge to true order at finish
+        noiseAmplitude: 0.05,
+        noiseFreq: 3 + Math.random() * 2,
+        noisePhase: Math.random() * Math.PI * 2,
       })),
     });
   } catch { /* socket optional */ }
 
-  // Staged 30-second simulation with live progress updates
-  await emitStagedProgress(raceId, ordered);
+  // Wait for race to complete (frontend animates during this window)
+  await new Promise((res) => setTimeout(res, RACE_DURATION_MS));
 
   // Commit everything atomically
   await finalizeRace(race, ordered);
