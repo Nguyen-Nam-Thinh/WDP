@@ -24,6 +24,7 @@ import {
   AlertTriangle,
   Image as ImageIcon,
   Ban,
+  Coins,
 } from 'lucide-react';
 import { 
   Button, Chip, Dialog, DialogTitle, DialogContent, DialogActions, 
@@ -34,6 +35,7 @@ import {
 } from 'recharts';
 import { ProfileDropdown } from '../components/ProfileDropdown';
 import { useAuth } from '../hooks/useAuth';
+import { useWallet } from '../hooks/useWallet';
 import { invitationApi, JockeyInvitation } from '../api/invitation';
 import { toast } from 'sonner';
 
@@ -47,6 +49,7 @@ const GRADE_COLORS: Record<string, string> = {
 export function JockeyDashboard() {
   const navigate = useNavigate();
   const { user, token } = useAuth();
+  const { formatted: walletBalance } = useWallet();
 
   useEffect(() => {
     if (!user) {
@@ -234,7 +237,12 @@ export function JockeyDashboard() {
             </div>
           </div>
 
-          <div className="hidden md:flex items-center gap-6">
+          <div className="hidden md:flex items-center gap-4">
+            {/* Wallet Balance Badge */}
+            <div className="flex items-center gap-2 bg-[#FFDE42]/10 border border-[#FFDE42]/20 px-4 py-2 rounded-xl">
+              <Coins className="w-4 h-4 text-[#FFDE42]" />
+              <span className="text-[#FFDE42] font-bold text-sm">{walletBalance ?? user?.balance ?? '...'}</span>
+            </div>
             <ProfileDropdown />
           </div>
 

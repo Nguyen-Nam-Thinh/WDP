@@ -42,6 +42,7 @@ import {
 import { Button, Chip, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { ProfileDropdown } from '../components/ProfileDropdown';
 import { useAuth } from '../hooks/useAuth';
+import { useWallet } from '../hooks/useWallet';
 import { raceApi, type Race } from '../api/race';
 import { betApi, type Bet, type BetType, BET_MULTIPLIERS } from '../api/bet';
 import { toast } from 'sonner';
@@ -49,6 +50,7 @@ import { toast } from 'sonner';
 export function SpectatorDashboard() {
   const navigate = useNavigate();
   const { user, token } = useAuth();
+  const { formatted: walletBalance } = useWallet();
   const [activeTab, setActiveTab] = useState('tournaments');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [predictionModalOpen, setPredictionModalOpen] = useState(false);
@@ -471,7 +473,7 @@ export function SpectatorDashboard() {
             {/* Wallet Balance Badge */}
             <div className="flex items-center gap-2 bg-[#FFDE42]/10 border border-[#FFDE42]/20 px-4 py-2 rounded-xl">
               <Coins className="w-4 h-4 text-[#FFDE42]" />
-              <span className="text-[#FFDE42] font-bold text-sm">{user?.balance || mockUser.balance}</span>
+              <span className="text-[#FFDE42] font-bold text-sm">{walletBalance ?? user?.balance ?? '...'}</span>
             </div>
 
             {/* Notifications */}
