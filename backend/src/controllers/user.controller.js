@@ -88,4 +88,22 @@ async function getUsers(req, res, next) {
   }
 }
 
-module.exports = { getMe, updateMe, getMyWallet, getMyTransactions, uploadAvatar, getJockeys, getReferees, getUsers };
+async function toggleActive(req, res, next) {
+  try {
+    const user = await userService.toggleActive(req.params.id);
+    sendSuccess(res, user, 200, `User ${user.isActive ? 'activated' : 'deactivated'}`);
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function adminUpdateUser(req, res, next) {
+  try {
+    const user = await userService.adminUpdateUser(req.params.id, req.body);
+    sendSuccess(res, user, 200, 'User updated successfully');
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { getMe, updateMe, getMyWallet, getMyTransactions, uploadAvatar, getJockeys, getReferees, getUsers, toggleActive, adminUpdateUser };

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
+import { useAdminAuth } from '../context/AdminAuthContext';
 
 const drawerWidth = 260;
 
@@ -93,10 +94,17 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, logout } = useAdminAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const isActive = (path: string) => {
     return location.pathname === path;
+  };
+
+  const handleLogout = () => {
+    logout();
+    setUserMenuOpen(false);
+    navigate('/login');
   };
 
   const currentPage = menuItems.find((item) => isActive(item.path));
@@ -253,10 +261,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 10px', borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer' }}
             >
               <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #f5c842 0%, #d4a017 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 13 }}>
-                A
+                {user?.name?.charAt(0).toUpperCase() ?? 'A'}
               </div>
               <div style={{ textAlign: 'left' }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#111', lineHeight: 1.2 }}>Admin</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#111', lineHeight: 1.2 }}>{user?.name ?? 'Admin'}</div>
                 <div style={{ fontSize: 11, color: '#999' }}>Quản trị viên</div>
               </div>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
@@ -266,11 +274,16 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </button>
 
             {userMenuOpen && (
-              <div style={{
-                position: 'absolute', right: 0, top: '100%', marginTop: 6,
-                backgroundColor: '#fff', border: '1px solid #f0f0f0', borderRadius: 10,
-                boxShadow: '0 8px 24px rgba(0,0,0,0.1)', minWidth: 180, zIndex: 999, overflow: 'hidden',
-              }}>
+              <>
+                <div
+                  onClick={() => setUserMenuOpen(false)}
+                  style={{ position: 'fixed', inset: 0, zIndex: 998 }}
+                />
+                <div style={{
+                  position: 'absolute', right: 0, top: '100%', marginTop: 6,
+                  backgroundColor: '#fff', border: '1px solid #f0f0f0', borderRadius: 10,
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.1)', minWidth: 180, zIndex: 999, overflow: 'hidden',
+                }}>
                 {[
                   { label: 'Hồ sơ', icon: '👤' },
                   { label: 'Cài đặt', icon: '⚙️' },
@@ -287,12 +300,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 <div style={{ borderTop: '1px solid #f5f5f5', margin: '4px 0' }} />
                 <button
                   className="user-menu-item"
-                  onClick={() => setUserMenuOpen(false)}
+                  onClick={handleLogout}
                   style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 14px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 13.5, color: '#ef4444', fontWeight: 500, textAlign: 'left' }}
                 >
                   <span>🚪</span> Đăng xuất
                 </button>
               </div>
+              </>
             )}
           </div>
         </header>
@@ -302,14 +316,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           {children}
         </main>
       </div>
-
-      {/* Overlay for user menu */}
-      {userMenuOpen && (
-        <div
-          onClick={() => setUserMenuOpen(false)}
-          style={{ position: 'fixed', inset: 0, zIndex: 998 }}
-        />
-      )}
     </div>
   );
 }

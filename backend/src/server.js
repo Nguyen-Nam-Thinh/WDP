@@ -11,7 +11,8 @@ const { startRaceStatusJob } = require('./jobs/raceStatus.job');
 const app = express();
 
 app.use(helmet());
-app.use(cors({ origin: env.CLIENT_URL, credentials: true }));
+const allowedOrigins = env.CLIENT_URL ? env.CLIENT_URL.split(',') : [];
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

@@ -94,4 +94,23 @@ async function getUsers(page = 1, limit = 20, role) {
   return { users, total, page, limit, totalPages: Math.ceil(total / limit) };
 }
 
-module.exports = { getUserById, updateProfile, uploadAvatar, getJockeys, getReferees, getUsers };
+async function toggleActive(userId) {
+  const user = await User.findById(userId);
+  if (!user) throw new AppError(404, 'User not found');
+  user.isActive = !user.isActive;
+  await user.save();
+  return user;
+}
+
+async function adminUpdateUser(userId, data) {
+  const allowed = ['fullName', 'phone', 'role', 'isActive'];
+  const update = {};
+  for (const key of allowed) {
+    if (data[key] !== undefined) update[key] = data[key];
+  }
+  const user = await User.findByIdAndUpdate(userId, { $set: update }, { new: true, runValidators: true });
+  if (!user) throw new AppError(404, 'User not found');
+  return user;
+}
+
+module.exports = { getUserById, updateProfile, uploadAvatar, getJockeys, getReferees, getUsers, toggleActive, adminUpdateUser };
