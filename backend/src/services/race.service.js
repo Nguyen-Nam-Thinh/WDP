@@ -247,7 +247,49 @@ async function getRaceHorses(raceId) {
   };
 }
 
+// Admin force-start: auto-pass pending registrations + run simulation immediately
+async function forceSimulateRace(raceId) {
+  const { Registration } = require('../models/registration.model');
+  const { runRaceSimulation } = require('./race-simulation.service');
+
+  const race = await Race.findById(raceId);
+  if (!race) throw new AppError(404, 'Race not found');
+  if (race.status === 'finished' || race.status === 'cancelled') {
+    throw new AppError(400, `Race already ${race.status}`);
+  }
+
+  // Auto-pass all active registrations still pending pre-check
+  await Registration.updateMany(
+    { raceId, status: 'active', 'preCheckResult.status': 'pending' },
+    { $set: { 'preCheckResult.status': 'passed', 'preCheckResult.checkedAt': new Date() } },
+  );
+
+  // Ensure race is in running status
+  await Race.findByIdAndUpdate(raceId, { $set: { status: 'running' } });
+
+  // Fire simulation async (non-blocking — client waits for socket events)
+  runRaceSimulation(raceId).catch((err) =>
+    console.error(`[force-simulate] Race ${raceId} failed:`, err.message),
+  );
+
+  return { message: 'Simulation started', raceId };
+}
+
+async function getRaceResults(raceId) {
+  const race = await Race.findById(raceId);
+  if (!race) throw new AppError(404, 'Race not found');
+
+  const { RaceResult } = require('../models/race_result.model');
+  const results = await RaceResult.find({ raceId })
+    .populate('horseId', 'name breed currentGrade primaryImageUrl')
+    .populate('jockeyId', 'fullName jockeyProfile')
+    .sort({ position: 1 });
+
+  return { race, results };
+}
+
 module.exports = {
   createRace, getRaces, getRaceById, updateRace,
   cancelRace, assignReferee, updateRaceStatus, getRaceRegistrations, getRaceHorses,
+  getRaceResults, forceSimulateRace,
 };

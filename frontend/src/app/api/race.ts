@@ -1,6 +1,16 @@
 import { API_URL } from "./auth";
 import { fetchWithAuth } from "../utils/apiClient";
 
+export interface RaceResultEntry {
+  _id: string;
+  position: number;
+  horseId: { _id: string; name: string; breed?: string; currentGrade: string; primaryImageUrl?: string };
+  jockeyId?: { _id: string; fullName: string; jockeyProfile?: { winCount: number; raceCount: number } } | null;
+  finishTime: number;
+  prizeAmount: number;
+  pointsEarned: number;
+}
+
 export interface RaceEligibility {
   allowedGrades: ("Maiden" | "G3" | "G2" | "G1")[];
   minPoints: number;
@@ -90,6 +100,13 @@ export const raceApi = {
     const res = await fetch(`${API_URL}/races/${raceId}/horses`, { headers: authHeader(token) });
     const json = await res.json();
     if (!res.ok) throw new Error(json.message || "Failed to fetch horses");
+    return json.data;
+  },
+
+  getRaceResults: async (token: string, raceId: string): Promise<{ race: Race; results: RaceResultEntry[] }> => {
+    const res = await fetchWithAuth(`${API_URL}/races/${raceId}/results`, { headers: authHeader(token) });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || 'Failed to fetch race results');
     return json.data;
   },
 };

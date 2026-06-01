@@ -14,6 +14,7 @@ import { DepositHistoryPage } from "./pages/DepositHistoryPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { DepositPortalPage } from "./pages/DepositPortalPage";
 import { ForgotPassword } from "./pages/ForgotPassword";
+import { LiveRacePage } from "./pages/LiveRacePage";
 
 export const router = createBrowserRouter([
   {
@@ -75,6 +76,10 @@ export const router = createBrowserRouter([
   {
     path: "/forgot-password",
     element: <ForgotPassword />,
+  },
+  {
+    path: "/spectator/race/:raceId",
+    element: <LiveRacePage />,
   },
 ]);
 

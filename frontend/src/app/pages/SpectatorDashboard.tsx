@@ -79,12 +79,19 @@ export function SpectatorDashboard() {
     if (!token) return;
     setLoadingSchedule(true);
     try {
-      const [openRes, runningRes] = await Promise.all([
+      const [openRes, runningRes, preCheckRes, closedRes] = await Promise.all([
         raceApi.getRaces(token, { status: 'open', limit: 30 }),
         raceApi.getRaces(token, { status: 'running', limit: 10 }),
+        raceApi.getRaces(token, { status: 'pre_check', limit: 10 }),
+        raceApi.getRaces(token, { status: 'closed', limit: 10 }),
       ]);
       setScheduleRaces(openRes.races ?? []);
-      setLiveRacesData(runningRes.races ?? []);
+      // Live tab shows running + pre_check + closed (sắp chạy)
+      setLiveRacesData([
+        ...(runningRes.races ?? []),
+        ...(preCheckRes.races ?? []),
+        ...(closedRes.races ?? []),
+      ]);
     } catch (err: any) {
       toast.error(err.message || 'Không thể tải lịch đua');
     } finally {
@@ -106,7 +113,7 @@ export function SpectatorDashboard() {
   };
 
   useEffect(() => {
-    if (activeTab === 'schedule') loadSchedule();
+    if (activeTab === 'schedule' || activeTab === 'live') loadSchedule();
     if (activeTab === 'predictions') loadMyBets();
   }, [activeTab, token]);
   const [depositMethod, setDepositMethod] = useState('bank');
@@ -635,107 +642,113 @@ export function SpectatorDashboard() {
         {activeTab === 'live' && (
           <div>
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+              <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
               <h2 className="text-3xl font-bold text-white">Đang Trực Tiếp</h2>
-              <Chip label={`${liveRaces.length} Đang Hoạt Động`} size="small" sx={{ backgroundColor: '#ef4444', color: 'white' }} />
+              <Chip
+                label={`${liveRacesData.length} Đang Hoạt Động`}
+                size="small"
+                sx={{ backgroundColor: liveRacesData.length > 0 ? '#ef4444' : '#475569', color: 'white' }}
+              />
+              <button
+                onClick={loadSchedule}
+                className="ml-auto text-xs text-slate-400 hover:text-white transition-colors flex items-center gap-1"
+              >
+                <Activity className="w-3 h-3" />
+                Làm mới
+              </button>
             </div>
 
-            {liveRaces.length > 0 ? (
+            {loadingSchedule ? (
+              <div className="flex justify-center py-16">
+                <div className="w-8 h-8 border-2 border-[#FFDE42] border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : liveRacesData.length > 0 ? (
               <div className="space-y-6">
-                {liveRaces.map(race => (
-                  <div key={race.id} className="bg-white/5 backdrop-blur-md border border-red-500/30 rounded-2xl p-6 shadow-xl shadow-red-500/10">
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-                        <div>
-                          <h3 className="text-xl font-bold text-white">{race.raceName}</h3>
-                          <p className="text-sm text-slate-400">{race.tournament}</p>
+                {liveRacesData.map(race => {
+                  const myBetOnRace = myBets.some(b => (b.raceId as any)?._id === race._id && b.status === 'pending');
+                  const isRunning = race.status === 'running';
+                  const borderColor = isRunning ? 'border-red-500/30' : 'border-amber-500/20';
+                  const statusLabel = isRunning ? 'LIVE' : race.status === 'pre_check' ? 'Chuẩn bị' : 'Đóng cược';
+                  const statusBg = isRunning ? '#ef4444' : '#f59e0b';
+                  return (
+                    <div key={race._id} className={`bg-white/5 backdrop-blur-md border ${borderColor} rounded-2xl p-6`}>
+                      <div className="flex items-center justify-between mb-5">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <div className={`w-3 h-3 rounded-full animate-pulse shrink-0 ${isRunning ? 'bg-red-500' : 'bg-amber-400'}`} />
+                          <div>
+                            <h3 className="text-xl font-bold text-white">{race.name}</h3>
+                            <p className="text-sm text-slate-400">{race.distance}m • {new Date(race.scheduledTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</p>
+                          </div>
+                          <Chip label={statusLabel} size="small" sx={{ backgroundColor: statusBg, color: 'white', fontWeight: 'bold' }} />
+                          {myBetOnRace && (
+                            <Chip label="✓ Bạn đã cược" size="small" sx={{ bgcolor: '#FFDE42', color: '#1B0C0C', fontWeight: 'bold', fontSize: '0.7rem' }} />
+                          )}
                         </div>
                         <Chip
-                          label="LIVE"
+                          label={race.grade}
                           size="small"
-                          icon={<Play className="w-4 h-4" />}
-                          sx={{ backgroundColor: '#ef4444', color: 'white', fontWeight: 'bold' }}
+                          sx={{ bgcolor: 'rgba(245,158,11,0.15)', color: '#fbbf24', border: '1px solid #f59e0b', fontWeight: 'bold' }}
                         />
                       </div>
-                      <div className="text-right">
-                        <div className="text-sm text-slate-400">Thời Gian Đã Trôi</div>
-                        <div className="text-red-400 text-2xl font-bold">{race.elapsed}</div>
-                      </div>
-                    </div>
 
-                    <div className="grid md:grid-cols-3 gap-4 mb-6">
-                      <div className="bg-white/5 rounded-xl p-4">
-                        <div className="text-xs text-slate-400 mb-1">Cấp Độ</div>
-                        <div className="text-white font-medium">{race.grade}</div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-5">
+                        <div className="bg-white/5 rounded-xl p-3">
+                          <div className="text-xs text-slate-400 mb-1">Cấp Hạng</div>
+                          <div className="text-white font-semibold">{race.grade}</div>
+                        </div>
+                        <div className="bg-white/5 rounded-xl p-3">
+                          <div className="text-xs text-slate-400 mb-1">Cự Ly</div>
+                          <div className="text-white font-semibold">{race.distance}m</div>
+                        </div>
+                        <div className="bg-white/5 rounded-xl p-3">
+                          <div className="text-xs text-slate-400 mb-1">Giải Thưởng</div>
+                          <div className="text-[#FFDE42] font-semibold">{race.purse.toLocaleString()} coins</div>
+                        </div>
                       </div>
-                      <div className="bg-white/5 rounded-xl p-4">
-                        <div className="text-xs text-slate-400 mb-1">Cự Ly</div>
-                        <div className="text-white font-medium">{race.distance}</div>
-                      </div>
-                      <div className="bg-white/5 rounded-xl p-4">
-                        <div className="text-xs text-slate-400 mb-1">Trọng Tài</div>
-                        <div className="text-white font-medium">{race.referee}</div>
-                      </div>
-                    </div>
 
-                    <div className="bg-slate-900/50 rounded-xl p-5 mb-4">
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
-                          <Activity className="w-4 h-4" />
-                          Bảng Xếp Hạng Trực Tiếp
-                        </h4>
-                        <Eye className="w-4 h-4 text-slate-400" />
+                      <div className={`${isRunning ? 'bg-red-500/5 border-red-500/20' : 'bg-amber-500/5 border-amber-500/20'} border rounded-xl p-4 mb-4 flex items-center gap-3`}>
+                        <div className={`w-8 h-8 ${isRunning ? 'bg-red-500/20' : 'bg-amber-500/20'} rounded-full flex items-center justify-center shrink-0`}>
+                          <Activity className={`w-4 h-4 ${isRunning ? 'text-red-400' : 'text-amber-400'}`} />
+                        </div>
+                        <div>
+                          <div className="text-white text-sm font-medium">{isRunning ? 'Cuộc đua đang diễn ra' : 'Cuộc đua sắp bắt đầu'}</div>
+                          <div className="text-slate-400 text-xs">Vào xem trực tiếp để theo dõi vị trí ngựa và nhận kết quả ngay khi hoàn thành</div>
+                        </div>
                       </div>
-                      <div className="space-y-3">
-                        {race.leaders.map((leader) => (
-                          <div key={leader.position} className="flex items-center gap-4 p-4 bg-slate-800/50 rounded-xl hover:bg-slate-800 transition-colors">
-                            <div className={`w-10 h-10 flex items-center justify-center rounded-xl font-bold ${
-                              leader.position === 1 ? 'bg-amber-500 text-white' :
-                              leader.position === 2 ? 'bg-slate-400 text-white' :
-                              leader.position === 3 ? 'bg-orange-600 text-white' :
-                              'bg-slate-700 text-slate-300'
-                            }`}>
-                              #{leader.position}
-                            </div>
-                            <div className="flex-1">
-                              <div className="text-white font-semibold">{leader.horse}</div>
-                              <div className="text-sm text-slate-400">{leader.jockey}</div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-[#FFDE42] font-medium">{leader.speed}</div>
-                              <div className="text-xs text-slate-500">Còn {leader.distance}</div>
-                            </div>
-                            {leader.position === 1 && (
-                              <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
 
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      startIcon={<Eye />}
-                      sx={{
-                        background: 'linear-gradient(135deg, #FFDE42 0%, #1B0C0C 100%)',
-                        borderRadius: '12px',
-                        py: 1.5,
-                        fontWeight: 600,
-                        '&:hover': { background: 'linear-gradient(135deg, #FFDE42 0%, #4C5C2D 100%)' }
-                      }}
-                    >
-                      Xem Trực Tiếp
-                    </Button>
-                  </div>
-                ))}
+                      <Button
+                        fullWidth
+                        variant="contained"
+                        startIcon={<Eye />}
+                        onClick={() => navigate(`/spectator/race/${race._id}`)}
+                        sx={{
+                          background: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)',
+                          borderRadius: '12px',
+                          py: 1.5,
+                          fontWeight: 700,
+                          textTransform: 'none',
+                          fontSize: '0.95rem',
+                          '&:hover': { background: 'linear-gradient(135deg, #f87171 0%, #ef4444 100%)' }
+                        }}
+                      >
+                        Xem Trực Tiếp
+                      </Button>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-12 text-center">
                 <Play className="w-16 h-16 text-slate-600 mx-auto mb-4" />
                 <h3 className="text-xl text-white font-semibold mb-2">Không Có Cuộc Đua Trực Tiếp</h3>
-                <p className="text-slate-400">Quay lại sớm để xem các cuộc đua sắp tới</p>
+                <p className="text-slate-400 mb-6">Hiện chưa có cuộc đua nào đang chạy</p>
+                <Button
+                  variant="outlined"
+                  onClick={() => setActiveTab('schedule')}
+                  sx={{ borderColor: 'rgba(255,222,66,0.4)', color: '#FFDE42', borderRadius: '10px', textTransform: 'none', '&:hover': { borderColor: '#FFDE42', backgroundColor: 'rgba(255,222,66,0.05)' } }}
+                >
+                  Xem Lịch Trình Sắp Tới
+                </Button>
               </div>
             )}
           </div>
@@ -814,6 +827,11 @@ export function SpectatorDashboard() {
                               <div className="text-xs text-amber-400 font-medium">Đã Đóng Cược</div>
                             </div>
                           )}
+                          <Button fullWidth variant="outlined" startIcon={<Eye />}
+                            onClick={() => navigate(`/spectator/race/${race._id}`)}
+                            sx={{ borderColor: 'rgba(255,255,255,0.2)', color: '#94a3b8', borderRadius: '12px', py: 1, fontWeight: 600, textTransform: 'none', fontSize: '0.8rem', '&:hover': { borderColor: '#FFDE42', color: '#FFDE42', backgroundColor: 'rgba(255,222,66,0.05)' } }}>
+                            Xem Race
+                          </Button>
                         </div>
                       </div>
                     </div>

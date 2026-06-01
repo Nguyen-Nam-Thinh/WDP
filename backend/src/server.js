@@ -1,3 +1,4 @@
+const http = require('http');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -7,6 +8,7 @@ const { connectDB } = require('./config/database');
 const apiRoutes = require('./routes');
 const { errorHandler, notFound } = require('./middleware/error.middleware');
 const { startRaceStatusJob } = require('./jobs/raceStatus.job');
+const { initSocket } = require('./sockets');
 
 const app = express();
 
@@ -28,8 +30,13 @@ app.use(errorHandler);
 
 async function bootstrap() {
   await connectDB();
+
+  const httpServer = http.createServer(app);
+  initSocket(httpServer, env.CLIENT_URL);
+
   startRaceStatusJob();
-  app.listen(env.PORT, () => {
+
+  httpServer.listen(env.PORT, () => {
     console.log(`Server running on port ${env.PORT} [${env.NODE_ENV}]`);
   });
 }

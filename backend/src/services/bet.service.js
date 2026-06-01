@@ -220,6 +220,43 @@ async function settleBets(raceId) {
   return { settled: pendingBets.length, won: wonCount, lost: lostCount };
 }
 
+// Settle bets within an external MongoDB session (called from race simulation transaction)
+async function settleBetsWithSession(raceId, positionMap, raceName, session) {
+  const pendingBets = await Bet.find({ raceId, status: 'pending' }).session(session);
+
+  for (const bet of pendingBets) {
+    const pos = positionMap[bet.horseId.toString()];
+    let won = false;
+
+    if (pos !== undefined) {
+      if (bet.betType === 'win' && pos === 1) won = true;
+      else if (bet.betType === 'place' && pos <= 2) won = true;
+      else if (bet.betType === 'show' && pos <= 3) won = true;
+    }
+
+    if (won) {
+      const payout = Math.floor(bet.amount * bet.multiplier);
+      const wallet = await Wallet.findOne({ userId: bet.spectatorId }).session(session);
+      if (wallet) {
+        await walletService.creditWallet(
+          wallet._id, bet.spectatorId, payout,
+          'bet_payout',
+          `Win: ${bet.betType} on ${raceName}`,
+          bet._id, 'Bet', session,
+        );
+      }
+      bet.status = 'won';
+      bet.payoutAmount = payout;
+    } else {
+      bet.status = 'lost';
+    }
+    bet.settledAt = new Date();
+    await bet.save({ session });
+  }
+
+  return pendingBets.length;
+}
+
 // Refund all pending bets when race is cancelled
 async function refundRaceBets(raceId, session) {
   const pendingBets = await Bet.find({ raceId, status: 'pending' }).session(session);
@@ -241,4 +278,4 @@ async function refundRaceBets(raceId, session) {
   return pendingBets.length;
 }
 
-module.exports = { placeBet, getMyBets, getBetById, cancelBet, getRaceBets, settleBets, refundRaceBets };
+module.exports = { placeBet, getMyBets, getBetById, cancelBet, getRaceBets, settleBets, settleBetsWithSession, refundRaceBets };

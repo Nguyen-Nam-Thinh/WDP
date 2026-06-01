@@ -60,5 +60,7 @@ router.patch('/:id/assign-referee', authorize('admin'), validate(assignRefereeSc
 router.patch('/:id/status', authorize('admin'), validate(statusSchema), raceController.updateRaceStatus);
 router.get('/:id/registrations', raceController.getRaceRegistrations);
 router.get('/:id/horses', raceController.getRaceHorses);
+router.get('/:id/results', raceController.getRaceResults);
+router.post('/:id/force-simulate', authorize('admin'), raceController.forceSimulateRace);
 
 module.exports = router;

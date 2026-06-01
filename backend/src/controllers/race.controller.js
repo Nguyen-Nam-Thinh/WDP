@@ -93,7 +93,26 @@ async function getRaceHorses(req, res, next) {
   }
 }
 
+async function forceSimulateRace(req, res, next) {
+  try {
+    const result = await raceService.forceSimulateRace(req.params.id);
+    sendSuccess(res, result, 202, 'Simulation started');
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function getRaceResults(req, res, next) {
+  try {
+    const result = await raceService.getRaceResults(req.params.id);
+    sendSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   createRace, getRaces, getRaceById, updateRace,
   cancelRace, assignReferee, updateRaceStatus, getRaceRegistrations, getRaceHorses,
+  getRaceResults, forceSimulateRace,
 };
