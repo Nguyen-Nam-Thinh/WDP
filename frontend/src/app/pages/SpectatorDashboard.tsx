@@ -45,6 +45,8 @@ import { useAuth } from '../hooks/useAuth';
 import { useWallet } from '../hooks/useWallet';
 import { raceApi, type Race } from '../api/race';
 import { betApi, type Bet, type BetType, BET_MULTIPLIERS } from '../api/bet';
+import { tournamentApi, type Tournament } from '../api/tournament';
+import { rankingsApi, type HorseRanking, type JockeyRanking, type OwnerRanking, type SpectatorRanking } from '../api/rankings';
 import { toast } from 'sonner';
 
 export function SpectatorDashboard() {
@@ -62,6 +64,23 @@ export function SpectatorDashboard() {
       navigate('/');
     }
   }, [user, navigate]);
+
+  // ── Real tournaments ──
+  const [tournamentsData, setTournamentsData] = useState<Tournament[]>([]);
+  const [loadingTournaments, setLoadingTournaments] = useState(false);
+
+  const loadTournaments = async () => {
+    if (!token) return;
+    setLoadingTournaments(true);
+    try {
+      const res = await tournamentApi.getTournaments(token);
+      setTournamentsData(res.tournaments ?? []);
+    } catch (err: any) {
+      toast.error(err.message || 'Không thể tải giải đấu');
+    } finally {
+      setLoadingTournaments(false);
+    }
+  };
 
   // ── Real races for Schedule tab ──
   const [liveRacesData, setLiveRacesData] = useState<Race[]>([]);
@@ -113,9 +132,17 @@ export function SpectatorDashboard() {
   };
 
   useEffect(() => {
+    if (activeTab === 'tournaments') loadTournaments();
     if (activeTab === 'schedule' || activeTab === 'live') loadSchedule();
     if (activeTab === 'predictions') loadMyBets();
+    if (activeTab === 'rankings') loadRankings();
+    if (activeTab === 'leaderboard') loadLeaderboard();
   }, [activeTab, token]);
+
+  // Load bets on mount để stats cards dùng dữ liệu thật
+  useEffect(() => {
+    if (token) loadMyBets();
+  }, [token]);
   const [depositMethod, setDepositMethod] = useState('bank');
   const [depositAmountInput, setDepositAmountInput] = useState('');
   const [depositStep, setDepositStep] = useState(1);
@@ -127,6 +154,46 @@ export function SpectatorDashboard() {
   const [rankingType, setRankingType] = useState('horses');
   const [rankingFilter, setRankingFilter] = useState('all-time');
   const [tournamentFilter, setTournamentFilter] = useState('all');
+
+  // ── Real rankings data ──
+  const [horseRankings, setHorseRankings] = useState<HorseRanking[]>([]);
+  const [jockeyRankings, setJockeyRankings] = useState<JockeyRanking[]>([]);
+  const [ownerRankings, setOwnerRankings] = useState<OwnerRanking[]>([]);
+  const [spectatorRankings, setSpectatorRankings] = useState<SpectatorRanking[]>([]);
+  const [loadingRankings, setLoadingRankings] = useState(false);
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+
+  const loadRankings = async () => {
+    if (!token) return;
+    setLoadingRankings(true);
+    try {
+      const [horses, jockeys, owners] = await Promise.all([
+        rankingsApi.getHorseRankings(token),
+        rankingsApi.getJockeyRankings(token),
+        rankingsApi.getOwnerRankings(token),
+      ]);
+      setHorseRankings(horses);
+      setJockeyRankings(jockeys);
+      setOwnerRankings(owners);
+    } catch (err: any) {
+      toast.error(err.message || 'Không thể tải bảng xếp hạng');
+    } finally {
+      setLoadingRankings(false);
+    }
+  };
+
+  const loadLeaderboard = async () => {
+    if (!token) return;
+    setLoadingLeaderboard(true);
+    try {
+      const data = await rankingsApi.getSpectatorLeaderboard(token);
+      setSpectatorRankings(data);
+    } catch (err: any) {
+      toast.error(err.message || 'Không thể tải bảng dẫn đầu');
+    } finally {
+      setLoadingLeaderboard(false);
+    }
+  };
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -152,47 +219,6 @@ export function SpectatorDashboard() {
     verified: true,
   };
 
-  const tournaments = [
-    {
-      id: 1,
-      name: 'Giải Vô Địch Ưu Tú 2026',
-      banner: 'https://images.unsplash.com/photo-1568572933382-74d440642117?w=800',
-      status: 'Đang Diễn Ra',
-      startDate: '2026-05-01',
-      endDate: '2026-06-30',
-      totalRaces: 24,
-      prizePool: '$500,000',
-      grade: 'Grade A',
-      currentLeader: 'Thunder Strike',
-      participants: 120
-    },
-    {
-      id: 2,
-      name: 'Giải Mùa Xuân',
-      banner: 'https://images.unsplash.com/photo-1551076805-e1869033e561?w=800',
-      status: 'Sắp Diễn Ra',
-      startDate: '2026-06-15',
-      endDate: '2026-07-15',
-      totalRaces: 18,
-      prizePool: '$300,000',
-      grade: 'Grade B',
-      currentLeader: '-',
-      participants: 85
-    },
-    {
-      id: 3,
-      name: 'Chung Kết Derby Vàng',
-      banner: 'https://images.unsplash.com/photo-1584464491033-06628f3a6b7b?w=800',
-      status: 'Đã Kết Thúc',
-      startDate: '2026-03-01',
-      endDate: '2026-04-30',
-      totalRaces: 30,
-      prizePool: '$750,000',
-      grade: 'Grade A',
-      currentLeader: 'Midnight Star',
-      participants: 150
-    }
-  ];
 
   const liveRaces = [
     {
@@ -325,38 +351,6 @@ export function SpectatorDashboard() {
   ];
 
 
-  const horseRankings = [
-    { rank: 1, name: 'Thunder Strike', owner: 'Elite Stables', totalPoints: 2450, wins: 18, earnings: '$125,000', winRate: '75%' },
-    { rank: 2, name: 'Midnight Star', owner: 'Royal Racing', totalPoints: 2180, wins: 15, earnings: '$98,500', winRate: '68%' },
-    { rank: 3, name: 'Golden Arrow', owner: 'Summit Farms', totalPoints: 1920, wins: 12, earnings: '$85,200', winRate: '63%' },
-    { rank: 4, name: 'Storm Chaser', owner: 'Thunder Valley', totalPoints: 1850, wins: 11, earnings: '$78,400', winRate: '61%' },
-    { rank: 5, name: 'Wild Fire', owner: 'Phoenix Racing', totalPoints: 1740, wins: 10, earnings: '$72,100', winRate: '58%' }
-  ];
-
-  const jockeyRankings = [
-    { rank: 1, name: 'Mike Johnson', races: 45, wins: 32, earnings: '$215,000', winRate: '71%' },
-    { rank: 2, name: 'Sarah Williams', races: 52, wins: 35, earnings: '$198,000', winRate: '67%' },
-    { rank: 3, name: 'David Chen', races: 38, wins: 24, earnings: '$165,000', winRate: '63%' },
-    { rank: 4, name: 'Emma Davis', races: 41, wins: 25, earnings: '$152,000', winRate: '61%' },
-    { rank: 5, name: 'Alex Kim', races: 36, wins: 21, earnings: '$138,000', winRate: '58%' }
-  ];
-
-  const ownerRankings = [
-    { rank: 1, name: 'Elite Stables', horses: 12, wins: 45, earnings: '$485,000', winRate: '68%' },
-    { rank: 2, name: 'Royal Racing', horses: 10, wins: 38, earnings: '$425,000', winRate: '65%' },
-    { rank: 3, name: 'Summit Farms', horses: 15, wins: 42, earnings: '$398,000', winRate: '61%' },
-    { rank: 4, name: 'Thunder Valley', horses: 8, wins: 28, earnings: '$325,000', winRate: '59%' },
-    { rank: 5, name: 'Phoenix Racing', horses: 11, wins: 32, earnings: '$298,000', winRate: '56%' }
-  ];
-
-  const spectatorLeaderboard = [
-    { rank: 1, name: 'Alex Morgan', predictions: 45, wins: 32, winRate: '71%', earnings: 2450, accuracy: '71%' },
-    { rank: 2, name: 'Emma Wilson', predictions: 52, wins: 35, winRate: '67%', earnings: 2180, accuracy: '67%' },
-    { rank: 3, name: 'Chris Lee', predictions: 38, wins: 24, winRate: '63%', earnings: 1920, accuracy: '63%' },
-    { rank: 4, name: 'You', predictions: 18, wins: 12, winRate: '67%', earnings: 1350, accuracy: '67%', isYou: true },
-    { rank: 5, name: 'Jordan Smith', predictions: 41, wins: 25, winRate: '61%', earnings: 1640, accuracy: '61%' }
-  ];
-
   const notifications = [
     { id: 1, type: 'won', title: 'Dự Đoán Thắng!', message: 'Cược của bạn vào Thunder Strike đã thắng! +$300', amount: 300, time: '5 phút trước', read: false },
     { id: 2, type: 'starting', title: 'Cuộc Đua Sắp Bắt Đầu', message: 'Cuộc Đua 13 bắt đầu trong 15 phút', time: '12 phút trước', read: false },
@@ -364,11 +358,17 @@ export function SpectatorDashboard() {
     { id: 4, type: 'lost', title: 'Dự Đoán Thua', message: 'Cược của bạn vào Storm Runner không thắng', time: '2 giờ trước', read: true }
   ];
 
+  const pendingBets = myBets.filter(b => b.status === 'pending').length;
+  const wonBets = myBets.filter(b => b.status === 'won').length;
+  const settledBets = myBets.filter(b => b.status === 'won' || b.status === 'lost').length;
+  const winRate = settledBets > 0 ? Math.round((wonBets / settledBets) * 100) : 0;
+  const totalWinnings = myBets.reduce((s, b) => s + (b.payoutAmount || 0), 0);
+
   const stats = [
-    { label: 'Số Dư Ví', value: '$1,350', icon: Coins, color: 'from-[#FFDE42] to-[#E6C21E]' },
-    { label: 'Dự Đoán Đang Hoạt Động', value: '3', icon: Target, color: 'from-blue-500 to-blue-600' },
-    { label: 'Tỷ Lệ Thắng', value: '67%', icon: TrendingUp, color: 'from-amber-500 to-amber-600' },
-    { label: 'Tổng Tiền Thắng', value: '+$1,350', icon: Gift, color: 'from-purple-500 to-purple-600' }
+    { label: 'Số Dư Ví', value: walletBalance ?? '...', icon: Coins, color: 'from-[#FFDE42] to-[#E6C21E]' },
+    { label: 'Cược Đang Chờ', value: String(pendingBets), icon: Target, color: 'from-blue-500 to-blue-600' },
+    { label: 'Tỷ Lệ Thắng', value: settledBets > 0 ? `${winRate}%` : '—', icon: TrendingUp, color: 'from-amber-500 to-amber-600' },
+    { label: 'Tổng Tiền Thắng', value: totalWinnings > 0 ? `+${totalWinnings.toLocaleString()}` : '0', icon: Gift, color: 'from-purple-500 to-purple-600' },
   ];
 
   const handleOpenPrediction = async (race: any) => {
@@ -445,16 +445,27 @@ export function SpectatorDashboard() {
 
   const getTournamentStatusColor = (status: string) => {
     switch (status) {
-      case 'Đang Diễn Ra': return 'bg-[#FFDE42]';
-      case 'Sắp Diễn Ra': return 'bg-blue-500';
-      case 'Đã Kết Thúc': return 'bg-slate-500';
+      case 'ongoing': return 'bg-[#FFDE42]';
+      case 'upcoming': return 'bg-blue-500';
+      case 'finished': return 'bg-slate-500';
+      case 'cancelled': return 'bg-red-500';
       default: return 'bg-slate-500';
     }
   };
 
-  const filteredTournaments = tournaments.filter(t => {
+  const getTournamentStatusLabel = (status: string) => {
+    switch (status) {
+      case 'ongoing': return 'Đang Diễn Ra';
+      case 'upcoming': return 'Sắp Diễn Ra';
+      case 'finished': return 'Đã Kết Thúc';
+      case 'cancelled': return 'Đã Hủy';
+      default: return status;
+    }
+  };
+
+  const filteredTournaments = tournamentsData.filter(t => {
     if (tournamentFilter === 'all') return true;
-    return t.status.toLowerCase() === tournamentFilter;
+    return t.status === tournamentFilter;
   });
 
   const totalPredictions = myPredictions.length;
@@ -503,12 +514,12 @@ export function SpectatorDashboard() {
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {stats.map((stat, idx) => (
-            <div key={idx} className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-5 hover:-translate-y-1 transition-transform">
-              <div className={`w-10 h-10 bg-gradient-to-br ${stat.color} rounded-lg flex items-center justify-center mb-3 shadow-lg`}>
+            <div key={idx} className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-5 hover:-translate-y-1 transition-transform flex flex-col">
+              <div className={`w-10 h-10 bg-gradient-to-br ${stat.color} rounded-lg flex items-center justify-center mb-3 shadow-lg shrink-0`}>
                 <stat.icon className="w-5 h-5 text-white" />
               </div>
-              <div className="text-2xl font-bold text-white mb-1">{stat.value}</div>
-              <div className="text-sm text-slate-400 font-medium">{stat.label}</div>
+              <div className="text-xl font-bold text-white mb-1 break-all">{stat.value}</div>
+              <div className="text-sm text-slate-400 font-medium leading-tight mt-auto">{stat.label}</div>
             </div>
           ))}
         </div>
@@ -563,7 +574,7 @@ export function SpectatorDashboard() {
                     }}
                   >
                     <MenuItem key="all" value="all">Tất Cả Trạng Thái</MenuItem>
-                    <MenuItem key="running" value="running">Đang Diễn Ra</MenuItem>
+                    <MenuItem key="ongoing" value="ongoing">Đang Diễn Ra</MenuItem>
                     <MenuItem key="upcoming" value="upcoming">Sắp Diễn Ra</MenuItem>
                     <MenuItem key="finished" value="finished">Đã Kết Thúc</MenuItem>
                   </Select>
@@ -571,70 +582,70 @@ export function SpectatorDashboard() {
               </div>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredTournaments.map((tournament) => (
-                <div key={tournament.id} className="group bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden hover:border-[#FFDE42]/30 transition-all">
-                  <div className="relative h-40 bg-slate-900">
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 to-transparent"></div>
-                    <div className="absolute top-4 right-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getTournamentStatusColor(tournament.status)}`}>
-                        {tournament.status}
-                      </span>
-                    </div>
-                    <div className="absolute bottom-4 left-4">
-                      <div className="text-xs font-medium text-[#FFDE42] mb-1">{tournament.grade}</div>
-                      <h3 className="text-xl font-bold text-white">{tournament.name}</h3>
-                    </div>
-                  </div>
-
-                  <div className="p-5">
-                    <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
-                      <div>
-                        <div className="text-slate-500 text-xs mb-1">Thời Gian</div>
-                        <div className="text-white font-medium">{tournament.startDate} - {tournament.endDate}</div>
+            {loadingTournaments ? (
+              <div className="flex justify-center py-16">
+                <div className="w-8 h-8 border-2 border-[#FFDE42] border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : filteredTournaments.length === 0 ? (
+              <div className="bg-white/5 border border-white/5 rounded-2xl p-12 text-center">
+                <Trophy className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                <p className="text-slate-400">Không có giải đấu nào</p>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredTournaments.map((tournament) => (
+                  <div key={tournament._id} className="group bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden hover:border-[#FFDE42]/30 transition-all">
+                    <div className="relative h-36 bg-gradient-to-br from-slate-800 to-slate-900 flex items-end p-4">
+                      <div className="absolute top-4 right-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getTournamentStatusColor(tournament.status)}`}>
+                          {getTournamentStatusLabel(tournament.status)}
+                        </span>
                       </div>
-                      <div>
-                        <div className="text-slate-500 text-xs mb-1">Giải Thưởng</div>
-                        <div className="text-[#FFDE42] font-bold">{tournament.prizePool}</div>
-                      </div>
-                      <div>
-                        <div className="text-slate-500 text-xs mb-1">Tổng Cuộc Đua</div>
-                        <div className="text-white font-medium">{tournament.totalRaces} cuộc</div>
-                      </div>
-                      <div>
-                        <div className="text-slate-500 text-xs mb-1">Người Tham Gia</div>
-                        <div className="text-white font-medium">{tournament.participants}</div>
-                      </div>
+                      <h3 className="text-xl font-bold text-white leading-tight pr-24">{tournament.name}</h3>
                     </div>
 
-                    {tournament.currentLeader !== '-' && (
-                      <div className="bg-white/5 rounded-lg p-3 mb-4">
-                        <div className="text-xs text-slate-400 mb-1">Đang Dẫn Đầu</div>
-                        <div className="flex items-center gap-2">
-                          <Trophy className="w-4 h-4 text-amber-400" />
-                          <span className="text-white font-medium">{tournament.currentLeader}</span>
+                    <div className="p-5">
+                      <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+                        <div>
+                          <div className="text-slate-500 text-xs mb-1">Bắt Đầu</div>
+                          <div className="text-white font-medium">{new Date(tournament.startDate).toLocaleDateString('vi-VN')}</div>
+                        </div>
+                        <div>
+                          <div className="text-slate-500 text-xs mb-1">Kết Thúc</div>
+                          <div className="text-white font-medium">{new Date(tournament.endDate).toLocaleDateString('vi-VN')}</div>
                         </div>
                       </div>
-                    )}
 
-                    <Button
-                      fullWidth
-                      variant="outlined"
-                      onClick={() => handleOpenTournamentDetails(tournament)}
-                      endIcon={<ChevronRight className="w-4 h-4" />}
-                      sx={{
-                        borderColor: 'rgba(16, 185, 129, 0.3)',
-                        color: '#FFDE42',
-                        borderRadius: '10px',
-                        '&:hover': { borderColor: '#FFDE42', backgroundColor: 'rgba(255, 222, 66, 0.1)' }
-                      }}
-                    >
-                      Xem Chi Tiết
-                    </Button>
+                      {tournament.location && (
+                        <div className="bg-white/5 rounded-lg p-3 mb-4 flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-blue-400 shrink-0" />
+                          <span className="text-slate-300 text-sm">{tournament.location}</span>
+                        </div>
+                      )}
+
+                      {tournament.description && (
+                        <p className="text-slate-400 text-sm mb-4 line-clamp-2">{tournament.description}</p>
+                      )}
+
+                      <Button
+                        fullWidth
+                        variant="outlined"
+                        onClick={() => handleOpenTournamentDetails(tournament)}
+                        endIcon={<ChevronRight className="w-4 h-4" />}
+                        sx={{
+                          borderColor: 'rgba(255,222,66,0.3)',
+                          color: '#FFDE42',
+                          borderRadius: '10px',
+                          '&:hover': { borderColor: '#FFDE42', backgroundColor: 'rgba(255, 222, 66, 0.1)' }
+                        }}
+                      >
+                        Xem Chi Tiết
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -1046,293 +1057,290 @@ export function SpectatorDashboard() {
         )}
 
         {/* Rankings Tab */}
-        {activeTab === 'rankings' && (
-          <div>
-            <div className="mb-6">
-              <h2 className="text-3xl font-bold text-white mb-4">Bảng Xếp Hạng</h2>
-
-              <div className="flex gap-3 mb-6">
-                <button
-                  onClick={() => setRankingType('horses')}
-                  className={`px-5 py-2.5 rounded-xl font-medium transition-all ${
-                    rankingType === 'horses'
-                      ? 'bg-[#FFDE42] text-white shadow-lg shadow-[#FFDE42]/30'
-                      : 'bg-white/5 text-slate-400 hover:bg-white/10 border border-white/5'
-                  }`}
-                >
-                  Ngựa
-                </button>
-                <button
-                  onClick={() => setRankingType('jockeys')}
-                  className={`px-5 py-2.5 rounded-xl font-medium transition-all ${
-                    rankingType === 'jockeys'
-                      ? 'bg-[#FFDE42] text-white shadow-lg shadow-[#FFDE42]/30'
-                      : 'bg-white/5 text-slate-400 hover:bg-white/10 border border-white/5'
-                  }`}
-                >
-                  Kỵ Sĩ
-                </button>
-                <button
-                  onClick={() => setRankingType('owners')}
-                  className={`px-5 py-2.5 rounded-xl font-medium transition-all ${
-                    rankingType === 'owners'
-                      ? 'bg-[#FFDE42] text-white shadow-lg shadow-[#FFDE42]/30'
-                      : 'bg-white/5 text-slate-400 hover:bg-white/10 border border-white/5'
-                  }`}
-                >
-                  Chủ Ngựa
-                </button>
-              </div>
-
-              <FormControl size="small" sx={{ minWidth: 150 }}>
-                <Select
-                  value={rankingFilter}
-                  onChange={(e) => setRankingFilter(e.target.value)}
-                  sx={{
-                    color: 'white',
-                    '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.1)' },
-                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.2)' },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#FFDE42' },
-                    '.MuiSvgIcon-root': { color: '#94a3b8' },
-                    background: 'rgba(255,255,255,0.05)',
-                    borderRadius: '12px'
-                  }}
-                >
-                  <MenuItem key="all-time" value="all-time">Mọi Thời Đại</MenuItem>
-                  <MenuItem key="monthly" value="monthly">Tháng Này</MenuItem>
-                  <MenuItem key="weekly" value="weekly">Tuần Này</MenuItem>
-                </Select>
-              </FormControl>
+        {activeTab === 'rankings' && (() => {
+          const gradeColor: Record<string, string> = {
+            G1: 'bg-[#FFDE42]/20 text-[#FFDE42] border-[#FFDE42]/40',
+            G2: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+            G3: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
+            Maiden: 'bg-slate-600/30 text-slate-400 border-slate-600/40',
+          };
+          const rankBadge = (rank: number) => (
+            <div className={`w-12 h-12 shrink-0 flex items-center justify-center rounded-xl text-sm font-bold shadow-lg ${
+              rank === 1 ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-white' :
+              rank === 2 ? 'bg-gradient-to-br from-slate-300 to-slate-500 text-slate-900' :
+              rank === 3 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white' :
+              'bg-white/10 text-slate-400'
+            }`}>
+              {rank <= 3 ? <Medal className="w-5 h-5" /> : `#${rank}`}
             </div>
+          );
+          const winBar = (rate: number) => (
+            <div className="w-full bg-white/10 rounded-full h-1.5 mt-1">
+              <div className="bg-[#FFDE42] h-1.5 rounded-full" style={{ width: `${Math.min(rate, 100)}%` }} />
+            </div>
+          );
+          const activeList = rankingType === 'horses' ? horseRankings
+            : rankingType === 'jockeys' ? jockeyRankings
+            : ownerRankings;
 
-            {/* Horse Rankings */}
-            {rankingType === 'horses' && (
-              <div className="space-y-3">
-                {horseRankings.map((entry) => (
-                  <div
-                    key={entry.rank}
-                    className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-6 hover:border-[#FFDE42]/30 transition-all"
-                  >
-                    <div className="flex items-center gap-6">
-                      <div className={`w-14 h-14 flex items-center justify-center rounded-2xl text-xl font-bold shadow-lg ${
-                        entry.rank === 1 ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-white' :
-                        entry.rank === 2 ? 'bg-gradient-to-br from-slate-300 to-slate-500 text-white' :
-                        entry.rank === 3 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white' :
-                        'bg-slate-800 text-slate-300'
+          return (
+            <div>
+              {/* Header */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div>
+                  <h2 className="text-3xl font-bold text-white mb-1">Bảng Xếp Hạng</h2>
+                  <p className="text-slate-400 text-sm">Dữ liệu tích lũy toàn sự nghiệp</p>
+                </div>
+                <div className="flex gap-2 p-1 bg-white/5 rounded-xl border border-white/5">
+                  {(['horses', 'jockeys', 'owners'] as const).map((t) => (
+                    <button key={t} onClick={() => setRankingType(t)}
+                      className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                        rankingType === t ? 'bg-[#FFDE42] text-slate-900 shadow' : 'text-slate-400 hover:text-white'
                       }`}>
-                        {entry.rank <= 3 ? <Medal className="w-7 h-7" /> : `#${entry.rank}`}
+                      {t === 'horses' ? '🐎 Ngựa' : t === 'jockeys' ? '🏇 Kỵ Sĩ' : '👑 Chủ Ngựa'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {loadingRankings ? (
+                <div className="flex justify-center py-16">
+                  <div className="w-8 h-8 border-2 border-[#FFDE42] border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : activeList.length === 0 ? (
+                <div className="bg-white/5 border border-white/5 rounded-2xl p-12 text-center">
+                  <Trophy className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                  <p className="text-slate-400">Chưa có dữ liệu xếp hạng</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {rankingType === 'horses' && horseRankings.map((h) => (
+                    <div key={h._id} className={`group flex items-center gap-4 p-4 rounded-2xl border transition-all hover:-translate-y-0.5 ${
+                      h.rank <= 3 ? 'bg-gradient-to-r from-white/8 to-white/3 border-white/10' : 'bg-white/4 border-white/5 hover:border-white/10'
+                    }`}>
+                      {rankBadge(h.rank)}
+
+                      {/* Name + owner + grade */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-white font-bold truncate">{h.name}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full border font-semibold shrink-0 ${gradeColor[h.currentGrade] || gradeColor.Maiden}`}>
+                            {h.currentGrade}
+                          </span>
+                        </div>
+                        <span className="text-xs text-slate-500">Chủ: {h.owner}</span>
                       </div>
 
-                      <div className="flex-1">
-                        <div className="text-white text-xl font-bold mb-1">{entry.name}</div>
-                        <div className="text-sm text-slate-400">Chủ: {entry.owner}</div>
+                      {/* Stats */}
+                      <div className="hidden md:grid grid-cols-4 gap-6 text-center">
+                        <div>
+                          <div className="text-lg font-bold text-white">{h.totalPoints.toLocaleString()}</div>
+                          <div className="text-xs text-slate-500">Điểm</div>
+                        </div>
+                        <div>
+                          <div className="text-lg font-bold text-[#FFDE42]">{h.winCount}</div>
+                          <div className="text-xs text-slate-500">Thắng</div>
+                        </div>
+                        <div>
+                          <div className="text-lg font-bold text-emerald-400">{h.winRate}%</div>
+                          {winBar(h.winRate)}
+                        </div>
+                        <div>
+                          <div className="text-lg font-bold text-purple-400">{h.totalEarnings.toLocaleString()}</div>
+                          <div className="text-xs text-slate-500">Coins</div>
+                        </div>
                       </div>
 
-                      <div className="grid grid-cols-4 gap-8 text-center">
-                        <div>
-                          <div className="text-2xl font-bold text-white">{entry.totalPoints}</div>
-                          <div className="text-xs text-slate-400">Điểm</div>
-                        </div>
-                        <div>
-                          <div className="text-2xl font-bold text-[#FFDE42]">{entry.wins}</div>
-                          <div className="text-xs text-slate-400">Thắng</div>
-                        </div>
-                        <div>
-                          <div className="text-2xl font-bold text-amber-400">{entry.winRate}</div>
-                          <div className="text-xs text-slate-400">Tỷ Lệ Thắng</div>
-                        </div>
-                        <div>
-                          <div className="text-2xl font-bold text-purple-400">{entry.earnings}</div>
-                          <div className="text-xs text-slate-400">Thu Nhập</div>
-                        </div>
+                      {/* Mobile compact */}
+                      <div className="md:hidden text-right">
+                        <div className="text-[#FFDE42] font-bold">{h.totalPoints} pts</div>
+                        <div className="text-xs text-slate-500">{h.winRate}% win</div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
 
-            {/* Jockey Rankings */}
-            {rankingType === 'jockeys' && (
-              <div className="space-y-3">
-                {jockeyRankings.map((entry) => (
-                  <div
-                    key={entry.rank}
-                    className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-6 hover:border-[#FFDE42]/30 transition-all"
-                  >
-                    <div className="flex items-center gap-6">
-                      <div className={`w-14 h-14 flex items-center justify-center rounded-2xl text-xl font-bold shadow-lg ${
-                        entry.rank === 1 ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-white' :
-                        entry.rank === 2 ? 'bg-gradient-to-br from-slate-300 to-slate-500 text-white' :
-                        entry.rank === 3 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white' :
-                        'bg-slate-800 text-slate-300'
-                      }`}>
-                        {entry.rank <= 3 ? <Medal className="w-7 h-7" /> : `#${entry.rank}`}
+                  {rankingType === 'jockeys' && jockeyRankings.map((j) => (
+                    <div key={j._id} className={`group flex items-center gap-4 p-4 rounded-2xl border transition-all hover:-translate-y-0.5 ${
+                      j.rank <= 3 ? 'bg-gradient-to-r from-white/8 to-white/3 border-white/10' : 'bg-white/4 border-white/5 hover:border-white/10'
+                    }`}>
+                      {rankBadge(j.rank)}
+
+                      <div className="flex-1 min-w-0">
+                        <div className="text-white font-bold truncate">{j.name}</div>
+                        <div className="text-xs text-slate-500">{j.experienceYears} năm kinh nghiệm</div>
                       </div>
 
-                      <div className="flex-1">
-                        <div className="text-white text-xl font-bold">{entry.name}</div>
+                      <div className="hidden md:grid grid-cols-3 gap-6 text-center">
+                        <div>
+                          <div className="text-lg font-bold text-white">{j.raceCount}</div>
+                          <div className="text-xs text-slate-500">Cuộc Đua</div>
+                        </div>
+                        <div>
+                          <div className="text-lg font-bold text-[#FFDE42]">{j.winCount}</div>
+                          <div className="text-xs text-slate-500">Thắng</div>
+                        </div>
+                        <div>
+                          <div className="text-lg font-bold text-emerald-400">{j.winRate}%</div>
+                          {winBar(j.winRate)}
+                        </div>
                       </div>
 
-                      <div className="grid grid-cols-4 gap-8 text-center">
-                        <div>
-                          <div className="text-2xl font-bold text-white">{entry.races}</div>
-                          <div className="text-xs text-slate-400">Cuộc Đua</div>
-                        </div>
-                        <div>
-                          <div className="text-2xl font-bold text-[#FFDE42]">{entry.wins}</div>
-                          <div className="text-xs text-slate-400">Thắng</div>
-                        </div>
-                        <div>
-                          <div className="text-2xl font-bold text-amber-400">{entry.winRate}</div>
-                          <div className="text-xs text-slate-400">Tỷ Lệ Thắng</div>
-                        </div>
-                        <div>
-                          <div className="text-2xl font-bold text-purple-400">{entry.earnings}</div>
-                          <div className="text-xs text-slate-400">Thu Nhập</div>
-                        </div>
+                      <div className="md:hidden text-right">
+                        <div className="text-[#FFDE42] font-bold">{j.winCount} thắng</div>
+                        <div className="text-xs text-slate-500">{j.winRate}% win</div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
 
-            {/* Owner Rankings */}
-            {rankingType === 'owners' && (
-              <div className="space-y-3">
-                {ownerRankings.map((entry) => (
-                  <div
-                    key={entry.rank}
-                    className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-6 hover:border-[#FFDE42]/30 transition-all"
-                  >
-                    <div className="flex items-center gap-6">
-                      <div className={`w-14 h-14 flex items-center justify-center rounded-2xl text-xl font-bold shadow-lg ${
-                        entry.rank === 1 ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-white' :
-                        entry.rank === 2 ? 'bg-gradient-to-br from-slate-300 to-slate-500 text-white' :
-                        entry.rank === 3 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white' :
-                        'bg-slate-800 text-slate-300'
-                      }`}>
-                        {entry.rank <= 3 ? <Medal className="w-7 h-7" /> : `#${entry.rank}`}
+                  {rankingType === 'owners' && ownerRankings.map((o) => (
+                    <div key={o._id} className={`group flex items-center gap-4 p-4 rounded-2xl border transition-all hover:-translate-y-0.5 ${
+                      o.rank <= 3 ? 'bg-gradient-to-r from-white/8 to-white/3 border-white/10' : 'bg-white/4 border-white/5 hover:border-white/10'
+                    }`}>
+                      {rankBadge(o.rank)}
+
+                      <div className="flex-1 min-w-0">
+                        <div className="text-white font-bold truncate">{o.name}</div>
+                        <div className="text-xs text-slate-500">{o.totalHorses} ngựa · {o.totalRaces} cuộc đua</div>
                       </div>
 
-                      <div className="flex-1">
-                        <div className="text-white text-xl font-bold">{entry.name}</div>
+                      <div className="hidden md:grid grid-cols-4 gap-6 text-center">
+                        <div>
+                          <div className="text-lg font-bold text-white">{o.totalHorses}</div>
+                          <div className="text-xs text-slate-500">Ngựa</div>
+                        </div>
+                        <div>
+                          <div className="text-lg font-bold text-[#FFDE42]">{o.totalWins}</div>
+                          <div className="text-xs text-slate-500">Thắng</div>
+                        </div>
+                        <div>
+                          <div className="text-lg font-bold text-emerald-400">{o.winRate}%</div>
+                          {winBar(o.winRate)}
+                        </div>
+                        <div>
+                          <div className="text-lg font-bold text-purple-400">{o.totalEarnings.toLocaleString()}</div>
+                          <div className="text-xs text-slate-500">Coins</div>
+                        </div>
                       </div>
 
-                      <div className="grid grid-cols-4 gap-8 text-center">
-                        <div>
-                          <div className="text-2xl font-bold text-white">{entry.horses}</div>
-                          <div className="text-xs text-slate-400">Ngựa</div>
-                        </div>
-                        <div>
-                          <div className="text-2xl font-bold text-[#FFDE42]">{entry.wins}</div>
-                          <div className="text-xs text-slate-400">Thắng</div>
-                        </div>
-                        <div>
-                          <div className="text-2xl font-bold text-amber-400">{entry.winRate}</div>
-                          <div className="text-xs text-slate-400">Tỷ Lệ Thắng</div>
-                        </div>
-                        <div>
-                          <div className="text-2xl font-bold text-purple-400">{entry.earnings}</div>
-                          <div className="text-xs text-slate-400">Thu Nhập</div>
-                        </div>
+                      <div className="md:hidden text-right">
+                        <div className="text-[#FFDE42] font-bold">{o.totalWins} thắng</div>
+                        <div className="text-xs text-slate-500">{o.winRate}% win</div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Leaderboard Tab */}
         {activeTab === 'leaderboard' && (
           <div>
-            <div className="mb-6">
-              <h2 className="text-3xl font-bold text-white mb-2">Bảng Dẫn Đầu Khán Giả</h2>
-              <p className="text-slate-400">Những người dự đoán hàng đầu và thống kê của họ</p>
-            </div>
-
-            <div className="space-y-3">
-              {spectatorLeaderboard.map((entry) => (
-                <div
-                  key={entry.rank}
-                  className={`bg-white/5 backdrop-blur-md border rounded-2xl p-6 transition-all ${
-                    entry.isYou
-                      ? 'border-[#FFDE42]/50 shadow-lg shadow-[#FFDE42]/20'
-                      : 'border-white/5 hover:border-white/10'
-                  }`}
-                >
-                  <div className="flex items-center gap-6">
-                    <div className={`w-14 h-14 flex items-center justify-center rounded-2xl text-xl font-bold shadow-lg ${
-                      entry.rank === 1 ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-white' :
-                      entry.rank === 2 ? 'bg-gradient-to-br from-slate-300 to-slate-500 text-white' :
-                      entry.rank === 3 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white' :
-                      'bg-slate-800 text-slate-300'
-                    }`}>
-                      {entry.rank <= 3 ? <Medal className="w-7 h-7" /> : `#${entry.rank}`}
-                    </div>
-
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-1">
-                        <span className="text-white text-xl font-bold">{entry.name}</span>
-                        {entry.isYou && (
-                          <Chip label="Bạn" size="small" sx={{ backgroundColor: '#10b981', color: 'white', fontWeight: 600 }} />
-                        )}
-                      </div>
-                      <div className="flex gap-6 text-sm">
-                        <div>
-                          <span className="text-slate-400">Dự Đoán: </span>
-                          <span className="text-white font-medium">{entry.predictions}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400">Thắng: </span>
-                          <span className="text-[#FFDE42] font-medium">{entry.wins}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400">Chính Xác: </span>
-                          <span className="text-amber-400 font-medium">{entry.accuracy}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="text-right">
-                      <div className="text-3xl font-bold text-[#FFDE42] mb-1 flex items-center gap-1">
-                        <Coins className="w-6 h-6" />
-                        {entry.earnings}
-                      </div>
-                      <div className="text-sm text-slate-400">Tổng Thu Nhập</div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-8 bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-2xl p-8 text-center shadow-2xl">
-              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Flame className="w-10 h-10 text-white" />
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+              <div>
+                <h2 className="text-3xl font-bold text-white mb-1">Bảng Dẫn Đầu Khán Giả</h2>
+                <p className="text-slate-400 text-sm">Xếp hạng theo tổng tiền thắng cược</p>
               </div>
-              <h3 className="text-3xl font-bold text-white mb-3">Leo Lên Đỉnh Cao!</h3>
-              <p className="text-emerald-50 text-lg mb-6 max-w-xl mx-auto">
-                Thực hiện dự đoán chính xác liên tục để nhận phần thưởng và cạnh tranh với những người dự đoán tốt nhất
+              <button onClick={loadLeaderboard}
+                className="flex items-center gap-2 text-xs text-slate-400 hover:text-white transition-colors px-3 py-2 bg-white/5 rounded-lg border border-white/5">
+                <Activity className="w-3.5 h-3.5" /> Làm mới
+              </button>
+            </div>
+
+            {loadingLeaderboard ? (
+              <div className="flex justify-center py-16">
+                <div className="w-8 h-8 border-2 border-[#FFDE42] border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : spectatorRankings.length === 0 ? (
+              <div className="bg-white/5 border border-white/5 rounded-2xl p-12 text-center">
+                <Award className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                <p className="text-slate-400 mb-2">Chưa có ai vào bảng xếp hạng</p>
+                <p className="text-slate-500 text-sm">Hãy đặt cược và thắng để xuất hiện ở đây!</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {spectatorRankings.map((entry) => {
+                  const isMe = entry._id === user?._id;
+                  return (
+                    <div key={entry._id} className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${
+                      isMe
+                        ? 'bg-[#FFDE42]/5 border-[#FFDE42]/30 shadow-lg shadow-[#FFDE42]/10'
+                        : entry.rank <= 3
+                        ? 'bg-gradient-to-r from-white/8 to-white/3 border-white/10'
+                        : 'bg-white/4 border-white/5 hover:border-white/10'
+                    }`}>
+                      {/* Rank badge */}
+                      <div className={`w-12 h-12 shrink-0 flex items-center justify-center rounded-xl text-sm font-bold shadow-lg ${
+                        entry.rank === 1 ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-white' :
+                        entry.rank === 2 ? 'bg-gradient-to-br from-slate-300 to-slate-500 text-slate-900' :
+                        entry.rank === 3 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white' :
+                        isMe ? 'bg-[#FFDE42]/20 text-[#FFDE42] border border-[#FFDE42]/40' : 'bg-white/10 text-slate-400'
+                      }`}>
+                        {entry.rank <= 3 ? <Medal className="w-5 h-5" /> : `#${entry.rank}`}
+                      </div>
+
+                      {/* Avatar + name */}
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
+                          isMe ? 'bg-[#FFDE42] text-slate-900' : 'bg-slate-700 text-slate-300'
+                        }`}>
+                          {entry.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-white font-semibold truncate">{entry.name}</span>
+                            {isMe && <Chip label="Bạn" size="small" sx={{ bgcolor: '#FFDE42', color: '#1B0C0C', fontWeight: 700, height: 18, fontSize: '0.65rem' }} />}
+                          </div>
+                          <div className="text-xs text-slate-500">{entry.totalBets} cược · {entry.winRate}% thắng</div>
+                        </div>
+                      </div>
+
+                      {/* Stats */}
+                      <div className="hidden md:flex items-center gap-8">
+                        <div className="text-center">
+                          <div className="text-sm font-bold text-[#FFDE42]">{entry.wonBets}/{entry.totalBets}</div>
+                          <div className="text-xs text-slate-500">Thắng/Tổng</div>
+                        </div>
+                        <div className="text-center">
+                          <div className={`text-sm font-bold ${entry.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {entry.profit >= 0 ? '+' : ''}{entry.profit.toLocaleString()}
+                          </div>
+                          <div className="text-xs text-slate-500">Lợi nhuận</div>
+                        </div>
+                        <div className="text-center min-w-[90px]">
+                          <div className="text-lg font-bold text-white">{entry.totalPayout.toLocaleString()}</div>
+                          <div className="text-xs text-slate-500">Tổng nhận</div>
+                        </div>
+                      </div>
+
+                      {/* Mobile */}
+                      <div className="md:hidden text-right shrink-0">
+                        <div className="text-[#FFDE42] font-bold text-sm">{entry.totalPayout.toLocaleString()}</div>
+                        <div className={`text-xs ${entry.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {entry.profit >= 0 ? '+' : ''}{entry.profit.toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* CTA */}
+            <div className="mt-8 bg-gradient-to-br from-[#FFDE42]/20 via-amber-900/10 to-slate-900 border border-[#FFDE42]/20 rounded-2xl p-8 text-center">
+              <div className="w-14 h-14 bg-[#FFDE42]/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Flame className="w-8 h-8 text-[#FFDE42]" />
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-2">Leo Lên Đỉnh Cao!</h3>
+              <p className="text-slate-400 mb-6 max-w-md mx-auto text-sm">
+                Đặt cược thông minh và liên tục để tích lũy chiến thắng, leo hạng và được ghi danh trên bảng dẫn đầu.
               </p>
-              <Button
-                variant="contained"
-                size="large"
-                startIcon={<Target />}
-                sx={{
-                  background: 'white',
-                  color: '#047857',
-                  px: 6,
-                  py: 1.5,
-                  fontSize: '16px',
-                  fontWeight: 700,
-                  borderRadius: '12px',
-                  '&:hover': { background: '#f0fdf4', transform: 'translateY(-2px)' }
-                }}
-              >
-                Bắt Đầu Dự Đoán
+              <Button variant="contained" startIcon={<Target />}
+                onClick={() => setActiveTab('schedule')}
+                sx={{ background: 'linear-gradient(135deg,#FFDE42,#E6C21E)', color: '#1B0C0C', fontWeight: 700, borderRadius: '12px', px: 4, textTransform: 'none', '&:hover': { background: 'linear-gradient(135deg,#FFE866,#FFDE42)' } }}>
+                Đặt Cược Ngay
               </Button>
             </div>
           </div>
@@ -1446,67 +1454,50 @@ export function SpectatorDashboard() {
           <>
             <DialogTitle sx={{ color: 'white', borderBottom: '1px solid rgba(255,255,255,0.1)', p: 3 }}>
               <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm text-[#FFDE42] font-medium mb-1">{selectedTournamentForDetails.grade}</div>
-                  <h2 className="text-2xl font-bold text-white">{selectedTournamentForDetails.name}</h2>
-                </div>
-                <Chip 
-                  label={selectedTournamentForDetails.status} 
-                  sx={{ 
+                <h2 className="text-2xl font-bold text-white">{selectedTournamentForDetails.name}</h2>
+                <Chip
+                  label={getTournamentStatusLabel(selectedTournamentForDetails.status)}
+                  sx={{
                     bgcolor: getTournamentStatusColor(selectedTournamentForDetails.status),
-                    color: selectedTournamentForDetails.status === 'Đang Diễn Ra' ? '#1B0C0C' : 'white',
+                    color: selectedTournamentForDetails.status === 'ongoing' ? '#1B0C0C' : 'white',
                     fontWeight: 'bold'
-                  }} 
+                  }}
                 />
               </div>
             </DialogTitle>
             <DialogContent sx={{ p: 3 }}>
-              <div className="mt-4 mb-6 relative h-48 rounded-xl overflow-hidden shadow-xl border border-white/10">
-                <img src={selectedTournamentForDetails.banner} alt="Banner" className="w-full h-full object-cover opacity-80" />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent" />
-                <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
-                  <div>
-                    <div className="text-white/80 text-sm mb-1">Tổng Giải Thưởng</div>
-                    <div className="text-3xl font-bold text-[#FFDE42]">{selectedTournamentForDetails.prizePool}</div>
-                  </div>
-                  <div className="bg-black/50 backdrop-blur-md px-4 py-2 rounded-lg border border-white/10 text-center">
-                    <div className="text-white/80 text-xs mb-1">Tổng Cuộc Đua</div>
-                    <div className="text-xl font-bold text-white">{selectedTournamentForDetails.totalRaces}</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="mt-4 grid md:grid-cols-2 gap-6">
                 <div className="bg-white/5 border border-white/5 rounded-xl p-5">
-                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-400" /> Thời Gian & Địa Điểm</h3>
+                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-blue-400" /> Thời Gian
+                  </h3>
                   <div className="space-y-4">
                     <div>
                       <div className="text-sm text-slate-400">Bắt Đầu</div>
-                      <div className="text-white font-medium">{selectedTournamentForDetails.startDate}</div>
+                      <div className="text-white font-medium">{new Date(selectedTournamentForDetails.startDate).toLocaleDateString('vi-VN')}</div>
                     </div>
                     <div>
                       <div className="text-sm text-slate-400">Kết Thúc</div>
-                      <div className="text-white font-medium">{selectedTournamentForDetails.endDate}</div>
+                      <div className="text-white font-medium">{new Date(selectedTournamentForDetails.endDate).toLocaleDateString('vi-VN')}</div>
                     </div>
-                    <div>
-                      <div className="text-sm text-slate-400">Số Lượng Đăng Ký</div>
-                      <div className="text-white font-medium">{selectedTournamentForDetails.participants} Kỵ Sĩ / Ngựa</div>
-                    </div>
+                    {selectedTournamentForDetails.location && (
+                      <div>
+                        <div className="text-sm text-slate-400">Địa Điểm</div>
+                        <div className="text-white font-medium">{selectedTournamentForDetails.location}</div>
+                      </div>
+                    )}
                   </div>
                 </div>
-                
+
                 <div className="bg-white/5 border border-white/5 rounded-xl p-5">
-                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><Trophy className="w-5 h-5 text-amber-400" /> Cập Nhật Hiện Tại</h3>
-                  <div className="space-y-4">
-                    <div className="bg-slate-900/50 p-4 rounded-lg border border-white/5">
-                      <div className="text-sm text-slate-400 mb-1">Đang Dẫn Đầu Bảng Xếp Hạng</div>
-                      <div className="text-xl font-bold text-[#FFDE42]">{selectedTournamentForDetails.currentLeader}</div>
-                    </div>
-                    <div className="bg-slate-900/50 p-4 rounded-lg border border-white/5">
-                      <div className="text-sm text-slate-400 mb-1">Cơ Hội Chiến Thắng Cao Nhất</div>
-                      <div className="text-white font-medium">Theo dữ liệu từ chuyên gia, Thunder Strike đang chiếm 65% tỷ lệ cược thắng.</div>
-                    </div>
-                  </div>
+                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <Trophy className="w-5 h-5 text-amber-400" /> Mô Tả
+                  </h3>
+                  {selectedTournamentForDetails.description ? (
+                    <p className="text-slate-300 text-sm leading-relaxed">{selectedTournamentForDetails.description}</p>
+                  ) : (
+                    <p className="text-slate-500 text-sm italic">Chưa có mô tả</p>
+                  )}
                 </div>
               </div>
             </DialogContent>

@@ -8,6 +8,7 @@ const raceRoutes = require('./race.routes');
 const registrationRoutes = require('./registration.routes');
 const refereeRoutes = require('./referee.routes');
 const betRoutes = require('./bet.routes');
+const rankingsRoutes = require('./rankings.routes');
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use('/races', raceRoutes);
 router.use('/registrations', registrationRoutes);
 router.use('/referee', refereeRoutes);
 router.use('/bets', betRoutes);
+router.use('/rankings', rankingsRoutes);
 
 module.exports = router;
