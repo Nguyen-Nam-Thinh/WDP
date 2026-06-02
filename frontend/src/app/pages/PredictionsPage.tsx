@@ -1,135 +1,32 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { Navbar } from '../components/Navbar';
 import {
-  Zap,
-  TrendingUp,
-  TrendingDown,
-  Star,
-  Target,
-  BarChart3,
-  Clock,
-  Trophy,
-  Users,
-  Flame,
-  Activity,
-  Eye,
-  Check,
-  AlertCircle,
-  Lock,
-  LogIn,
-  Medal,
-  Flag,
-  MapPin,
-  Calendar,
-  Timer,
-  Wind,
-  ChevronRight,
-  Award,
-  ArrowUpRight,
-  Minus,
-  Crown,
-  Sparkles,
-  Info,
+  Zap, Target, BarChart3, Clock, Trophy, Users, Flame, Activity,
+  Eye, Check, AlertCircle, Lock, LogIn, Medal, Flag, MapPin, Wind,
+  ChevronRight, Award, ArrowUpRight, Crown, Sparkles, Info, Loader2,
 } from 'lucide-react';
 import { Button } from '@mui/material';
+import { useAuth } from '../hooks/useAuth';
+import { raceApi, type Race, type RaceResultEntry } from '../api/race';
+import { betApi, type Bet, type BetType, BET_MULTIPLIERS } from '../api/bet';
+import { toast } from 'sonner';
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-const races = [
-  {
-    id: 1,
-    name: 'Giải Hoàng Gia 2026 — Chung Kết',
-    shortName: 'Hoàng Gia CK',
-    status: 'live',
-    time: 'ĐANG ĐUA',
-    round: 'Vòng 4/5',
-    location: 'Trường Đua Phú Thọ, TP.HCM',
-    distance: '2400m',
-    surface: 'Cỏ Tự Nhiên',
-    weather: '☀️ 28°C · Nắng nhẹ',
-    prize: '500,000,000 VNĐ',
-    participants: [
-      { pos: 1, number: 3, horse: 'Tia Chớp', jockey: 'Nguyễn Văn Anh', owner: 'Nguyễn Hoàng Minh', age: 5, weight: '57kg', odds: 2.5, communityPick: 42, trend: 'up', form: [1,1,2,1,1], color: '#F59E0B', nationality: 'VN', wins: 12, runs: 18 },
-      { pos: 2, number: 7, horse: 'Ngôi Sao Đêm', jockey: 'Trần Thị Bích', owner: 'Trần Gia Hưng', age: 4, weight: '55kg', odds: 3.8, communityPick: 28, trend: 'up', form: [2,1,1,3,2], color: '#8B5CF6', nationality: 'AU', wins: 8, runs: 15 },
-      { pos: 3, number: 1, horse: 'Thần Gió', jockey: 'Lê Văn Cường', owner: 'Lê Đình Phát', age: 6, weight: '58kg', odds: 5.0, communityPick: 16, trend: 'same', form: [3,2,1,2,3], color: '#EF4444', nationality: 'GB', wins: 6, runs: 22 },
-      { pos: 4, number: 5, horse: 'Móng Vàng', jockey: 'Phạm Minh Đức', owner: 'Phạm Quốc Thái', age: 5, weight: '56kg', odds: 12.0, communityPick: 9, trend: 'down', form: [1,3,4,1,4], color: '#10B981', nationality: 'FR', wins: 4, runs: 20 },
-      { pos: 5, number: 9, horse: 'Vinh Quang Đỏ', jockey: 'Hoàng Văn Em', owner: 'Hoàng Bá Lộc', age: 7, weight: '59kg', odds: 15.0, communityPick: 5, trend: 'down', form: [4,4,3,5,5], color: '#3B82F6', nationality: 'JP', wins: 2, runs: 30 },
-    ],
-  },
-  {
-    id: 2,
-    name: 'Cup Mùa Hè 2026 — Vòng 1',
-    shortName: 'Cup Mùa Hè V1',
-    status: 'upcoming',
-    time: '14:30 hôm nay',
-    round: 'Vòng 1/4',
-    location: 'Trường Đua Đại Nam, Bình Dương',
-    distance: '1800m',
-    surface: 'Đất Nện',
-    weather: '⛅ 25°C · Mát',
-    prize: '200,000,000 VNĐ',
-    participants: [
-      { pos: 1, number: 2, horse: 'Bão Tốc', jockey: 'Ngô Thị Phương', owner: 'Ngô Tấn Kiệt', age: 4, weight: '56kg', odds: 2.1, communityPick: 38, trend: 'up', form: [1,2,1,1,2], color: '#8B5CF6', nationality: 'VN', wins: 9, runs: 14 },
-      { pos: 2, number: 6, horse: 'Hổ Phong', jockey: 'Dương Minh Giang', owner: 'Dương Trường Sơn', age: 5, weight: '57kg', odds: 3.5, communityPick: 31, trend: 'up', form: [2,1,2,2,1], color: '#3B82F6', nationality: 'AU', wins: 7, runs: 16 },
-      { pos: 3, number: 4, horse: 'Long Mã', jockey: 'Lý Hữu Hùng', owner: 'Lý Thái Sơn', age: 3, weight: '54kg', odds: 6.0, communityPick: 18, trend: 'same', form: [3,3,3,1,3], color: '#06B6D4', nationality: 'FR', wins: 3, runs: 10 },
-      { pos: 4, number: 8, horse: 'Tia Chớp', jockey: 'Nguyễn Văn Anh', owner: 'Nguyễn Hoàng Minh', age: 5, weight: '57kg', odds: 8.0, communityPick: 13, trend: 'down', form: [1,2,1,3,4], color: '#F59E0B', nationality: 'VN', wins: 12, runs: 18 },
-    ],
-  },
-];
+interface HorseEntry {
+  registrationId: string;
+  horseId: string;
+  horseName: string;
+  currentGrade: string;
+  totalPoints: number;
+  winRate: number;
+  jockeyId?: string;
+  jockeyName?: string;
+  jockeyExperience?: number;
+}
 
-// ─── Completed Race Results ───────────────────────────────────────────────────
-
-const completedResults = [
-  {
-    id: 101,
-    name: 'Tranh Tài Mùa Xuân 2026 — Chung Kết',
-    date: '20/04/2026',
-    location: 'Trường Đua Phú Thọ, TP.HCM',
-    distance: '2000m',
-    surface: 'Cỏ Tự Nhiên',
-    prize: '150,000,000 VNĐ',
-    totalBets: 1247,
-    results: [
-      { pos: 1, number: 1, horse: 'Vinh Quang Đỏ', jockey: 'Hoàng Văn Em', owner: 'Hoàng Bá Lộc', time: '1:50.4', prize: '90,000,000 VNĐ', odds: 3.1, margin: 'Đầu', color: '#F59E0B' },
-      { pos: 2, number: 4, horse: 'Bão Tốc', jockey: 'Ngô Thị Phương', owner: 'Ngô Tấn Kiệt', time: '1:50.9', prize: '37,500,000 VNĐ', odds: 4.2, margin: '1/2 thân', color: '#94A3B8' },
-      { pos: 3, number: 7, horse: 'Tia Chớp', jockey: 'Nguyễn Văn Anh', owner: 'Nguyễn Hoàng Minh', time: '1:51.3', prize: '22,500,000 VNĐ', odds: 2.5, margin: '3/4 thân', color: '#CD7F32' },
-      { pos: 4, number: 2, horse: 'Ngôi Sao Đêm', jockey: 'Trần Thị Bích', owner: 'Trần Gia Hưng', time: '1:51.8', prize: '—', odds: 3.8, margin: '1 thân', color: '#64748B' },
-      { pos: 5, number: 5, horse: 'Thần Gió', jockey: 'Lê Văn Cường', owner: 'Lê Đình Phát', time: '1:52.4', prize: '—', odds: 5.0, margin: '2 thân', color: '#64748B' },
-    ],
-    accumulatedPool: '98,500,000 VNĐ',
-    winDividend: '3.10',
-    placeDividend: '1.40',
-  },
-  {
-    id: 102,
-    name: 'Giải Miền Bắc 2026 — Bán Kết',
-    date: '15/04/2026',
-    location: 'Trường Đua Hà Nội',
-    distance: '1600m',
-    surface: 'Đất Nện',
-    prize: '80,000,000 VNĐ',
-    totalBets: 892,
-    results: [
-      { pos: 1, number: 3, horse: 'Ngôi Sao Đêm', jockey: 'Trần Thị Bích', owner: 'Trần Gia Hưng', time: '1:38.2', prize: '48,000,000 VNĐ', odds: 2.8, margin: '2 thân', color: '#F59E0B' },
-      { pos: 2, number: 6, horse: 'Hổ Phong', jockey: 'Dương Minh Giang', owner: 'Dương Trường Sơn', time: '1:38.9', prize: '20,000,000 VNĐ', odds: 3.5, margin: '1/2 thân', color: '#94A3B8' },
-      { pos: 3, number: 1, horse: 'Bão Tốc', jockey: 'Ngô Thị Phương', owner: 'Ngô Tấn Kiệt', time: '1:39.1', prize: '12,000,000 VNĐ', odds: 2.1, margin: '1 thân', color: '#CD7F32' },
-      { pos: 4, number: 8, horse: 'Long Mã', jockey: 'Lý Hữu Hùng', owner: 'Lý Thái Sơn', time: '1:39.6', prize: '—', odds: 6.0, margin: '3 thân', color: '#64748B' },
-    ],
-    accumulatedPool: '62,000,000 VNĐ',
-    winDividend: '2.80',
-    placeDividend: '1.25',
-  },
-];
-
-const userPredictions = [
-  { race: 'Giải Hoàng Gia — Chung Kết', horse: 'Tia Chớp', odds: 2.5, amount: 500000, status: 'pending', potential: 1250000, date: 'Hôm nay' },
-  { race: 'Cup Mùa Hè — Vòng 1', horse: 'Bão Tốc', odds: 2.1, amount: 200000, status: 'pending', potential: 420000, date: 'Hôm nay' },
-  { race: 'Tranh Tài Mùa Xuân — CK', horse: 'Ngôi Sao Đêm', odds: 3.8, amount: 300000, status: 'won', potential: 1140000, date: '20/04' },
-  { race: 'Giải Miền Bắc — Bán Kết', horse: 'Thần Gió', odds: 5.0, amount: 100000, status: 'lost', potential: 500000, date: '15/04' },
-];
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const formColor = (pos: number) => {
   if (pos === 1) return 'bg-emerald-500 text-white';
@@ -138,8 +35,11 @@ const formColor = (pos: number) => {
   return 'bg-slate-700 text-slate-400';
 };
 
-const flagEmoji: Record<string, string> = {
-  VN: '🇻🇳', AU: '🇦🇺', GB: '🇬🇧', FR: '🇫🇷', JP: '🇯🇵',
+const GRADE_COLOR: Record<string, string> = {
+  G1: 'text-[#FFDE42] border-[#FFDE42]/40 bg-[#FFDE42]/10',
+  G2: 'text-purple-300 border-purple-500/40 bg-purple-500/10',
+  G3: 'text-blue-300 border-blue-500/40 bg-blue-500/10',
+  Maiden: 'text-slate-400 border-slate-600/40 bg-slate-700/20',
 };
 
 // ─── Login Gate Modal ─────────────────────────────────────────────────────────
@@ -148,47 +48,21 @@ function LoginGateModal({ onClose, onLogin }: { onClose: () => void; onLogin: ()
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
-      <div
-        className="relative w-full max-w-md rounded-3xl overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, #0F1117, #141820)', border: '1px solid rgba(255,255,255,0.1)' }}
-      >
-        {/* Top accent */}
-        <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg, #10b981, #06b6d4)' }} />
-
+      <div className="relative w-full max-w-md rounded-3xl overflow-hidden" style={{ background: 'linear-gradient(135deg,#0F1117,#141820)', border: '1px solid rgba(255,255,255,0.1)' }}>
+        <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg,#10b981,#06b6d4)' }} />
         <div className="p-8 text-center">
-          <div
-            className="w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)', boxShadow: '0 0 40px rgba(16,185,129,0.3)' }}
-          >
+          <div className="w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#10b981,#06b6d4)', boxShadow: '0 0 40px rgba(16,185,129,0.3)' }}>
             <Lock className="w-9 h-9 text-white" />
           </div>
-
           <h2 className="text-2xl font-black text-white mb-3">Yêu Cầu Đăng Nhập</h2>
-          <p className="text-slate-400 leading-relaxed mb-8">
-            Bạn cần <strong className="text-white">đăng nhập</strong> vào tài khoản để đặt cược và theo dõi lịch sử dự đoán của mình.
-          </p>
-
+          <p className="text-slate-400 leading-relaxed mb-8">Bạn cần <strong className="text-white">đăng nhập</strong> để đặt cược và xem lịch sử dự đoán.</p>
           <div className="space-y-3">
-            <button
-              onClick={onLogin}
-              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-base font-bold transition-all hover:opacity-90 active:scale-95"
-              style={{ background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)', color: 'white', boxShadow: '0 8px 24px rgba(16,185,129,0.3)' }}
-            >
-              <LogIn className="w-5 h-5" />
-              Đăng Nhập Ngay
+            <button onClick={onLogin} className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-base font-bold transition-all hover:opacity-90"
+              style={{ background: 'linear-gradient(135deg,#10b981,#06b6d4)', color: 'white', boxShadow: '0 8px 24px rgba(16,185,129,0.3)' }}>
+              <LogIn className="w-5 h-5" /> Đăng Nhập Ngay
             </button>
-            <button
-              onClick={onClose}
-              className="w-full py-3 rounded-2xl text-sm font-medium text-slate-500 hover:text-white transition-colors"
-            >
+            <button onClick={onClose} className="w-full py-3 rounded-2xl text-sm font-medium text-slate-500 hover:text-white transition-colors">
               Tiếp tục xem (không đặt cược)
-            </button>
-          </div>
-
-          <div className="mt-6 pt-6 border-t border-white/8 text-xs text-slate-600">
-            Chưa có tài khoản?{' '}
-            <button className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors" onClick={onLogin}>
-              Đăng ký miễn phí
             </button>
           </div>
         </div>
@@ -197,207 +71,138 @@ function LoginGateModal({ onClose, onLogin }: { onClose: () => void; onLogin: ()
   );
 }
 
-// ─── Results Board ─────────────────────────────────────────────────────────────
+// ─── Results Board ────────────────────────────────────────────────────────────
 
-function ResultsBoard() {
-  const [selectedResult, setSelectedResult] = useState(completedResults[0]);
+function ResultsBoard({ token }: { token: string | null }) {
+  const [finishedRaces, setFinishedRaces] = useState<Race[]>([]);
+  const [selectedRace, setSelectedRace] = useState<Race | null>(null);
+  const [results, setResults] = useState<RaceResultEntry[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!token) return;
+    raceApi.getRaces(token, { status: 'finished', limit: 5 })
+      .then(r => {
+        const races = r.races ?? [];
+        setFinishedRaces(races);
+        if (races.length > 0) setSelectedRace(races[0]);
+      }).catch(() => {});
+  }, [token]);
+
+  useEffect(() => {
+    if (!selectedRace || !token) return;
+    setLoading(true);
+    raceApi.getRaceResults(token, selectedRace._id)
+      .then(r => setResults(r.results ?? []))
+      .catch(() => setResults([]))
+      .finally(() => setLoading(false));
+  }, [selectedRace, token]);
+
+  if (!token) return (
+    <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+      <Lock className="w-12 h-12 mb-4 opacity-30" />
+      <p>Đăng nhập để xem kết quả</p>
+    </div>
+  );
+
+  if (finishedRaces.length === 0) return (
+    <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+      <Trophy className="w-12 h-12 mb-4 opacity-30" />
+      <p>Chưa có cuộc đua nào hoàn thành</p>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
-      {/* Section header */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #F59E0B20, #EF444415)' }}>
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#F59E0B20,#EF444415)' }}>
           <Trophy className="w-5 h-5 text-amber-400" />
         </div>
         <div>
           <h2 className="text-lg font-black text-white">Kết Quả Chính Thức</h2>
-          <p className="text-xs text-slate-500">Bảng công bố kết quả đua ngựa chi tiết</p>
+          <p className="text-xs text-slate-500">Bảng kết quả đua ngựa chi tiết</p>
         </div>
       </div>
 
-      {/* Race selector tabs */}
-      <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
-        {completedResults.map(r => (
-          <button
-            key={r.id}
-            onClick={() => setSelectedResult(r)}
-            className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-              selectedResult.id === r.id
-                ? 'text-white'
-                : 'text-slate-500 hover:text-slate-300'
-            }`}
-            style={selectedResult.id === r.id
-              ? { background: 'linear-gradient(135deg, #F59E0B, #EF4444)', boxShadow: '0 4px 16px rgba(245,158,11,0.3)' }
-              : { backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }
-            }
-          >
-            {r.shortName || r.name.split('—')[0].trim()}
-            <span className="ml-2 opacity-70">{r.date}</span>
+      {/* Race selector */}
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {finishedRaces.map(r => (
+          <button key={r._id} onClick={() => setSelectedRace(r)}
+            className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${selectedRace?._id === r._id ? 'text-white' : 'text-slate-500 hover:text-slate-300'}`}
+            style={selectedRace?._id === r._id ? { background: 'linear-gradient(135deg,#F59E0B,#EF4444)', boxShadow: '0 4px 16px rgba(245,158,11,0.3)' } : { backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            {r.name}
           </button>
         ))}
       </div>
 
-      {/* Race header card */}
-      <div
-        className="relative overflow-hidden rounded-2xl p-6"
-        style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.12), rgba(239,68,68,0.08))', border: '1px solid rgba(245,158,11,0.25)' }}
-      >
-        {/* Glow */}
-        <div className="absolute top-0 right-0 w-48 h-48 rounded-full opacity-10 pointer-events-none" style={{ background: 'radial-gradient(circle, #F59E0B, transparent 70%)', filter: 'blur(30px)' }} />
-
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest" style={{ background: 'rgba(245,158,11,0.2)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)' }}>
-                ✓ Chính Thức
-              </span>
-              <span className="text-xs text-slate-500">{selectedResult.date}</span>
-            </div>
-            <h3 className="text-xl font-black text-white mb-1">{selectedResult.name}</h3>
-            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
-              <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{selectedResult.location}</span>
-              <span className="flex items-center gap-1"><Flag className="w-3 h-3" />{selectedResult.distance}</span>
-              <span className="flex items-center gap-1"><Wind className="w-3 h-3" />{selectedResult.surface}</span>
-            </div>
-          </div>
-          <div className="flex gap-4 shrink-0">
-            <div className="text-center">
-              <div className="text-2xl font-black text-amber-400">{selectedResult.winDividend}x</div>
-              <div className="text-[10px] text-slate-500 uppercase tracking-wider">Tỷ lệ thắng</div>
-            </div>
-            <div className="w-px bg-white/8" />
-            <div className="text-center">
-              <div className="text-2xl font-black text-emerald-400">{selectedResult.totalBets.toLocaleString()}</div>
-              <div className="text-[10px] text-slate-500 uppercase tracking-wider">Lượt cược</div>
-            </div>
-            <div className="w-px bg-white/8" />
-            <div className="text-center">
-              <div className="text-lg font-black text-white">{selectedResult.prize}</div>
-              <div className="text-[10px] text-slate-500 uppercase tracking-wider">Tổng giải</div>
-            </div>
+      {/* Race info */}
+      {selectedRace && (
+        <div className="relative overflow-hidden rounded-2xl p-6" style={{ background: 'linear-gradient(135deg,rgba(245,158,11,0.12),rgba(239,68,68,0.08))', border: '1px solid rgba(245,158,11,0.25)' }}>
+          <h3 className="text-xl font-black text-white mb-2">{selectedRace.name}</h3>
+          <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400">
+            <span className="flex items-center gap-1"><Flag className="w-3 h-3" />{selectedRace.grade}</span>
+            <span className="flex items-center gap-1"><Activity className="w-3 h-3" />{selectedRace.distance}m</span>
+            <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(selectedRace.scheduledTime).toLocaleDateString('vi-VN')}</span>
+            <span className="ml-auto text-amber-400 font-bold">{selectedRace.purse.toLocaleString()} coins giải thưởng</span>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Results Table */}
-      <div className="overflow-hidden rounded-2xl" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
-        {/* Table header */}
-        <div className="grid grid-cols-12 gap-2 px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-600" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
-          <div className="col-span-1 text-center">Hạng</div>
-          <div className="col-span-1 text-center">Số</div>
-          <div className="col-span-4">Ngựa / Kỵ Sĩ</div>
-          <div className="col-span-2 text-center">Thời Gian</div>
-          <div className="col-span-1 text-center">Cách</div>
-          <div className="col-span-1 text-center">Tỷ Lệ</div>
-          <div className="col-span-2 text-right">Giải Thưởng</div>
-        </div>
-
-        {/* Table rows */}
-        <div className="divide-y divide-white/5">
-          {selectedResult.results.map((r, idx) => (
-            <div
-              key={idx}
-              className={`grid grid-cols-12 gap-2 px-5 py-4 items-center transition-colors hover:bg-white/3 ${idx === 0 ? 'bg-amber-500/5' : ''}`}
-            >
-              {/* Position badge */}
-              <div className="col-span-1 flex justify-center">
-                {r.pos === 1 ? (
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black" style={{ background: 'linear-gradient(135deg, #F59E0B, #D97706)', boxShadow: '0 4px 12px rgba(245,158,11,0.4)' }}>
-                    <Crown className="w-4 h-4 text-white" />
+      {/* Results */}
+      {loading ? (
+        <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-amber-400" /></div>
+      ) : results.length === 0 ? (
+        <div className="text-center py-10 text-slate-500 text-sm">Chưa có kết quả</div>
+      ) : (
+        <div className="overflow-hidden rounded-2xl" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="grid grid-cols-12 gap-2 px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-600" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+            <div className="col-span-1 text-center">Hạng</div>
+            <div className="col-span-5">Ngựa / Kỵ Sĩ</div>
+            <div className="col-span-2 text-center">Thời Gian</div>
+            <div className="col-span-2 text-center">Điểm</div>
+            <div className="col-span-2 text-right">Giải Thưởng</div>
+          </div>
+          <div className="divide-y divide-white/5">
+            {results.sort((a, b) => a.position - b.position).map((r, idx) => (
+              <div key={r._id} className={`grid grid-cols-12 gap-2 px-5 py-4 items-center hover:bg-white/3 ${idx === 0 ? 'bg-amber-500/5' : ''}`}>
+                <div className="col-span-1 flex justify-center">
+                  {r.position === 1 ? (
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#F59E0B,#D97706)', boxShadow: '0 4px 12px rgba(245,158,11,0.4)' }}>
+                      <Crown className="w-4 h-4 text-white" />
+                    </div>
+                  ) : r.position <= 3 ? (
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm" style={{ background: r.position === 2 ? '#64748B' : '#CD7F32' }}>
+                      <span className="text-white">{r.position}</span>
+                    </div>
+                  ) : (
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold bg-white/5 text-slate-500">{r.position}</div>
+                  )}
+                </div>
+                <div className="col-span-5">
+                  <div className={`font-black text-sm ${r.position === 1 ? 'text-amber-400' : r.position === 2 ? 'text-slate-300' : 'text-slate-400'}`}>
+                    {r.horseId?.name ?? '—'}
+                    {r.position === 1 && <span className="ml-2 text-[10px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/30">VÔ ĐỊCH</span>}
                   </div>
-                ) : r.pos === 2 ? (
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black bg-slate-600" style={{ boxShadow: '0 4px 12px rgba(148,163,184,0.3)' }}>
-                    <span className="text-slate-200">2</span>
-                  </div>
-                ) : r.pos === 3 ? (
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black" style={{ background: '#CD7F32', boxShadow: '0 4px 12px rgba(205,127,50,0.3)' }}>
-                    <span className="text-white">3</span>
-                  </div>
-                ) : (
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold bg-white/5 text-slate-500">
-                    {r.pos}
-                  </div>
-                )}
-              </div>
-
-              {/* Race number */}
-              <div className="col-span-1 flex justify-center">
-                <div
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black text-white"
-                  style={{ backgroundColor: r.color + '30', border: `1px solid ${r.color}50`, color: r.color }}
-                >
-                  {r.number}
+                  {r.jockeyId && <div className="text-xs text-slate-500 mt-0.5">🏇 {r.jockeyId.fullName}</div>}
+                </div>
+                <div className="col-span-2 text-center">
+                  <span className="text-sm font-mono text-slate-400">{(r.finishTime / 1000).toFixed(2)}s</span>
+                </div>
+                <div className="col-span-2 text-center">
+                  <span className="text-amber-400 font-bold">+{r.pointsEarned}</span>
+                </div>
+                <div className="col-span-2 text-right">
+                  {r.prizeAmount > 0 ? (
+                    <span className="text-emerald-400 font-black text-sm">{r.prizeAmount.toLocaleString()}</span>
+                  ) : (
+                    <span className="text-slate-700 text-xs">—</span>
+                  )}
                 </div>
               </div>
-
-              {/* Horse info */}
-              <div className="col-span-4">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <span className={`font-black text-sm ${r.pos === 1 ? 'text-amber-400' : r.pos === 2 ? 'text-slate-300' : r.pos === 3 ? 'text-orange-400' : 'text-slate-400'}`}>
-                    {r.horse}
-                  </span>
-                  {r.pos === 1 && <span className="text-[10px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded-md font-bold border border-amber-500/30">VÔ ĐỊCH</span>}
-                </div>
-                <div className="text-xs text-slate-500">
-                  🏇 {r.jockey} &nbsp;·&nbsp; {r.owner}
-                </div>
-              </div>
-
-              {/* Time */}
-              <div className="col-span-2 text-center">
-                <div className={`text-sm font-bold font-mono ${r.pos === 1 ? 'text-white' : 'text-slate-400'}`}>{r.time}</div>
-              </div>
-
-              {/* Margin */}
-              <div className="col-span-1 text-center text-xs text-slate-500">
-                {r.pos === 1 ? <span className="text-emerald-400 font-bold">—</span> : r.margin}
-              </div>
-
-              {/* Odds */}
-              <div className="col-span-1 text-center">
-                <span className={`text-sm font-bold ${r.pos === 1 ? 'text-amber-400' : 'text-slate-500'}`}>{r.odds}x</span>
-              </div>
-
-              {/* Prize */}
-              <div className="col-span-2 text-right">
-                {r.prize !== '—' ? (
-                  <span className="text-sm font-black text-emerald-400">{r.prize}</span>
-                ) : (
-                  <span className="text-xs text-slate-700">—</span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Dividend summary */}
-      <div className="grid grid-cols-2 gap-4">
-        <div
-          className="flex items-center gap-4 p-4 rounded-2xl"
-          style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}
-        >
-          <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
-            <Trophy className="w-5 h-5 text-amber-400" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">Tỷ Lệ Chi Trả Thắng</div>
-            <div className="text-xl font-black text-amber-400">{selectedResult.winDividend}x</div>
+            ))}
           </div>
         </div>
-        <div
-          className="flex items-center gap-4 p-4 rounded-2xl"
-          style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}
-        >
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
-            <Medal className="w-5 h-5 text-emerald-400" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">Tỷ Lệ Chi Trả Hạng 2-3</div>
-            <div className="text-xl font-black text-emerald-400">{selectedResult.placeDividend}x</div>
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -406,82 +211,138 @@ function ResultsBoard() {
 
 export function PredictionsPage() {
   const navigate = useNavigate();
+  const { user, token } = useAuth();
+  const isLoggedIn = !!user && !!token;
 
-  // Auth simulation — set to false = not logged in
-  const [isLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-
   const [activeTab, setActiveTab] = useState<'predict' | 'results'>('predict');
-  const [selectedRace, setSelectedRace] = useState(races[0]);
-  const [selectedHorse, setSelectedHorse] = useState<number | null>(null);
-  const [betAmount, setBetAmount] = useState('');
-  const [submitted, setSubmitted] = useState(false);
 
-  const selectedParticipant = selectedHorse !== null ? selectedRace.participants[selectedHorse] : null;
-  const potentialWin = selectedParticipant && betAmount
-    ? (parseFloat(betAmount) * selectedParticipant.odds).toFixed(0)
+  // Races
+  const [races, setRaces] = useState<Race[]>([]);
+  const [selectedRace, setSelectedRace] = useState<Race | null>(null);
+  const [loadingRaces, setLoadingRaces] = useState(false);
+
+  // Horses for selected race
+  const [horses, setHorses] = useState<HorseEntry[]>([]);
+  const [loadingHorses, setLoadingHorses] = useState(false);
+
+  // Bet
+  const [selectedHorseIdx, setSelectedHorseIdx] = useState<number | null>(null);
+  const [betType, setBetType] = useState<BetType>('win');
+  const [betAmount, setBetAmount] = useState('');
+  const [placing, setPlacing] = useState(false);
+  const [placed, setPlaced] = useState(false);
+
+  // Bet history
+  const [myBets, setMyBets] = useState<Bet[]>([]);
+  const [loadingBets, setLoadingBets] = useState(false);
+
+  // Load open+running races on mount
+  useEffect(() => {
+    if (!token) return;
+    setLoadingRaces(true);
+    Promise.all([
+      raceApi.getRaces(token, { status: 'open', limit: 5 }),
+      raceApi.getRaces(token, { status: 'running', limit: 3 }),
+    ])
+      .then(([openRes, runningRes]) => {
+        const all = [...(runningRes.races ?? []), ...(openRes.races ?? [])];
+        setRaces(all);
+        if (all.length > 0) setSelectedRace(all[0]);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingRaces(false));
+  }, [token]);
+
+  // Load horses when race changes
+  useEffect(() => {
+    if (!selectedRace || !token) return;
+    setHorses([]);
+    setSelectedHorseIdx(null);
+    setLoadingHorses(true);
+    raceApi.getRaceHorses(token, selectedRace._id)
+      .then(r => setHorses(r.horses ?? []))
+      .catch(() => setHorses([]))
+      .finally(() => setLoadingHorses(false));
+  }, [selectedRace, token]);
+
+  // Load bets on mount
+  useEffect(() => {
+    if (!token) return;
+    setLoadingBets(true);
+    betApi.getMyBets(token, { limit: 10 })
+      .then(r => setMyBets(r.bets ?? []))
+      .catch(() => {})
+      .finally(() => setLoadingBets(false));
+  }, [token, placed]);
+
+  const selectedHorse = selectedHorseIdx !== null ? horses[selectedHorseIdx] : null;
+  const multiplier = BET_MULTIPLIERS[betType];
+  const potentialWin = selectedHorse && betAmount && !isNaN(Number(betAmount))
+    ? Math.floor(Number(betAmount) * multiplier)
     : null;
 
-  const handleBetClick = () => {
-    if (!isLoggedIn) {
-      setShowLoginModal(true);
-      return;
-    }
-    if (selectedHorse !== null && betAmount) {
-      setSubmitted(true);
-      setTimeout(() => setSubmitted(false), 3000);
-      setSelectedHorse(null);
+  const handleBetClick = async () => {
+    if (!isLoggedIn) { setShowLoginModal(true); return; }
+    if (!selectedRace || !selectedHorse || !betAmount) return;
+    const amount = Number(betAmount);
+    if (isNaN(amount) || amount < 1) { toast.error('Số tiền tối thiểu là 1'); return; }
+    setPlacing(true);
+    try {
+      await betApi.place(token!, { raceId: selectedRace._id, horseId: selectedHorse.horseId, betType, amount });
+      toast.success(`Đặt cược thành công! Tiềm năng: +${potentialWin?.toLocaleString()} coins`);
+      setPlaced(p => !p);
+      setSelectedHorseIdx(null);
       setBetAmount('');
+    } catch (err: any) {
+      toast.error(err.message || 'Đặt cược thất bại');
+    } finally {
+      setPlacing(false);
     }
   };
 
-  const totalWon = userPredictions.filter(p => p.status === 'won').reduce((a, p) => a + p.potential, 0);
-  const winRate = Math.round((userPredictions.filter(p => p.status === 'won').length / userPredictions.filter(p => p.status !== 'pending').length) * 100);
+  const wonBets = myBets.filter(b => b.status === 'won').length;
+  const settledBets = myBets.filter(b => b.status === 'won' || b.status === 'lost').length;
+  const winRate = settledBets > 0 ? Math.round((wonBets / settledBets) * 100) : 0;
+  const totalWon = myBets.reduce((s, b) => s + (b.payoutAmount || 0), 0);
 
   return (
-    <div className="min-h-screen text-slate-200" style={{ backgroundColor: '#09090F', fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
+    <div className="min-h-screen text-slate-200" style={{ backgroundColor: '#09090F', fontFamily: "'Inter','Segoe UI',sans-serif" }}>
       <Navbar />
 
       {showLoginModal && (
-        <LoginGateModal
-          onClose={() => setShowLoginModal(false)}
-          onLogin={() => navigate('/login')}
-        />
+        <LoginGateModal onClose={() => setShowLoginModal(false)} onLogin={() => navigate('/login')} />
       )}
 
-      {/* Background glows */}
+      {/* BG glows */}
       <div className="absolute inset-x-0 top-0 h-[600px] pointer-events-none overflow-hidden">
-        <div className="absolute top-0 left-1/3 w-96 h-96 rounded-full opacity-8" style={{ background: 'radial-gradient(circle, #10b981, transparent 70%)', filter: 'blur(90px)' }} />
-        <div className="absolute top-20 right-1/3 w-80 h-80 rounded-full opacity-6" style={{ background: 'radial-gradient(circle, #06b6d4, transparent 70%)', filter: 'blur(90px)' }} />
+        <div className="absolute top-0 left-1/3 w-96 h-96 rounded-full opacity-8" style={{ background: 'radial-gradient(circle,#10b981,transparent 70%)', filter: 'blur(90px)' }} />
+        <div className="absolute top-20 right-1/3 w-80 h-80 rounded-full opacity-6" style={{ background: 'radial-gradient(circle,#06b6d4,transparent 70%)', filter: 'blur(90px)' }} />
       </div>
 
-      {/* ── Header ── */}
+      {/* Header */}
       <div className="relative pt-28 pb-14 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col lg:flex-row items-start lg:items-end justify-between gap-10">
             <div>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 text-sm font-bold uppercase tracking-widest" style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.25)', color: '#10b981' }}>
-                <Zap className="w-4 h-4" />
-                Dự Đoán &amp; Cược
+                <Zap className="w-4 h-4" /> Dự Đoán &amp; Cược
               </div>
               <h1 className="text-5xl md:text-6xl font-black text-white mb-4 leading-none tracking-tight">
-                Dự Đoán
-                <br />
-                <span style={{ background: 'linear-gradient(135deg, #10b981, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                Dự Đoán<br />
+                <span style={{ background: 'linear-gradient(135deg,#10b981,#06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                   Cuộc Đua
                 </span>
               </h1>
               <p className="text-lg text-slate-400 max-w-xl leading-relaxed">
-                Phân tích xu hướng, đọc chỉ số phong độ và đưa ra dự đoán chính xác. Xem kết quả đua ngựa chính thức công bố đầy đủ.
+                Phân tích xu hướng, xem phong độ ngựa và đưa ra dự đoán chính xác.
               </p>
             </div>
-
-            {/* Stats */}
             <div className="grid grid-cols-3 gap-3 shrink-0">
               {[
-                { label: 'Tỷ Lệ Đúng', value: `${winRate}%`, color: '#10b981', bg: 'rgba(16,185,129,0.1)', border: 'rgba(16,185,129,0.25)', icon: Target },
-                { label: 'Đã Dự Đoán', value: `${userPredictions.length}`, color: '#F59E0B', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.25)', icon: BarChart3 },
-                { label: 'Tổng Thắng', value: `${(totalWon / 1000000).toFixed(1)}M`, color: '#8B5CF6', bg: 'rgba(139,92,246,0.1)', border: 'rgba(139,92,246,0.25)', icon: Sparkles },
+                { label: 'Tỷ Lệ Đúng', value: isLoggedIn ? `${winRate}%` : '—', color: '#10b981', bg: 'rgba(16,185,129,0.1)', border: 'rgba(16,185,129,0.25)', icon: Target },
+                { label: 'Đã Cược', value: isLoggedIn ? String(myBets.length) : '—', color: '#F59E0B', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.25)', icon: BarChart3 },
+                { label: 'Tổng Thắng', value: isLoggedIn ? `${(totalWon / 1000).toFixed(0)}K` : '—', color: '#8B5CF6', bg: 'rgba(139,92,246,0.1)', border: 'rgba(139,92,246,0.25)', icon: Sparkles },
               ].map(({ label, value, color, bg, border, icon: Icon }) => (
                 <div key={label} className="flex flex-col items-center text-center px-5 py-4 rounded-2xl" style={{ backgroundColor: bg, border: `1px solid ${border}` }}>
                   <Icon className="w-4 h-4 mb-2" style={{ color }} />
@@ -494,213 +355,158 @@ export function PredictionsPage() {
         </div>
       </div>
 
-      {/* ── Tabs ── */}
+      {/* Tabs */}
       <div className="sticky top-[72px] z-30 border-b border-white/8 px-6" style={{ backgroundColor: '#09090FEE', backdropFilter: 'blur(20px)' }}>
         <div className="max-w-7xl mx-auto flex gap-0">
-          {[
-            { key: 'predict', label: 'Đặt Dự Đoán', icon: Target },
-            { key: 'results', label: 'Kết Quả Chính Thức', icon: Trophy },
-          ].map(({ key, label, icon: Icon }) => (
-            <button
-              key={key}
-              onClick={() => setActiveTab(key as typeof activeTab)}
-              className={`flex items-center gap-2 px-6 py-4 text-sm font-bold border-b-2 transition-all uppercase tracking-wider ${
-                activeTab === key ? '' : 'border-transparent text-slate-500 hover:text-slate-300'
-              }`}
-              style={activeTab === key
-                ? { borderBottomColor: '#10b981', color: '#10b981' }
-                : {}
-              }
-            >
-              <Icon className="w-4 h-4" />
-              {label}
+          {[['predict', 'Đặt Dự Đoán', Target], ['results', 'Kết Quả Chính Thức', Trophy]].map(([key, label, Icon]: any) => (
+            <button key={key} onClick={() => setActiveTab(key)}
+              className={`flex items-center gap-2 px-6 py-4 text-sm font-bold border-b-2 transition-all uppercase tracking-wider ${activeTab === key ? '' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
+              style={activeTab === key ? { borderBottomColor: '#10b981', color: '#10b981' } : {}}>
+              <Icon className="w-4 h-4" /> {label}
             </button>
           ))}
         </div>
       </div>
 
-      {/* ── Main Content ── */}
+      {/* Content */}
       <div className="max-w-7xl mx-auto px-6 py-10">
 
-        {/* ━━━ TAB: PREDICT ━━━ */}
+        {/* PREDICT TAB */}
         {activeTab === 'predict' && (
           <div className="grid lg:grid-cols-3 gap-8">
-
-            {/* Left: Race selection + participants */}
+            {/* Left: Race + Participants */}
             <div className="lg:col-span-2 space-y-8">
-
-              {/* Live race banner */}
-              {selectedRace.status === 'live' && (
+              {selectedRace?.status === 'running' && (
                 <div className="flex items-center gap-4 px-5 py-4 rounded-2xl" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
                   <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_12px_rgba(239,68,68,0.9)]" />
                   <span className="text-sm font-bold text-red-400 uppercase tracking-widest">Đang Diễn Ra Trực Tiếp</span>
-                  <div className="ml-auto flex items-center gap-2 text-xs text-slate-400 bg-white/5 px-3 py-1.5 rounded-full border border-white/8">
-                    <Eye className="w-3.5 h-3.5 text-red-400" />
-                    12,405 đang xem
-                  </div>
                 </div>
               )}
 
               {/* Race selector */}
               <div>
                 <h2 className="text-sm font-black text-slate-500 uppercase tracking-widest mb-4">Chọn Cuộc Đua</h2>
-                <div className="grid sm:grid-cols-2 gap-3">
-                  {races.map(race => (
-                    <button
-                      key={race.id}
-                      onClick={() => { setSelectedRace(race); setSelectedHorse(null); setBetAmount(''); }}
-                      className="p-4 rounded-2xl border text-left transition-all hover:-translate-y-0.5"
-                      style={selectedRace.id === race.id
-                        ? { background: 'rgba(16,185,129,0.1)', borderColor: 'rgba(16,185,129,0.4)', boxShadow: '0 4px 20px rgba(16,185,129,0.1)' }
-                        : { background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }
-                      }
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <h3 className="font-bold text-white text-sm leading-tight pr-2">{race.name}</h3>
-                        <span className={`shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wide ${
-                          race.status === 'live'
-                            ? 'bg-red-500 text-white'
-                            : 'bg-blue-600/80 text-white'
-                        }`}>
-                          {race.status === 'live' ? '● LIVE' : 'Sắp Tới'}
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{race.time}</span>
-                        <span className="flex items-center gap-1"><Flag className="w-3 h-3" />{race.distance}</span>
-                        <span className="flex items-center gap-1"><Users className="w-3 h-3" />{race.participants.length} ngựa</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+                {loadingRaces ? (
+                  <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-emerald-400" /></div>
+                ) : races.length === 0 ? (
+                  <div className="p-6 rounded-2xl text-center text-slate-500 text-sm" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    Không có cuộc đua nào đang mở đặt cược
+                  </div>
+                ) : (
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {races.map(race => (
+                      <button key={race._id} onClick={() => { setSelectedRace(race); setSelectedHorseIdx(null); setBetAmount(''); }}
+                        className="p-4 rounded-2xl border text-left transition-all hover:-translate-y-0.5"
+                        style={selectedRace?._id === race._id
+                          ? { background: 'rgba(16,185,129,0.1)', borderColor: 'rgba(16,185,129,0.4)', boxShadow: '0 4px 20px rgba(16,185,129,0.1)' }
+                          : { background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }}>
+                        <div className="flex items-start justify-between mb-3">
+                          <h3 className="font-bold text-white text-sm leading-tight pr-2">{race.name}</h3>
+                          <span className={`shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase ${race.status === 'running' ? 'bg-red-500 text-white' : 'bg-blue-600/80 text-white'}`}>
+                            {race.status === 'running' ? '● LIVE' : 'Mở Cược'}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(race.scheduledTime).toLocaleString('vi-VN')}</span>
+                          <span className="flex items-center gap-1"><Flag className="w-3 h-3" />{race.distance}m</span>
+                          <span className="flex items-center gap-1"><Award className="w-3 h-3" />{race.purse.toLocaleString()}c</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Race info */}
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { label: 'Địa Điểm', value: selectedRace.location.split(',')[0], icon: MapPin },
-                  { label: 'Cự Ly', value: selectedRace.distance, icon: Flag },
-                  { label: 'Mặt Đường', value: selectedRace.surface, icon: Wind },
-                ].map(({ label, value, icon: Icon }) => (
-                  <div key={label} className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <Icon className="w-4 h-4 text-slate-500 shrink-0" />
-                    <div>
-                      <div className="text-[10px] text-slate-600 uppercase tracking-wider">{label}</div>
-                      <div className="text-xs font-semibold text-white truncate">{value}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Participants */}
-              <div>
-                <h2 className="text-sm font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                  <Activity className="w-4 h-4" /> Phân Tích Ứng Viên
-                </h2>
-                <div className="space-y-3">
-                  {selectedRace.participants.map((p, idx) => (
-                    <div
-                      key={idx}
-                      onClick={() => setSelectedHorse(idx)}
-                      className="relative overflow-hidden rounded-2xl cursor-pointer transition-all hover:-translate-y-0.5"
-                      style={selectedHorse === idx
-                        ? { background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.35)', boxShadow: '0 4px 20px rgba(16,185,129,0.1)' }
-                        : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }
-                      }
-                    >
-                      {/* Color accent bar */}
-                      <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl" style={{ backgroundColor: p.color }} />
-
-                      <div className="pl-5 pr-5 py-4">
-                        {/* Top row */}
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            {/* Race number */}
-                            <div
-                              className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black shrink-0"
-                              style={{ backgroundColor: p.color + '25', border: `1px solid ${p.color}50`, color: p.color }}
-                            >
-                              {p.number}
-                            </div>
-
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-black text-white">{p.horse}</span>
-                                {flagEmoji[p.nationality] && <span className="text-sm">{flagEmoji[p.nationality]}</span>}
-                                {p.trend === 'up' && <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />}
-                                {p.trend === 'down' && <TrendingDown className="w-3.5 h-3.5 text-red-400" />}
-                                {p.trend === 'same' && <Minus className="w-3.5 h-3.5 text-slate-500" />}
-                              </div>
-                              <div className="text-xs text-slate-500">
-                                🏇 {p.jockey} &nbsp;·&nbsp; {p.age} tuổi &nbsp;·&nbsp; {p.weight}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="text-right shrink-0">
-                            <div className="text-xl font-black text-amber-400">{p.odds}x</div>
-                            <div className="text-[10px] text-slate-600 uppercase tracking-wider">Tỷ lệ</div>
-                          </div>
-                        </div>
-
-                        {/* Bottom row: form + win rate + community */}
-                        <div className="flex items-center gap-4 flex-wrap">
-                          {/* Form guide */}
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-slate-600 uppercase tracking-wider shrink-0">Phong độ:</span>
-                            <div className="flex gap-1">
-                              {p.form.map((pos, i) => (
-                                <div key={i} className={`w-6 h-6 rounded-md text-[10px] font-bold flex items-center justify-center ${formColor(pos)}`}>
-                                  {pos}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Win stats */}
-                          <div className="text-xs text-slate-500">
-                            <span className="text-emerald-400 font-bold">{p.wins}</span>/{p.runs} trận thắng
-                          </div>
-
-                          {/* Community pick bar */}
-                          <div className="ml-auto flex-1 min-w-[100px] max-w-[140px]">
-                            <div className="flex justify-between text-[10px] mb-1.5">
-                              <span className="text-slate-600 uppercase tracking-wider">Cộng đồng</span>
-                              <span className="font-bold" style={{ color: p.color }}>{p.communityPick}%</span>
-                            </div>
-                            <div className="h-1.5 rounded-full overflow-hidden bg-white/8">
-                              <div
-                                className="h-full rounded-full transition-all duration-700"
-                                style={{ width: `${p.communityPick}%`, backgroundColor: p.color }}
-                              />
-                            </div>
-                          </div>
-                        </div>
+              {selectedRace && (
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { label: 'Cự Ly', value: `${selectedRace.distance}m`, icon: Flag },
+                    { label: 'Cấp Hạng', value: selectedRace.grade, icon: Award },
+                    { label: 'Giải Thưởng', value: `${selectedRace.purse.toLocaleString()} coins`, icon: Trophy },
+                  ].map(({ label, value, icon: Icon }) => (
+                    <div key={label} className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <Icon className="w-4 h-4 text-slate-500 shrink-0" />
+                      <div>
+                        <div className="text-[10px] text-slate-600 uppercase tracking-wider">{label}</div>
+                        <div className="text-xs font-semibold text-white truncate">{value}</div>
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
+              )}
+
+              {/* Participants */}
+              {selectedRace && (
+                <div>
+                  <h2 className="text-sm font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <Activity className="w-4 h-4" /> Ngựa Tham Gia
+                  </h2>
+                  {loadingHorses ? (
+                    <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-emerald-400" /></div>
+                  ) : horses.length === 0 ? (
+                    <div className="text-center py-8 text-slate-500 text-sm" style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.08)', borderRadius: '16px' }}>
+                      Chưa có ngựa đăng ký
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {horses.map((h, idx) => (
+                        <div key={h.horseId} onClick={() => setSelectedHorseIdx(idx)}
+                          className="relative overflow-hidden rounded-2xl cursor-pointer transition-all hover:-translate-y-0.5"
+                          style={selectedHorseIdx === idx
+                            ? { background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.35)', boxShadow: '0 4px 20px rgba(16,185,129,0.1)' }
+                            : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                          <div className="pl-5 pr-5 py-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black shrink-0 bg-white/10 text-white">
+                                  {idx + 1}
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-black text-white">{h.horseName}</span>
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${GRADE_COLOR[h.currentGrade] ?? GRADE_COLOR.Maiden}`}>{h.currentGrade}</span>
+                                  </div>
+                                  <div className="text-xs text-slate-500">
+                                    {h.jockeyName ? `🏇 ${h.jockeyName}` : 'Chưa có kỵ sĩ'}
+                                    {h.jockeyExperience ? ` · ${h.jockeyExperience}năm KN` : ''}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <div className="text-xl font-black text-amber-400">{h.totalPoints}</div>
+                                <div className="text-[10px] text-slate-600 uppercase tracking-wider">Điểm</div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-[10px] text-slate-600 uppercase tracking-wider shrink-0">Win Rate:</span>
+                              <div className="flex-1 h-1.5 bg-white/8 rounded-full overflow-hidden">
+                                <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" style={{ width: `${h.winRate}%` }} />
+                              </div>
+                              <span className="text-xs font-bold text-emerald-400 shrink-0">{h.winRate}%</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Right: Bet panel + history */}
             <div className="space-y-5">
-
-              {/* Bet Panel */}
-              <div
-                className="rounded-2xl overflow-hidden sticky top-[138px]"
-                style={{ background: 'rgba(15,17,23,0.95)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)' }}
-              >
-                {/* Panel header */}
+              {/* Bet panel */}
+              <div className="rounded-2xl overflow-hidden"
+                style={{ background: 'rgba(15,17,23,0.95)', border: '1px solid rgba(255,255,255,0.1)' }}>
                 <div className="px-6 py-5 border-b border-white/8 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #10b981, #06b6d4)', boxShadow: '0 4px 16px rgba(16,185,129,0.3)' }}>
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#10b981,#06b6d4)', boxShadow: '0 4px 16px rgba(16,185,129,0.3)' }}>
                     <Zap className="w-4 h-4 text-white" />
                   </div>
                   <div>
                     <h3 className="font-black text-white">Đặt Cược</h3>
                     {!isLoggedIn && <p className="text-[10px] text-red-400">Yêu cầu đăng nhập</p>}
                   </div>
-
                   {!isLoggedIn && (
                     <div className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-500/10 border border-red-500/20">
                       <Lock className="w-3 h-3 text-red-400" />
@@ -710,132 +516,93 @@ export function PredictionsPage() {
                 </div>
 
                 <div className="p-6">
-                  {submitted ? (
-                    <div className="flex flex-col items-center py-8 text-center">
-                      <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ background: 'linear-gradient(135deg, #10b981, #06b6d4)', boxShadow: '0 0 40px rgba(16,185,129,0.3)' }}>
-                        <Check className="w-8 h-8 text-white" />
+                  {/* Bet type */}
+                  {isLoggedIn && (
+                    <div className="mb-4">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Loại Cược</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {(['win', 'place', 'show'] as const).map(bt => (
+                          <button key={bt} onClick={() => setBetType(bt)}
+                            className={`py-2 rounded-xl text-xs font-bold transition-all ${betType === bt ? 'text-emerald-400' : 'text-slate-500 hover:text-white'}`}
+                            style={betType === bt
+                              ? { background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)' }
+                              : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            {bt === 'win' ? `Win ${BET_MULTIPLIERS.win}x` : bt === 'place' ? `Place ${BET_MULTIPLIERS.place}x` : `Show ${BET_MULTIPLIERS.show}x`}
+                          </button>
+                        ))}
                       </div>
-                      <h4 className="text-lg font-black text-white mb-1">Đã Gửi!</h4>
-                      <p className="text-sm text-slate-400">Dự đoán đã được ghi nhận.</p>
+                    </div>
+                  )}
+
+                  {/* Selected horse */}
+                  {selectedHorse ? (
+                    <div className="mb-5 p-4 rounded-xl" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}>
+                      <div className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest mb-2">Đã Chọn</div>
+                      <div className="font-black text-white">{selectedHorse.horseName}</div>
+                      <div className="text-xs text-slate-500 mt-0.5">{selectedHorse.jockeyName ?? 'Chưa có kỵ sĩ'}</div>
                     </div>
                   ) : (
-                    <>
-                      {/* Selection display */}
-                      {selectedHorse !== null && selectedParticipant ? (
-                        <div
-                          className="mb-5 p-4 rounded-xl"
-                          style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}
-                        >
-                          <div className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest mb-2">Đã Chọn</div>
-                          <div className="flex items-center gap-3 mb-2">
-                            <div
-                              className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black shrink-0"
-                              style={{ backgroundColor: selectedParticipant.color + '25', color: selectedParticipant.color }}
-                            >
-                              {selectedParticipant.number}
-                            </div>
-                            <div>
-                              <div className="font-black text-white">{selectedParticipant.horse}</div>
-                              <div className="text-xs text-slate-500">🏇 {selectedParticipant.jockey}</div>
-                            </div>
-                            <div className="ml-auto text-right">
-                              <div className="text-2xl font-black text-amber-400">{selectedParticipant.odds}x</div>
-                              <div className="text-[10px] text-slate-600">Tỷ lệ</div>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div
-                          className="mb-5 p-5 rounded-xl text-center cursor-pointer transition-colors hover:border-emerald-500/20"
-                          style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)' }}
-                          onClick={() => !isLoggedIn && setShowLoginModal(true)}
-                        >
-                          <AlertCircle className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-                          <p className="text-sm text-slate-500">Chọn ngựa từ danh sách</p>
-                        </div>
-                      )}
+                    <div className="mb-5 p-5 rounded-xl text-center cursor-pointer" style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)' }}
+                      onClick={() => !isLoggedIn && setShowLoginModal(true)}>
+                      <AlertCircle className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                      <p className="text-sm text-slate-500">Chọn ngựa từ danh sách</p>
+                    </div>
+                  )}
 
-                      {/* Amount input */}
-                      <div className="mb-4">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">
-                          Số Tiền Cược (VNĐ)
-                        </label>
-                        <div className="relative">
-                          <input
-                            type="number"
-                            placeholder="Nhập số tiền..."
-                            value={betAmount}
-                            onChange={e => setBetAmount(e.target.value)}
-                            onClick={() => !isLoggedIn && setShowLoginModal(true)}
-                            readOnly={!isLoggedIn}
-                            className="w-full rounded-xl px-4 py-3 text-white text-sm placeholder:text-slate-600 focus:outline-none transition-all"
-                            style={{
-                              background: 'rgba(255,255,255,0.05)',
-                              border: '1px solid rgba(255,255,255,0.1)',
-                              cursor: isLoggedIn ? 'text' : 'not-allowed',
-                            }}
-                          />
-                          {!isLoggedIn && (
-                            <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
-                          )}
-                        </div>
-                        <div className="grid grid-cols-4 gap-1.5 mt-2">
-                          {[100000, 200000, 500000, 1000000].map(v => (
-                            <button
-                              key={v}
-                              onClick={() => isLoggedIn ? setBetAmount(String(v)) : setShowLoginModal(true)}
-                              className="py-2 rounded-lg text-[10px] font-bold text-slate-500 hover:text-white transition-all"
-                              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
-                            >
-                              {v >= 1000000 ? `${v/1000000}M` : `${v/1000}K`}
-                            </button>
-                          ))}
-                        </div>
+                  {/* Amount */}
+                  <div className="mb-4">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Số Tiền Cược (coins)</label>
+                    <div className="relative">
+                      <input type="number" placeholder="Nhập số tiền..." value={betAmount}
+                        onChange={e => setBetAmount(e.target.value)}
+                        onClick={() => !isLoggedIn && setShowLoginModal(true)}
+                        readOnly={!isLoggedIn}
+                        className="w-full rounded-xl px-4 py-3 text-white text-sm placeholder:text-slate-600 focus:outline-none transition-all"
+                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', cursor: isLoggedIn ? 'text' : 'not-allowed' }} />
+                      {!isLoggedIn && <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />}
+                    </div>
+                    <div className="grid grid-cols-4 gap-1.5 mt-2">
+                      {[100, 500, 1000, 5000].map(v => (
+                        <button key={v} onClick={() => isLoggedIn ? setBetAmount(String(v)) : setShowLoginModal(true)}
+                          className="py-2 rounded-lg text-[10px] font-bold text-slate-500 hover:text-white transition-all"
+                          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                          {v >= 1000 ? `${v/1000}K` : v}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Potential win */}
+                  {potentialWin !== null && isLoggedIn && (
+                    <div className="mb-5 p-4 rounded-xl flex items-center justify-between" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
+                      <div>
+                        <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">Tiềm Năng Thắng ({multiplier}x)</div>
+                        <div className="text-xl font-black text-amber-400">{potentialWin.toLocaleString()} coins</div>
                       </div>
+                      <ArrowUpRight className="w-6 h-6 text-amber-400 opacity-60" />
+                    </div>
+                  )}
 
-                      {/* Potential win */}
-                      {potentialWin && isLoggedIn && (
-                        <div
-                          className="mb-5 p-4 rounded-xl flex items-center justify-between"
-                          style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}
-                        >
-                          <div>
-                            <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">Tiềm Năng Thắng</div>
-                            <div className="text-xl font-black text-amber-400">{parseInt(potentialWin).toLocaleString()} VNĐ</div>
-                          </div>
-                          <ArrowUpRight className="w-6 h-6 text-amber-400 opacity-60" />
-                        </div>
-                      )}
-
-                      {/* CTA button */}
-                      {!isLoggedIn ? (
-                        <button
-                          onClick={() => setShowLoginModal(true)}
-                          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-black transition-all hover:opacity-90 active:scale-95"
-                          style={{ background: 'linear-gradient(135deg, #10b981, #06b6d4)', color: 'white', boxShadow: '0 8px 24px rgba(16,185,129,0.25)' }}
-                        >
-                          <LogIn className="w-4 h-4" />
-                          Đăng Nhập Để Cược
-                        </button>
-                      ) : (
-                        <button
-                          onClick={handleBetClick}
-                          disabled={selectedHorse === null || !betAmount}
-                          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-black transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-                          style={{ background: 'linear-gradient(135deg, #10b981, #06b6d4)', color: 'white', boxShadow: selectedHorse !== null && betAmount ? '0 8px 24px rgba(16,185,129,0.25)' : 'none' }}
-                        >
-                          <Zap className="w-4 h-4" />
-                          Xác Nhận Đặt Cược
-                        </button>
-                      )}
-                    </>
+                  {/* CTA */}
+                  {!isLoggedIn ? (
+                    <button onClick={() => setShowLoginModal(true)} className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-black transition-all hover:opacity-90"
+                      style={{ background: 'linear-gradient(135deg,#10b981,#06b6d4)', color: 'white', boxShadow: '0 8px 24px rgba(16,185,129,0.25)' }}>
+                      <LogIn className="w-4 h-4" /> Đăng Nhập Để Cược
+                    </button>
+                  ) : (
+                    <button onClick={handleBetClick} disabled={!selectedHorse || !betAmount || placing}
+                      className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-black transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                      style={{ background: 'linear-gradient(135deg,#10b981,#06b6d4)', color: 'white' }}>
+                      {placing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                      {placing ? 'Đang xử lý...' : 'Xác Nhận Đặt Cược'}
+                    </button>
                   )}
                 </div>
               </div>
 
               {/* Bet history */}
-              <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                <div className="px-5 py-4 border-b border-white/7 flex items-center justify-between">
+              <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                   <h3 className="text-sm font-black text-white flex items-center gap-2">
                     <Eye className="w-4 h-4 text-slate-500" /> Lịch Sử Cược
                   </h3>
@@ -846,35 +613,36 @@ export function PredictionsPage() {
                     <div className="py-8 text-center">
                       <Lock className="w-8 h-8 text-slate-700 mx-auto mb-3" />
                       <p className="text-sm text-slate-600">Đăng nhập để xem lịch sử</p>
-                      <button
-                        onClick={() => setShowLoginModal(true)}
-                        className="mt-3 text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1 mx-auto"
-                      >
+                      <button onClick={() => setShowLoginModal(true)} className="mt-3 text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1 mx-auto">
                         Đăng nhập ngay <ChevronRight className="w-3 h-3" />
                       </button>
                     </div>
+                  ) : loadingBets ? (
+                    <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-slate-500" /></div>
+                  ) : myBets.length === 0 ? (
+                    <div className="py-6 text-center text-sm text-slate-600">Chưa có lịch sử cược</div>
                   ) : (
-                    userPredictions.map((pred, i) => (
-                      <div key={i} className="p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <span className="text-xs text-slate-400 leading-tight">{pred.race}</span>
-                          <span className={`shrink-0 px-2 py-0.5 rounded-md text-[10px] font-black uppercase ${
-                            pred.status === 'won' ? 'bg-emerald-500/15 text-emerald-400' :
-                            pred.status === 'lost' ? 'bg-red-500/15 text-red-400' :
-                            'bg-amber-500/15 text-amber-400'
-                          }`}>
-                            {pred.status === 'won' ? '✓ Thắng' : pred.status === 'lost' ? '✗ Thua' : '⏳ Chờ'}
-                          </span>
+                    myBets.map(bet => {
+                      const race = (bet.raceId as any);
+                      const horse = (bet.horseId as any);
+                      return (
+                        <div key={bet._id} className="p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <span className="text-xs text-slate-400 leading-tight">{race?.name ?? 'Race'}</span>
+                            <span className={`shrink-0 px-2 py-0.5 rounded-md text-[10px] font-black uppercase ${bet.status === 'won' ? 'bg-emerald-500/15 text-emerald-400' : bet.status === 'lost' ? 'bg-red-500/15 text-red-400' : 'bg-amber-500/15 text-amber-400'}`}>
+                              {bet.status === 'won' ? '✓ Thắng' : bet.status === 'lost' ? '✗ Thua' : '⏳ Chờ'}
+                            </span>
+                          </div>
+                          <div className="font-bold text-white text-sm mb-1">{horse?.name ?? '—'}</div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate-600">{bet.betType} · {bet.amount.toLocaleString()}c</span>
+                            <span className={`font-bold ${bet.status === 'won' ? 'text-emerald-400' : bet.status === 'lost' ? 'text-red-400 line-through' : 'text-amber-400'}`}>
+                              +{Math.floor(bet.amount * bet.multiplier).toLocaleString()}c
+                            </span>
+                          </div>
                         </div>
-                        <div className="font-bold text-white text-sm mb-1.5">{pred.horse}</div>
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-slate-600">{pred.odds}x · {pred.amount.toLocaleString()}đ</span>
-                          <span className={`font-bold ${pred.status === 'won' ? 'text-emerald-400' : pred.status === 'lost' ? 'text-red-400 line-through' : 'text-amber-400'}`}>
-                            +{pred.potential.toLocaleString()}đ
-                          </span>
-                        </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </div>
@@ -882,10 +650,8 @@ export function PredictionsPage() {
           </div>
         )}
 
-        {/* ━━━ TAB: RESULTS ━━━ */}
-        {activeTab === 'results' && (
-          <ResultsBoard />
-        )}
+        {/* RESULTS TAB */}
+        {activeTab === 'results' && <ResultsBoard token={token} />}
       </div>
     </div>
   );
