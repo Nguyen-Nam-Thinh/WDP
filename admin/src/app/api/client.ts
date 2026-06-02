@@ -1,3 +1,5 @@
+import { getApiErrorMessage } from '../utils/errorMessages';
+
 export const API_URL = 'http://localhost:5000/api/v1';
 
 export function getToken(): string | null {
@@ -16,7 +18,7 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
   });
 
   const json = await res.json();
-  if (!res.ok) throw new Error(json.message || 'Request failed');
+  if (!res.ok) throw new Error(getApiErrorMessage(json.message));
   return json.data as T;
 }
 
@@ -28,6 +30,6 @@ export async function apiUpload<T>(path: string, formData: FormData): Promise<T>
     body: formData,
   });
   const json = await res.json();
-  if (!res.ok) throw new Error(json.message || 'Upload failed');
+  if (!res.ok) throw new Error(getApiErrorMessage(json.message));
   return json.data as T;
 }

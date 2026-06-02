@@ -75,7 +75,7 @@ export function Navbar() {
           >
             <TrendingUp className="w-4 h-4 text-[#FFDE42]" />
             Dự Đoán
-            <span className="px-1.5 py-0.5 bg-emerald-500 text-slate-950 text-[9px] font-bold rounded uppercase tracking-wide">LIVE</span>
+            <span className="px-1.5 py-0.5 bg-emerald-500 text-slate-950 text-[9px] font-bold rounded uppercase tracking-wide">TRỰC TIẾP</span>
           </button>
 
         </div>

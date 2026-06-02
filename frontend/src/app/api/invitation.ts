@@ -1,5 +1,6 @@
 import { API_URL } from "./auth";
 import { fetchWithAuth } from "../utils/apiClient";
+import { getApiErrorMessage } from "../utils/errorMessages";
 
 export interface InvitationHorse {
   _id: string;
@@ -64,7 +65,7 @@ export const invitationApi = {
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error((errorData as any).message || "Failed to send invitation");
+      throw new Error(getApiErrorMessage((errorData as any).message));
     }
     const json = await response.json();
     return json.data;
@@ -84,7 +85,7 @@ export const invitationApi = {
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error((errorData as any).message || "Failed to fetch invitations");
+      throw new Error(getApiErrorMessage((errorData as any).message));
     }
     const json = await response.json();
     return json.data;
@@ -97,7 +98,7 @@ export const invitationApi = {
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error((errorData as any).message || "Failed to accept invitation");
+      throw new Error(getApiErrorMessage((errorData as any).message));
     }
     const json = await response.json();
     return json.data;
@@ -115,7 +116,7 @@ export const invitationApi = {
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error((errorData as any).message || "Failed to reject invitation");
+      throw new Error(getApiErrorMessage((errorData as any).message));
     }
     const json = await response.json();
     return json.data;
@@ -128,7 +129,7 @@ export const invitationApi = {
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error((errorData as any).message || "Failed to cancel invitation");
+      throw new Error(getApiErrorMessage((errorData as any).message));
     }
   },
 };

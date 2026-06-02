@@ -1,5 +1,6 @@
 import { API_URL } from "./auth";
 import { fetchWithAuth } from "../utils/apiClient";
+import { getApiErrorMessage } from "../utils/errorMessages";
 
 export interface Tournament {
   _id: string;
@@ -28,7 +29,7 @@ export const tournamentApi = {
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error((errorData as any).message || "Failed to fetch tournaments");
+      throw new Error(getApiErrorMessage((errorData as any).message));
     }
     const json = await response.json();
     return json.data;

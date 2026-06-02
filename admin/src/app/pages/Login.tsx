@@ -97,7 +97,7 @@ export default function Login() {
               Admin Portal
             </Typography>
             <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 500, letterSpacing: '0.5px', textTransform: 'uppercase', fontSize: '0.75rem' }}>
-              HRTMS — Horse Racing Management
+              HRTMS — Hệ Thống Quản Lý Đua Ngựa
             </Typography>
           </Box>
 

@@ -1,4 +1,5 @@
 import { API_URL } from './auth';
+import { getApiErrorMessage } from '../utils/errorMessages';
 
 export interface Registration {
   _id: string;
@@ -32,7 +33,7 @@ export const registrationApi = {
       body: JSON.stringify(data),
     });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Registration failed');
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data;
   },
 
@@ -45,14 +46,14 @@ export const registrationApi = {
     if (params.raceId) q.append('raceId', params.raceId);
     const res = await fetch(`${API_URL}/registrations?${q}`, { headers: authHeader(token) });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Failed to fetch registrations');
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data;
   },
 
   getById: async (token: string, id: string): Promise<Registration> => {
     const res = await fetch(`${API_URL}/registrations/${id}`, { headers: authHeader(token) });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Failed to fetch registration');
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data;
   },
 
@@ -63,7 +64,7 @@ export const registrationApi = {
       body: JSON.stringify({ jockeyId }),
     });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Failed to assign jockey');
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data;
   },
 
@@ -73,7 +74,7 @@ export const registrationApi = {
       headers: authHeader(token),
     });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Failed to cancel registration');
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data;
   },
 
@@ -88,7 +89,7 @@ export const registrationApi = {
       body: JSON.stringify(data),
     });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Failed to update pre-check');
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data;
   },
 };

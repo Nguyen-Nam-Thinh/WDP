@@ -23,7 +23,7 @@ interface BetSummary {
   createdAt: string;
 }
 
-const BET_TYPE_LABEL: Record<string, string> = { win: 'Thắng', place: 'Top 2', show: 'Top 3' };
+const BET_TYPE_LABEL: Record<string, string> = { win: 'Thắng', place: 'Hạng 2', show: 'Hạng 3' };
 const STATUS_COLOR: Record<string, any> = { pending: 'warning', won: 'success', lost: 'error', cancelled: 'default', refunded: 'info' };
 const STATUS_LABEL: Record<string, string> = { pending: 'Chờ', won: 'Thắng', lost: 'Thua', cancelled: 'Hủy', refunded: 'Hoàn' };
 
@@ -90,7 +90,7 @@ export default function ResultsPublishing() {
     setSimulatingId(race._id);
     try {
       await raceApi.forceSimulate(race._id);
-      toast.success(`Simulation "${race.name}" đã bắt đầu`);
+      toast.success(`Mô phỏng cuộc đua "${race.name}" đã bắt đầu`);
       loadSimRaces();
     } catch (err: any) {
       toast.error(err.message);
@@ -152,7 +152,7 @@ export default function ResultsPublishing() {
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Bolt sx={{ color: '#f59e0b' }} />
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>Chạy Simulation</Typography>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>Chạy Mô Phỏng</Typography>
             <Chip label={`${simRaces.length} race`} size="small" color="warning" />
           </Box>
           <Button size="small" variant="outlined" onClick={loadSimRaces} disabled={loadingSim}>
@@ -164,7 +164,7 @@ export default function ResultsPublishing() {
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}><CircularProgress size={24} /></Box>
         ) : simRaces.length === 0 ? (
           <Paper sx={{ p: 3, textAlign: 'center', borderRadius: '12px', bgcolor: '#fafafa' }}>
-            <Typography color="text.secondary" variant="body2">Không có race nào đang chờ simulation</Typography>
+            <Typography color="text.secondary" variant="body2">Không có cuộc đua nào đang chờ mô phỏng</Typography>
           </Paper>
         ) : (
           <Grid container spacing={2}>
@@ -210,7 +210,7 @@ export default function ResultsPublishing() {
                           ? 'Đang chạy...'
                           : isRunning
                           ? 'Đang khởi động'
-                          : 'Force Simulate'}
+                          : 'Chạy Mô Phỏng'}
                       </Button>
                     </CardContent>
                   </Card>
@@ -308,7 +308,7 @@ export default function ResultsPublishing() {
 
               {pendingBets > 0 && (
                 <Alert severity="warning" sx={{ mb: 2 }}>
-                  Có {pendingBets} cược chưa được quyết toán. Race cần có kết quả (race_results) để tự động quyết toán.
+                  Có {pendingBets} cược chưa được quyết toán. Cuộc đua cần có kết quả để hệ thống tự động quyết toán.
                 </Alert>
               )}
 

@@ -157,7 +157,7 @@ export function LiveRacePage() {
     setSimulating(true);
     try {
       await raceApi.forceSimulate(token, raceId);
-      toast.success('Simulation đã bắt đầu — chờ socket events');
+      toast.success('Cuộc đua đã bắt đầu, đang cập nhật kết quả...');
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -285,7 +285,7 @@ export function LiveRacePage() {
             {(phase === 'started' || phase === 'racing') && (
               <div className="flex items-center gap-1.5 bg-red-500/20 border border-red-500/30 rounded-full px-3 py-1">
                 <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                <span className="text-red-300 text-xs font-medium">LIVE</span>
+                <span className="text-red-300 text-xs font-medium">TRỰC TIẾP</span>
               </div>
             )}
             {phase === 'finished' && (
@@ -353,7 +353,7 @@ export function LiveRacePage() {
                 className="w-full mb-4 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-semibold text-sm hover:bg-amber-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Zap className="w-4 h-4" />
-                {simulating ? 'Đang khởi động...' : 'Force Simulate (Admin)'}
+                {simulating ? 'Đang khởi động...' : 'Chạy Mô Phỏng (Admin)'}
               </button>
             )}
             {lineup.length > 0 && (
@@ -549,7 +549,7 @@ export function LiveRacePage() {
                         <div className="flex-1 min-w-0">
                           <div className="text-white text-sm font-medium">{bet.horseId.name}</div>
                           <div className="text-slate-400 text-xs">
-                            {bet.betType === 'win' ? 'Thắng' : bet.betType === 'place' ? 'Top 2' : 'Top 3'}
+                            {bet.betType === 'win' ? 'Thắng' : bet.betType === 'place' ? 'Hạng 2' : 'Hạng 3'}
                             {' '}— {bet.amount.toLocaleString()} × {bet.multiplier}x
                           </div>
                         </div>
@@ -592,7 +592,7 @@ export function LiveRacePage() {
                   <div className="flex-1 min-w-0">
                     <div className="text-white text-sm font-medium truncate">{bet.horseId.name}</div>
                     <div className="text-slate-400 text-xs">
-                      {bet.betType === 'win' ? 'Thắng' : bet.betType === 'place' ? 'Top 2' : 'Top 3'}
+                      {bet.betType === 'win' ? 'Thắng' : bet.betType === 'place' ? 'Hạng 2' : 'Hạng 3'}
                       {' '}· {bet.amount.toLocaleString()} coins
                     </div>
                   </div>

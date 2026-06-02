@@ -1,5 +1,6 @@
 import { API_URL } from "./auth";
 import { fetchWithAuth } from "../utils/apiClient";
+import { getApiErrorMessage } from "../utils/errorMessages";
 
 export interface Horse {
   _id: string;
@@ -28,6 +29,11 @@ const authHeader = (token: string) => ({
   Authorization: `Bearer ${token}`,
 });
 
+const throwMapped = async (response: Response) => {
+  const errorData = await response.json().catch(() => ({}));
+  throw new Error(getApiErrorMessage((errorData as any).message));
+};
+
 export const horseApi = {
   getMyHorses: async (
     token: string,
@@ -45,10 +51,7 @@ export const horseApi = {
     const response = await fetchWithAuth(`${API_URL}/horses?${params}`, {
       headers: authHeader(token),
     });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error((errorData as any).message || "Failed to fetch horses");
-    }
+    if (!response.ok) await throwMapped(response);
     const json = await response.json();
     return json.data;
   },
@@ -57,10 +60,7 @@ export const horseApi = {
     const response = await fetchWithAuth(`${API_URL}/horses/${horseId}`, {
       headers: authHeader(token),
     });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error((errorData as any).message || "Failed to fetch horse");
-    }
+    if (!response.ok) await throwMapped(response);
     const json = await response.json();
     return json.data;
   },
@@ -74,10 +74,7 @@ export const horseApi = {
       },
       body: JSON.stringify(data),
     });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error((errorData as any).message || "Failed to create horse");
-    }
+    if (!response.ok) await throwMapped(response);
     const json = await response.json();
     return json.data;
   },
@@ -95,10 +92,7 @@ export const horseApi = {
       },
       body: JSON.stringify(data),
     });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error((errorData as any).message || "Failed to update horse");
-    }
+    if (!response.ok) await throwMapped(response);
     const json = await response.json();
     return json.data;
   },
@@ -108,12 +102,7 @@ export const horseApi = {
       method: "DELETE",
       headers: authHeader(token),
     });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        (errorData as any).message || "Failed to deactivate horse",
-      );
-    }
+    if (!response.ok) await throwMapped(response);
     const json = await response.json();
     return json.data;
   },
@@ -131,10 +120,7 @@ export const horseApi = {
       headers: authHeader(token),
       body: formData,
     });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error((errorData as any).message || "Failed to upload images");
-    }
+    if (!response.ok) await throwMapped(response);
     const json = await response.json();
     return json.data;
   },
@@ -152,12 +138,7 @@ export const horseApi = {
       },
       body: JSON.stringify({ imageUrl }),
     });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        (errorData as any).message || "Failed to set primary image",
-      );
-    }
+    if (!response.ok) await throwMapped(response);
     const json = await response.json();
     return json.data;
   },
@@ -175,10 +156,7 @@ export const horseApi = {
       },
       body: JSON.stringify({ imageUrl }),
     });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error((errorData as any).message || "Failed to delete image");
-    }
+    if (!response.ok) await throwMapped(response);
     const json = await response.json();
     return json.data;
   },
@@ -195,12 +173,7 @@ export const horseApi = {
         headers: authHeader(token),
       },
     );
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        (errorData as any).message || "Failed to add regular jockey",
-      );
-    }
+    if (!response.ok) await throwMapped(response);
     const json = await response.json();
     return json.data;
   },
@@ -217,12 +190,7 @@ export const horseApi = {
         headers: authHeader(token),
       },
     );
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        (errorData as any).message || "Failed to remove regular jockey",
-      );
-    }
+    if (!response.ok) await throwMapped(response);
     const json = await response.json();
     return json.data;
   },

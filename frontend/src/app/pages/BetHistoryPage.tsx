@@ -16,7 +16,7 @@ const statusConfig: Record<string, { label: string; bg: string; color: string; i
   refunded:  { label: 'Đã hoàn', bg: 'rgba(59,130,246,0.15)', color: '#60a5fa', icon: CheckCircle },
 };
 
-const BET_TYPE_LABEL: Record<string, string> = { win: 'Thắng (1st)', place: 'Top 2', show: 'Top 3' };
+const BET_TYPE_LABEL: Record<string, string> = { win: 'Thắng (Hạng 1)', place: 'Hạng 2', show: 'Hạng 3' };
 
 export function BetHistoryPage() {
   const navigate = useNavigate();

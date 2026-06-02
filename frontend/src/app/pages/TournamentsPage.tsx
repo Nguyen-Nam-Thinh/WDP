@@ -30,7 +30,7 @@ function gradientFor(status: Tournament['status']): { from: string; to: string }
 
 function raceStatusCls(s: Race['status']): { label: string; cls: string } {
   switch (s) {
-    case 'running':   return { label: 'LIVE', cls: 'bg-red-500 text-white' };
+    case 'running':   return { label: 'TRỰC TIẾP', cls: 'bg-red-500 text-white' };
     case 'pre_check': return { label: 'Chuẩn Bị', cls: 'bg-amber-500 text-slate-900' };
     case 'open':      return { label: 'Mở', cls: 'bg-emerald-600/80 text-white' };
     case 'closed':    return { label: 'Đóng', cls: 'bg-slate-600 text-white' };

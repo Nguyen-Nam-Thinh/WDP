@@ -1,5 +1,6 @@
 import { API_URL } from "./auth";
 import { fetchWithAuth } from "../utils/apiClient";
+import { getApiErrorMessage } from "../utils/errorMessages";
 
 export interface RaceResultEntry {
   _id: string;
@@ -53,7 +54,7 @@ export const raceApi = {
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error((errorData as any).message || "Failed to fetch races");
+      throw new Error(getApiErrorMessage((errorData as any).message));
     }
     const json = await response.json();
     return json.data;
@@ -62,7 +63,7 @@ export const raceApi = {
   getRaceById: async (token: string, id: string): Promise<Race> => {
     const res = await fetch(`${API_URL}/races/${id}`, { headers: authHeader(token) });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to fetch race");
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data;
   },
 
@@ -74,7 +75,7 @@ export const raceApi = {
     const q = new URLSearchParams({ page: String(params.page ?? 1), limit: String(params.limit ?? 50) });
     const res = await fetch(`${API_URL}/races/${raceId}/registrations?${q}`, { headers: authHeader(token) });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to fetch registrations");
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data;
   },
 
@@ -99,7 +100,7 @@ export const raceApi = {
   }> => {
     const res = await fetch(`${API_URL}/races/${raceId}/horses`, { headers: authHeader(token) });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to fetch horses");
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data;
   },
 
@@ -109,14 +110,14 @@ export const raceApi = {
       headers: authHeader(token),
     });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Failed to start simulation');
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data;
   },
 
   getRaceResults: async (token: string, raceId: string): Promise<{ race: Race; results: RaceResultEntry[] }> => {
     const res = await fetchWithAuth(`${API_URL}/races/${raceId}/results`, { headers: authHeader(token) });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Failed to fetch race results');
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data;
   },
 };

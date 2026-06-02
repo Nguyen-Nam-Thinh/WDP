@@ -1,5 +1,6 @@
 import { API_URL } from "./auth";
 import { fetchWithAuth } from "../utils/apiClient";
+import { getApiErrorMessage } from "../utils/errorMessages";
 
 export interface UserProfile {
   _id: string;
@@ -72,7 +73,7 @@ export const userApi = {
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error((errorData as any).message || "Failed to fetch profile");
+      throw new Error(getApiErrorMessage((errorData as any).message));
     }
     const json = await response.json();
     return json.data;
@@ -89,7 +90,7 @@ export const userApi = {
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error((errorData as any).message || "Failed to update profile");
+      throw new Error(getApiErrorMessage((errorData as any).message));
     }
     const json = await response.json();
     return json.data;
@@ -101,7 +102,7 @@ export const userApi = {
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error((errorData as any).message || "Failed to fetch wallet");
+      throw new Error(getApiErrorMessage((errorData as any).message));
     }
     const json = await response.json();
     return json.data;
@@ -114,9 +115,7 @@ export const userApi = {
     );
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        (errorData as any).message || "Failed to fetch transactions",
-      );
+      throw new Error(getApiErrorMessage((errorData as any).message));
     }
     const json = await response.json();
     return json.data;
@@ -133,7 +132,7 @@ export const userApi = {
     );
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error((errorData as any).message || "Failed to fetch jockeys");
+      throw new Error(getApiErrorMessage((errorData as any).message));
     }
     const json = await response.json();
     return json.data;
@@ -152,7 +151,7 @@ export const userApi = {
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error((errorData as any).message || "Failed to upload avatar");
+      throw new Error(getApiErrorMessage((errorData as any).message));
     }
     const json = await response.json();
     return json.data;

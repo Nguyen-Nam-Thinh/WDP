@@ -231,11 +231,11 @@ export default function BetManagement() {
 
       {/* Settle Dialog */}
       <Dialog open={settleDialog} onClose={() => setSettleDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Quyết Toán Cược Theo Race</DialogTitle>
+        <DialogTitle>Quyết Toán Cược Theo Cuộc Đua</DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 2 }}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Chọn race đã kết thúc để quyết toán cược. Hệ thống tự động dựa vào race_results.
+              Chọn cuộc đua đã kết thúc để quyết toán cược. Hệ thống tự động tính toán dựa trên kết quả cuộc đua.
             </Typography>
             <FormControl fullWidth>
               <InputLabel>Chọn cuộc đua đã kết thúc</InputLabel>
@@ -247,7 +247,7 @@ export default function BetManagement() {
             </FormControl>
             {races.filter(r => r.status === 'finished').length === 0 && (
               <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
-                Chưa có race nào kết thúc
+                Chưa có cuộc đua nào kết thúc
               </Typography>
             )}
           </Box>

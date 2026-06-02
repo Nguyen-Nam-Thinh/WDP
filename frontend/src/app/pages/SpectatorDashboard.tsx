@@ -300,7 +300,7 @@ export function SpectatorDashboard() {
       race: 'Cuộc Đua 9 - Cúp Chiến Thắng',
       tournament: 'Giải Mùa Xuân',
       date: '2026-05-18',
-      betType: 'Về Đích Top 3',
+      betType: 'Về Đích Hạng 3',
       predicted: 'Storm Runner',
       actual: 'Golden Arrow',
       amount: 150,
@@ -313,7 +313,7 @@ export function SpectatorDashboard() {
       race: 'Cuộc Đua 8 - Derby Ưu Tú',
       tournament: 'Giải Vô Địch Ưu Tú 2026',
       date: '2026-05-15',
-      betType: 'Về Đích Top 5',
+      betType: 'Về Đích Hạng 3',
       predicted: 'Wild Fire',
       actual: 'Wild Fire',
       amount: 200,
@@ -345,8 +345,8 @@ export function SpectatorDashboard() {
 
   const betHistory = [
     { id: 'BET001', date: '2026-05-28 11:00', race: 'Cuộc Đua 15 - Chung Kết', amount: 100, type: 'Thắng', horse: 'Thunder Strike', odds: '2.5x', status: 'pending', reward: 0 },
-    { id: 'BET002', date: '2026-05-27 15:30', race: 'Cuộc Đua 12 - Bán Kết', amount: 50, type: 'Về Đích Top 3', horse: 'Golden Arrow', odds: '1.8x', status: 'won', reward: 90 },
-    { id: 'BET003', date: '2026-05-26 14:00', race: 'Cuộc Đua 10 - Vòng Loại', amount: 200, type: 'Về Đích Top 5', horse: 'Storm Chaser', odds: '3.0x', status: 'lost', reward: 0 },
+    { id: 'BET002', date: '2026-05-27 15:30', race: 'Cuộc Đua 12 - Bán Kết', amount: 50, type: 'Về Đích Hạng 3', horse: 'Golden Arrow', odds: '1.8x', status: 'won', reward: 90 },
+    { id: 'BET003', date: '2026-05-26 14:00', race: 'Cuộc Đua 10 - Vòng Loại', amount: 200, type: 'Về Đích Hạng 3', horse: 'Storm Chaser', odds: '3.0x', status: 'lost', reward: 0 },
     { id: 'BET004', date: '2026-05-25 09:15', race: 'Cuộc Đua 8 - Khởi Động', amount: 150, type: 'Thắng', horse: 'Wild Fire', odds: '5.5x', status: 'won', reward: 825 },
   ];
 
@@ -679,7 +679,7 @@ export function SpectatorDashboard() {
                   const myBetOnRace = myBets.some(b => (b.raceId as any)?._id === race._id && b.status === 'pending');
                   const isRunning = race.status === 'running';
                   const borderColor = isRunning ? 'border-red-500/30' : 'border-amber-500/20';
-                  const statusLabel = isRunning ? 'LIVE' : race.status === 'pre_check' ? 'Chuẩn bị' : 'Đóng cược';
+                  const statusLabel = isRunning ? 'TRỰC TIẾP' : race.status === 'pre_check' ? 'Chuẩn bị' : 'Đóng cược';
                   const statusBg = isRunning ? '#ef4444' : '#f59e0b';
                   return (
                     <div key={race._id} className={`bg-white/5 backdrop-blur-md border ${borderColor} rounded-2xl p-6`}>
@@ -1010,7 +1010,7 @@ export function SpectatorDashboard() {
                           refunded: { label: 'Đã hoàn', color: 'bg-blue-500/20 text-blue-400' },
                         };
                         const st = statusMap[bet.status] || statusMap.pending;
-                        const betTypeLabel: Record<string, string> = { win: 'Thắng (1st)', place: 'Top 2', show: 'Top 3' };
+                        const betTypeLabel: Record<string, string> = { win: 'Thắng (Hạng 1)', place: 'Hạng 2', show: 'Hạng 3' };
                         const race = bet.raceId as any;
                         const horse = bet.horseId as any;
                         return (
@@ -1384,9 +1384,9 @@ export function SpectatorDashboard() {
                   <InputLabel sx={{ color: '#94a3b8' }}>Loại Cược</InputLabel>
                   <Select value={betType} onChange={(e) => setBetType(e.target.value)} label="Loại Cược"
                     sx={{ color: 'white', '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.1)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.2)' }, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#FFDE42' }, '.MuiSvgIcon-root': { color: '#94a3b8' } }}>
-                    <MenuItem value="win">Thắng — ngựa về 1st (hệ số 3.0x)</MenuItem>
-                    <MenuItem value="place">Place — ngựa về Top 2 (hệ số 2.0x)</MenuItem>
-                    <MenuItem value="show">Show — ngựa về Top 3 (hệ số 1.5x)</MenuItem>
+                    <MenuItem value="win">Thắng — ngựa về hạng 1 (hệ số 3.0x)</MenuItem>
+                    <MenuItem value="place">Về Nhì — ngựa về hạng 2 (hệ số 2.0x)</MenuItem>
+                    <MenuItem value="show">Về Ba — ngựa về hạng 3 (hệ số 1.5x)</MenuItem>
                   </Select>
                 </FormControl>
 

@@ -1,5 +1,6 @@
 import { API_URL } from "./auth";
 import { fetchWithAuth } from "../utils/apiClient";
+import { getApiErrorMessage } from "../utils/errorMessages";
 
 export interface HorseRanking {
   rank: number;
@@ -56,7 +57,7 @@ export const rankingsApi = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error((err as any).message || 'Failed to fetch horse rankings');
+      throw new Error(getApiErrorMessage((err as any).message));
     }
     const json = await res.json();
     return json.data;
@@ -68,7 +69,7 @@ export const rankingsApi = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error((err as any).message || 'Failed to fetch jockey rankings');
+      throw new Error(getApiErrorMessage((err as any).message));
     }
     const json = await res.json();
     return json.data;
@@ -80,7 +81,7 @@ export const rankingsApi = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error((err as any).message || 'Failed to fetch owner rankings');
+      throw new Error(getApiErrorMessage((err as any).message));
     }
     const json = await res.json();
     return json.data;
@@ -92,7 +93,7 @@ export const rankingsApi = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error((err as any).message || 'Failed to fetch spectator leaderboard');
+      throw new Error(getApiErrorMessage((err as any).message));
     }
     const json = await res.json();
     return json.data;

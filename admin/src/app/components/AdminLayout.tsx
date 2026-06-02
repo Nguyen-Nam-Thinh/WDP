@@ -147,8 +147,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           />
           {sidebarOpen && (
             <div>
-              <div style={{ fontWeight: 700, fontSize: 15, color: '#111', lineHeight: 1.2 }}>Horse Racing</div>
-              <div style={{ fontSize: 11, color: '#999', fontWeight: 500, marginTop: 2 }}>Admin Panel</div>
+              <div style={{ fontWeight: 700, fontSize: 15, color: '#111', lineHeight: 1.2 }}>Đua Ngựa Pro</div>
+              <div style={{ fontSize: 11, color: '#999', fontWeight: 500, marginTop: 2 }}>Cổng Quản Trị</div>
             </div>
           )}
         </div>

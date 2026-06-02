@@ -233,7 +233,7 @@ export function JockeyDashboard() {
                 Cổng Kỵ Sĩ
                 <Chip label="Hạng A" size="small" sx={{ height: '18px', fontSize: '0.65rem', bgcolor: 'rgba(255, 222, 66, 0.2)', color: '#FFDE42', fontWeight: 'bold' }} />
               </div>
-              <div className="text-sm text-slate-400">Giấy Phép: JCK-8821 • Top 10%</div>
+              <div className="text-sm text-slate-400">Giấy Phép: JCK-8821 • Nhóm 10% đầu</div>
             </div>
           </div>
 

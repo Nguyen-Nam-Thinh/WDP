@@ -1,3 +1,5 @@
+import { getApiErrorMessage } from '../utils/errorMessages';
+
 export const API_URL = 'http://localhost:5000/api/v1';
 
 export const authApi = {
@@ -9,7 +11,7 @@ export const authApi = {
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Login failed');
+      throw new Error(getApiErrorMessage(errorData.message));
     }
     const json = await response.json();
     return json.data;
@@ -23,7 +25,7 @@ export const authApi = {
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Registration failed');
+      throw new Error(getApiErrorMessage(errorData.message));
     }
     const json = await response.json();
     return json.data;
@@ -37,7 +39,7 @@ export const authApi = {
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Failed to send reset email');
+      throw new Error(getApiErrorMessage(errorData.message));
     }
     const json = await response.json();
     return json.data;
@@ -51,7 +53,7 @@ export const authApi = {
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Invalid reset code');
+      throw new Error(getApiErrorMessage(errorData.message));
     }
     const json = await response.json();
     return json.data;
@@ -65,7 +67,7 @@ export const authApi = {
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Failed to reset password');
+      throw new Error(getApiErrorMessage(errorData.message));
     }
     const json = await response.json();
     return json.data;
@@ -82,7 +84,7 @@ export const authApi = {
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error((errorData as any).message || 'Failed to change password');
+      throw new Error(getApiErrorMessage((errorData as any).message));
     }
     return;
   },
@@ -110,7 +112,7 @@ export const authApi = {
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Failed to refresh token');
+      throw new Error(getApiErrorMessage(errorData.message));
     }
     const json = await response.json();
     return json.data;

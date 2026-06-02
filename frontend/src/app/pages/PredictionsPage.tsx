@@ -403,7 +403,7 @@ export function PredictionsPage() {
                         <div className="flex items-start justify-between mb-3">
                           <h3 className="font-bold text-white text-sm leading-tight pr-2">{race.name}</h3>
                           <span className={`shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase ${race.status === 'running' ? 'bg-red-500 text-white' : 'bg-blue-600/80 text-white'}`}>
-                            {race.status === 'running' ? '● LIVE' : 'Mở Cược'}
+                            {race.status === 'running' ? '● TRỰC TIẾP' : 'Mở Cược'}
                           </span>
                         </div>
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">

@@ -1,4 +1,5 @@
 import { API_URL } from './auth';
+import { getApiErrorMessage } from '../utils/errorMessages';
 
 export interface LiveRace {
   _id: string;
@@ -34,7 +35,7 @@ export interface PlatformStats {
 export const publicApi = {
   getPlatformStats: async (): Promise<PlatformStats> => {
     const res = await fetch(`${API_URL}/public/stats`);
-    if (!res.ok) throw new Error('Failed to fetch platform stats');
+    if (!res.ok) throw new Error(getApiErrorMessage(undefined));
     const json = await res.json();
     return json.data;
   },

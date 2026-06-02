@@ -25,7 +25,7 @@ export interface BetListResponse {
   totalPages: number;
 }
 
-export const BET_TYPE_LABEL: Record<string, string> = { win: 'Thắng (1st)', place: 'Top 2', show: 'Top 3' };
+export const BET_TYPE_LABEL: Record<string, string> = { win: 'Thắng (Hạng 1)', place: 'Hạng 2', show: 'Hạng 3' };
 export const BET_STATUS_LABEL: Record<string, string> = { pending: 'Chờ', won: 'Thắng', lost: 'Thua', cancelled: 'Hủy', refunded: 'Đã hoàn' };
 export const BET_STATUS_COLOR: Record<string, any> = { pending: 'warning', won: 'success', lost: 'error', cancelled: 'default', refunded: 'info' };
 

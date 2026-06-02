@@ -1,5 +1,5 @@
-import { API_URL } from './client';
-import { apiRequest } from './client';
+import { API_URL, apiRequest } from './client';
+import { getApiErrorMessage } from '../utils/errorMessages';
 
 export interface AdminUser {
   _id: string;
@@ -44,7 +44,7 @@ export const userApi = {
       body: JSON.stringify({ email, password }),
     });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Login failed');
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data as LoginResponse;
   },
 

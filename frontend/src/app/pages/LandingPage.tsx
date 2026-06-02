@@ -75,7 +75,7 @@ export function LandingPage() {
     ?? null;
 
   const statusLabel = (s: string) =>
-    s === 'running' ? 'LIVE' : s === 'pre_check' ? 'Chuẩn Bị' : 'Sắp Bắt Đầu';
+    s === 'running' ? 'TRỰC TIẾP' : s === 'pre_check' ? 'Chuẩn Bị' : 'Sắp Bắt Đầu';
   const statusBg = (s: string) =>
     s === 'running' ? 'bg-red-500' : 'bg-amber-500';
 
@@ -103,7 +103,7 @@ export function LandingPage() {
             </button>
             <button onClick={() => navigate('/predictions')} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-all">
               <TrendingUp className="w-4 h-4 text-[#FFDE42]" /> Dự Đoán
-              <span className="px-1.5 py-0.5 bg-emerald-500 text-slate-950 text-[9px] font-bold rounded uppercase tracking-wide">LIVE</span>
+              <span className="px-1.5 py-0.5 bg-emerald-500 text-slate-950 text-[9px] font-bold rounded uppercase tracking-wide">TRỰC TIẾP</span>
             </button>
           </div>
 

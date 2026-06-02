@@ -28,7 +28,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const data = await userApi.login(email, password);
-    if (data.user.role !== 'admin') throw new Error('Access denied. Admin only.');
+    if (data.user.role !== 'admin') throw new Error('Tài khoản này không có quyền truy cập Admin Portal.');
     localStorage.setItem('adminToken', data.accessToken);
     localStorage.setItem('adminUser', JSON.stringify(data.user));
     setToken(data.accessToken);

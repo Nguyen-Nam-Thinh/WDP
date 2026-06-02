@@ -1,4 +1,5 @@
 import { API_URL } from './auth';
+import { getApiErrorMessage } from '../utils/errorMessages';
 import type { Race } from './race';
 
 export interface Incident {
@@ -48,7 +49,7 @@ export const refereeApi = {
     if (params.status) q.append('status', params.status);
     const res = await fetch(`${API_URL}/referee/races?${q}`, { headers: authHeader(token) });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Failed to fetch assigned races');
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data;
   },
 
@@ -59,7 +60,7 @@ export const refereeApi = {
       body: JSON.stringify({ raceId }),
     });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Failed to create report');
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data;
   },
 
@@ -71,14 +72,14 @@ export const refereeApi = {
     if (params.status) q.append('status', params.status);
     const res = await fetch(`${API_URL}/referee/reports?${q}`, { headers: authHeader(token) });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Failed to fetch reports');
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data;
   },
 
   getReportById: async (token: string, id: string): Promise<RefereeReport> => {
     const res = await fetch(`${API_URL}/referee/reports/${id}`, { headers: authHeader(token) });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Report not found');
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data;
   },
 
@@ -93,7 +94,7 @@ export const refereeApi = {
       body: JSON.stringify(data),
     });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Failed to update report');
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data;
   },
 
@@ -108,7 +109,7 @@ export const refereeApi = {
       body: JSON.stringify(data),
     });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Failed to add incident');
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data;
   },
 
@@ -118,7 +119,7 @@ export const refereeApi = {
       headers: authHeader(token),
     });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Failed to remove incident');
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data;
   },
 
@@ -128,7 +129,7 @@ export const refereeApi = {
       headers: authHeader(token),
     });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Failed to submit report');
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data;
   },
 
@@ -136,7 +137,7 @@ export const refereeApi = {
     const res = await fetch(`${API_URL}/referee/reports/${reportId}/pdf`, { headers: authHeader(token) });
     if (!res.ok) {
       const json = await res.json().catch(() => ({}));
-      throw new Error((json as any).message || 'Failed to download PDF');
+      throw new Error(getApiErrorMessage((json as any).message));
     }
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);

@@ -1,13 +1,14 @@
 import { API_URL } from './auth';
+import { getApiErrorMessage } from '../utils/errorMessages';
 
 export type BetType = 'win' | 'place' | 'show';
 export type BetStatus = 'pending' | 'won' | 'lost' | 'cancelled' | 'refunded';
 
 export const BET_MULTIPLIERS: Record<BetType, number> = { win: 3, place: 2, show: 1.5 };
 export const BET_TYPE_LABEL: Record<BetType, string> = {
-  win: 'Thắng (Top 1) — 3.0x',
-  place: 'Về Đích Top 2 — 2.0x',
-  show: 'Về Đích Top 3 — 1.5x',
+  win: 'Thắng (Hạng 1) — 3.0x',
+  place: 'Về Nhì (Hạng 2) — 2.0x',
+  show: 'Về Ba (Hạng 3) — 1.5x',
 };
 
 export interface Bet {
@@ -42,7 +43,7 @@ export const betApi = {
       body: JSON.stringify(data),
     });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Failed to place bet');
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data;
   },
 
@@ -55,14 +56,14 @@ export const betApi = {
     if (params.raceId) q.append('raceId', params.raceId);
     const res = await fetch(`${API_URL}/bets?${q}`, { headers: authHeader(token) });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Failed to fetch bets');
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data;
   },
 
   getById: async (token: string, id: string): Promise<Bet> => {
     const res = await fetch(`${API_URL}/bets/${id}`, { headers: authHeader(token) });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Bet not found');
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data;
   },
 
@@ -72,7 +73,7 @@ export const betApi = {
       headers: authHeader(token),
     });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Failed to cancel bet');
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data;
   },
 
@@ -80,7 +81,7 @@ export const betApi = {
     const q = new URLSearchParams({ page: String(page), limit: String(limit) });
     const res = await fetch(`${API_URL}/bets/race/${raceId}?${q}`, { headers: authHeader(token) });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Failed to fetch race bets');
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data as BetListResponse;
   },
 
@@ -90,7 +91,7 @@ export const betApi = {
       headers: authHeader(token),
     });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Failed to settle bets');
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data as { settled: number; won: number; lost: number };
   },
 };
