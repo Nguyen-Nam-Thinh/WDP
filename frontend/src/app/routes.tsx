@@ -1,5 +1,6 @@
 import { createBrowserRouter } from "react-router";
 import { LandingPage } from "./pages/LandingPage";
+import { NotFoundPage } from "./pages/NotFoundPage";
 import { HorseOwnerDashboard } from "./pages/HorseOwnerDashboard";
 import { JockeyDashboard } from "./pages/JockeyDashboard";
 import { RefereeDashboard } from "./pages/RefereeDashboard";
@@ -80,6 +81,10 @@ export const router = createBrowserRouter([
   {
     path: "/spectator/race/:raceId",
     element: <LiveRacePage />,
+  },
+  {
+    path: "*",
+    element: <NotFoundPage />,
   },
 ]);
 

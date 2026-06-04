@@ -11,6 +11,7 @@ import RefereeAssignment from './components/pages/RefereeAssignment';
 import ResultsPublishing from './components/pages/ResultsPublishing';
 import BetManagement from './components/pages/BetManagement';
 import Login from './pages/Login';
+import NotFoundPage from './pages/NotFoundPage';
 import { AdminAuthProvider, useAdminAuth } from './context/AdminAuthContext';
 
 const theme = createTheme({
@@ -64,6 +65,7 @@ export default function App() {
                 <Route path="/results" element={<ResultsPublishing />} />
                 <Route path="/bets" element={<BetManagement />} />
               </Route>
+              <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </div>
         </BrowserRouter>
