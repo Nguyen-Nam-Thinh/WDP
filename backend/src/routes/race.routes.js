@@ -1,6 +1,7 @@
 const { Router } = require('express');
 const { z } = require('zod');
 const raceController = require('../controllers/race.controller');
+const aiPredictionController = require('../controllers/ai-prediction.controller');
 const { authenticate, authorize } = require('../middleware/auth.middleware');
 const { validate } = require('../middleware/validate.middleware');
 
@@ -61,6 +62,7 @@ router.patch('/:id/status', authorize('admin'), validate(statusSchema), raceCont
 router.get('/:id/registrations', raceController.getRaceRegistrations);
 router.get('/:id/horses', raceController.getRaceHorses);
 router.get('/:id/results', raceController.getRaceResults);
+router.get('/:id/ai-predictions', aiPredictionController.getRaceAIPredictions);
 router.post('/:id/force-simulate', authorize('admin'), raceController.forceSimulateRace);
 
 module.exports = router;

@@ -5,10 +5,11 @@ import {
   Zap, Target, BarChart3, Clock, Trophy, Users, Flame, Activity,
   Eye, Check, AlertCircle, Lock, LogIn, Medal, Flag, MapPin, Wind,
   ChevronRight, Award, ArrowUpRight, Crown, Sparkles, Info, Loader2,
+  Bot, RefreshCw, TrendingUp,
 } from 'lucide-react';
 import { Button } from '@mui/material';
 import { useAuth } from '../hooks/useAuth';
-import { raceApi, type Race, type RaceResultEntry } from '../api/race';
+import { raceApi, type Race, type RaceResultEntry, type HorsePrediction } from '../api/race';
 import { betApi, type Bet, type BetType, BET_MULTIPLIERS } from '../api/bet';
 import { toast } from 'sonner';
 
@@ -203,6 +204,134 @@ function ResultsBoard({ token }: { token: string | null }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── AI Predictions Panel ─────────────────────────────────────────────────────
+
+function AIPredictionsPanel({ raceId, token }: { raceId: string; token: string }) {
+  const [predictions, setPredictions] = useState<HorsePrediction[]>([]);
+  const [generatedAt, setGeneratedAt] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = (refresh = false) => {
+    setLoading(true);
+    setError(null);
+    raceApi.getAIPredictions(token, raceId, refresh)
+      .then((data) => {
+        setPredictions(data.predictions ?? []);
+        setGeneratedAt(data.generatedAt);
+        setFromCache(data.fromCache);
+      })
+      .catch((err) => setError(err.message || 'Không thể tải dự đoán AI'))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, [raceId]);
+
+  return (
+    <div className="rounded-2xl overflow-hidden mt-6" style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.25)' }}>
+      {/* Header */}
+      <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(139,92,246,0.15)' }}>
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#8B5CF6,#6366F1)', boxShadow: '0 4px 16px rgba(139,92,246,0.3)' }}>
+            <Bot className="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <h3 className="font-black text-white text-sm">Dự Đoán AI Thứ Hạng</h3>
+            {generatedAt && (
+              <p className="text-[10px] text-slate-500 mt-0.5">
+                {fromCache ? `Cập nhật lúc ${new Date(generatedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}` : 'Vừa phân tích'}
+              </p>
+            )}
+          </div>
+        </div>
+        <button
+          onClick={() => load(true)}
+          disabled={loading}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-purple-300 hover:text-white transition-colors disabled:opacity-40"
+          style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)' }}>
+          <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+          Làm mới
+        </button>
+      </div>
+
+      {/* Body */}
+      <div className="p-4">
+        {loading && predictions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(139,92,246,0.15)' }}>
+              <Bot className="w-5 h-5 text-purple-400 animate-pulse" />
+            </div>
+            <p className="text-sm text-slate-400">Gemini AI đang phân tích...</p>
+            <p className="text-xs text-slate-600">Thường mất 1–3 giây</p>
+          </div>
+        ) : error ? (
+          <div className="flex items-center gap-3 py-4 px-2 text-sm text-red-400">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        ) : predictions.length === 0 ? (
+          <div className="text-center py-6 text-sm text-slate-500">Chưa có đủ dữ liệu để dự đoán</div>
+        ) : (
+          <div className="space-y-2">
+            {predictions.map((p) => (
+              <div key={p.horseId} className="rounded-xl p-3.5 transition-all" style={{ background: p.rank <= 3 ? 'rgba(139,92,246,0.08)' : 'rgba(255,255,255,0.02)', border: p.rank <= 3 ? '1px solid rgba(139,92,246,0.2)' : '1px solid rgba(255,255,255,0.05)' }}>
+                <div className="flex items-center gap-3 mb-2">
+                  {/* Rank badge */}
+                  {p.rank === 1 ? (
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#F59E0B,#D97706)', boxShadow: '0 3px 10px rgba(245,158,11,0.4)' }}>
+                      <Crown className="w-4 h-4 text-white" />
+                    </div>
+                  ) : p.rank === 2 ? (
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm font-black text-white" style={{ background: '#64748B' }}>{p.rank}</div>
+                  ) : p.rank === 3 ? (
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm font-black text-white" style={{ background: '#CD7F32' }}>{p.rank}</div>
+                  ) : (
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm font-bold text-slate-500 bg-white/5">{p.rank}</div>
+                  )}
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-black text-white text-sm truncate">{p.horseName}</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs text-purple-300 font-bold">{p.winProbability}%</span>
+                        <span className="text-[10px] text-slate-600">win</span>
+                      </div>
+                    </div>
+                    {/* Win probability bar */}
+                    <div className="mt-1.5 h-1.5 bg-white/8 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${p.winProbability}%`, background: p.rank === 1 ? 'linear-gradient(90deg,#F59E0B,#D97706)' : 'linear-gradient(90deg,#8B5CF6,#6366F1)' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stats row */}
+                <div className="flex items-center ml-11">
+                  <div className="flex items-center gap-1 text-[10px] text-slate-500">
+                    <TrendingUp className="w-3 h-3" />
+                    Top 3: <span className="text-emerald-400 font-bold ml-0.5">{p.top3Probability}%</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Footer */}
+        {!loading && !error && predictions.length > 0 && (
+          <div className="mt-3 flex items-center gap-1.5 text-[10px] text-slate-600">
+            <Bot className="w-3 h-3" />
+            <span>Powered by Gemini AI · Chỉ mang tính tham khảo</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -434,6 +563,11 @@ export function PredictionsPage() {
                     </div>
                   ))}
                 </div>
+              )}
+
+              {/* AI Predictions */}
+              {selectedRace && token && !['finished', 'cancelled'].includes(selectedRace.status) && (
+                <AIPredictionsPanel raceId={selectedRace._id} token={token} />
               )}
 
               {/* Participants */}

@@ -7,6 +7,7 @@ const { Wallet } = require('../models/wallet.model');
 const walletService = require('./wallet.service');
 const { AppError } = require('../middleware/error.middleware');
 const { REFUND_RATES } = require('../config/constants');
+const { clearPredictionCache } = require('./ai-prediction.service');
 
 function calcHorseAge(birthDate) {
   const now = new Date();
@@ -87,6 +88,8 @@ async function registerHorse(ownerId, { raceId, horseId, jockeyId }) {
   } finally {
     session.endSession();
   }
+
+  clearPredictionCache(raceId).catch(() => {});
 
   return Registration.findById(registration._id)
     .populate('raceId', 'name grade scheduledTime status')
@@ -204,6 +207,8 @@ async function cancelRegistration(registrationId, ownerId) {
   } finally {
     session.endSession();
   }
+
+  clearPredictionCache(reg.raceId).catch(() => {});
 
   return Registration.findById(registrationId)
     .populate('raceId', 'name grade scheduledTime')
