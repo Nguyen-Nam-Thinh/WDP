@@ -28,6 +28,20 @@ const raceSchema = new mongoose.Schema(
       enum: ['open', 'closed', 'pre_check', 'running', 'finished', 'cancelled'],
       default: 'open',
     },
+    aiPredictions: {
+      generatedAt: { type: Date, default: null },
+      predictions: [
+        {
+          rank: Number,
+          horseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Horse' },
+          horseName: String,
+          winProbability: Number,
+          top3Probability: Number,
+          reason: String,
+          _id: false,
+        },
+      ],
+    },
   },
   { timestamps: true },
 );

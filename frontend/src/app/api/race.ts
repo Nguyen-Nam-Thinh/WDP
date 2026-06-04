@@ -2,6 +2,21 @@ import { API_URL } from "./auth";
 import { fetchWithAuth } from "../utils/apiClient";
 import { getApiErrorMessage } from "../utils/errorMessages";
 
+export interface HorsePrediction {
+  rank: number;
+  horseId: string;
+  horseName: string;
+  winProbability: number;
+  top3Probability: number;
+  reason: string;
+}
+
+export interface AIPredictionResponse {
+  predictions: HorsePrediction[];
+  generatedAt: string;
+  fromCache: boolean;
+}
+
 export interface RaceResultEntry {
   _id: string;
   position: number;
@@ -116,6 +131,14 @@ export const raceApi = {
 
   getRaceResults: async (token: string, raceId: string): Promise<{ race: Race; results: RaceResultEntry[] }> => {
     const res = await fetchWithAuth(`${API_URL}/races/${raceId}/results`, { headers: authHeader(token) });
+    const json = await res.json();
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
+    return json.data;
+  },
+
+  getAIPredictions: async (token: string, raceId: string, refresh = false): Promise<AIPredictionResponse> => {
+    const url = `${API_URL}/races/${raceId}/ai-predictions${refresh ? '?refresh=true' : ''}`;
+    const res = await fetch(url, { headers: authHeader(token) });
     const json = await res.json();
     if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data;
