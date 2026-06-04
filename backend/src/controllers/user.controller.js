@@ -97,6 +97,34 @@ async function toggleActive(req, res, next) {
   }
 }
 
+async function getMyRaceResults(req, res, next) {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const { RaceResult } = require('../models/race_result.model');
+    const { Horse } = require('../models/horse.model');
+
+    const horses = await Horse.find({ ownerId: req.user._id }).select('_id');
+    const horseIds = horses.map(h => h._id);
+
+    const skip = (page - 1) * limit;
+    const [results, total] = await Promise.all([
+      RaceResult.find({ horseId: { $in: horseIds } })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('raceId', 'name grade scheduledTime purse distance')
+        .populate('horseId', 'name breed currentGrade')
+        .populate('jockeyId', 'fullName'),
+      RaceResult.countDocuments({ horseId: { $in: horseIds } }),
+    ]);
+
+    sendSuccess(res, { results, total, page, limit, totalPages: Math.ceil(total / limit) });
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function adminUpdateUser(req, res, next) {
   try {
     const user = await userService.adminUpdateUser(req.params.id, req.body);
@@ -106,4 +134,4 @@ async function adminUpdateUser(req, res, next) {
   }
 }
 
-module.exports = { getMe, updateMe, getMyWallet, getMyTransactions, uploadAvatar, getJockeys, getReferees, getUsers, toggleActive, adminUpdateUser };
+module.exports = { getMe, updateMe, getMyWallet, getMyTransactions, getMyRaceResults, uploadAvatar, getJockeys, getReferees, getUsers, toggleActive, adminUpdateUser };

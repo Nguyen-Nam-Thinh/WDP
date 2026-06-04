@@ -48,10 +48,11 @@ export interface SpectatorRanking {
   profit: number;
 }
 
-const authHeader = (token: string) => ({ Authorization: `Bearer ${token}` });
+const authHeader = (token?: string | null) =>
+  token ? { Authorization: `Bearer ${token}` } : {};
 
 export const rankingsApi = {
-  getHorseRankings: async (token: string, limit = 20): Promise<HorseRanking[]> => {
+  getHorseRankings: async (token?: string | null, limit = 20): Promise<HorseRanking[]> => {
     const res = await fetchWithAuth(`${API_URL}/rankings/horses?limit=${limit}`, {
       headers: authHeader(token),
     });
@@ -63,7 +64,7 @@ export const rankingsApi = {
     return json.data;
   },
 
-  getJockeyRankings: async (token: string, limit = 20): Promise<JockeyRanking[]> => {
+  getJockeyRankings: async (token?: string | null, limit = 20): Promise<JockeyRanking[]> => {
     const res = await fetchWithAuth(`${API_URL}/rankings/jockeys?limit=${limit}`, {
       headers: authHeader(token),
     });
@@ -75,7 +76,7 @@ export const rankingsApi = {
     return json.data;
   },
 
-  getOwnerRankings: async (token: string, limit = 20): Promise<OwnerRanking[]> => {
+  getOwnerRankings: async (token?: string | null, limit = 20): Promise<OwnerRanking[]> => {
     const res = await fetchWithAuth(`${API_URL}/rankings/owners?limit=${limit}`, {
       headers: authHeader(token),
     });

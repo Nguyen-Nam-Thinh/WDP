@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { Pagination } from "../components/Pagination";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import {
@@ -54,7 +55,7 @@ import { ProfileDropdown } from "../components/ProfileDropdown";
 import { useAuth } from "../hooks/useAuth";
 import { useWallet } from "../hooks/useWallet";
 import { horseApi, Horse } from "../api/horse";
-import { userApi, JockeyListItem } from "../api/user";
+import { userApi, JockeyListItem, type Transaction, type OwnerRaceResult } from "../api/user";
 import { tournamentApi, Tournament } from "../api/tournament";
 import { raceApi, Race } from "../api/race";
 import { invitationApi } from "../api/invitation";
@@ -70,7 +71,7 @@ const GRADE_COLORS: Record<string, string> = {
 export function HorseOwnerDashboard() {
   const navigate = useNavigate();
   const { user, token } = useAuth();
-  const { formatted: walletBalance } = useWallet();
+  const { balance: walletBalance } = useWallet();
 
   useEffect(() => {
     if (!user) navigate("/");
@@ -97,6 +98,8 @@ export function HorseOwnerDashboard() {
   // Horses — real API
   const [horses, setHorses] = useState<Horse[]>([]);
   const [loadingHorses, setLoadingHorses] = useState(false);
+  const [horsePage, setHorsePage] = useState(1);
+  const [jockeyPage, setJockeyPage] = useState(1);
 
   const loadHorses = async () => {
     if (!token) return;
@@ -363,10 +366,25 @@ export function HorseOwnerDashboard() {
   const [openRaces, setOpenRaces] = useState<Race[]>([]);
   const [myRegistrations, setMyRegistrations] = useState<Registration[]>([]);
   const [loadingSchedule, setLoadingSchedule] = useState(false);
+  const [regPage, setRegPage] = useState(1);
+  const [scheduleSubTab, setScheduleSubTab] = useState<"registrations" | "open">("registrations");
   const [selectedRaceForReg, setSelectedRaceForReg] = useState<Race | null>(null);
   const [regHorseId, setRegHorseId] = useState("");
   const [submittingReg, setSubmittingReg] = useState(false);
   const [cancellingRegId, setCancellingRegId] = useState<string | null>(null);
+
+  // Race results state
+  const [raceResults, setRaceResults] = useState<OwnerRaceResult[]>([]);
+  const [loadingResults, setLoadingResults] = useState(false);
+  const [resultsPage, setResultsPage] = useState(1);
+  const [resultsTotalPages, setResultsTotalPages] = useState(1);
+  const [resultsTotal, setResultsTotal] = useState(0);
+
+  // Transactions state
+  const [txList, setTxList] = useState<Transaction[]>([]);
+  const [loadingTx, setLoadingTx] = useState(false);
+  const [txPage, setTxPage] = useState(1);
+  const [txTotalPages, setTxTotalPages] = useState(1);
 
   const loadScheduleData = async () => {
     if (!token) return;
@@ -388,6 +406,24 @@ export function HorseOwnerDashboard() {
   useEffect(() => {
     if (activeTab === "schedule") loadScheduleData();
   }, [activeTab, token]);
+
+  useEffect(() => {
+    if (activeTab !== "results" || !token) return;
+    setLoadingResults(true);
+    userApi.getMyRaceResults(token, resultsPage, 10)
+      .then(r => { setRaceResults(r.results ?? []); setResultsTotalPages(r.totalPages); setResultsTotal(r.total); })
+      .catch(() => {})
+      .finally(() => setLoadingResults(false));
+  }, [activeTab, token, resultsPage]);
+
+  useEffect(() => {
+    if (activeTab !== "wallet" || !token) return;
+    setLoadingTx(true);
+    userApi.getMyTransactions(token, txPage, 10)
+      .then(r => { setTxList(r.transactions ?? []); setTxTotalPages(Math.ceil(r.total / 10)); })
+      .catch(() => {})
+      .finally(() => setLoadingTx(false));
+  }, [activeTab, token, txPage]);
 
   const handleOpenRegisterDialog = (race: Race) => {
     setSelectedRaceForReg(race);
@@ -425,6 +461,16 @@ export function HorseOwnerDashboard() {
     }
   };
 
+  const PAGE_SIZE = 10;
+  const pagedHorses = useMemo(() => horses.slice((horsePage - 1) * PAGE_SIZE, horsePage * PAGE_SIZE), [horses, horsePage]);
+  const horseTotalPages = Math.ceil(horses.length / PAGE_SIZE);
+  const pagedJockeys = useMemo(() => jockeys.slice((jockeyPage - 1) * PAGE_SIZE, jockeyPage * PAGE_SIZE), [jockeys, jockeyPage]);
+  const jockeyTotalPages = Math.ceil(jockeys.length / PAGE_SIZE);
+
+  const activeRegs = useMemo(() => myRegistrations.filter(r => r.status === "active"), [myRegistrations]);
+  const pagedRegs = useMemo(() => activeRegs.slice((regPage - 1) * PAGE_SIZE, regPage * PAGE_SIZE), [activeRegs, regPage]);
+  const regTotalPages = Math.ceil(activeRegs.length / PAGE_SIZE);
+
   // Check if horse is already registered in a race
   const isHorseRegistered = (raceId: string) =>
     myRegistrations.some(r => (r.raceId as any)?._id === raceId && r.status === "active");
@@ -437,40 +483,6 @@ export function HorseOwnerDashboard() {
     { month: "T5", earnings: 55000, points: 800 },
   ];
 
-  const transactions = [
-    {
-      id: 1,
-      date: "2026-05-20",
-      type: "Giải Thưởng",
-      description: "Hạng 1 - Giải Mùa Xuân",
-      amount: 25000,
-      status: "completed",
-    },
-    {
-      id: 2,
-      date: "2026-05-18",
-      type: "Phí Đăng Ký",
-      description: "Giải Vô Địch Mùa Xuân",
-      amount: -500,
-      status: "completed",
-    },
-    {
-      id: 3,
-      date: "2026-05-15",
-      type: "Nạp Tiền",
-      description: "Chuyển Khoản Ngân Hàng",
-      amount: 5000,
-      status: "completed",
-    },
-    {
-      id: 4,
-      date: "2026-05-10",
-      type: "Hoàn Tiền",
-      description: "Giải Bị Hủy - Đường C",
-      amount: 300,
-      status: "completed",
-    },
-  ];
 
   const stats = [
     {
@@ -524,7 +536,7 @@ export function HorseOwnerDashboard() {
             {/* Wallet Balance Badge */}
             <div className="flex items-center gap-2 bg-[#FFDE42]/10 border border-[#FFDE42]/20 px-4 py-2 rounded-xl">
               <Coins className="w-4 h-4 text-[#FFDE42]" />
-              <span className="text-[#FFDE42] font-bold text-sm">{walletBalance ?? user?.balance ?? '...'}</span>
+              <span className="text-[#FFDE42] font-bold text-sm">{walletBalance !== null ? `${walletBalance?.toLocaleString('vi-VN')} coin` : (user?.balance ?? '...')}</span>
             </div>
             <ProfileDropdown />
           </div>
@@ -564,7 +576,7 @@ export function HorseOwnerDashboard() {
         {/* Tabs */}
         <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
           {[
-            { id: "horses", label: "Ngựa Của Tôi", icon: Sparkles },
+            { id: "horses", label: "Ngựa Của Tôi", icon: null },
             { id: "jockeys", label: "Kỵ Sĩ", icon: Users },
             { id: "schedule", label: "Lịch Đua", icon: Calendar },
             { id: "results", label: "Thành Tích", icon: TrendingUp },
@@ -579,7 +591,7 @@ export function HorseOwnerDashboard() {
                   : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/5"
               }`}
             >
-              <tab.icon className="w-4 h-4" />
+              {tab.icon ? <tab.icon className="w-4 h-4" /> : <span className="text-base leading-none">🐎</span>}
               {tab.label}
             </button>
           ))}
@@ -626,8 +638,9 @@ export function HorseOwnerDashboard() {
                 Chưa có ngựa nào. Nhấn "Đăng Ký Ngựa" để bắt đầu.
               </div>
             ) : (
+            <>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {horses.map((horse) => {
+              {pagedHorses.map((horse) => {
                 const ageYears = horse.birthDate
                   ? Math.floor((Date.now() - new Date(horse.birthDate).getTime()) / (365.25 * 24 * 3600 * 1000))
                   : "?";
@@ -663,29 +676,6 @@ export function HorseOwnerDashboard() {
                         <ImageIcon className="w-16 h-16 text-slate-600" />
                       </div>
                     )}
-                    <div className="absolute top-4 right-4">
-                      <Chip
-                        label={horse.isActive ? "Hoạt Động" : "Không Hoạt Động"}
-                        size="small"
-                        sx={{
-                          backgroundColor: horse.isActive ? "#10b981" : "#64748b",
-                          color: "white",
-                          fontWeight: 500,
-                          backdropFilter: "blur(4px)",
-                        }}
-                      />
-                    </div>
-                    <div className="absolute top-4 left-4">
-                      <Chip
-                        label={horse.currentGrade}
-                        size="small"
-                        sx={{
-                          backgroundColor: GRADE_COLORS[horse.currentGrade] ?? "#f59e0b",
-                          color: "white",
-                          fontWeight: 600,
-                        }}
-                      />
-                    </div>
                   </div>
 
                   <div className="p-6">
@@ -694,6 +684,12 @@ export function HorseOwnerDashboard() {
                     </h3>
                     <p className="text-sm text-slate-400 mb-4">
                       {horse.breed ?? "—"} • {ageYears} tuổi
+                      <span
+                        className="ml-2 px-1.5 py-0.5 rounded text-xs font-bold text-white"
+                        style={{ backgroundColor: GRADE_COLORS[horse.currentGrade] ?? "#f59e0b" }}
+                      >
+                        {horse.currentGrade}
+                      </span>
                     </p>
 
                     <div className="grid grid-cols-2 gap-3 mb-6">
@@ -754,6 +750,8 @@ export function HorseOwnerDashboard() {
               );
               })}
             </div>
+            <Pagination page={horsePage} totalPages={horseTotalPages} onPageChange={(p) => { setHorsePage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
+            </>
             )}
           </div>
         )}
@@ -789,7 +787,7 @@ export function HorseOwnerDashboard() {
                         Chưa có kỵ sĩ nào trong hệ thống
                       </div>
                     ) : (
-                      jockeys.map((jockey) => {
+                      pagedJockeys.map((jockey) => {
                         const winCount = jockey.jockeyProfile?.winCount ?? 0;
                         const raceCount = jockey.jockeyProfile?.raceCount ?? 0;
                         const winRate = raceCount > 0
@@ -862,6 +860,7 @@ export function HorseOwnerDashboard() {
                         );
                       })
                     )}
+                    <Pagination page={jockeyPage} totalPages={jockeyTotalPages} onPageChange={setJockeyPage} />
                   </div>
                 </div>
               </div>
@@ -900,9 +899,32 @@ export function HorseOwnerDashboard() {
         {/* Content: Schedule */}
         {activeTab === "schedule" && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="mb-8">
+            <div className="mb-6">
               <h2 className="text-3xl font-bold text-white mb-2">Lịch Đua & Đăng Ký</h2>
               <p className="text-slate-400">Đăng ký ngựa vào cuộc đua và quản lý các đăng ký của bạn</p>
+            </div>
+
+            {/* Sub-tabs */}
+            <div className="flex gap-2 mb-6 border-b border-white/8 pb-0">
+              {([
+                { id: "registrations", label: "Đăng Ký Của Tôi", count: activeRegs.length },
+                { id: "open", label: "Cuộc Đua Mở", count: openRaces.length },
+              ] as const).map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setScheduleSubTab(t.id)}
+                  className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-all ${
+                    scheduleSubTab === t.id
+                      ? "border-[#FFDE42] text-[#FFDE42]"
+                      : "border-transparent text-slate-400 hover:text-white"
+                  }`}
+                >
+                  {t.label}
+                  <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
+                    scheduleSubTab === t.id ? "bg-[#FFDE42]/20 text-[#FFDE42]" : "bg-white/8 text-slate-400"
+                  }`}>{t.count}</span>
+                </button>
+              ))}
             </div>
 
             {loadingSchedule ? (
@@ -911,23 +933,17 @@ export function HorseOwnerDashboard() {
               </div>
             ) : (
               <>
-                {/* ── My Registrations ── */}
-                <div className="mb-8">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-8 h-8 bg-[#FFDE42]/10 rounded-lg flex items-center justify-center">
-                      <CheckCircle className="w-4 h-4 text-[#FFDE42]" />
-                    </div>
-                    <h3 className="text-xl font-bold text-white">Đăng Ký Của Tôi ({myRegistrations.filter(r => r.status === "active").length})</h3>
-                  </div>
-
-                  {myRegistrations.filter(r => r.status === "active").length === 0 ? (
+                {/* ── Sub-tab: Đăng Ký Của Tôi ── */}
+                {scheduleSubTab === "registrations" && (
+                  activeRegs.length === 0 ? (
                     <div className="bg-white/3 border border-white/5 rounded-2xl p-8 text-center">
                       <Calendar className="w-10 h-10 text-slate-600 mx-auto mb-3" />
                       <p className="text-slate-500">Bạn chưa đăng ký cuộc đua nào</p>
                     </div>
                   ) : (
+                    <>
                     <div className="space-y-3">
-                      {myRegistrations.filter(r => r.status === "active").map(reg => {
+                      {pagedRegs.map(reg => {
                         const race = reg.raceId as any;
                         const horse = reg.horseId as any;
                         const jockey = reg.jockeyId as any;
@@ -984,19 +1000,14 @@ export function HorseOwnerDashboard() {
                         );
                       })}
                     </div>
-                  )}
-                </div>
+                    <Pagination page={regPage} totalPages={regTotalPages} onPageChange={setRegPage} />
+                    </>
+                  )
+                )}
 
-                {/* ── Open Races ── */}
-                <div>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-8 h-8 bg-emerald-500/10 rounded-lg flex items-center justify-center">
-                      <Trophy className="w-4 h-4 text-emerald-400" />
-                    </div>
-                    <h3 className="text-xl font-bold text-white">Cuộc Đua Đang Mở ({openRaces.length})</h3>
-                  </div>
-
-                  {openRaces.length === 0 ? (
+                {/* ── Sub-tab: Cuộc Đua Mở ── */}
+                {scheduleSubTab === "open" && (
+                  openRaces.length === 0 ? (
                     <div className="bg-white/3 border border-white/5 rounded-2xl p-8 text-center">
                       <Trophy className="w-10 h-10 text-slate-600 mx-auto mb-3" />
                       <p className="text-slate-500">Hiện không có cuộc đua nào đang mở đăng ký</p>
@@ -1028,11 +1039,11 @@ export function HorseOwnerDashboard() {
                                   </div>
                                   <div>
                                     <div className="text-slate-500 text-xs uppercase mb-1 flex items-center gap-1"><Trophy className="w-3 h-3" /> Giải Thưởng</div>
-                                    <div className="text-[#FFDE42] font-semibold">${race.purse?.toLocaleString()}</div>
+                                    <div className="text-[#FFDE42] font-semibold">{race.purse?.toLocaleString()} coin</div>
                                   </div>
                                   <div>
                                     <div className="text-slate-500 text-xs uppercase mb-1 flex items-center gap-1"><DollarSign className="w-3 h-3" /> Phí ĐK</div>
-                                    <div className="text-white font-semibold">${race.registrationFee?.toLocaleString()}</div>
+                                    <div className="text-white font-semibold">{race.registrationFee?.toLocaleString()} coin</div>
                                   </div>
                                   <div>
                                     <div className="text-slate-500 text-xs uppercase mb-1 flex items-center gap-1"><Clock className="w-3 h-3" /> Hạn ĐK</div>
@@ -1041,6 +1052,30 @@ export function HorseOwnerDashboard() {
                                     </div>
                                   </div>
                                 </div>
+                                {/* Điều kiện tham gia */}
+                                {race.eligibility && (
+                                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                                    <span className="text-slate-500 uppercase tracking-wider">Điều kiện:</span>
+                                    {(race.eligibility.allowedGrades ?? []).length > 0 && (
+                                      <span className="text-slate-400">
+                                        Hạng:{" "}
+                                        {race.eligibility.allowedGrades.map(g => (
+                                          <span key={g} className="mr-1 px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/25 font-bold">{g}</span>
+                                        ))}
+                                      </span>
+                                    )}
+                                    {race.eligibility.minPoints > 0 && (
+                                      <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">
+                                        Tối thiểu {race.eligibility.minPoints} điểm
+                                      </span>
+                                    )}
+                                    {(race.eligibility.minAge > 0 || race.eligibility.maxAge > 0) && (
+                                      <span className="px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                                        Tuổi {race.eligibility.minAge}–{race.eligibility.maxAge} năm
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                               <div className="md:ml-4 flex-shrink-0">
                                 {alreadyRegistered ? (
@@ -1067,8 +1102,8 @@ export function HorseOwnerDashboard() {
                         );
                       })}
                     </div>
-                  )}
-                </div>
+                  )
+                )}
               </>
             )}
           </div>
@@ -1077,140 +1112,65 @@ export function HorseOwnerDashboard() {
         {/* Content: Performance & Results */}
         {activeTab === "results" && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <h2 className="text-3xl font-bold text-white mb-6">
-              Thành Tích & Phân Tích
-            </h2>
-
-            <div className="grid lg:grid-cols-2 gap-6 mb-8">
-              <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-6">
-                <h3 className="text-lg font-bold text-white mb-6">
-                  Lịch Sử Thu Nhập
-                </h3>
-                <div className="h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={performanceData}>
-                      <defs>
-                        <linearGradient
-                          id="colorEarnings"
-                          x1="0"
-                          y1="0"
-                          x2="0"
-                          y2="1"
-                        >
-                          <stop
-                            offset="5%"
-                            stopColor="#10b981"
-                            stopOpacity={0.3}
-                          />
-                          <stop
-                            offset="95%"
-                            stopColor="#10b981"
-                            stopOpacity={0}
-                          />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        stroke="rgba(255,255,255,0.1)"
-                      />
-                      <XAxis dataKey="month" stroke="#94a3b8" />
-                      <YAxis stroke="#94a3b8" />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "#0f172a",
-                          border: "1px solid rgba(255,255,255,0.1)",
-                          borderRadius: "8px",
-                        }}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="earnings"
-                        stroke="#10b981"
-                        fillOpacity={1}
-                        fill="url(#colorEarnings)"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-6">
-                <h3 className="text-lg font-bold text-white mb-6">Tiến Độ Điểm</h3>
-                <div className="h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={performanceData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                      <XAxis dataKey="month" stroke="#94a3b8" />
-                      <YAxis stroke="#94a3b8" />
-                      <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }} />
-                      <Bar dataKey="points" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div> */}
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-3xl font-bold text-white">Thành Tích</h2>
+              <span className="text-slate-500 text-sm">{resultsTotal} kết quả</span>
             </div>
 
             <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-6">
-              <h3 className="text-xl font-bold text-white mb-6">
-                Kết Quả Gần Đây
-              </h3>
-              <div className="space-y-4">
-                {[
-                  {
-                    race: "Giải Kinh Điển Mùa Xuân",
-                    date: "2026-05-15",
-                    horse: "Tia Chớp",
-                    position: 1,
-                    prize: "$25,000",
-                    points: "+150",
-                  },
-                  {
-                    race: "Cúp Chiến Thắng",
-                    date: "2026-05-10",
-                    horse: "Mũi Tên Vàng",
-                    position: 3,
-                    prize: "$8,000",
-                    points: "+45",
-                  },
-                ].map((result, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-white/5"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div
-                        className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg
-                        ${
-                          result.position === 1
-                            ? "bg-amber-500/20 text-amber-500 border border-amber-500/30"
-                            : result.position === 2
-                              ? "bg-slate-300/20 text-slate-300 border border-slate-300/30"
-                              : "bg-orange-700/20 text-orange-500 border border-orange-700/30"
-                        }`}
-                      >
-                        #{result.position}
-                      </div>
-                      <div>
-                        <div className="text-white font-bold text-lg">
-                          {result.race}
+              <h3 className="text-xl font-bold text-white mb-6">Lịch Sử Kết Quả</h3>
+
+              {loadingResults ? (
+                <div className="flex justify-center py-12"><Loader2 className="w-7 h-7 animate-spin text-[#FFDE42]" /></div>
+              ) : raceResults.length === 0 ? (
+                <div className="text-center py-12 text-slate-500">
+                  <Trophy className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p>Chưa có kết quả race nào</p>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    {raceResults.map(r => {
+                      const pos = r.position;
+                      const posCls = pos === 1
+                        ? "bg-amber-500/20 text-amber-400 border-amber-500/30"
+                        : pos === 2
+                          ? "bg-slate-400/20 text-slate-300 border-slate-400/30"
+                          : pos === 3
+                            ? "bg-orange-700/20 text-orange-400 border-orange-700/30"
+                            : "bg-white/5 text-slate-400 border-white/10";
+                      return (
+                        <div key={r._id} className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-white/5 hover:border-white/10 transition-all">
+                          <div className="flex items-center gap-4">
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-base border ${posCls}`}>
+                              #{pos}
+                            </div>
+                            <div>
+                              <div className="text-white font-bold">{r.raceId?.name}</div>
+                              <div className="text-xs text-slate-400 mt-0.5">
+                                {new Date(r.raceId?.scheduledTime).toLocaleDateString("vi-VN")}
+                                {" · "}
+                                <span className="text-[#FFDE42]">{r.horseId?.name}</span>
+                                {r.jockeyId && <span className="text-slate-500"> · {r.jockeyId.fullName}</span>}
+                              </div>
+                              <div className="flex gap-2 mt-1">
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">{r.raceId?.grade}</span>
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-700/50 text-slate-400">{r.raceId?.distance}m</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <div className="text-[#FFDE42] font-bold">{r.prizeAmount > 0 ? `+${r.prizeAmount.toLocaleString()} coin` : "—"}</div>
+                            <div className="text-blue-400 text-sm">+{r.pointsEarned} pts</div>
+                            <div className="text-xs text-slate-500 mt-0.5">{(r.finishTime / 1000).toFixed(2)}s</div>
+                          </div>
                         </div>
-                        <div className="text-sm text-slate-400">
-                          {result.date} •{" "}
-                          <span className="text-[#FFDE42]">{result.horse}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-[#FFDE42] font-bold text-lg">
-                        {result.prize}
-                      </div>
-                      <div className="text-blue-400 text-sm font-medium">
-                        {result.points} pts
-                      </div>
-                    </div>
+                      );
+                    })}
                   </div>
-                ))}
-              </div>
+                  <Pagination page={resultsPage} totalPages={resultsTotalPages} onPageChange={setResultsPage} />
+                </>
+              )}
             </div>
           </div>
         )}
@@ -1231,8 +1191,8 @@ export function HorseOwnerDashboard() {
                     <div className="text-white font-medium mb-2">
                       Tổng Số Dư
                     </div>
-                    <div className="text-5xl font-bold text-white mb-8">
-                      $45,800.00
+                    <div className="text-4xl font-bold text-white mb-8">
+                      {walletBalance !== null ? walletBalance.toLocaleString("vi-VN") : "—"} coin
                     </div>
 
                     <div className="flex gap-3">
@@ -1289,55 +1249,49 @@ export function HorseOwnerDashboard() {
               </div>
 
               <div className="md:col-span-2 bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold text-white">
-                    Lịch Sử Giao Dịch
-                  </h3>
-                  <Button sx={{ color: "#FFDE42", textTransform: "none" }}>
-                    Xem Tất Cả
-                  </Button>
-                </div>
+                <h3 className="text-xl font-bold text-white mb-6">Lịch Sử Giao Dịch</h3>
 
-                <div className="space-y-4">
-                  {transactions.map((tx) => (
-                    <div
-                      key={tx.id}
-                      className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-white/5 hover:bg-slate-800/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center
-                          ${tx.amount > 0 ? "bg-[#FFDE42]/20 text-[#FFDE42]" : "bg-red-500/20 text-red-500"}`}
-                        >
-                          {tx.amount > 0 ? (
-                            <ArrowDownRight className="w-5 h-5" />
-                          ) : (
-                            <ArrowUpRight className="w-5 h-5" />
-                          )}
-                        </div>
-                        <div>
-                          <div className="text-white font-medium">
-                            {tx.type}
+                {loadingTx ? (
+                  <div className="flex justify-center py-12"><Loader2 className="w-7 h-7 animate-spin text-[#FFDE42]" /></div>
+                ) : txList.length === 0 ? (
+                  <div className="text-center py-12 text-slate-500">
+                    <DollarSign className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                    <p>Chưa có giao dịch nào</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-3">
+                      {txList.map((tx) => {
+                        const isCredit = tx.amount > 0;
+                        const typeLabel: Record<string, string> = {
+                          topup: 'Nạp Tiền', registration_fee: 'Phí Đăng Ký',
+                          registration_refund: 'Hoàn Phí ĐK', prize_payout: 'Tiền Thưởng',
+                          bet_placed: 'Đặt Cược', bet_payout: 'Thắng Cược', bet_refund: 'Hoàn Cược',
+                        };
+                        return (
+                          <div key={tx._id} className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-white/5 hover:bg-slate-800/50 transition-colors">
+                            <div className="flex items-center gap-4">
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isCredit ? "bg-[#FFDE42]/20 text-[#FFDE42]" : "bg-red-500/20 text-red-400"}`}>
+                                {isCredit ? <ArrowDownRight className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
+                              </div>
+                              <div>
+                                <div className="text-white font-medium">{typeLabel[tx.type] ?? tx.type}</div>
+                                <div className="text-xs text-slate-400">{tx.description} · {new Date(tx.createdAt).toLocaleDateString("vi-VN")}</div>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className={`font-bold ${isCredit ? "text-[#FFDE42]" : "text-red-400"}`}>
+                                {isCredit ? "+" : ""}{tx.amount.toLocaleString()} coin
+                              </div>
+                              <div className="text-xs text-slate-500">Số dư: {tx.balanceAfter.toLocaleString()}</div>
+                            </div>
                           </div>
-                          <div className="text-sm text-slate-400">
-                            {tx.description} • {tx.date}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div
-                          className={`font-bold ${tx.amount > 0 ? "text-[#FFDE42]" : "text-red-400"}`}
-                        >
-                          {tx.amount > 0 ? "+" : ""}
-                          {tx.amount}
-                        </div>
-                        <div className="text-xs text-slate-500 uppercase">
-                          {tx.status === "completed" ? "hoàn thành" : tx.status}
-                        </div>
-                      </div>
+                        );
+                      })}
                     </div>
-                  ))}
-                </div>
+                    <Pagination page={txPage} totalPages={txTotalPages} onPageChange={setTxPage} />
+                  </>
+                )}
               </div>
             </div>
           </div>

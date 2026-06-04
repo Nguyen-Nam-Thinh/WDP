@@ -59,7 +59,6 @@ export function RankingsPage() {
   const [owners, setOwners] = useState<OwnerRanking[]>([]);
 
   useEffect(() => {
-    if (!token) return;
     setLoading(true);
     Promise.all([
       rankingsApi.getHorseRankings(token),

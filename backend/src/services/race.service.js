@@ -174,6 +174,23 @@ async function updateRaceStatus(raceId, newStatus) {
     throw new AppError(400, `Cannot transition from '${race.status}' to '${newStatus}'`);
   }
 
+  if (newStatus === 'pre_check') {
+    // Phải có trọng tài được phân công
+    if (!race.refereeId) {
+      throw new AppError(400, 'Phải phân công trọng tài trước khi chuyển sang giai đoạn kiểm tra');
+    }
+
+    // Phải có ít nhất 2 ngựa đã đăng ký (status active)
+    const { Registration } = require('../models/registration.model');
+    const activeCount = await Registration.countDocuments({ raceId, status: 'active' });
+    if (activeCount < 2) {
+      throw new AppError(
+        400,
+        `Cần ít nhất 2 ngựa đăng ký để bắt đầu kiểm tra trước race (hiện có ${activeCount} ngựa)`
+      );
+    }
+  }
+
   race.status = newStatus;
   await race.save();
   return race.populate('tournamentId', 'name status');

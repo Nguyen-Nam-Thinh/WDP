@@ -45,6 +45,27 @@ export interface JockeyListItem {
   };
 }
 
+export interface Transaction {
+  _id: string;
+  type: 'topup' | 'registration_fee' | 'registration_refund' | 'prize_payout' | 'bet_placed' | 'bet_payout' | 'bet_refund';
+  amount: number;
+  balanceAfter: number;
+  description?: string;
+  createdAt: string;
+}
+
+export interface OwnerRaceResult {
+  _id: string;
+  raceId: { _id: string; name: string; grade: string; scheduledTime: string; purse: number; distance: number };
+  horseId: { _id: string; name: string; breed?: string; currentGrade: string };
+  jockeyId?: { _id: string; fullName: string } | null;
+  position: number;
+  finishTime: number;
+  prizeAmount: number;
+  pointsEarned: number;
+  createdAt: string;
+}
+
 export interface UpdateProfileData {
   fullName?: string;
   phone?: string;
@@ -108,9 +129,22 @@ export const userApi = {
     return json.data;
   },
 
-  getMyTransactions: async (token: string, page = 1, limit = 20) => {
+  getMyTransactions: async (token: string, page = 1, limit = 10): Promise<{ transactions: Transaction[]; total: number; page: number; limit: number }> => {
     const response = await fetchWithAuth(
       `${API_URL}/users/me/transactions?page=${page}&limit=${limit}`,
+      { headers: authHeader(token) },
+    );
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(getApiErrorMessage((errorData as any).message));
+    }
+    const json = await response.json();
+    return json.data;
+  },
+
+  getMyRaceResults: async (token: string, page = 1, limit = 10): Promise<{ results: OwnerRaceResult[]; total: number; page: number; limit: number; totalPages: number }> => {
+    const response = await fetchWithAuth(
+      `${API_URL}/users/me/race-results?page=${page}&limit=${limit}`,
       { headers: authHeader(token) },
     );
     if (!response.ok) {

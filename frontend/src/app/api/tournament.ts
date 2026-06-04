@@ -13,13 +13,12 @@ export interface Tournament {
   isActive: boolean;
 }
 
-const authHeader = (token: string) => ({
-  Authorization: `Bearer ${token}`,
-});
+const authHeader = (token?: string | null) =>
+  token ? { Authorization: `Bearer ${token}` } : {};
 
 export const tournamentApi = {
   getTournaments: async (
-    token: string,
+    token: string | null | undefined,
     page = 1,
     limit = 50,
   ): Promise<{ tournaments: Tournament[]; total: number }> => {

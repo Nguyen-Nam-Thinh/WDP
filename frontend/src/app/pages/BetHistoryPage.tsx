@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Pagination } from '../components/Pagination';
 import { useNavigate } from 'react-router';
 import {
   Activity, ArrowLeft, CheckCircle, XCircle, Clock,
@@ -28,6 +29,7 @@ export function BetHistoryPage() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterOpen, setFilterOpen] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [betPage, setBetPage] = useState(1);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -67,6 +69,10 @@ export function BetHistoryPage() {
     const matchStatus = filterStatus === 'all' || b.status === filterStatus;
     return matchSearch && matchStatus;
   });
+
+  const BET_PAGE_SIZE = 10;
+  const betTotalPages = Math.ceil(filtered.length / BET_PAGE_SIZE);
+  const pagedBets = useMemo(() => filtered.slice((betPage - 1) * BET_PAGE_SIZE, betPage * BET_PAGE_SIZE), [filtered, betPage]);
 
   const totalBet  = bets.reduce((s, b) => s + (b.amount || 0), 0);
   const totalWon  = bets.filter(b => b.status === 'won').reduce((s, b) => s + (b.payoutAmount || 0), 0);
@@ -122,7 +128,7 @@ export function BetHistoryPage() {
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+            <input type="text" value={search} onChange={e => { setSearch(e.target.value); setBetPage(1); }}
               placeholder="Tìm theo tên cuộc đua, ngựa..."
               className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#FFDE42]/50 transition-all" />
           </div>
@@ -136,7 +142,7 @@ export function BetHistoryPage() {
             {filterOpen && (
               <div className="absolute right-0 top-full mt-1 bg-slate-900 border border-white/10 rounded-xl shadow-xl z-10 overflow-hidden min-w-36">
                 {[{ v: 'all', l: 'Tất Cả' }, { v: 'pending', l: 'Chờ KQ' }, { v: 'won', l: 'Thắng' }, { v: 'lost', l: 'Thua' }, { v: 'cancelled', l: 'Đã Hủy' }].map(opt => (
-                  <button key={opt.v} onClick={() => { setFilterStatus(opt.v); setFilterOpen(false); }}
+                  <button key={opt.v} onClick={() => { setFilterStatus(opt.v); setFilterOpen(false); setBetPage(1); }}
                     className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${filterStatus === opt.v ? 'bg-[#FFDE42]/10 text-[#FFDE42]' : 'text-slate-300 hover:bg-white/5'}`}>
                     {opt.l}
                   </button>
@@ -167,7 +173,7 @@ export function BetHistoryPage() {
                     <Activity className="w-12 h-12 text-slate-700 mx-auto mb-3" />
                     <div className="text-slate-500 font-medium">{bets.length === 0 ? 'Chưa có cược nào' : 'Không tìm thấy kết quả'}</div>
                   </td></tr>
-                ) : filtered.map(bet => {
+                ) : pagedBets.map(bet => {
                   const cfg = statusConfig[bet.status] || statusConfig.pending;
                   const Icon = cfg.icon;
                   const race = bet.raceId as any;
@@ -222,8 +228,10 @@ export function BetHistoryPage() {
             </table>
           </div>
           {!loading && filtered.length > 0 && (
-            <div className="px-5 py-3 border-t border-white/5 flex items-center justify-between">
-              <span className="text-slate-500 text-sm">Hiển thị {filtered.length} / {bets.length} giao dịch</span>
+            <div className="px-5 py-3 border-t border-white/5 flex flex-col gap-3">
+              <Pagination page={betPage} totalPages={betTotalPages} onPageChange={setBetPage} />
+              <div className="flex items-center justify-between">
+              <span className="text-slate-500 text-sm">Hiển thị {Math.min(betPage * BET_PAGE_SIZE, filtered.length)}/{filtered.length} giao dịch</span>
               <div className="flex items-center gap-4">
                 {['won','lost','pending'].map(s => (
                   <div key={s} className="flex items-center gap-1.5">
@@ -231,6 +239,7 @@ export function BetHistoryPage() {
                     <span className="text-xs text-slate-400">{statusConfig[s]?.label}: {bets.filter(b => b.status === s).length}</span>
                   </div>
                 ))}
+              </div>
               </div>
             </div>
           )}

@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { Pagination } from '../components/Pagination';
 import { useNavigate } from 'react-router';
 import {
   Medal,
@@ -71,9 +72,11 @@ export function JockeyDashboard() {
 
   const [acceptedInvitations, setAcceptedInvitations] = useState<JockeyInvitation[]>([]);
   const [loadingSchedule, setLoadingSchedule] = useState(false);
+  const [acceptedPage, setAcceptedPage] = useState(1);
 
   const [rejectedInvitations, setRejectedInvitations] = useState<JockeyInvitation[]>([]);
   const [loadingRejected, setLoadingRejected] = useState(false);
+  const [rejectedPage, setRejectedPage] = useState(1);
 
   const loadInvitations = async () => {
     if (!token) return;
@@ -153,6 +156,12 @@ export function JockeyDashboard() {
       setProcessingId(null);
     }
   };
+
+  const JOCKEY_PAGE_SIZE = 10;
+  const pagedAccepted = useMemo(() => acceptedInvitations.slice((acceptedPage - 1) * JOCKEY_PAGE_SIZE, acceptedPage * JOCKEY_PAGE_SIZE), [acceptedInvitations, acceptedPage]);
+  const acceptedTotalPages = Math.ceil(acceptedInvitations.length / JOCKEY_PAGE_SIZE);
+  const pagedRejected = useMemo(() => rejectedInvitations.slice((rejectedPage - 1) * JOCKEY_PAGE_SIZE, rejectedPage * JOCKEY_PAGE_SIZE), [rejectedInvitations, rejectedPage]);
+  const rejectedTotalPages = Math.ceil(rejectedInvitations.length / JOCKEY_PAGE_SIZE);
 
   const recentResults = [
     { race: 'Spring Classic', date: '2026-05-15', horse: 'Thunder Strike', position: 1, prize: '$5,000', points: 100, violations: 0 },
@@ -495,7 +504,7 @@ export function JockeyDashboard() {
                 </div>
               ) : acceptedInvitations.length > 0 ? (
                 <div className="space-y-4">
-                  {acceptedInvitations.map(inv => {
+                  {pagedAccepted.map(inv => {
                     const race = inv.raceId;
                     const horse = inv.horseId;
                     const owner = inv.ownerId;
@@ -574,6 +583,7 @@ export function JockeyDashboard() {
                       </div>
                     );
                   })}
+                  <Pagination page={acceptedPage} totalPages={acceptedTotalPages} onPageChange={setAcceptedPage} />
                 </div>
               ) : (
                 <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-16 text-center backdrop-blur-md">
@@ -595,7 +605,7 @@ export function JockeyDashboard() {
                 </div>
               ) : rejectedInvitations.length > 0 ? (
                 <div className="space-y-4">
-                  {rejectedInvitations.map(inv => {
+                  {pagedRejected.map(inv => {
                     const horse = inv.horseId;
                     const owner = inv.ownerId;
                     const race = inv.raceId;
@@ -632,6 +642,7 @@ export function JockeyDashboard() {
                       </div>
                     );
                   })}
+                  <Pagination page={rejectedPage} totalPages={rejectedTotalPages} onPageChange={setRejectedPage} />
                 </div>
               ) : (
                 <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-16 text-center backdrop-blur-md">

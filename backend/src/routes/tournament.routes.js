@@ -1,7 +1,7 @@
 const { Router } = require('express');
 const { z } = require('zod');
 const tournamentController = require('../controllers/tournament.controller');
-const { authenticate, authorize } = require('../middleware/auth.middleware');
+const { authenticate, authorize, optionalAuthenticate } = require('../middleware/auth.middleware');
 const { validate } = require('../middleware/validate.middleware');
 
 const router = Router();
@@ -25,12 +25,13 @@ const updateTournamentSchema = z.object({
   status: z.enum(['upcoming', 'ongoing', 'finished', 'cancelled']).optional(),
 }).refine((data) => Object.keys(data).length > 0, { message: 'At least one field required' });
 
-router.use(authenticate);
+// GET public — guest xem được, token optional
+router.get('/', optionalAuthenticate, tournamentController.getTournaments);
+router.get('/:id', optionalAuthenticate, tournamentController.getTournamentById);
 
-router.post('/', authorize('admin'), validate(createTournamentSchema), tournamentController.createTournament);
-router.get('/', tournamentController.getTournaments);
-router.get('/:id', tournamentController.getTournamentById);
-router.patch('/:id', authorize('admin'), validate(updateTournamentSchema), tournamentController.updateTournament);
-router.delete('/:id', authorize('admin'), tournamentController.deleteTournament);
+// Các route còn lại bắt buộc đăng nhập
+router.post('/', authenticate, authorize('admin'), validate(createTournamentSchema), tournamentController.createTournament);
+router.patch('/:id', authenticate, authorize('admin'), validate(updateTournamentSchema), tournamentController.updateTournament);
+router.delete('/:id', authenticate, authorize('admin'), tournamentController.deleteTournament);
 
 module.exports = router;

@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Pagination } from '../components/Pagination';
 import { useNavigate } from 'react-router';
 import {
   Shield, Calendar, AlertTriangle, CheckCircle, LogOut, Menu, X,
@@ -74,6 +75,7 @@ export function RefereeDashboard() {
   // ── Pre-check state ──
   const [assignedRaces, setAssignedRaces] = useState<any[]>([]);
   const [loadingRaces, setLoadingRaces] = useState(true);
+  const [racePage, setRacePage] = useState(1);
   const [selectedRace, setSelectedRace] = useState<any>(null);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loadingRegs, setLoadingRegs] = useState(false);
@@ -87,6 +89,7 @@ export function RefereeDashboard() {
   const [reports, setReports] = useState<RefereeReport[]>([]);
   const [loadingReports, setLoadingReports] = useState(false);
   const [reportSearch, setReportSearch] = useState('');
+  const [reportPage, setReportPage] = useState(1);
   const [createReportDialog, setCreateReportDialog] = useState(false);
   const [selectedReportRaceId, setSelectedReportRaceId] = useState('');
   const [incidentDialog, setIncidentDialog] = useState(false);
@@ -263,6 +266,11 @@ export function RefereeDashboard() {
     (r.raceId as any)?.name?.toLowerCase().includes(reportSearch.toLowerCase())
   );
 
+  const REF_PAGE_SIZE = 10;
+  const pagedRaces = useMemo(() => assignedRaces.slice((racePage - 1) * REF_PAGE_SIZE, racePage * REF_PAGE_SIZE), [assignedRaces, racePage]);
+  const raceTotalPages = Math.ceil(assignedRaces.length / REF_PAGE_SIZE);
+  const pagedReports = useMemo(() => filteredReports.slice((reportPage - 1) * REF_PAGE_SIZE, reportPage * REF_PAGE_SIZE), [filteredReports, reportPage]);
+
   return (
     <div className="min-h-screen bg-slate-950 font-sans">
       {/* Nav */}
@@ -344,7 +352,7 @@ export function RefereeDashboard() {
               </div>
             ) : (
               <div className="space-y-4">
-                {assignedRaces.map(race => {
+                {pagedRaces.map(race => {
                   const isPrecheckable = race.status === 'pre_check';
                   return (
                     <div key={race._id} className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-6 hover:border-[#FFDE42]/30 transition-all">
@@ -383,6 +391,7 @@ export function RefereeDashboard() {
                     </div>
                   );
                 })}
+                <Pagination page={racePage} totalPages={raceTotalPages} onPageChange={setRacePage} />
               </div>
             )}
           </div>
@@ -397,7 +406,7 @@ export function RefereeDashboard() {
                 <div className="relative">
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input type="text" placeholder="Tìm theo tên cuộc đua..."
-                    value={reportSearch} onChange={e => setReportSearch(e.target.value)}
+                    value={reportSearch} onChange={e => { setReportSearch(e.target.value); setReportPage(1); }}
                     className="bg-slate-900 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-[#FFDE42] text-sm w-56" />
                 </div>
                 <Button variant="contained" onClick={() => setCreateReportDialog(true)}
@@ -415,6 +424,7 @@ export function RefereeDashboard() {
                 <p className="text-slate-400">Chưa có báo cáo nào</p>
               </div>
             ) : (
+              <>
               <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden">
                 <table className="w-full">
                   <thead className="bg-slate-900/80 border-b border-white/10">
@@ -427,7 +437,7 @@ export function RefereeDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
-                    {filteredReports.map(report => {
+                    {pagedReports.map(report => {
                       const isDraft = report.status === 'draft';
                       return (
                         <tr key={report._id} className="hover:bg-white/5 transition-colors">
@@ -470,6 +480,8 @@ export function RefereeDashboard() {
                   </tbody>
                 </table>
               </div>
+              <Pagination page={reportPage} totalPages={Math.ceil(filteredReports.length / REF_PAGE_SIZE)} onPageChange={setReportPage} />
+              </>
             )}
           </div>
         )}

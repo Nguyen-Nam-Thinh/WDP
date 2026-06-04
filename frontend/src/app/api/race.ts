@@ -49,13 +49,12 @@ export interface Race {
   status: "open" | "closed" | "pre_check" | "running" | "finished" | "cancelled";
 }
 
-const authHeader = (token: string) => ({
-  Authorization: `Bearer ${token}`,
-});
+const authHeader = (token?: string | null) =>
+  token ? { Authorization: `Bearer ${token}` } : {};
 
 export const raceApi = {
   getRaces: async (
-    token: string,
+    token: string | null | undefined,
     params: { tournamentId?: string; status?: string; page?: number; limit?: number },
   ): Promise<{ races: Race[]; total: number }> => {
     const query = new URLSearchParams();

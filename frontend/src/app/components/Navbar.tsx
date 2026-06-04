@@ -15,11 +15,9 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-6 py-0 flex items-center justify-between h-[72px]">
         {/* Logo */}
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
-          <div className="w-9 h-9 bg-gradient-to-br from-[#FFDE42] to-[#B8860B] rounded-lg flex items-center justify-center shadow-lg shadow-[#FFDE42]/30">
-            <Trophy className="w-5 h-5 text-slate-950" />
-          </div>
+          <img src="/images/logo.png" alt="RaceTrack Pro" className="w-10 h-10 object-contain" />
           <span className="text-lg font-extrabold text-white tracking-tight">
-            RaceTrack<span className="text-[#FFDE42]">Pro</span>
+            Race<span className="text-[#FFDE42]">Track</span>
           </span>
         </div>
 

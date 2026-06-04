@@ -51,7 +51,7 @@ function TournamentDetail({ t, token, onClose }: { t: Tournament; token: string 
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   useEffect(() => {
-    if (activeTab !== 'races' || !token) return;
+    if (activeTab !== 'races') return;
     setLoadingRaces(true);
     raceApi.getRaces(token, { tournamentId: t._id, limit: 50 })
       .then(r => setRaces(r.races ?? []))
@@ -141,12 +141,7 @@ function TournamentDetail({ t, token, onClose }: { t: Tournament; token: string 
           )}
 
           {activeTab === 'races' && (
-            !token ? (
-              <div className="flex flex-col items-center justify-center py-20 text-slate-500">
-                <Flag className="w-12 h-12 mb-4 opacity-30" />
-                <p>Đăng nhập để xem danh sách cuộc đua</p>
-              </div>
-            ) : loadingRaces ? (
+            loadingRaces ? (
               <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-violet-400" /></div>
             ) : races.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-slate-500">
@@ -261,7 +256,6 @@ export function TournamentsPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!token) return;
     setLoading(true);
     tournamentApi.getTournaments(token, 1, 100)
       .then(r => setTournaments(r.tournaments ?? []))
@@ -336,12 +330,7 @@ export function TournamentsPage() {
 
       {/* Grid */}
       <div className="max-w-7xl mx-auto px-6 py-10">
-        {!token ? (
-          <div className="flex flex-col items-center justify-center py-20 text-slate-500">
-            <Trophy className="w-16 h-16 mb-4 opacity-20" />
-            <p className="text-lg">Đăng nhập để xem danh sách giải đấu</p>
-          </div>
-        ) : loading ? (
+        {loading ? (
           <div className="flex justify-center py-20">
             <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
           </div>

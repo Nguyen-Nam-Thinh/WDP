@@ -2,7 +2,7 @@ const { Router } = require('express');
 const { z } = require('zod');
 const raceController = require('../controllers/race.controller');
 const aiPredictionController = require('../controllers/ai-prediction.controller');
-const { authenticate, authorize } = require('../middleware/auth.middleware');
+const { authenticate, authorize, optionalAuthenticate } = require('../middleware/auth.middleware');
 const { validate } = require('../middleware/validate.middleware');
 
 const router = Router();
@@ -50,19 +50,20 @@ const statusSchema = z.object({
   status: z.enum(['closed', 'pre_check']),
 });
 
-router.use(authenticate);
+// GET public — không cần đăng nhập
+router.get('/', optionalAuthenticate, raceController.getRaces);
+router.get('/:id', optionalAuthenticate, raceController.getRaceById);
+router.get('/:id/registrations', optionalAuthenticate, raceController.getRaceRegistrations);
+router.get('/:id/horses', optionalAuthenticate, raceController.getRaceHorses);
+router.get('/:id/results', optionalAuthenticate, raceController.getRaceResults);
+router.get('/:id/ai-predictions', optionalAuthenticate, aiPredictionController.getRaceAIPredictions);
 
-router.post('/', authorize('admin'), validate(createRaceSchema), raceController.createRace);
-router.get('/', raceController.getRaces);
-router.get('/:id', raceController.getRaceById);
-router.patch('/:id', authorize('admin'), validate(updateRaceSchema), raceController.updateRace);
-router.delete('/:id', authorize('admin'), raceController.cancelRace);
-router.patch('/:id/assign-referee', authorize('admin'), validate(assignRefereeSchema), raceController.assignReferee);
-router.patch('/:id/status', authorize('admin'), validate(statusSchema), raceController.updateRaceStatus);
-router.get('/:id/registrations', raceController.getRaceRegistrations);
-router.get('/:id/horses', raceController.getRaceHorses);
-router.get('/:id/results', raceController.getRaceResults);
-router.get('/:id/ai-predictions', aiPredictionController.getRaceAIPredictions);
-router.post('/:id/force-simulate', authorize('admin'), raceController.forceSimulateRace);
+// Các route thay đổi dữ liệu — bắt buộc auth
+router.post('/', authenticate, authorize('admin'), validate(createRaceSchema), raceController.createRace);
+router.patch('/:id', authenticate, authorize('admin'), validate(updateRaceSchema), raceController.updateRace);
+router.delete('/:id', authenticate, authorize('admin'), raceController.cancelRace);
+router.patch('/:id/assign-referee', authenticate, authorize('admin'), validate(assignRefereeSchema), raceController.assignReferee);
+router.patch('/:id/status', authenticate, authorize('admin'), validate(statusSchema), raceController.updateRaceStatus);
+router.post('/:id/force-simulate', authenticate, authorize('admin'), raceController.forceSimulateRace);
 
 module.exports = router;
