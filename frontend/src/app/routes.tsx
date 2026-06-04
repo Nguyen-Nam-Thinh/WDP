@@ -18,10 +18,12 @@ import { DepositPortalPage } from "./pages/DepositPortalPage";
 import { ForgotPassword } from "./pages/ForgotPassword";
 import { LiveRacePage } from "./pages/LiveRacePage";
 
-// Chặn truy cập nếu chưa đăng nhập, redirect về /login
+// Chặn truy cập nếu chưa đăng nhập hoặc là admin
 function RequireAuth() {
-  const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
+  const { isAuthenticated, user } = useAuth();
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if ((user?.role as string) === 'admin') return <Navigate to="/login" replace />;
+  return <Outlet />;
 }
 
 export const router = createBrowserRouter([

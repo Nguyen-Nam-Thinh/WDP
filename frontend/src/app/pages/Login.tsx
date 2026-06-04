@@ -23,9 +23,15 @@ export function Login() {
     setLoading(true);
     try {
       const data = await authApi.login(email, password);
+
+      if (data.user.role === 'admin') {
+        toast.error('Tài khoản Admin vui lòng đăng nhập tại Admin Portal.');
+        return;
+      }
+
       login(data.user, data.accessToken, data.refreshToken);
       toast.success('Đăng nhập thành công! Chào mừng ' + data.user.fullName);
-      
+
       const rolePath = data.user.role === 'owner' ? 'horse-owner' : data.user.role === 'spectator' ? '' : data.user.role;
       navigate(`/${rolePath}`);
     } catch (err: any) {
