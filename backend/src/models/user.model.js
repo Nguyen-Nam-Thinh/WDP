@@ -9,6 +9,11 @@ const jockeyProfileSchema = new Schema(
     winCount: { type: Number, default: 0 },
     raceCount: { type: Number, default: 0 },
     bio: { type: String },
+    style: {
+      type: String,
+      enum: ['aggressive', 'balanced', 'conservative'],
+      default: 'balanced',
+    },
   },
   { _id: false },
 );

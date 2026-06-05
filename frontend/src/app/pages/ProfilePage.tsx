@@ -165,6 +165,7 @@ export function ProfilePage() {
     dob: "",
     location: "",
     bio: "",
+    jockeyStyle: "balanced" as "aggressive" | "balanced" | "conservative",
   });
 
   useEffect(() => {
@@ -202,6 +203,7 @@ export function ProfilePage() {
           dob: mapped.dob,
           location: mapped.location,
           bio: mapped.bio,
+          jockeyStyle: (data.jockeyProfile?.style ?? 'balanced') as "aggressive" | "balanced" | "conservative",
         });
       })
       .catch((err) => {
@@ -288,7 +290,7 @@ export function ProfilePage() {
           phone: formState.phone || undefined,
         };
         if (user.role === "jockey") {
-          payload.jockeyProfile = { bio: formState.bio };
+          payload.jockeyProfile = { bio: formState.bio, style: formState.jockeyStyle };
         }
         await userApi.updateMe(token!, payload);
         setUser((prev) => ({
@@ -312,6 +314,7 @@ export function ProfilePage() {
         dob: user.dob,
         location: user.location,
         bio: user.bio,
+        jockeyStyle: formState.jockeyStyle,
       });
     }
     setEditMode(!editMode);
@@ -696,31 +699,70 @@ export function ProfilePage() {
               </div>
 
               {user.role === "jockey" && (
-                <div className="mt-6">
-                  <label className="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-2 block">
-                    Giới Thiệu Bản Thân
-                  </label>
-                  {editMode ? (
-                    <textarea
-                      value={formState.bio}
-                      onChange={(e) =>
-                        setFormState((prev) => ({
-                          ...prev,
-                          bio: e.target.value,
-                        }))
-                      }
-                      rows={3}
-                      className="w-full bg-slate-800/60 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#FFDE42]/60 resize-none transition-all"
-                    />
-                  ) : (
-                    <div className="bg-slate-900/40 rounded-xl px-4 py-3 border border-white/5 text-white text-sm min-h-[72px]">
-                      {user.bio || (
-                        <span className="text-slate-500">
-                          Chưa có giới thiệu
-                        </span>
-                      )}
-                    </div>
-                  )}
+                <div className="mt-6 space-y-5">
+                  <div>
+                    <label className="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-2 block">
+                      Giới Thiệu Bản Thân
+                    </label>
+                    {editMode ? (
+                      <textarea
+                        value={formState.bio}
+                        onChange={(e) =>
+                          setFormState((prev) => ({
+                            ...prev,
+                            bio: e.target.value,
+                          }))
+                        }
+                        rows={3}
+                        className="w-full bg-slate-800/60 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#FFDE42]/60 resize-none transition-all"
+                      />
+                    ) : (
+                      <div className="bg-slate-900/40 rounded-xl px-4 py-3 border border-white/5 text-white text-sm min-h-[72px]">
+                        {user.bio || (
+                          <span className="text-slate-500">
+                            Chưa có giới thiệu
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Riding style selector */}
+                  <div>
+                    <label className="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-2 block">
+                      Phong Cách Cưỡi
+                    </label>
+                    {editMode ? (
+                      <div className="grid grid-cols-3 gap-2">
+                        {([
+                          { value: "aggressive", label: "Aggressive", desc: "Dẫn đầu sớm", icon: "⚡" },
+                          { value: "balanced",   label: "Balanced",   desc: "Ổn định đều",  icon: "⚖️" },
+                          { value: "conservative", label: "Conservative", desc: "Bứt phá cuối", icon: "🎯" },
+                        ] as const).map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setFormState(prev => ({ ...prev, jockeyStyle: opt.value }))}
+                            className={`flex flex-col items-center gap-1 p-3 rounded-xl border text-sm font-medium transition-all ${
+                              formState.jockeyStyle === opt.value
+                                ? "border-[#FFDE42] bg-[#FFDE42]/10 text-[#FFDE42]"
+                                : "border-white/10 bg-slate-800/40 text-slate-400 hover:border-white/30"
+                            }`}
+                          >
+                            <span className="text-lg">{opt.icon}</span>
+                            <span>{opt.label}</span>
+                            <span className="text-[10px] opacity-70">{opt.desc}</span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="bg-slate-900/40 rounded-xl px-4 py-3 border border-white/5 text-white text-sm flex items-center gap-2">
+                        {formState.jockeyStyle === "aggressive" && <><span>⚡</span><span>Aggressive — Dẫn đầu sớm</span></>}
+                        {formState.jockeyStyle === "balanced"   && <><span>⚖️</span><span>Balanced — Ổn định đều</span></>}
+                        {formState.jockeyStyle === "conservative" && <><span>🎯</span><span>Conservative — Bứt phá cuối</span></>}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

@@ -20,6 +20,7 @@ export interface UserProfile {
     winCount: number;
     raceCount: number;
     bio?: string;
+    style?: 'aggressive' | 'balanced' | 'conservative';
   };
   refereeProfile?: {
     licenseNumber: string;
@@ -42,6 +43,7 @@ export interface JockeyListItem {
     weight: number;
     height: number;
     bio?: string;
+    style?: 'aggressive' | 'balanced' | 'conservative';
   };
 }
 
@@ -75,6 +77,7 @@ export interface UpdateProfileData {
     weight?: number;
     height?: number;
     bio?: string;
+    style?: 'aggressive' | 'balanced' | 'conservative';
   };
   refereeProfile?: {
     licenseNumber?: string;

@@ -10,6 +10,7 @@ export interface SocketHorse {
   horseId: string;
   horseName: string;
   jockeyName: string | null;
+  jockeyStyle?: 'aggressive' | 'balanced' | 'conservative';
 }
 
 export interface SocketPosition {
@@ -35,10 +36,31 @@ interface AnimHorse {
   horseId: string;
   horseName: string;
   jockeyName: string | null;
-  speedFactor: number;
+  jockeyStyle?: string;
+  // New: 3-phase speed profile [p0, p1, p2] — replaces flat speedFactor
+  speedProfile?: [number, number, number];
+  // Legacy fallback (old backend)
+  speedFactor?: number;
   noiseAmplitude: number;
   noiseFreq: number;
   noisePhase: number;
+}
+
+// ─── Phase-based progress calculation ────────────────────────────────────────
+// Integrates a 3-segment speed profile over t∈[0,1].
+// Phase boundaries: [0–0.33], [0.33–0.66], [0.66–1.0]
+// Each segment's contribution to total progress is proportional to its speed.
+// The integral naturally sums to baseFactor * 1.0 since profile values integrate to ~1.
+function progressFromProfile(profile: [number, number, number], t: number): number {
+  const t1 = 0.33, t2 = 0.66;
+  if (t <= 0) return 0;
+  if (t <= t1) {
+    return profile[0] * t;
+  } else if (t <= t2) {
+    return profile[0] * t1 + profile[1] * (t - t1);
+  } else {
+    return profile[0] * t1 + profile[1] * (t2 - t1) + profile[2] * (t - t2);
+  }
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -68,12 +90,25 @@ export function useRaceSocket(raceId: string, token: string | null) {
       const t = Math.min(elapsed, anim.duration);
       const progress = t / anim.duration; // 0→1
 
-      const computed = anim.horses.map((h) => {
-        const base = h.speedFactor * progress * 100;
-        // Noise fades to 0 as race ends → final order matches server-computed positions
+      const computed = anim.horses.map(h => {
+        // Noise fades to 0 as race ends → final order converges to server order
         const fade = 1 - progress;
         const noise = h.noiseAmplitude * 100 * fade *
           Math.sin(2 * Math.PI * h.noiseFreq * progress + h.noisePhase);
+
+        let base: number;
+        if (h.speedProfile) {
+          // Phase-based: integrate speed profile up to current time, scale to 100%
+          const rawProgress = progressFromProfile(h.speedProfile, progress);
+          // Normalize: at t=1.0, progressFromProfile returns ~baseFactor
+          // We want winner to reach ~100% so divide by expected max (profile[0]*0.33 + profile[1]*0.33 + profile[2]*0.34)
+          const expectedMax = h.speedProfile[0] * 0.33 + h.speedProfile[1] * 0.33 + h.speedProfile[2] * 0.34;
+          base = (rawProgress / Math.max(expectedMax, 0.01)) * 100;
+        } else {
+          // Legacy fallback for old backend
+          base = (h.speedFactor ?? 1.0) * progress * 100;
+        }
+
         return {
           horseId: h.horseId,
           horseName: h.horseName,
@@ -123,6 +158,7 @@ export function useRaceSocket(raceId: string, token: string | null) {
       raceId: string;
       raceName: string;
       raceDurationMs: number;
+      trackCondition?: string;
       horses: AnimHorse[];
     }) => {
       if (data.raceId !== raceId) return;
@@ -131,6 +167,7 @@ export function useRaceSocket(raceId: string, token: string | null) {
         horseId: h.horseId,
         horseName: h.horseName,
         jockeyName: h.jockeyName,
+        jockeyStyle: h.jockeyStyle,
       })));
       setPhase('racing');
 
@@ -141,7 +178,6 @@ export function useRaceSocket(raceId: string, token: string | null) {
     // race:progress kept for backwards compat but no longer emitted by backend
     socket.on('race:progress', (data: { raceId: string; elapsed: number; total: number; positions: SocketPosition[] }) => {
       if (data.raceId !== raceId) return;
-      // Only use if rAF loop is not running (e.g., old backend)
       if (!animRef.current) {
         setPositions(data.positions);
         setElapsed(data.elapsed);

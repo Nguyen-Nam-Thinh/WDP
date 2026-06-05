@@ -156,13 +156,15 @@ export function RaceTrack({
 
         {/* ── Horse dots ── */}
         {sorted.map((horse, renderIdx) => {
-          // Distribute horses into lanes based on their stable index
           const horseIdx = horses.findIndex(h => h.horseId === horse.horseId);
-          const laneShift = n > 1 ? (horseIdx - (n - 1) / 2) * 4.5 : 0;
-
+          // Scale lane spread to always fit within track width (~85px usable),
+          // and scale dot size down for larger fields to reduce overlap
+          const laneStep = n > 1 ? Math.min(4.5, 85 / (n - 1)) : 0;
+          const laneShift = n > 1 ? (horseIdx - (n - 1) / 2) * laneStep : 0;
           const { x, y } = getXY(horse.progressPct, laneShift);
           const color = HORSE_COLORS[horse.colorIdx % HORSE_COLORS.length];
-          const r = horse.isMyBet ? 12 : 9;
+          const baseR = n <= 8 ? 9 : n <= 14 ? 7 : 6;
+          const r = horse.isMyBet ? baseR + 3 : baseR;
 
           return (
             // No transition — positions update at 60fps via rAF, direct SVG transform
@@ -238,19 +240,69 @@ export function RaceTrack({
         })}
       </svg>
 
-      {/* ── Color legend ── */}
-      <div className="flex flex-wrap gap-x-4 gap-y-1 px-4 py-2 bg-slate-900/60 border-t border-white/5">
-        {horses.map((horse) => (
-          <div key={horse.horseId} className="flex items-center gap-1.5">
-            <div
-              className="w-3 h-3 rounded-full shrink-0"
-              style={{ backgroundColor: HORSE_COLORS[horse.colorIdx % HORSE_COLORS.length] }}
-            />
-            <span className={`text-xs truncate max-w-20 ${horse.isMyBet ? 'text-[#FFDE42] font-semibold' : 'text-slate-400'}`}>
-              {horse.horseName}
-            </span>
-          </div>
-        ))}
+      {/* ── Color legend — horizontal scroll, pill chips ── */}
+      <div className="relative bg-slate-900/70 border-t border-white/5">
+        {/* Right fade hint — indicates more content on scroll */}
+        <div className="pointer-events-none absolute right-0 top-0 h-full w-10 z-10"
+          style={{ background: 'linear-gradient(to left, rgba(15,23,42,0.85), transparent)' }} />
+
+        <div
+          className="flex gap-1.5 px-3 py-2.5 overflow-x-auto"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          {/* Gate order kept stable — rank badge updates in place */}
+          {horses.map((horse) => {
+            const color = HORSE_COLORS[horse.colorIdx % HORSE_COLORS.length];
+            const rank = horse.currentRank;
+            const isTop3 = rank !== undefined && rank <= 3;
+            const rankColors: Record<number, string> = { 1: '#FBBF24', 2: '#94A3B8', 3: '#F97316' };
+            const rankColor = rank ? (rankColors[rank] ?? 'rgba(255,255,255,0.4)') : 'rgba(255,255,255,0.4)';
+
+            return (
+              <div
+                key={horse.horseId}
+                className={`flex items-center gap-1.5 px-2 py-1 rounded-full shrink-0 border text-xs font-medium transition-all ${
+                  horse.isMyBet
+                    ? 'bg-[#FFDE42]/10 border-[#FFDE42]/40 text-[#FFDE42]'
+                    : isTop3
+                    ? 'bg-white/8 border-white/15 text-white'
+                    : 'bg-white/5 border-white/8 text-slate-400'
+                }`}
+              >
+                {/* Rank badge */}
+                {rank !== undefined && (
+                  <span
+                    className="shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black"
+                    style={{
+                      background: isTop3
+                        ? `radial-gradient(circle, ${rankColor}33, ${rankColor}11)`
+                        : 'rgba(255,255,255,0.07)',
+                      border: `1px solid ${isTop3 ? rankColor + '66' : 'rgba(255,255,255,0.12)'}`,
+                      color: isTop3 ? rankColor : 'rgba(255,255,255,0.35)',
+                    }}
+                  >
+                    {rank}
+                  </span>
+                )}
+
+                {/* Color dot */}
+                <span
+                  className="w-2 h-2 rounded-full shrink-0"
+                  style={{ backgroundColor: color, boxShadow: `0 0 5px ${color}` }}
+                />
+
+                {/* Horse name */}
+                <span className="max-w-[72px] truncate">{horse.horseName}</span>
+
+                {horse.isMyBet && (
+                  <span className="text-[#FFDE42] text-[10px] shrink-0">★</span>
+                )}
+              </div>
+            );
+          })}
+          {/* Spacer so last chip isn't hidden under the fade */}
+          <div className="shrink-0 w-6" />
+        </div>
       </div>
     </div>
   );
