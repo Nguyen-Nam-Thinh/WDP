@@ -1,0 +1,165 @@
+<h2>So sánh 2 hướng thiết kế track — 16 ngựa</h2>
+<p class="subtitle">Xem preview rồi chọn hướng muốn implement</p>
+
+<style>
+.split-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-align: center; margin-bottom: 6px; }
+.split-label.good { color: #4ade80; }
+.split-label.warn { color: #fbbf24; }
+.half { flex: 1; }
+.svg-box { background: #0c1a0c; border-radius: 8px; padding: 8px; }
+
+/* lanes */
+.lanes-track { background: #0c1a0c; border-radius: 8px; overflow: hidden; border: 1px solid #1a3a1a; }
+.track-hdr { display: flex; justify-content: space-between; padding: 3px 10px; background: #0a150a; font-size: 9px; color: #4b7a3c; font-weight: 700; letter-spacing: 1px; border-bottom: 1px solid #1e3a1e; }
+.lane { display: flex; align-items: center; height: 20px; border-bottom: 1px solid rgba(255,255,255,0.04); padding: 0 6px; gap: 4px; }
+.lane:last-child { border-bottom: none; }
+.ln { width: 14px; font-size: 8px; color: #475569; text-align: center; flex-shrink: 0; }
+.bar-bg { flex: 1; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; position: relative; overflow: visible; }
+.bar-fill { height: 100%; border-radius: 3px; position: relative; }
+.emoji { position: absolute; right: -9px; top: 50%; transform: translateY(-50%); font-size: 10px; }
+.hname { width: 52px; font-size: 8px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; text-align: right; }
+.rk { width: 13px; height: 13px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 7px; font-weight: 800; flex-shrink: 0; }
+.note { font-size: 11px; color: #64748b; margin-top: 8px; padding: 6px 8px; background: rgba(255,255,255,0.04); border-radius: 6px; }
+</style>
+
+<div class="cards">
+
+  <!-- ═══ OPTION 1: Adaptive ═══ -->
+  <div class="card" data-choice="adaptive" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f172a;padding:16px">
+      <div style="display:flex;gap:12px">
+        <!-- Oval for small field -->
+        <div class="half">
+          <div class="split-label good">≤10 ngựa → OVAL (như cũ)</div>
+          <div class="svg-box">
+            <svg viewBox="0 0 260 140" width="100%" style="display:block">
+              <rect width="260" height="140" fill="#0c1a0c"/>
+              <ellipse cx="130" cy="70" rx="108" ry="54" fill="none" stroke="#b89560" stroke-width="14" opacity="0.55"/>
+              <ellipse cx="130" cy="70" rx="66" ry="30" fill="#1a3a0e"/>
+              <ellipse cx="130" cy="70" rx="108" ry="54" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+              <ellipse cx="130" cy="70" rx="66" ry="30" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+              <g transform="translate(238,70)"><circle r="11" fill="#0f172a" stroke="#ef4444" stroke-width="1.8"/><text text-anchor="middle" y="4" font-size="11">🐎</text><circle cx="7" cy="-7" r="4" fill="#ef4444"/><text x="7" y="-4.5" text-anchor="middle" fill="white" font-size="5" font-weight="800">1</text></g>
+              <g transform="translate(190,29)"><circle r="10" fill="#0f172a" stroke="#3b82f6" stroke-width="1.8"/><text text-anchor="middle" y="3.5" font-size="10">🐎</text><circle cx="6" cy="-6" r="3.5" fill="#3b82f6"/><text x="6" y="-4" text-anchor="middle" fill="white" font-size="5" font-weight="800">2</text></g>
+              <g transform="translate(120,22)"><circle r="10" fill="#0f172a" stroke="#10b981" stroke-width="1.8"/><text text-anchor="middle" y="3.5" font-size="10">🐎</text><circle cx="6" cy="-6" r="3.5" fill="#10b981"/><text x="6" y="-4" text-anchor="middle" fill="white" font-size="5" font-weight="800">3</text></g>
+              <g transform="translate(52,50)"><circle r="10" fill="#0f172a" stroke="#f59e0b" stroke-width="1.8"/><text text-anchor="middle" y="3.5" font-size="10">🐎</text></g>
+              <g transform="translate(65,105)"><circle r="10" fill="#0f172a" stroke="#8b5cf6" stroke-width="1.8"/><text text-anchor="middle" y="3.5" font-size="10">🐎</text></g>
+              <g transform="translate(190,112)"><circle r="9" fill="#0f172a" stroke="#ec4899" stroke-width="1.8"/><text text-anchor="middle" y="3.5" font-size="9">🐎</text></g>
+              <line x1="238" y1="58" x2="238" y2="82" stroke="white" stroke-width="3" opacity="0.5"/>
+              <text x="248" y="73" fill="rgba(255,255,255,0.5)" font-size="6" font-weight="700">S/F</text>
+              <text x="130" y="68" text-anchor="middle" fill="rgba(255,255,255,0.2)" font-size="9" font-weight="700">6 NGỰA</text>
+              <text x="130" y="79" text-anchor="middle" fill="#4ade80" font-size="7">✓ Đẹp, thoải mái</text>
+            </svg>
+          </div>
+        </div>
+        <!-- Lanes for large field -->
+        <div class="half">
+          <div class="split-label warn">&gt;10 ngựa → LANES (tự động)</div>
+          <div class="lanes-track">
+            <div class="track-hdr"><span>START</span><span>→ FINISH</span></div>
+            <div class="lane"><div class="rk" style="background:#ef444422;color:#ef4444">1</div><div class="ln">1</div><div class="bar-bg"><div class="bar-fill" style="background:#ef4444;width:87%"><span class="emoji">🐎</span></div></div><div class="hname">Thunder</div></div>
+            <div class="lane"><div class="rk" style="background:#3b82f622;color:#3b82f6">2</div><div class="ln">2</div><div class="bar-bg"><div class="bar-fill" style="background:#3b82f6;width:81%"><span class="emoji">🐎</span></div></div><div class="hname">Storm</div></div>
+            <div class="lane"><div class="rk" style="background:#10b98122;color:#10b981">3</div><div class="ln">3</div><div class="bar-bg"><div class="bar-fill" style="background:#10b981;width:75%"><span class="emoji">🐎</span></div></div><div class="hname">Silver</div></div>
+            <div class="lane"><div class="rk" style="background:#f59e0b22;color:#f59e0b">4</div><div class="ln">4</div><div class="bar-bg"><div class="bar-fill" style="background:#f59e0b;width:69%"><span class="emoji">🐎</span></div></div><div class="hname">Golden</div></div>
+            <div class="lane"><div class="rk" style="background:#8b5cf622;color:#8b5cf6">5</div><div class="ln">5</div><div class="bar-bg"><div class="bar-fill" style="background:#8b5cf6;width:64%"><span class="emoji">🐎</span></div></div><div class="hname">Night</div></div>
+            <div class="lane"><div class="rk" style="background:#ec489922;color:#ec4899">6</div><div class="ln">6</div><div class="bar-bg"><div class="bar-fill" style="background:#ec4899;width:59%"><span class="emoji">🐎</span></div></div><div class="hname">Pink</div></div>
+            <div class="lane"><div class="rk" style="background:#06b6d422;color:#06b6d4">7</div><div class="ln">7</div><div class="bar-bg"><div class="bar-fill" style="background:#06b6d4;width:54%"><span class="emoji">🐎</span></div></div><div class="hname">Blue</div></div>
+            <div class="lane"><div class="rk" style="background:#84cc1622;color:#84cc16">8</div><div class="ln">8</div><div class="bar-bg"><div class="bar-fill" style="background:#84cc16;width:49%"><span class="emoji">🐎</span></div></div><div class="hname">Leaf</div></div>
+            <div class="lane"><div class="rk" style="background:#f9731622;color:#f97316">9</div><div class="ln">9</div><div class="bar-bg"><div class="bar-fill" style="background:#f97316;width:44%"><span class="emoji">🐎</span></div></div><div class="hname">Fire</div></div>
+            <div class="lane"><div class="rk" style="background:#a855f722;color:#a855f7">10</div><div class="ln">10</div><div class="bar-bg"><div class="bar-fill" style="background:#a855f7;width:39%"><span class="emoji">🐎</span></div></div><div class="hname">Violet</div></div>
+            <div class="lane"><div class="rk" style="background:#14b8a622;color:#14b8a6">11</div><div class="ln">11</div><div class="bar-bg"><div class="bar-fill" style="background:#14b8a6;width:34%"><span class="emoji">🐎</span></div></div><div class="hname">Teal</div></div>
+            <div class="lane"><div class="rk" style="background:#eab30822;color:#eab308">12</div><div class="ln">12</div><div class="bar-bg"><div class="bar-fill" style="background:#eab308;width:29%"><span class="emoji">🐎</span></div></div><div class="hname">Gold</div></div>
+            <div class="lane"><div class="rk" style="background:#ef444422;color:#ef4444">13</div><div class="ln">13</div><div class="bar-bg"><div class="bar-fill" style="background:#ef4444;width:25%"><span class="emoji">🐎</span></div></div><div class="hname">Baron</div></div>
+            <div class="lane"><div class="rk" style="background:#3b82f622;color:#3b82f6">14</div><div class="ln">14</div><div class="bar-bg"><div class="bar-fill" style="background:#3b82f6;width:21%"><span class="emoji">🐎</span></div></div><div class="hname">Sky</div></div>
+            <div class="lane"><div class="rk" style="background:#10b98122;color:#10b981">15</div><div class="ln">15</div><div class="bar-bg"><div class="bar-fill" style="background:#10b981;width:17%"><span class="emoji">🐎</span></div></div><div class="hname">Emerald</div></div>
+            <div class="lane"><div class="rk" style="background:#f59e0b22;color:#f59e0b">16</div><div class="ln">16</div><div class="bar-bg"><div class="bar-fill" style="background:#f59e0b;width:12%"><span class="emoji">🐎</span></div></div><div class="hname">Desert</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="note">Tự động chuyển layout tại ngưỡng 10 ngựa · Oval giữ nguyên code cũ · Lanes chỉ render khi &gt;10</div>
+    </div>
+    <div class="card-body">
+      <h3>Adaptive — tự động chuyển layout</h3>
+      <p>≤10 ngựa = oval như hiện tại (đẹp). >10 ngựa = horizontal lanes (rõ ràng, không chen chúc). 2 component riêng, switch tự động.</p>
+    </div>
+  </div>
+
+  <!-- ═══ OPTION 2: Improved Oval ═══ -->
+  <div class="card" data-choice="oval" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f172a;padding:16px">
+      <div style="display:flex;gap:12px">
+        <!-- 6 horses single ring -->
+        <div class="half">
+          <div class="split-label good">6 ngựa — 1 vòng</div>
+          <div class="svg-box">
+            <svg viewBox="0 0 260 140" width="100%" style="display:block">
+              <rect width="260" height="140" fill="#0c1a0c"/>
+              <ellipse cx="130" cy="70" rx="108" ry="54" fill="none" stroke="#b89560" stroke-width="14" opacity="0.55"/>
+              <ellipse cx="130" cy="70" rx="66" ry="30" fill="#1a3a0e"/>
+              <ellipse cx="130" cy="70" rx="108" ry="54" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+              <ellipse cx="130" cy="70" rx="66" ry="30" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+              <g transform="translate(238,70)"><circle r="11" fill="#0f172a" stroke="#ef4444" stroke-width="1.8"/><text text-anchor="middle" y="4" font-size="11">🐎</text><circle cx="7" cy="-7" r="4" fill="#ef4444"/><text x="7" y="-4.5" text-anchor="middle" fill="white" font-size="5" font-weight="800">1</text></g>
+              <g transform="translate(190,29)"><circle r="10" fill="#0f172a" stroke="#3b82f6" stroke-width="1.8"/><text text-anchor="middle" y="3.5" font-size="10">🐎</text><circle cx="6" cy="-6" r="3.5" fill="#3b82f6"/><text x="6" y="-4" text-anchor="middle" fill="white" font-size="5" font-weight="800">2</text></g>
+              <g transform="translate(120,22)"><circle r="10" fill="#0f172a" stroke="#10b981" stroke-width="1.8"/><text text-anchor="middle" y="3.5" font-size="10">🐎</text></g>
+              <g transform="translate(52,50)"><circle r="10" fill="#0f172a" stroke="#f59e0b" stroke-width="1.8"/><text text-anchor="middle" y="3.5" font-size="10">🐎</text></g>
+              <g transform="translate(65,105)"><circle r="10" fill="#0f172a" stroke="#8b5cf6" stroke-width="1.8"/><text text-anchor="middle" y="3.5" font-size="10">🐎</text></g>
+              <g transform="translate(190,112)"><circle r="9" fill="#0f172a" stroke="#ec4899" stroke-width="1.8"/><text text-anchor="middle" y="3.5" font-size="9">🐎</text></g>
+              <line x1="238" y1="58" x2="238" y2="82" stroke="white" stroke-width="3" opacity="0.5"/>
+              <text x="248" y="73" fill="rgba(255,255,255,0.5)" font-size="6" font-weight="700">S/F</text>
+              <text x="130" y="68" text-anchor="middle" fill="rgba(255,255,255,0.18)" font-size="9" font-weight="700">6 NGỰA</text>
+              <text x="130" y="79" text-anchor="middle" fill="#4ade80" font-size="7">✓ Đẹp, không đổi</text>
+            </svg>
+          </div>
+        </div>
+        <!-- 16 horses multi-ring oval -->
+        <div class="half">
+          <div class="split-label warn">16 ngựa — 3 vòng đồng tâm</div>
+          <div class="svg-box">
+            <svg viewBox="0 0 260 140" width="100%" style="display:block">
+              <rect width="260" height="140" fill="#0c1a0c"/>
+              <!-- Track wider to fit 3 rings -->
+              <ellipse cx="130" cy="70" rx="116" ry="60" fill="none" stroke="#b89560" stroke-width="24" opacity="0.45"/>
+              <!-- Inner grass -->
+              <ellipse cx="130" cy="70" rx="62" ry="29" fill="#1a3a0e"/>
+              <!-- 3 ring lines -->
+              <ellipse cx="130" cy="70" rx="116" ry="60" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1"/>
+              <ellipse cx="130" cy="70" rx="100" ry="50" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1" stroke-dasharray="6,5"/>
+              <ellipse cx="130" cy="70" rx="82" ry="38" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1" stroke-dasharray="6,5"/>
+              <ellipse cx="130" cy="70" rx="62" ry="29" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+              <!-- OUTER ring: 6 horses evenly distributed -->
+              <g transform="translate(246,70)"><circle r="8" fill="#0f172a" stroke="#ef4444" stroke-width="1.5"/><text text-anchor="middle" y="3" font-size="9">🐎</text><circle cx="5.5" cy="-5.5" r="3.5" fill="#ef4444"/><text x="5.5" y="-3.5" text-anchor="middle" fill="white" font-size="4.5" font-weight="800">1</text></g>
+              <g transform="translate(188,22)"><circle r="7" fill="#0f172a" stroke="#f59e0b" stroke-width="1.5"/><text text-anchor="middle" y="2.5" font-size="8">🐎</text></g>
+              <g transform="translate(72,22)"><circle r="7" fill="#0f172a" stroke="#ec4899" stroke-width="1.5"/><text text-anchor="middle" y="2.5" font-size="8">🐎</text></g>
+              <g transform="translate(14,70)"><circle r="7" fill="#0f172a" stroke="#06b6d4" stroke-width="1.5"/><text text-anchor="middle" y="2.5" font-size="8">🐎</text></g>
+              <g transform="translate(72,118)"><circle r="7" fill="#0f172a" stroke="#84cc16" stroke-width="1.5"/><text text-anchor="middle" y="2.5" font-size="8">🐎</text></g>
+              <g transform="translate(188,118)"><circle r="7" fill="#0f172a" stroke="#f97316" stroke-width="1.5"/><text text-anchor="middle" y="2.5" font-size="8">🐎</text></g>
+              <!-- MIDDLE ring: 5 horses -->
+              <g transform="translate(214,43)"><circle r="7" fill="#0f172a" stroke="#3b82f6" stroke-width="1.5"/><text text-anchor="middle" y="2.5" font-size="8">🐎</text><circle cx="5" cy="-5" r="3" fill="#3b82f6"/><text x="5" y="-3" text-anchor="middle" fill="white" font-size="4" font-weight="800">2</text></g>
+              <g transform="translate(130,20)"><circle r="7" fill="#0f172a" stroke="#8b5cf6" stroke-width="1.5"/><text text-anchor="middle" y="2.5" font-size="8">🐎</text></g>
+              <g transform="translate(46,43)"><circle r="7" fill="#0f172a" stroke="#a855f7" stroke-width="1.5"/><text text-anchor="middle" y="2.5" font-size="8">🐎</text></g>
+              <g transform="translate(46,97)"><circle r="7" fill="#0f172a" stroke="#14b8a6" stroke-width="1.5"/><text text-anchor="middle" y="2.5" font-size="8">🐎</text></g>
+              <g transform="translate(214,97)"><circle r="7" fill="#0f172a" stroke="#eab308" stroke-width="1.5"/><text text-anchor="middle" y="2.5" font-size="8">🐎</text></g>
+              <!-- INNER ring: 5 horses -->
+              <g transform="translate(212,70)"><circle r="6.5" fill="#0f172a" stroke="#10b981" stroke-width="1.5"/><text text-anchor="middle" y="2.5" font-size="7">🐎</text><circle cx="4.5" cy="-4.5" r="3" fill="#10b981"/><text x="4.5" y="-2.5" text-anchor="middle" fill="white" font-size="4" font-weight="800">3</text></g>
+              <g transform="translate(172,36)"><circle r="6" fill="#0f172a" stroke="#ef4444" stroke-width="1.5"/><text text-anchor="middle" y="2" font-size="7">🐎</text></g>
+              <g transform="translate(88,36)"><circle r="6" fill="#0f172a" stroke="#3b82f6" stroke-width="1.5"/><text text-anchor="middle" y="2" font-size="7">🐎</text></g>
+              <g transform="translate(48,70)"><circle r="6" fill="#0f172a" stroke="#10b981" stroke-width="1.5"/><text text-anchor="middle" y="2" font-size="7">🐎</text></g>
+              <g transform="translate(88,104)"><circle r="6" fill="#0f172a" stroke="#f59e0b" stroke-width="1.5"/><text text-anchor="middle" y="2" font-size="7">🐎</text></g>
+              <g transform="translate(172,104)"><circle r="6" fill="#0f172a" stroke="#8b5cf6" stroke-width="1.5"/><text text-anchor="middle" y="2" font-size="7">🐎</text></g>
+              <!-- S/F -->
+              <line x1="246" y1="56" x2="246" y2="84" stroke="white" stroke-width="2.5" opacity="0.5"/>
+              <text x="254" y="73" fill="rgba(255,255,255,0.5)" font-size="5.5" font-weight="700">S/F</text>
+              <text x="130" y="67" text-anchor="middle" fill="rgba(255,255,255,0.15)" font-size="8" font-weight="700">16 NGỰA</text>
+              <text x="130" y="77" text-anchor="middle" fill="#fbbf24" font-size="7">3 vòng đồng tâm</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="note">Luôn là oval · ≤8 = 1 vòng · ≤14 = 2 vòng · >14 = 3 vòng · Ngựa phân bổ đều vào các vòng</div>
+    </div>
+    <div class="card-body">
+      <h3>Improved Oval — luôn hình tròn, phân bổ multi-ring</h3>
+      <p>Không đổi visual language. Track tự mở rộng thêm vòng khi cần. Tất cả horse vẫn chạy trên ellipse, chỉ khác là có nhiều "làn" đồng tâm hơn.</p>
+    </div>
+  </div>
+
+</div>
