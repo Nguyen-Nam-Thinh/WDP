@@ -1,0 +1,239 @@
+<h2>Thêm 4 kiểu nữa</h2>
+<p class="subtitle">Các lựa chọn bổ sung — từ minimalist đến dramatic</p>
+
+<div class="cards">
+
+  <!-- Option E: Animated running dots (gallop effect) -->
+  <div class="card" data-choice="e" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0c1a0c;padding:20px 10px;display:flex;flex-direction:column;align-items:center;gap:12px">
+      <svg viewBox="0 0 320 80" width="300" height="80" style="display:block">
+        <defs>
+          <filter id="glow-e"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <ellipse cx="160" cy="40" rx="140" ry="32" fill="none" stroke="#b89560" stroke-width="18" opacity="0.5"/>
+        <!-- Helmet + number badge style — like F1 racing -->
+        <g transform="translate(295,40)" filter="url(#glow-e)">
+          <!-- Glow halo -->
+          <circle r="17" fill="#ef4444" opacity="0.15"/>
+          <!-- Main shield/hexagon -->
+          <polygon points="0,-14 12,-7 12,7 0,14 -12,7 -12,-7" fill="#1e293b" stroke="#ef4444" stroke-width="2"/>
+          <!-- Color bar top -->
+          <polygon points="0,-14 12,-7 0,-4 -12,-7" fill="#ef4444" opacity="0.9"/>
+          <!-- Number -->
+          <text x="0" y="7" text-anchor="middle" fill="white" font-size="10" font-weight="900">1</text>
+        </g>
+        <g transform="translate(244,19)">
+          <circle r="15" fill="#3b82f6" opacity="0.15"/>
+          <polygon points="0,-12 10,-6 10,6 0,12 -10,6 -10,-6" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
+          <polygon points="0,-12 10,-6 0,-3 -10,-6" fill="#3b82f6" opacity="0.9"/>
+          <text x="0" y="6" text-anchor="middle" fill="white" font-size="9" font-weight="900">2</text>
+        </g>
+        <g transform="translate(186,10)">
+          <circle r="14" fill="#10b981" opacity="0.15"/>
+          <polygon points="0,-12 10,-6 10,6 0,12 -10,6 -10,-6" fill="#1e293b" stroke="#10b981" stroke-width="2"/>
+          <polygon points="0,-12 10,-6 0,-3 -10,-6" fill="#10b981" opacity="0.9"/>
+          <text x="0" y="6" text-anchor="middle" fill="white" font-size="9" font-weight="900">3</text>
+        </g>
+        <g transform="translate(128,10)">
+          <circle r="13" fill="#f59e0b" opacity="0.15"/>
+          <polygon points="0,-11 9,-5.5 9,5.5 0,11 -9,5.5 -9,-5.5" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>
+          <polygon points="0,-11 9,-5.5 0,-3 -9,-5.5" fill="#f59e0b" opacity="0.9"/>
+          <text x="0" y="5" text-anchor="middle" fill="white" font-size="8" font-weight="900">4</text>
+        </g>
+        <g transform="translate(72,19)">
+          <circle r="13" fill="#8b5cf6" opacity="0.15"/>
+          <polygon points="0,-11 9,-5.5 9,5.5 0,11 -9,5.5 -9,-5.5" fill="#1e293b" stroke="#8b5cf6" stroke-width="2"/>
+          <polygon points="0,-11 9,-5.5 0,-3 -9,-5.5" fill="#8b5cf6" opacity="0.9"/>
+          <text x="0" y="5" text-anchor="middle" fill="white" font-size="8" font-weight="900">5</text>
+        </g>
+      </svg>
+      <div style="color:#94a3b8;font-size:11px">Hexagon badge kiểu F1 — số to, viền màu</div>
+    </div>
+    <div class="card-body">
+      <h3>E — F1 Hex Badge</h3>
+      <p>Hình lục giác như số hiệu xe đua F1. Viền màu riêng mỗi ngựa, số thứ hạng to và rõ. Nhìn chuyên nghiệp.</p>
+    </div>
+  </div>
+
+  <!-- Option F: Flame + glow dramatic -->
+  <div class="card" data-choice="f" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0c1a0c;padding:20px 10px;display:flex;flex-direction:column;align-items:center;gap:12px">
+      <svg viewBox="0 0 320 80" width="300" height="80" style="display:block">
+        <defs>
+          <filter id="glow-f-big"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <filter id="flame-blur"><feGaussianBlur stdDeviation="3"/></filter>
+        </defs>
+        <ellipse cx="160" cy="40" rx="140" ry="32" fill="none" stroke="#b89560" stroke-width="18" opacity="0.5"/>
+        <!-- Flame trail + glowing circle -->
+        <!-- Horse 1 -->
+        <g transform="translate(295,40)">
+          <!-- Flame trail -->
+          <ellipse cx="-20" cy="2" rx="14" ry="6" fill="#ef4444" opacity="0.4" filter="url(#flame-blur)"/>
+          <ellipse cx="-14" cy="1" rx="8" ry="4" fill="#fbbf24" opacity="0.3" filter="url(#flame-blur)"/>
+          <!-- Glowing circle -->
+          <circle r="13" fill="#ef4444" opacity="0.3" filter="url(#glow-f-big)"/>
+          <circle r="13" fill="#1e293b" stroke="#ef4444" stroke-width="2.5"/>
+          <text x="0" y="4" text-anchor="middle" fill="#ef4444" font-size="11" font-weight="900">1</text>
+        </g>
+        <g transform="translate(244,19)">
+          <ellipse cx="-18" cy="2" rx="12" ry="5" fill="#3b82f6" opacity="0.4" filter="url(#flame-blur)"/>
+          <ellipse cx="-12" cy="1" rx="7" ry="3.5" fill="#93c5fd" opacity="0.3" filter="url(#flame-blur)"/>
+          <circle r="12" fill="#3b82f6" opacity="0.3" filter="url(#glow-f-big)"/>
+          <circle r="12" fill="#1e293b" stroke="#3b82f6" stroke-width="2.5"/>
+          <text x="0" y="4" text-anchor="middle" fill="#3b82f6" font-size="10" font-weight="900">2</text>
+        </g>
+        <g transform="translate(186,10)">
+          <ellipse cx="-16" cy="2" rx="11" ry="5" fill="#10b981" opacity="0.4" filter="url(#flame-blur)"/>
+          <circle r="11" fill="#10b981" opacity="0.3" filter="url(#glow-f-big)"/>
+          <circle r="11" fill="#1e293b" stroke="#10b981" stroke-width="2.5"/>
+          <text x="0" y="3.5" text-anchor="middle" fill="#10b981" font-size="9" font-weight="900">3</text>
+        </g>
+        <g transform="translate(128,10)">
+          <ellipse cx="-15" cy="2" rx="10" ry="4" fill="#f59e0b" opacity="0.4" filter="url(#flame-blur)"/>
+          <circle r="10" fill="#f59e0b" opacity="0.3" filter="url(#glow-f-big)"/>
+          <circle r="10" fill="#1e293b" stroke="#f59e0b" stroke-width="2.5"/>
+          <text x="0" y="3" text-anchor="middle" fill="#f59e0b" font-size="9" font-weight="900">4</text>
+        </g>
+        <g transform="translate(72,19)">
+          <ellipse cx="-14" cy="2" rx="9" ry="4" fill="#8b5cf6" opacity="0.4" filter="url(#flame-blur)"/>
+          <circle r="10" fill="#8b5cf6" opacity="0.3" filter="url(#glow-f-big)"/>
+          <circle r="10" fill="#1e293b" stroke="#8b5cf6" stroke-width="2.5"/>
+          <text x="0" y="3" text-anchor="middle" fill="#8b5cf6" font-size="9" font-weight="900">5</text>
+        </g>
+      </svg>
+      <div style="color:#94a3b8;font-size:11px">Vòng tròn glowing + vệt lửa phía sau</div>
+    </div>
+    <div class="card-body">
+      <h3>F — Glow + Flame Trail</h3>
+      <p>Vòng tròn dark với viền neon phát sáng, vệt mờ phía sau như đang bốc lửa. Dramatic, phù hợp dark theme của track.</p>
+    </div>
+  </div>
+
+  <!-- Option G: Jockey cap (helmet) icon -->
+  <div class="card" data-choice="g" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0c1a0c;padding:20px 10px;display:flex;flex-direction:column;align-items:center;gap:12px">
+      <svg viewBox="0 0 320 80" width="300" height="80" style="display:block">
+        <defs>
+          <filter id="glow-g"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <ellipse cx="160" cy="40" rx="140" ry="32" fill="none" stroke="#b89560" stroke-width="18" opacity="0.5"/>
+        <!-- Jockey helmet/cap shape -->
+        <g transform="translate(295,40)" filter="url(#glow-g)">
+          <!-- Helmet shape: dome + brim -->
+          <ellipse cx="0" cy="-4" rx="13" ry="11" fill="#ef4444"/>
+          <!-- Stripe across helmet -->
+          <rect x="-13" y="-6" width="26" height="5" fill="#dc2626" opacity="0.6"/>
+          <!-- Brim -->
+          <rect x="-15" y="5" width="30" height="4" rx="2" fill="#b91c1c"/>
+          <!-- Visor -->
+          <rect x="-8" y="6" width="18" height="3" rx="1.5" fill="rgba(0,0,0,0.4)"/>
+          <!-- Rank -->
+          <circle cx="0" cy="-4" r="6" fill="rgba(0,0,0,0.35)"/>
+          <text x="0" y="-1" text-anchor="middle" fill="white" font-size="8" font-weight="bold">1</text>
+        </g>
+        <g transform="translate(244,19)">
+          <ellipse cx="0" cy="-4" rx="11" ry="9" fill="#3b82f6"/>
+          <rect x="-11" y="-5.5" width="22" height="4" fill="#2563eb" opacity="0.6"/>
+          <rect x="-13" y="4" width="26" height="3.5" rx="1.8" fill="#1d4ed8"/>
+          <rect x="-7" y="5" width="16" height="2.5" rx="1.2" fill="rgba(0,0,0,0.4)"/>
+          <circle cx="0" cy="-4" r="5" fill="rgba(0,0,0,0.35)"/>
+          <text x="0" y="-1" text-anchor="middle" fill="white" font-size="7" font-weight="bold">2</text>
+        </g>
+        <g transform="translate(186,10)">
+          <ellipse cx="0" cy="-4" rx="11" ry="9" fill="#10b981"/>
+          <rect x="-11" y="-5.5" width="22" height="4" fill="#059669" opacity="0.6"/>
+          <rect x="-13" y="4" width="26" height="3.5" rx="1.8" fill="#047857"/>
+          <rect x="-7" y="5" width="16" height="2.5" rx="1.2" fill="rgba(0,0,0,0.4)"/>
+          <circle cx="0" cy="-4" r="5" fill="rgba(0,0,0,0.35)"/>
+          <text x="0" y="-1" text-anchor="middle" fill="white" font-size="7" font-weight="bold">3</text>
+        </g>
+        <g transform="translate(128,10)">
+          <ellipse cx="0" cy="-3.5" rx="10" ry="8" fill="#f59e0b"/>
+          <rect x="-10" y="-5" width="20" height="3.5" fill="#d97706" opacity="0.6"/>
+          <rect x="-11" y="3.5" width="22" height="3" rx="1.5" fill="#b45309"/>
+          <circle cx="0" cy="-3.5" r="4.5" fill="rgba(0,0,0,0.35)"/>
+          <text x="0" y="-1" text-anchor="middle" fill="white" font-size="7" font-weight="bold">4</text>
+        </g>
+        <g transform="translate(72,19)">
+          <ellipse cx="0" cy="-3.5" rx="10" ry="8" fill="#8b5cf6"/>
+          <rect x="-10" y="-5" width="20" height="3.5" fill="#7c3aed" opacity="0.6"/>
+          <rect x="-11" y="3.5" width="22" height="3" rx="1.5" fill="#6d28d9"/>
+          <circle cx="0" cy="-3.5" r="4.5" fill="rgba(0,0,0,0.35)"/>
+          <text x="0" y="-1" text-anchor="middle" fill="white" font-size="7" font-weight="bold">5</text>
+        </g>
+      </svg>
+      <div style="color:#94a3b8;font-size:11px">Mũ jockey (helmet) + rank bên trong</div>
+    </div>
+    <div class="card-body">
+      <h3>G — Jockey Helmet</h3>
+      <p>Hình mũ bảo hiểm jockey thật — có dome, sọc ngang và vành. Mỗi màu là màu áo jockey. Rất đặc trưng đua ngựa.</p>
+    </div>
+  </div>
+
+  <!-- Option H: Combo — emoji on pill with trail -->
+  <div class="card" data-choice="h" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0c1a0c;padding:20px 10px;display:flex;flex-direction:column;align-items:center;gap:12px">
+      <svg viewBox="0 0 320 80" width="300" height="80" style="display:block">
+        <defs>
+          <filter id="trail-h"><feGaussianBlur stdDeviation="4"/></filter>
+          <filter id="glow-h"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <ellipse cx="160" cy="40" rx="140" ry="32" fill="none" stroke="#b89560" stroke-width="18" opacity="0.5"/>
+        <!-- Emoji on pill with speed trail -->
+        <g transform="translate(292,40)" filter="url(#glow-h)">
+          <!-- Speed trail -->
+          <ellipse cx="-22" cy="0" rx="16" ry="5" fill="#ef4444" opacity="0.35" filter="url(#trail-h)"/>
+          <!-- Pill bg -->
+          <rect x="-18" y="-10" width="34" height="20" rx="10" fill="#1e1e2e" stroke="#ef4444" stroke-width="1.5"/>
+          <!-- Color accent left -->
+          <rect x="-18" y="-10" width="14" height="20" rx="10" fill="#ef4444" opacity="0.25"/>
+          <!-- Emoji -->
+          <text x="4" y="6" text-anchor="middle" font-size="15">🐎</text>
+          <!-- Rank badge -->
+          <circle cx="-10" cy="0" r="7" fill="#ef4444"/>
+          <text x="-10" y="4" text-anchor="middle" fill="white" font-size="8" font-weight="bold">1</text>
+        </g>
+        <g transform="translate(240,19)">
+          <ellipse cx="-19" cy="0" rx="14" ry="4.5" fill="#3b82f6" opacity="0.35" filter="url(#trail-h)"/>
+          <rect x="-16" y="-9" width="30" height="18" rx="9" fill="#1e1e2e" stroke="#3b82f6" stroke-width="1.5"/>
+          <rect x="-16" y="-9" width="13" height="18" rx="9" fill="#3b82f6" opacity="0.25"/>
+          <text x="3" y="5" text-anchor="middle" font-size="13">🐎</text>
+          <circle cx="-8" cy="0" r="6" fill="#3b82f6"/>
+          <text x="-8" y="3.5" text-anchor="middle" fill="white" font-size="7" font-weight="bold">2</text>
+        </g>
+        <g transform="translate(183,10)">
+          <ellipse cx="-17" cy="0" rx="12" ry="4" fill="#10b981" opacity="0.35" filter="url(#trail-h)"/>
+          <rect x="-14" y="-8" width="27" height="16" rx="8" fill="#1e1e2e" stroke="#10b981" stroke-width="1.5"/>
+          <rect x="-14" y="-8" width="11" height="16" rx="8" fill="#10b981" opacity="0.25"/>
+          <text x="2" y="4" text-anchor="middle" font-size="12">🐎</text>
+          <circle cx="-7" cy="0" r="5.5" fill="#10b981"/>
+          <text x="-7" y="3" text-anchor="middle" fill="white" font-size="7" font-weight="bold">3</text>
+        </g>
+        <g transform="translate(126,10)">
+          <ellipse cx="-16" cy="0" rx="11" ry="4" fill="#f59e0b" opacity="0.35" filter="url(#trail-h)"/>
+          <rect x="-13" y="-7.5" width="25" height="15" rx="7.5" fill="#1e1e2e" stroke="#f59e0b" stroke-width="1.5"/>
+          <rect x="-13" y="-7.5" width="10" height="15" rx="7.5" fill="#f59e0b" opacity="0.25"/>
+          <text x="2" y="4" text-anchor="middle" font-size="11">🐎</text>
+          <circle cx="-6.5" cy="0" r="5" fill="#f59e0b"/>
+          <text x="-6.5" y="3" text-anchor="middle" fill="white" font-size="6" font-weight="bold">4</text>
+        </g>
+        <g transform="translate(70,19)">
+          <ellipse cx="-15" cy="0" rx="11" ry="4" fill="#8b5cf6" opacity="0.35" filter="url(#trail-h)"/>
+          <rect x="-13" y="-7.5" width="25" height="15" rx="7.5" fill="#1e1e2e" stroke="#8b5cf6" stroke-width="1.5"/>
+          <rect x="-13" y="-7.5" width="10" height="15" rx="7.5" fill="#8b5cf6" opacity="0.25"/>
+          <text x="2" y="4" text-anchor="middle" font-size="11">🐎</text>
+          <circle cx="-6.5" cy="0" r="5" fill="#8b5cf6"/>
+          <text x="-6.5" y="3" text-anchor="middle" fill="white" font-size="6" font-weight="bold">5</text>
+        </g>
+      </svg>
+      <div style="color:#94a3b8;font-size:11px">Pill ngang + emoji 🐎 + rank badge + vệt tốc độ</div>
+    </div>
+    <div class="card-body">
+      <h3>H — Emoji Pill + Trail (Combo)</h3>
+      <p>Kết hợp: pill nằm ngang dark, emoji ngựa bên phải, rank badge màu bên trái, vệt mờ phía sau. Best of A + C + D.</p>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:16px">Tổng cộng 8 options (A–H). Click chọn hoặc nhắn tôi trong terminal.</p>

@@ -367,9 +367,7 @@ export function LiveRacePage() {
       return displayResults.map((r, i) => ({
         horseId: r.horseId,
         horseName: r.horseName,
-        progressPct:
-          100 *
-          (1 - ((r.position - 1) / Math.max(displayResults.length, 1)) * 0.05),
+        progressPct: 100,
         colorIdx: assignColor(r.horseId, i),
         currentRank: r.position,
         isMyBet: myBetHorseIds.has(r.horseId),

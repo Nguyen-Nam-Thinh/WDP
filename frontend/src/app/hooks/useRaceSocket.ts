@@ -37,30 +37,43 @@ interface AnimHorse {
   horseName: string;
   jockeyName: string | null;
   jockeyStyle?: string;
-  // New: 3-phase speed profile [p0, p1, p2] — replaces flat speedFactor
   speedProfile?: [number, number, number];
-  // Legacy fallback (old backend)
-  speedFactor?: number;
-  noiseAmplitude: number;
-  noiseFreq: number;
-  noisePhase: number;
+  speedFactor?: number;  // legacy fallback
+  finalRank: number;     // 1 = winner — drives animation curve
+  noisePhase: number;    // kept for potential future visual wobble
 }
 
-// ─── Phase-based progress calculation ────────────────────────────────────────
-// Integrates a 3-segment speed profile over t∈[0,1].
-// Phase boundaries: [0–0.33], [0.33–0.66], [0.66–1.0]
-// Each segment's contribution to total progress is proportional to its speed.
-// The integral naturally sums to baseFactor * 1.0 since profile values integrate to ~1.
-function progressFromProfile(profile: [number, number, number], t: number): number {
-  const t1 = 0.33, t2 = 0.66;
+// ─── Constants ────────────────────────────────────────────────────────────────
+// Winner crosses the finish line at 88% of total animation duration.
+// Remaining 12% lets trailing horses also reach 100% in sequence.
+const WINNER_FINISH_T = 0.88;
+const TIME_SPREAD = 0.12;
+const SPRINT_MULTIPLIER = 1.15;
+
+// ─── Position curve ───────────────────────────────────────────────────────────
+// All horses reach 100% (the finish line). Each horse's finish time is staggered:
+// rank 1 → WINNER_FINISH_T, rank N → 1.0. Ranking is by time, not stopping point.
+function computeHorseProgress(
+  t: number,
+  rank: number,
+  totalHorses: number,
+  speedProfile: [number, number, number],
+): number {
   if (t <= 0) return 0;
-  if (t <= t1) {
-    return profile[0] * t;
-  } else if (t <= t2) {
-    return profile[0] * t1 + profile[1] * (t - t1);
-  } else {
-    return profile[0] * t1 + profile[1] * (t2 - t1) + profile[2] * (t - t2);
-  }
+  const myFinishT = WINNER_FINISH_T + (rank - 1) * TIME_SPREAD / Math.max(totalHorses - 1, 1);
+  const scaledT = Math.min(t / myFinishT, 1.0);
+  const p: [number, number, number] = [
+    speedProfile[0],
+    speedProfile[1],
+    speedProfile[2] * SPRINT_MULTIPLIER,
+  ];
+  const t1 = 0.33, t2 = 0.66;
+  let raw: number;
+  if (scaledT <= t1)      raw = p[0] * scaledT;
+  else if (scaledT <= t2) raw = p[0] * t1 + p[1] * (scaledT - t1);
+  else                    raw = p[0] * t1 + p[1] * (t2 - t1) + p[2] * (scaledT - t2);
+  const maxRaw = p[0] * t1 + p[1] * (t2 - t1) + p[2] * (1 - t2);
+  return Math.max(0, Math.min(100, (raw / Math.max(maxRaw, 0.01)) * 100));
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -90,29 +103,20 @@ export function useRaceSocket(raceId: string, token: string | null) {
       const t = Math.min(elapsed, anim.duration);
       const progress = t / anim.duration; // 0→1
 
+      const totalHorses = anim.horses.length;
       const computed = anim.horses.map(h => {
-        // Noise fades to 0 as race ends → final order converges to server order
-        const fade = 1 - progress;
-        const noise = h.noiseAmplitude * 100 * fade *
-          Math.sin(2 * Math.PI * h.noiseFreq * progress + h.noisePhase);
-
-        let base: number;
+        let progressPct: number;
         if (h.speedProfile) {
-          // Phase-based: integrate speed profile up to current time, scale to 100%
-          const rawProgress = progressFromProfile(h.speedProfile, progress);
-          // Normalize: at t=1.0, progressFromProfile returns ~baseFactor
-          // We want winner to reach ~100% so divide by expected max (profile[0]*0.33 + profile[1]*0.33 + profile[2]*0.34)
-          const expectedMax = h.speedProfile[0] * 0.33 + h.speedProfile[1] * 0.33 + h.speedProfile[2] * 0.34;
-          base = (rawProgress / Math.max(expectedMax, 0.01)) * 100;
+          progressPct = computeHorseProgress(progress, h.finalRank, totalHorses, h.speedProfile);
         } else {
-          // Legacy fallback for old backend
-          base = (h.speedFactor ?? 1.0) * progress * 100;
+          // Legacy fallback: scale progress by this horse's finish time
+          const myFinishT = WINNER_FINISH_T + (h.finalRank - 1) * TIME_SPREAD / Math.max(totalHorses - 1, 1);
+          progressPct = (h.speedFactor ?? 1.0) * Math.min(progress / myFinishT, 1.0) * 100;
         }
-
         return {
           horseId: h.horseId,
           horseName: h.horseName,
-          progressPct: Math.max(0, Math.min(100, base + noise)),
+          progressPct: Math.round(progressPct * 10) / 10,
         };
       });
 

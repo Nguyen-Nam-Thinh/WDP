@@ -16,7 +16,10 @@ const {
   JOCKEY_STYLE_SPEED_PROFILES,
 } = require('../config/constants');
 
-const RACE_DURATION_MS = 30_000;
+// Duration scales with race distance (60ms per meter), clamped 30s–90s
+function calcRaceDurationMs(distanceMeters) {
+  return Math.min(Math.max(distanceMeters * 60, 30_000), 90_000);
+}
 
 // ─── Gaussian noise (Box-Muller) ─────────────────────────────────────────────
 function gaussianNoise(sigma = 1) {
@@ -259,6 +262,8 @@ async function runRaceSimulation(raceId) {
       };
     });
 
+  const raceDurationMs = calcRaceDurationMs(race.distance ?? 1000);
+
   // ── Emit race:started with per-horse speed profiles ───────────────────────
   let io;
   try {
@@ -266,7 +271,7 @@ async function runRaceSimulation(raceId) {
     io.to(`race:${raceId}`).emit('race:started', {
       raceId,
       raceName: race.name,
-      raceDurationMs: RACE_DURATION_MS,
+      raceDurationMs,
       trackCondition,
       horses: ordered.map(e => ({
         horseId: e.horseId.toString(),
@@ -274,15 +279,14 @@ async function runRaceSimulation(raceId) {
         jockeyName: e.jockeyName,
         jockeyStyle: e.jockeyStyle,
         speedProfile: e.speedProfile,   // [phase1Factor, phase2Factor, phase3Factor]
-        noiseAmplitude: 0.04,
-        noiseFreq: 3 + Math.random() * 2,
+        finalRank: e.position,          // actual finish rank — drives animation curve
         noisePhase: Math.random() * Math.PI * 2,
       })),
     });
   } catch { /* socket optional */ }
 
   // ── Wait for race animation window ────────────────────────────────────────
-  await new Promise(res => setTimeout(res, RACE_DURATION_MS));
+  await new Promise(res => setTimeout(res, raceDurationMs));
 
   // ── Commit results atomically ─────────────────────────────────────────────
   await finalizeRace(race, ordered);
