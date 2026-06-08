@@ -18,6 +18,8 @@ export interface Horse {
   totalEarnings: number;
   raceCount: number;
   winCount: number;
+  preferredTrackCondition?: 'dry' | 'wet' | 'muddy';
+  temperament?: 'aggressive' | 'balanced' | 'conservative';
   regularJockeys?: string[];
   violations?: any[];
   isActive: boolean;

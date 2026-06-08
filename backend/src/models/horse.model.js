@@ -32,6 +32,12 @@ const horseSchema = new Schema(
     totalEarnings: { type: Number, default: 0 },
     raceCount: { type: Number, default: 0 },
     winCount: { type: Number, default: 0 },
+    preferredTrackCondition: { type: String, enum: ['dry', 'wet', 'muddy'] },
+    temperament: {
+      type: String,
+      enum: ['aggressive', 'balanced', 'conservative'],
+      default: 'balanced',
+    },
     regularJockeys: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     violations: [violationSchema],
     isActive: { type: Boolean, default: true },

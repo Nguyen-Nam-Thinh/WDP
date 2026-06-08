@@ -198,6 +198,8 @@ export function HorseOwnerDashboard() {
     birthDate: "",
     weight: "",
     color: "",
+    preferredTrackCondition: "" as "" | "dry" | "wet" | "muddy",
+    temperament: "balanced" as "aggressive" | "balanced" | "conservative",
   });
   const [horseImageFiles, setHorseImageFiles] = useState<File[]>([]);
   const [horseImagePreviews, setHorseImagePreviews] = useState<string[]>([]);
@@ -214,6 +216,8 @@ export function HorseOwnerDashboard() {
     birthDate: "",
     weight: "",
     color: "",
+    preferredTrackCondition: "" as "" | "dry" | "wet" | "muddy",
+    temperament: "balanced" as "aggressive" | "balanced" | "conservative",
   });
   const [updatingHorse, setUpdatingHorse] = useState(false);
   const [editHorseImageFiles, setEditHorseImageFiles] = useState<File[]>([]);
@@ -293,6 +297,8 @@ export function HorseOwnerDashboard() {
         birthDate: horseForm.birthDate,
         weight: Number(horseForm.weight),
         color: horseForm.color || undefined,
+        preferredTrackCondition: horseForm.preferredTrackCondition || undefined,
+        temperament: horseForm.temperament,
       });
 
       if (horseImageFiles.length > 0) {
@@ -301,7 +307,7 @@ export function HorseOwnerDashboard() {
 
       toast.success("Đăng ký ngựa thành công!");
       setAddHorseOpen(false);
-      setHorseForm({ name: "", breed: "", gender: "male", birthDate: "", weight: "", color: "" });
+      setHorseForm({ name: "", breed: "", gender: "male", birthDate: "", weight: "", color: "", preferredTrackCondition: "", temperament: "balanced" });
       setHorseImageFiles([]);
       setHorseImagePreviews([]);
       await loadHorses();
@@ -327,6 +333,8 @@ export function HorseOwnerDashboard() {
         birthDate: editHorseForm.birthDate,
         weight: Number(editHorseForm.weight),
         color: editHorseForm.color || undefined,
+        preferredTrackCondition: editHorseForm.preferredTrackCondition || undefined,
+        temperament: editHorseForm.temperament,
       });
 
       if (editHorseImageFiles.length > 0) {
@@ -355,6 +363,8 @@ export function HorseOwnerDashboard() {
       birthDate: horse.birthDate ? horse.birthDate.split('T')[0] : "",
       weight: horse.weight.toString(),
       color: horse.color || "",
+      preferredTrackCondition: (horse.preferredTrackCondition ?? "") as "" | "dry" | "wet" | "muddy",
+      temperament: (horse.temperament ?? "balanced") as "aggressive" | "balanced" | "conservative",
     });
     setEditHorseImageFiles([]);
     setEditHorseImagePreviews(horse.imageUrls || (horse.primaryImageUrl ? [horse.primaryImageUrl] : []));
@@ -1465,6 +1475,59 @@ export function HorseOwnerDashboard() {
               </Select>
             </FormControl>
 
+            <div className="grid grid-cols-2 gap-4">
+              <FormControl
+                fullWidth
+                sx={{
+                  "& .MuiInputLabel-root": { color: "#94a3b8" },
+                  "& .MuiOutlinedInput-root": {
+                    color: "white",
+                    "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
+                    "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
+                    "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
+                    "& .MuiSelect-icon": { color: "#94a3b8" },
+                  },
+                }}
+              >
+                <InputLabel>Sân Ưa Thích</InputLabel>
+                <Select
+                  label="Sân Ưa Thích"
+                  value={horseForm.preferredTrackCondition}
+                  onChange={(e) => setHorseForm((p) => ({ ...p, preferredTrackCondition: e.target.value as "" | "dry" | "wet" | "muddy" }))}
+                >
+                  <MenuItem value="">Không rõ</MenuItem>
+                  <MenuItem value="dry">Khô (Dry)</MenuItem>
+                  <MenuItem value="wet">Ướt (Wet)</MenuItem>
+                  <MenuItem value="muddy">Lầy (Muddy)</MenuItem>
+                </Select>
+              </FormControl>
+
+              <FormControl
+                fullWidth
+                sx={{
+                  "& .MuiInputLabel-root": { color: "#94a3b8" },
+                  "& .MuiOutlinedInput-root": {
+                    color: "white",
+                    "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
+                    "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
+                    "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
+                    "& .MuiSelect-icon": { color: "#94a3b8" },
+                  },
+                }}
+              >
+                <InputLabel>Khí Chất</InputLabel>
+                <Select
+                  label="Khí Chất"
+                  value={horseForm.temperament}
+                  onChange={(e) => setHorseForm((p) => ({ ...p, temperament: e.target.value as "aggressive" | "balanced" | "conservative" }))}
+                >
+                  <MenuItem value="aggressive">Hung hăng</MenuItem>
+                  <MenuItem value="balanced">Cân bằng</MenuItem>
+                  <MenuItem value="conservative">Bảo thủ</MenuItem>
+                </Select>
+              </FormControl>
+            </div>
+
           </div>
         </DialogContent>
         <DialogActions
@@ -1476,9 +1539,9 @@ export function HorseOwnerDashboard() {
           <Button
             onClick={() => {
               setAddHorseOpen(false);
-              setHorseForm({ name: "", breed: "", gender: "male", birthDate: "", weight: "", color: "" });
-              setHorseImageFile(null);
-              setHorseImagePreview("");
+              setHorseForm({ name: "", breed: "", gender: "male", birthDate: "", weight: "", color: "", preferredTrackCondition: "", temperament: "balanced" });
+              setHorseImageFiles([]);
+              setHorseImagePreviews([]);
             }}
             sx={{ color: "#94a3b8", textTransform: "none" }}
           >
@@ -1666,6 +1729,59 @@ export function HorseOwnerDashboard() {
                 <MenuItem value="female">Cái</MenuItem>
               </Select>
             </FormControl>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormControl
+                fullWidth
+                sx={{
+                  "& .MuiInputLabel-root": { color: "#94a3b8" },
+                  "& .MuiOutlinedInput-root": {
+                    color: "white",
+                    "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
+                    "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
+                    "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
+                    "& .MuiSelect-icon": { color: "#94a3b8" },
+                  },
+                }}
+              >
+                <InputLabel>Sân Ưa Thích</InputLabel>
+                <Select
+                  label="Sân Ưa Thích"
+                  value={editHorseForm.preferredTrackCondition}
+                  onChange={(e) => setEditHorseForm((p) => ({ ...p, preferredTrackCondition: e.target.value as "" | "dry" | "wet" | "muddy" }))}
+                >
+                  <MenuItem value="">Không rõ</MenuItem>
+                  <MenuItem value="dry">Khô (Dry)</MenuItem>
+                  <MenuItem value="wet">Ướt (Wet)</MenuItem>
+                  <MenuItem value="muddy">Lầy (Muddy)</MenuItem>
+                </Select>
+              </FormControl>
+
+              <FormControl
+                fullWidth
+                sx={{
+                  "& .MuiInputLabel-root": { color: "#94a3b8" },
+                  "& .MuiOutlinedInput-root": {
+                    color: "white",
+                    "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
+                    "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
+                    "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
+                    "& .MuiSelect-icon": { color: "#94a3b8" },
+                  },
+                }}
+              >
+                <InputLabel>Khí Chất</InputLabel>
+                <Select
+                  label="Khí Chất"
+                  value={editHorseForm.temperament}
+                  onChange={(e) => setEditHorseForm((p) => ({ ...p, temperament: e.target.value as "aggressive" | "balanced" | "conservative" }))}
+                >
+                  <MenuItem value="aggressive">Hung hăng</MenuItem>
+                  <MenuItem value="balanced">Cân bằng</MenuItem>
+                  <MenuItem value="conservative">Bảo thủ</MenuItem>
+                </Select>
+              </FormControl>
+            </div>
 
           </div>
         </DialogContent>
