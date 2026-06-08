@@ -44,19 +44,17 @@ async function calcFormFactor(horseId, lookback = AI_CONFIG.winProbability.formL
   return Math.max(0, Math.min(1, 1 - (avgPosition - 1) / 9));
 }
 
-// ─── Track condition multiplier based on horse weight vs field average ────────
-// dry  → lighter horses slightly faster
-// wet  → heavier horses better grip
-// muddy → strong advantage for heavier horses
-function getTrackMultiplier(horseWeight, avgFieldWeight, trackCondition) {
-  if (!horseWeight || !avgFieldWeight || avgFieldWeight === 0) return 1.0;
-  const delta = horseWeight / avgFieldWeight - 1.0; // negative = lighter, positive = heavier
-  switch (trackCondition) {
-    case 'dry':   return 1.0 - delta * 0.07;
-    case 'wet':   return 1.0 + delta * 0.07;
-    case 'muddy': return 1.0 + delta * 0.12;
-    default:      return 1.0;
-  }
+// ─── Track condition multiplier: weight delta + breed modifier + preferred track bonus ──
+function getTrackMultiplier(horse, avgFieldWeight, trackCondition) {
+  const condition = TRACK_CONDITIONS[trackCondition];
+  if (!condition || !horse.weight || !avgFieldWeight || avgFieldWeight === 0) return 1.0;
+
+  const delta = horse.weight / avgFieldWeight - 1.0;
+  const weightFactor = 1.0 + delta * condition.weightEffect;
+  const breedFactor = condition.breedModifiers?.[horse.breed] ?? 1.0;
+  const prefBonus = horse.preferredTrackCondition === trackCondition ? condition.preferredBonus : 1.0;
+
+  return weightFactor * breedFactor * prefBonus;
 }
 
 // ─── Base score (same formula used by ai-prediction, kept in sync) ───────────
@@ -207,7 +205,8 @@ async function runRaceSimulation(raceId) {
   }
 
   // ── Determine track condition for this race ───────────────────────────────
-  const trackCondition = TRACK_CONDITIONS[Math.floor(Math.random() * TRACK_CONDITIONS.length)];
+  const trackConditionKeys = Object.keys(TRACK_CONDITIONS);
+  const trackCondition = trackConditionKeys[Math.floor(Math.random() * trackConditionKeys.length)];
 
   // ── Field average weight for track condition calculation ──────────────────
   const weights = registrations.map(r => r.horseId.weight ?? 500);
@@ -223,14 +222,18 @@ async function runRaceSimulation(raceId) {
   const scored = registrations.map((reg, i) => {
     const baseScore = calcBaseScore(reg.horseId, reg.jockeyId);
     const formBonus = w.formFactor * formFactors[i];
-    const trackMultiplier = getTrackMultiplier(reg.horseId.weight, avgFieldWeight, trackCondition);
-    const finalScore = (baseScore + formBonus) * trackMultiplier;
+    const trackMultiplier = getTrackMultiplier(reg.horseId, avgFieldWeight, trackCondition);
+    const jockeyStyle = reg.jockeyId?.jockeyProfile?.style ?? reg.horseId.temperament ?? 'balanced';
+    const styleProfile = JOCKEY_STYLE_SPEED_PROFILES[jockeyStyle] ?? JOCKEY_STYLE_SPEED_PROFILES.balanced;
+    const styleTrackBonus = styleProfile.trackBonus?.[trackCondition] ?? 1.0;
+    const finalScore = (baseScore + formBonus) * trackMultiplier * styleTrackBonus;
     return {
       registration: reg,
       horseId: reg.horseId._id,
       horseName: reg.horseId.name,
       jockeyName: reg.jockeyId?.fullName ?? null,
-      jockeyStyle: reg.jockeyId?.jockeyProfile?.style ?? 'balanced',
+      jockeyStyle,
+      riskFactor: styleProfile.riskFactor ?? 0.1,
       score: finalScore,
     };
   });
@@ -238,7 +241,7 @@ async function runRaceSimulation(raceId) {
   // ── Add Gaussian noise and determine finish order ─────────────────────────
   const n = scored.length;
   const ordered = scored
-    .map(e => ({ ...e, noisyScore: e.score + gaussianNoise(0.1) }))
+    .map(e => ({ ...e, noisyScore: e.score + gaussianNoise(e.riskFactor) }))
     .sort((a, b) => b.noisyScore - a.noisyScore)
     .map((e, idx) => {
       // Finish time: base pace ~60ms per meter + 500ms gap per position + small noise
@@ -251,7 +254,7 @@ async function runRaceSimulation(raceId) {
 
       // Phase-based speed profile adjusted for jockey style
       const styleProfile = JOCKEY_STYLE_SPEED_PROFILES[e.jockeyStyle] ?? JOCKEY_STYLE_SPEED_PROFILES.balanced;
-      const speedProfile = styleProfile.map(p => baseFactor * p);
+      const speedProfile = styleProfile.phases.map(p => baseFactor * p);
 
       return {
         ...e,

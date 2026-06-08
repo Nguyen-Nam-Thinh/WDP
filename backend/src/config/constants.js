@@ -56,15 +56,78 @@ const AI_CONFIG = {
   },
 };
 
-// Track condition — randomly assigned at race start
-const TRACK_CONDITIONS = ['dry', 'wet', 'muddy'];
+// Track conditions — randomly assigned at race start
+// breedModifiers: speed factor per breed relative to baseline 1.0
+// weightEffect: multiplier for (horseWeight/avgWeight - 1) delta — negative = lighter is faster
+// preferredBonus: bonus applied when horse.preferredTrackCondition matches this condition
+const TRACK_CONDITIONS = {
+  dry: {
+    label: 'Khô',
+    speedMultiplier: 1.0,
+    breedModifiers: {
+      Thoroughbred: 1.05,
+      Arabian: 1.03,
+      'Akhal-Teke': 1.04,
+      'Quarter Horse': 1.02,
+      Standardbred: 1.00,
+      Andalusian: 1.00,
+    },
+    weightEffect: -0.07, // lighter horses faster on firm ground
+    preferredBonus: 1.03,
+  },
+  wet: {
+    label: 'Ướt',
+    speedMultiplier: 0.95,
+    breedModifiers: {
+      Standardbred: 1.03,
+      'Akhal-Teke': 1.00,
+      Arabian: 0.99,
+      Andalusian: 0.98,
+      'Quarter Horse': 0.98,
+      Thoroughbred: 0.97,
+    },
+    weightEffect: 0.07, // heavier = better grip on wet
+    preferredBonus: 1.03,
+  },
+  muddy: {
+    label: 'Lầy',
+    speedMultiplier: 0.88,
+    breedModifiers: {
+      Standardbred: 1.01,
+      'Quarter Horse': 0.97,
+      'Akhal-Teke': 0.96,
+      Andalusian: 0.94,
+      Arabian: 0.93,
+      Thoroughbred: 0.90,
+    },
+    weightEffect: 0.12, // heavier horses grip mud better
+    preferredBonus: 1.03,
+  },
+};
 
-// Per-phase speed multipliers [phase1, phase2, phase3] for animation
-// Values integrate to ~1.0 so final distance covered is preserved per horse
+// Jockey racing styles — per-phase speed multipliers for animation + risk/track metadata
+// phases: [phase1, phase2, phase3] — integrate to ~1.0 so total distance is preserved
+// riskFactor: Gaussian noise sigma used in scoring (higher = more variance)
+// trackBonus: per-condition multiplier applied to horse's final score
 const JOCKEY_STYLE_SPEED_PROFILES = {
-  aggressive:   [1.30, 1.00, 0.70], // leads early, fades in stretch
-  balanced:     [1.00, 1.00, 1.00], // steady pace throughout
-  conservative: [0.70, 1.00, 1.30], // holds back, surges late
+  aggressive: {
+    phases: [1.30, 1.00, 0.70],
+    riskFactor: 0.15,
+    trackBonus: { dry: 1.02, wet: 0.98, muddy: 0.95 },
+    label: 'Hung hăng',
+  },
+  balanced: {
+    phases: [1.00, 1.00, 1.00],
+    riskFactor: 0.08,
+    trackBonus: { dry: 1.00, wet: 1.00, muddy: 1.00 },
+    label: 'Cân bằng',
+  },
+  conservative: {
+    phases: [0.70, 1.00, 1.30],
+    riskFactor: 0.10,
+    trackBonus: { dry: 0.98, wet: 1.02, muddy: 1.04 },
+    label: 'Bảo thủ',
+  },
 };
 
 module.exports = {
