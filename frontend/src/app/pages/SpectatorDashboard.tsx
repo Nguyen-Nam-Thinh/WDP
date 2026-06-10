@@ -104,12 +104,15 @@ export function SpectatorDashboard() {
         raceApi.getRaces(token, { status: 'pre_check', limit: 10 }),
         raceApi.getRaces(token, { status: 'closed', limit: 10 }),
       ]);
-      setScheduleRaces(openRes.races ?? []);
-      // Live tab shows running + pre_check + closed (sắp chạy)
+      // Schedule tab: open races + closed races (registration closed but betting may still be open)
+      setScheduleRaces([
+        ...(openRes.races ?? []),
+        ...(closedRes.races ?? []),
+      ]);
+      // Live tab shows running + pre_check
       setLiveRacesData([
         ...(runningRes.races ?? []),
         ...(preCheckRes.races ?? []),
-        ...(closedRes.races ?? []),
       ]);
     } catch (err: any) {
       toast.error(err.message || 'Không thể tải lịch đua');
@@ -788,7 +791,7 @@ export function SpectatorDashboard() {
                   const bettingCutoff = new Date(new Date(race.scheduledTime).getTime() - 60 * 60 * 1000);
                   const cutoffPassed = new Date() > bettingCutoff;
                   const myBetOnRace = myBets.some(b => (b.raceId as any)?._id === race._id && b.status === 'pending');
-                  const canBet = race.status === 'open' && !cutoffPassed;
+                  const canBet = (race.status === 'open' || race.status === 'closed') && !cutoffPassed;
 
                   return (
                     <div key={race._id} className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-6 hover:border-[#FFDE42]/30 transition-all">
