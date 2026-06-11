@@ -37,7 +37,7 @@ Theme **Heritage Editorial Light** — phong cách báo chí/heritage đua ngự
 
 - Card: nền trắng, border mảnh `#E3DCCB`, góc vuông hoặc radius rất nhỏ, không shadow đậm.
 - Button: chữ in hoa tracked. Primary = nền green, Secondary = outline green, hành động cược = nền burgundy.
-- Ant Design giữ cho Table/Form/Modal phức tạp, restyle qua `ConfigProvider` theme token cho khớp palette.
+- **Đính chính (11/06):** frontend thực tế KHÔNG dùng Ant Design (CLAUDE.md ghi sai) — stack thật là Tailwind v4 + Radix UI (shadcn-style, `components/ui/`) + react-router 7. Table/Form/Modal phức tạp dùng component Radix sẵn có trong `components/ui/`, restyle qua CSS variables trong `theme.css`.
 
 ## 2. Layout
 
