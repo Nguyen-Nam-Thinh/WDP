@@ -6,7 +6,7 @@
 
   createRoot(document.getElementById("root")!).render(
     <AuthProvider>
-      <Toaster theme="dark" position="top-right" richColors offset="80px" />
+      <Toaster theme="light" position="top-right" richColors offset="80px" />
       <App />
     </AuthProvider>
   );

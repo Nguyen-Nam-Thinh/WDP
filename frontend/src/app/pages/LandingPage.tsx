@@ -195,7 +195,7 @@ export function LandingPage() {
             <div className="inline-block px-4 py-1.5 bg-[#FFDE42]/10 border border-[#FFDE42]/20 rounded-full mb-6">
               <span className="text-sm font-medium text-[#FFDE42]">Tại Sao Chọn RaceTrack</span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 tracking-tight" style={{ textWrap: 'balance' }}>
               Mọi Thứ Bạn Cần Để <br className="hidden md:block" />
               Quản Lý Đua Ngựa Chuyên Nghiệp
             </h2>
@@ -204,14 +204,16 @@ export function LandingPage() {
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+          <div className="grid md:grid-cols-2 gap-4 mb-16">
             {features.map((feature, idx) => (
-              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: idx * 0.1 }} key={idx} className="bg-slate-950/50 backdrop-blur-sm border border-white/5 rounded-2xl p-6 hover:border-[#FFDE42]/30 transition-all hover:-translate-y-1">
-                <div className="w-12 h-12 bg-[#FFDE42]/10 rounded-xl flex items-center justify-center mb-4 border border-emerald-500/20">
-                  <feature.icon className="w-6 h-6 text-[#FFDE42]" />
+              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: idx * 0.1 }} key={idx} className="group flex items-start gap-5 bg-slate-950/50 backdrop-blur-sm border border-white/5 rounded-2xl p-6 hover:border-[#FFDE42]/20 transition-all">
+                <div className="w-14 h-14 bg-[#FFDE42]/10 rounded-xl flex items-center justify-center shrink-0 border border-[#FFDE42]/15 group-hover:bg-[#FFDE42]/15 transition-colors">
+                  <feature.icon className="w-7 h-7 text-[#FFDE42]" />
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2">{feature.title}</h3>
-                <p className="text-sm text-slate-400 leading-relaxed">{feature.description}</p>
+                <div>
+                  <h3 className="text-base font-semibold text-white mb-1.5">{feature.title}</h3>
+                  <p className="text-sm text-slate-400 leading-relaxed">{feature.description}</p>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -302,7 +304,7 @@ export function LandingPage() {
                 </div>
 
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <button onClick={() => navigate(user ? '/spectator' : '/register')} className="w-20 h-20 bg-[#FFDE42]/90 text-white rounded-full flex items-center justify-center backdrop-blur-sm shadow-[0_0_30px_rgba(255,222,66,0.5)] hover:bg-[#E6C21E] hover:scale-110 transition-all duration-300">
+                  <button onClick={() => navigate(user ? '/spectator' : '/register')} className="w-20 h-20 bg-[#FFDE42]/90 text-[#1B0C0C] rounded-full flex items-center justify-center backdrop-blur-sm shadow-[0_0_30px_rgba(255,222,66,0.5)] hover:bg-[#E6C21E] hover:scale-110 transition-all duration-300">
                     <Play className="w-8 h-8 ml-1 fill-current" />
                   </button>
                 </div>
@@ -404,7 +406,7 @@ export function LandingPage() {
               <span className="text-sm font-medium text-[#FFDE42]">Được Tin Tưởng Bởi Các Chuyên Gia Đua Ngựa</span>
             </div>
 
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">Sẵn Sàng Tham Gia Tương Lai?</h2>
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 tracking-tight">Sẵn Sàng Tham Gia Tương Lai?</h2>
             <p className="text-xl text-emerald-50 mb-10 max-w-2xl mx-auto leading-relaxed">
               Tham gia cùng{' '}
               <span className="text-[#FFDE42] font-bold">{loadingStats ? '...' : formatCount(stats?.totalSpectators ?? 0)}</span>{' '}

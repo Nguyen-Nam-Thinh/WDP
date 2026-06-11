@@ -12,7 +12,7 @@
 /* Custom thin scrollbar for panels */
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.1) transparent;
+  scrollbar-color: rgba(35,32,26,0.15) transparent;
 }
 .scrollbar-thin::-webkit-scrollbar {
   width: 4px;
@@ -21,11 +21,11 @@
   background: transparent;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.1);
+  background: rgba(35,32,26,0.15);
   border-radius: 4px;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(255,255,255,0.18);
+  background: rgba(35,32,26,0.25);
 }
 
 /* Slide-in animation for detail panel */
@@ -107,9 +107,9 @@
   height: 200%;
   background: linear-gradient(
     to right,
-    rgba(255,255,255,0) 0%,
-    rgba(255,255,255,0.04) 50%,
-    rgba(255,255,255,0) 100%
+    rgba(35,32,26,0) 0%,
+    rgba(35,32,26,0.08) 50%,
+    rgba(35,32,26,0) 100%
   );
   transform: skewX(-20deg);
   transition: none;
@@ -122,10 +122,10 @@
 
 /* Glass morphism utility */
 .glass {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(35, 32, 26, 0.04);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(35, 32, 26, 0.08);
 }
 
 /* Line clamp utilities */
@@ -143,8 +143,12 @@
 }
 
 /* Body and root */
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -156,6 +160,6 @@ body.overflow-hidden {
 
 /* Selection color */
 ::selection {
-  background: rgba(245, 158, 11, 0.3);
-  color: white;
+  background: rgba(201, 162, 39, 0.3);
+  color: #23201A;
 }
