@@ -517,12 +517,15 @@ export function SpectatorDashboard() {
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {stats.map((stat, idx) => (
-            <div key={idx} className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-5 hover:-translate-y-1 transition-transform flex flex-col">
-              <div className={`w-10 h-10 bg-gradient-to-br ${stat.color} rounded-lg flex items-center justify-center mb-3 shadow-lg shrink-0`}>
-                <stat.icon className="w-5 h-5 text-white" />
+            <div key={idx} className="relative bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-5 hover:-translate-y-1 transition-all hover:border-white/10 flex flex-col overflow-hidden">
+              <div className="flex items-center justify-between mb-3">
+                <div className={`w-10 h-10 bg-gradient-to-br ${stat.color} rounded-lg flex items-center justify-center shadow-lg shrink-0`}>
+                  <stat.icon className="w-5 h-5 text-white" />
+                </div>
               </div>
-              <div className="text-xl font-bold text-white mb-1 break-all">{stat.value}</div>
-              <div className="text-sm text-slate-400 font-medium leading-tight mt-auto">{stat.label}</div>
+              <div className="text-2xl font-bold text-white mb-1 tabular-nums break-all">{stat.value}</div>
+              <div className="text-xs text-slate-500 font-medium leading-tight mt-auto uppercase tracking-wide">{stat.label}</div>
+              {idx === 0 && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#FFDE42]/60 to-transparent" />}
             </div>
           ))}
         </div>
@@ -542,7 +545,7 @@ export function SpectatorDashboard() {
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all whitespace-nowrap font-medium ${
                 activeTab === tab.id
-                  ? 'bg-[#FFDE42] text-white shadow-lg shadow-[#FFDE42]/30'
+                  ? 'bg-[#FFDE42] text-[#1B0C0C] shadow-lg shadow-[#FFDE42]/30'
                   : 'bg-white/5 text-slate-400 hover:bg-white/10 border border-white/5'
               }`}
             >
@@ -598,13 +601,14 @@ export function SpectatorDashboard() {
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredTournaments.map((tournament) => (
                   <div key={tournament._id} className="group bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden hover:border-[#FFDE42]/30 transition-all">
-                    <div className="relative h-36 bg-gradient-to-br from-slate-800 to-slate-900 flex items-end p-4">
+                    <div className="relative h-36 overflow-hidden flex items-end p-4" style={{ background: 'linear-gradient(135deg, #1e1a10 0%, #241414 40%, #1a1f0e 100%)' }}>
+                      <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, #FFDE42 0%, transparent 50%), radial-gradient(circle at 80% 20%, #4C5C2D 0%, transparent 40%)' }} />
                       <div className="absolute top-4 right-4">
                         <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getTournamentStatusColor(tournament.status)}`}>
                           {getTournamentStatusLabel(tournament.status)}
                         </span>
                       </div>
-                      <h3 className="text-xl font-bold text-white leading-tight pr-24">{tournament.name}</h3>
+                      <h3 className="text-xl font-bold text-white leading-tight pr-24 relative z-10">{tournament.name}</h3>
                     </div>
 
                     <div className="p-5">
