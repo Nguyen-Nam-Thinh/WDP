@@ -56,6 +56,7 @@ export function AppShell({ roleLabel, nav, children }: AppShellProps) {
         <div className="mt-auto border-t border-sidebar-border pt-3 text-xs">
           <div className="font-semibold">{user?.fullName ?? user?.email}</div>
           <button
+            type="button"
             onClick={async () => { await logout(); navigate("/login"); }}
             className="mt-1 flex items-center gap-1 opacity-60 hover:opacity-100"
           >
