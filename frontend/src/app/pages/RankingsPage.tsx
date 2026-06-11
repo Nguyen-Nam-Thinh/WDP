@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Navbar } from '../components/Navbar';
+import { PublicShell } from '../components/layout/PublicShell';
 import {
-  Trophy, Medal, TrendingUp, ChevronUp, Search, Award, Zap, Users, Activity, Crown, Loader2
+  Trophy, Search, Award, Zap, Users, Crown, Loader2
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -12,21 +12,21 @@ import {
 } from '../api/rankings';
 
 const GRADE_BADGE: Record<string, { label: string; cls: string }> = {
-  G1:     { label: 'G1 Premier', cls: 'bg-gradient-to-r from-amber-500 to-yellow-300 text-slate-900' },
-  G2:     { label: 'G2 Elite',   cls: 'bg-gradient-to-r from-purple-500 to-purple-300 text-white' },
-  G3:     { label: 'G3 Classic', cls: 'bg-gradient-to-r from-blue-500 to-blue-300 text-white' },
-  Maiden: { label: 'Maiden',     cls: 'bg-slate-700/80 text-slate-300' },
+  G1:     { label: 'G1 Premier', cls: 'bg-gold text-foreground' },
+  G2:     { label: 'G2 Elite',   cls: 'border border-secondary text-secondary' },
+  G3:     { label: 'G3 Classic', cls: 'border border-primary text-primary' },
+  Maiden: { label: 'Maiden',     cls: 'border border-muted-foreground text-muted-foreground' },
 };
 
-const rankColors: Record<number, string> = { 1: 'text-amber-400', 2: 'text-slate-300', 3: 'text-orange-500' };
+const rankColors: Record<number, string> = { 1: 'text-gold', 2: 'text-[#9A937F]', 3: 'text-[#A85C32]' };
 
 function WinRateBar({ rate }: { rate: number }) {
   return (
     <div className="flex items-center gap-2 justify-center">
-      <div className="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-        <div className="h-full bg-gradient-to-r from-violet-500 to-pink-500 rounded-full" style={{ width: `${Math.min(rate, 100)}%` }} />
+      <div className="w-16 h-1.5 bg-muted overflow-hidden">
+        <div className="h-full bg-primary" style={{ width: `${Math.min(rate, 100)}%` }} />
       </div>
-      <span className="text-white font-medium text-sm">{rate}%</span>
+      <span className="text-foreground font-medium text-sm tabular-nums">{rate}%</span>
     </div>
   );
 }
@@ -34,14 +34,14 @@ function WinRateBar({ rate }: { rate: number }) {
 function Spinner() {
   return (
     <div className="flex justify-center py-20">
-      <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+      <Loader2 className="w-8 h-8 text-primary animate-spin" />
     </div>
   );
 }
 
 function EmptyState({ label }: { label: string }) {
   return (
-    <div className="flex flex-col items-center justify-center py-20 text-slate-600">
+    <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
       <Trophy className="w-12 h-12 mb-4 opacity-30" />
       <p className="text-sm">{label}</p>
     </div>
@@ -85,24 +85,21 @@ export function RankingsPage() {
   const top3 = currentList.slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-slate-950 font-sans text-slate-200">
-      <Navbar />
-      <div className="absolute inset-x-0 top-0 h-[500px] bg-gradient-to-b from-violet-950/30 to-transparent pointer-events-none" />
-
+    <PublicShell>
       {/* Header */}
-      <div className="relative pt-28 pb-16 px-6 border-b border-white/5">
+      <div className="relative pt-14 pb-16 px-6 border-b border-border bg-card">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-8">
             <div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-violet-500/20 border border-violet-500/30 rounded-full mb-6">
-                <Crown className="w-4 h-4 text-violet-400" />
-                <span className="text-sm font-semibold text-violet-400 uppercase tracking-wider">Bảng Xếp Hạng</span>
+              <div className="inline-flex items-center gap-2 px-4 py-2 border border-secondary/30 rounded-full mb-6">
+                <Crown className="w-4 h-4 text-secondary" />
+                <span className="text-sm font-semibold text-secondary uppercase tracking-wider">Bảng Xếp Hạng</span>
               </div>
-              <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-4 tracking-tight">
+              <h1 className="font-serif text-5xl md:text-6xl font-bold text-foreground mb-4 tracking-tight">
                 Bảng Xếp Hạng<br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-pink-400">Mùa Giải 2026</span>
+                <span className="italic text-secondary">Mùa Giải 2026</span>
               </h1>
-              <p className="text-lg text-slate-400">Xếp hạng cập nhật dựa trên điểm tích lũy toàn sự nghiệp.</p>
+              <p className="text-lg text-muted-foreground">Xếp hạng cập nhật dựa trên điểm tích lũy toàn sự nghiệp.</p>
             </div>
             {/* Top 3 podium preview */}
             <div className="flex items-end gap-3">
@@ -110,11 +107,11 @@ export function RankingsPage() {
                 const item = currentList[pos - 1] as any;
                 return (
                   <div key={pos} className="flex flex-col items-center gap-2">
-                    <div className={`w-10 h-10 rounded-full border-2 ${pos === 1 ? 'border-amber-400' : pos === 2 ? 'border-slate-300' : 'border-orange-500'} bg-slate-800 flex items-center justify-center`}>
-                      <span className="text-xs font-bold text-white">{item?.name?.charAt(0) ?? '?'}</span>
+                    <div className={`w-10 h-10 rounded-full border-2 ${pos === 1 ? 'border-gold' : pos === 2 ? 'border-[#9A937F]' : 'border-[#A85C32]'} bg-card flex items-center justify-center`}>
+                      <span className="text-xs font-bold text-foreground">{item?.name?.charAt(0) ?? '?'}</span>
                     </div>
-                    <div className={`w-14 ${h} ${pos === 1 ? 'bg-amber-500/30 border-amber-500/50' : pos === 2 ? 'bg-slate-500/20 border-slate-500/40' : 'bg-orange-700/20 border-orange-700/40'} border rounded-t-lg flex items-center justify-center`}>
-                      <span className={`text-sm font-bold ${rankColors[pos] || 'text-white'}`}>{pos}</span>
+                    <div className={`w-14 ${h} ${pos === 1 ? 'bg-gold/25 border-gold/60' : pos === 2 ? 'bg-[#9A937F]/20 border-[#9A937F]/50' : 'bg-[#A85C32]/15 border-[#A85C32]/40'} border flex items-center justify-center`}>
+                      <span className={`text-sm font-bold ${rankColors[pos] || 'text-foreground'}`}>{pos}</span>
                     </div>
                   </div>
                 );
@@ -125,27 +122,28 @@ export function RankingsPage() {
       </div>
 
       {/* Sticky Tab + Search */}
-      <div className="sticky top-[72px] z-30 bg-slate-950/80 backdrop-blur-xl border-b border-white/5 py-4 px-6">
+      <div className="sticky top-[64px] z-30 bg-background/95 backdrop-blur-sm border-b border-border py-4 px-6">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center gap-4">
-          <div className="flex bg-slate-900 rounded-xl p-1 border border-white/8">
+          <div className="flex bg-card p-1 border border-border">
             {([['horses', 'Ngựa Đua', Zap], ['jockeys', 'Kỵ Sĩ', Users], ['owners', 'Chủ Ngựa', Award]] as const).map(([key, label, Icon]) => (
               <button
+                type="button"
                 key={key}
                 onClick={() => { setTab(key); setSearch(''); }}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${tab === key ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/25' : 'text-slate-400 hover:text-white'}`}
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-all ${tab === key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
               >
                 <Icon className="w-4 h-4" /> {label}
               </button>
             ))}
           </div>
           <div className="relative flex-1 max-w-sm ml-auto">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
               placeholder="Tìm kiếm..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full bg-slate-800/60 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-violet-500/50 transition-all"
+              className="w-full bg-card border border-border pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-all"
             />
           </div>
         </div>
@@ -161,37 +159,37 @@ export function RankingsPage() {
             {top3.length > 0 && (
               <div className="grid md:grid-cols-3 gap-5 mb-10">
                 {top3.map((item: any, i) => (
-                  <div key={item._id} className={`relative p-6 rounded-2xl border transition-all hover:-translate-y-1 ${
-                    i === 0 ? 'bg-gradient-to-br from-amber-500/15 to-yellow-600/5 border-amber-500/30' :
-                    i === 1 ? 'bg-gradient-to-br from-slate-400/10 to-slate-500/5 border-slate-400/20' :
-                    'bg-gradient-to-br from-orange-700/10 to-orange-900/5 border-orange-700/20'
+                  <div key={item._id} className={`relative p-6 bg-card border transition-all hover:-translate-y-1 ${
+                    i === 0 ? 'border-gold' :
+                    i === 1 ? 'border-[#9A937F]' :
+                    'border-[#A85C32]'
                   }`}>
-                    {i === 0 && <Crown className="absolute top-4 right-4 w-6 h-6 text-amber-400 opacity-60" />}
+                    {i === 0 && <Crown className="absolute top-4 right-4 w-6 h-6 text-gold opacity-70" />}
                     <div className="flex items-center gap-4 mb-4">
-                      <div className={`text-4xl font-black ${rankColors[item.rank] || 'text-white'}`}>#{item.rank}</div>
+                      <div className={`font-serif text-4xl font-bold ${rankColors[item.rank] || 'text-foreground'}`}>#{item.rank}</div>
                       <div>
-                        <h3 className="text-lg font-bold text-white">{item.name}</h3>
-                        <div className="text-sm text-slate-400">
+                        <h3 className="font-serif text-lg font-bold text-foreground">{item.name}</h3>
+                        <div className="text-sm text-muted-foreground">
                           {tab === 'horses' ? item.owner : tab === 'jockeys' ? `${item.experienceYears}năm KN` : `${item.totalHorses} ngựa`}
                         </div>
                       </div>
                     </div>
                     <div className="grid grid-cols-3 gap-3 text-center">
                       <div>
-                        <div className="text-xl font-bold text-white">{tab === 'horses' ? item.winCount : tab === 'jockeys' ? item.winCount : item.totalWins}</div>
-                        <div className="text-xs text-slate-500">Thắng</div>
+                        <div className="text-xl font-bold text-foreground tabular-nums">{tab === 'horses' ? item.winCount : tab === 'jockeys' ? item.winCount : item.totalWins}</div>
+                        <div className="text-xs text-muted-foreground">Thắng</div>
                       </div>
                       <div>
-                        <div className="text-xl font-bold text-white">{item.winRate}%</div>
-                        <div className="text-xs text-slate-500">Tỷ Lệ</div>
+                        <div className="text-xl font-bold text-foreground tabular-nums">{item.winRate}%</div>
+                        <div className="text-xs text-muted-foreground">Tỷ Lệ</div>
                       </div>
                       <div>
-                        <div className="text-xl font-bold text-white">{tab === 'horses' ? item.totalPoints : tab === 'jockeys' ? item.raceCount : item.totalRaces}</div>
-                        <div className="text-xs text-slate-500">{tab === 'jockeys' || tab === 'owners' ? 'Cuộc Đua' : 'Điểm'}</div>
+                        <div className="text-xl font-bold text-foreground tabular-nums">{tab === 'horses' ? item.totalPoints : tab === 'jockeys' ? item.raceCount : item.totalRaces}</div>
+                        <div className="text-xs text-muted-foreground">{tab === 'jockeys' || tab === 'owners' ? 'Cuộc Đua' : 'Điểm'}</div>
                       </div>
                     </div>
                     {tab === 'horses' && (
-                      <span className={`mt-4 inline-block px-3 py-1 rounded-full text-xs font-bold ${GRADE_BADGE[(item as HorseRanking).currentGrade]?.cls ?? 'bg-slate-700 text-white'}`}>
+                      <span className={`mt-4 inline-block px-3 py-1 text-xs font-bold uppercase tracking-wider ${GRADE_BADGE[(item as HorseRanking).currentGrade]?.cls ?? 'border border-muted-foreground text-muted-foreground'}`}>
                         {GRADE_BADGE[(item as HorseRanking).currentGrade]?.label}
                       </span>
                     )}
@@ -204,51 +202,51 @@ export function RankingsPage() {
             {currentList.length === 0 ? (
               <EmptyState label={`Không có dữ liệu ${tab === 'horses' ? 'ngựa' : tab === 'jockeys' ? 'kỵ sĩ' : 'chủ ngựa'}`} />
             ) : (
-              <div className="bg-slate-900/50 border border-white/8 rounded-2xl overflow-hidden">
+              <div className="bg-card border border-border overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-white/8 bg-slate-900/80">
-                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider w-16">Hạng</th>
-                        <th className="text-left px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                      <tr className="border-b border-border bg-muted/50">
+                        <th className="text-left px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider w-16">Hạng</th>
+                        <th className="text-left px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                           {tab === 'horses' ? 'Ngựa' : tab === 'jockeys' ? 'Kỵ Sĩ' : 'Chủ Ngựa'}
                         </th>
-                        <th className="text-center px-4 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Thắng</th>
-                        <th className="text-center px-4 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Số Đua</th>
-                        <th className="text-center px-4 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Tỷ Lệ Thắng</th>
-                        {tab === 'horses' && <th className="text-center px-4 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Điểm</th>}
-                        {tab === 'jockeys' && <th className="text-center px-4 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Kinh Nghiệm</th>}
-                        {tab === 'owners' && <th className="text-center px-4 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Ngựa</th>}
-                        <th className="text-center px-4 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                        <th className="text-center px-4 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Thắng</th>
+                        <th className="text-center px-4 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Số Đua</th>
+                        <th className="text-center px-4 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tỷ Lệ Thắng</th>
+                        {tab === 'horses' && <th className="text-center px-4 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Điểm</th>}
+                        {tab === 'jockeys' && <th className="text-center px-4 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Kinh Nghiệm</th>}
+                        {tab === 'owners' && <th className="text-center px-4 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Ngựa</th>}
+                        <th className="text-center px-4 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                           {tab === 'horses' ? 'Cấp' : tab === 'owners' ? 'Thu Nhập' : 'Danh Hiệu'}
                         </th>
                       </tr>
                     </thead>
                     <tbody>
                       {currentList.map((item: any) => (
-                        <tr key={item._id} className="border-b border-white/5 hover:bg-white/3 transition-colors group">
+                        <tr key={item._id} className="border-b border-border hover:bg-muted/40 transition-colors group">
                           <td className="px-6 py-4">
-                            <span className={`text-lg font-bold ${rankColors[item.rank] || 'text-white'}`}>#{item.rank}</span>
+                            <span className={`text-lg font-bold tabular-nums ${rankColors[item.rank] || 'text-foreground'}`}>#{item.rank}</span>
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500/30 to-purple-600/20 border border-violet-500/20 flex items-center justify-center font-bold text-sm text-white shrink-0">
+                              <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center font-bold text-sm text-primary shrink-0">
                                 {item.name.charAt(0)}
                               </div>
                               <div>
-                                <div className="font-semibold text-white group-hover:text-violet-400 transition-colors">{item.name}</div>
-                                <div className="text-xs text-slate-500">
+                                <div className="font-semibold text-foreground group-hover:text-primary transition-colors">{item.name}</div>
+                                <div className="text-xs text-muted-foreground">
                                   {tab === 'horses' ? `Chủ: ${item.owner}` : tab === 'jockeys' ? `${item.experienceYears} năm KN` : `${item.totalHorses} ngựa đua`}
                                 </div>
                               </div>
                             </div>
                           </td>
                           <td className="px-4 py-4 text-center">
-                            <span className="text-emerald-400 font-bold">
+                            <span className="text-primary font-bold tabular-nums">
                               {tab === 'owners' ? item.totalWins : item.winCount}
                             </span>
                           </td>
-                          <td className="px-4 py-4 text-center text-slate-300">
+                          <td className="px-4 py-4 text-center text-foreground tabular-nums">
                             {tab === 'owners' ? item.totalRaces : item.raceCount}
                           </td>
                           <td className="px-4 py-4 text-center">
@@ -256,24 +254,24 @@ export function RankingsPage() {
                           </td>
                           {tab === 'horses' && (
                             <td className="px-4 py-4 text-center">
-                              <span className="text-amber-400 font-bold">{item.totalPoints.toLocaleString()}</span>
+                              <span className="text-gold font-bold tabular-nums">{item.totalPoints.toLocaleString()}</span>
                             </td>
                           )}
                           {tab === 'jockeys' && (
-                            <td className="px-4 py-4 text-center text-slate-300">{item.experienceYears} năm</td>
+                            <td className="px-4 py-4 text-center text-foreground tabular-nums">{item.experienceYears} năm</td>
                           )}
                           {tab === 'owners' && (
-                            <td className="px-4 py-4 text-center text-slate-300">{item.totalHorses}</td>
+                            <td className="px-4 py-4 text-center text-foreground tabular-nums">{item.totalHorses}</td>
                           )}
                           <td className="px-4 py-4 text-center">
                             {tab === 'horses' ? (
-                              <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${GRADE_BADGE[item.currentGrade]?.cls ?? 'bg-slate-700 text-white'}`}>
+                              <span className={`px-2.5 py-1 text-xs font-bold uppercase tracking-wider ${GRADE_BADGE[item.currentGrade]?.cls ?? 'border border-muted-foreground text-muted-foreground'}`}>
                                 {GRADE_BADGE[item.currentGrade]?.label ?? item.currentGrade}
                               </span>
                             ) : tab === 'owners' ? (
-                              <span className="text-purple-400 font-bold text-sm">{item.totalEarnings.toLocaleString()}</span>
+                              <span className="text-gold font-bold text-sm tabular-nums">{item.totalEarnings.toLocaleString()}</span>
                             ) : (
-                              <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-700/80 text-slate-300">
+                              <span className="px-2.5 py-1 text-xs font-bold bg-muted text-muted-foreground uppercase tracking-wider">
                                 {item.winCount >= 30 ? 'Huyền Thoại' : item.winCount >= 20 ? 'Bạch Kim' : item.winCount >= 10 ? 'Vàng' : item.winCount >= 5 ? 'Bạc' : 'Đồng'}
                               </span>
                             )}
@@ -288,6 +286,6 @@ export function RankingsPage() {
           </>
         )}
       </div>
-    </div>
+    </PublicShell>
   );
 }
