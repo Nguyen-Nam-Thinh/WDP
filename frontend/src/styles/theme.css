@@ -2,85 +2,83 @@
 
 :root {
   --font-size: 16px;
-  --background: #1B0C0C;
-  --foreground: #FDFBF7;
-  --card: #241414;
-  --card-foreground: #FDFBF7;
-  --popover: #1B0C0C;
-  --popover-foreground: #FDFBF7;
-  --primary: #FFDE42;
-  --primary-foreground: #1B0C0C;
-  --secondary: #4C5C2D;
+  --background: #F7F3EA;
+  --foreground: #23201A;
+  --card: #FFFFFF;
+  --card-foreground: #23201A;
+  --popover: #FFFFFF;
+  --popover-foreground: #23201A;
+  --primary: #1F3D2B;
+  --primary-foreground: #F7F3EA;
+  --secondary: #8C2F1B;
   --secondary-foreground: #FFFFFF;
-  --muted: #313E17;
-  --muted-foreground: #A6AF9B;
-  --accent: #313E17;
-  --accent-foreground: #FFDE42;
-  --destructive: #d4183d;
+  --muted: #EDE7D8;
+  --muted-foreground: #7A7468;
+  --accent: #EDE7D8;
+  --accent-foreground: #1F3D2B;
+  --destructive: #B42318;
   --destructive-foreground: #ffffff;
-  --border: #313E17;
+  --border: #E3DCCB;
   --input: transparent;
-  --input-background: #241414;
-  --switch-background: #4C5C2D;
+  --input-background: #FFFFFF;
+  --switch-background: #C9C2B0;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: #FFDE42;
-  --chart-1: #FFDE42;
-  --chart-2: #4C5C2D;
-  --chart-3: #313E17;
-  --chart-4: #FDFBF7;
-  --chart-5: #241414;
-  --radius: 0.625rem;
-  --sidebar: #1B0C0C;
-  --sidebar-foreground: #FDFBF7;
-  --sidebar-primary: #FFDE42;
-  --sidebar-primary-foreground: #1B0C0C;
-  --sidebar-accent: #313E17;
-  --sidebar-accent-foreground: #FFDE42;
-  --sidebar-border: #313E17;
-  --sidebar-ring: #FFDE42;
+  --ring: #1F3D2B;
+  --gold: #C9A227;
+  --chart-1: #1F3D2B;
+  --chart-2: #8C2F1B;
+  --chart-3: #C9A227;
+  --chart-4: #7A7468;
+  --chart-5: #E3DCCB;
+  --radius: 0.25rem;
+  --sidebar: #1F3D2B;
+  --sidebar-foreground: #F7F3EA;
+  --sidebar-primary: #F7F3EA;
+  --sidebar-primary-foreground: #1F3D2B;
+  --sidebar-accent: #2A4D38;
+  --sidebar-accent-foreground: #F7F3EA;
+  --sidebar-border: #2A4D38;
+  --sidebar-ring: #C9A227;
 }
 
+/* .dark giữ nguyên giá trị light — site không còn dark mode riêng */
 .dark {
-  --background: #1B0C0C;
-  --foreground: #FDFBF7;
-  --card: #241414;
-  --card-foreground: #FDFBF7;
-  --popover: #1B0C0C;
-  --popover-foreground: #FDFBF7;
-  --primary: #FFDE42;
-  --primary-foreground: #1B0C0C;
-  --secondary: #4C5C2D;
+  --background: #F7F3EA;
+  --foreground: #23201A;
+  --card: #FFFFFF;
+  --card-foreground: #23201A;
+  --popover: #FFFFFF;
+  --popover-foreground: #23201A;
+  --primary: #1F3D2B;
+  --primary-foreground: #F7F3EA;
+  --secondary: #8C2F1B;
   --secondary-foreground: #FFFFFF;
-  --muted: #313E17;
-  --muted-foreground: #A6AF9B;
-  --accent: #313E17;
-  --accent-foreground: #FFDE42;
-  --destructive: #d4183d;
+  --muted: #EDE7D8;
+  --muted-foreground: #7A7468;
+  --accent: #EDE7D8;
+  --accent-foreground: #1F3D2B;
+  --destructive: #B42318;
   --destructive-foreground: #ffffff;
-  --border: #313E17;
+  --border: #E3DCCB;
   --input: transparent;
-  --input-background: #241414;
-  --ring: #FFDE42;
-  --font-weight-medium: 500;
-  --font-weight-normal: 400;
-  --chart-1: #FFDE42;
-  --chart-2: #4C5C2D;
-  --chart-3: #313E17;
-  --chart-4: #FDFBF7;
-  --chart-5: #241414;
-  --sidebar: #1B0C0C;
-  --sidebar-foreground: #FDFBF7;
-  --sidebar-primary: #FFDE42;
-  --sidebar-primary-foreground: #1B0C0C;
-  --sidebar-accent: #313E17;
-  --sidebar-accent-foreground: #FFDE42;
-  --sidebar-border: #313E17;
-  --sidebar-ring: #FFDE42;
+  --input-background: #FFFFFF;
+  --switch-background: #C9C2B0;
+  --ring: #1F3D2B;
+  --gold: #C9A227;
+  --sidebar: #1F3D2B;
+  --sidebar-foreground: #F7F3EA;
+  --sidebar-primary: #F7F3EA;
+  --sidebar-primary-foreground: #1F3D2B;
+  --sidebar-accent: #2A4D38;
+  --sidebar-accent-foreground: #F7F3EA;
+  --sidebar-border: #2A4D38;
+  --sidebar-ring: #C9A227;
 }
 
 @theme inline {
-  --font-sans: 'Outfit', 'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -103,6 +101,7 @@
   --color-input-background: var(--input-background);
   --color-switch-background: var(--switch-background);
   --color-ring: var(--ring);
+  --color-gold: var(--gold);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -121,51 +120,56 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  --color-slate-50: #FDFBF7;
-  --color-slate-100: #F6F3EB;
-  --color-slate-200: #EBE5D5;
-  --color-slate-300: #DFD4BB;
-  --color-slate-400: #A6AF9B;
-  --color-slate-500: #4C5C2D;
-  --color-slate-600: #445428;
-  --color-slate-700: #3A4722;
-  --color-slate-800: #313E17;
-  --color-slate-900: #241414;
-  --color-slate-950: #1B0C0C;
+  /* ── Palette remap: page cũ viết cho dark theme nên ĐẢO scale slate ──
+     slate-950 (nền tối cũ) → kem sáng; slate-50 (chữ sáng cũ) → chữ đậm */
+  --color-slate-50: #23201A;
+  --color-slate-100: #2C2820;
+  --color-slate-200: #4A4438;
+  --color-slate-300: #5C5648;
+  --color-slate-400: #7A7468;
+  --color-slate-500: #9A937F;
+  --color-slate-600: #C9C2B0;
+  --color-slate-700: #E3DCCB;
+  --color-slate-800: #EDE7D8;
+  --color-slate-900: #FFFFFF;
+  --color-slate-950: #F7F3EA;
 
-  --color-emerald-50: #FFFCE8;
-  --color-emerald-100: #FFF8C2;
-  --color-emerald-200: #FFF18B;
-  --color-emerald-300: #FFE64A;
-  --color-emerald-400: #FFDE42;
-  --color-emerald-500: #E6C21E;
-  --color-emerald-600: #C29D13;
-  --color-emerald-700: #9C7812;
-  --color-emerald-800: #816117;
-  --color-emerald-900: #6D5019;
-  --color-emerald-950: #402C09;
+  /* emerald (accent vàng neon cũ) → racing green */
+  --color-emerald-50: #F0F4EF;
+  --color-emerald-100: #DCE6DC;
+  --color-emerald-200: #B5CCB8;
+  --color-emerald-300: #6E9678;
+  --color-emerald-400: #1F3D2B;
+  --color-emerald-500: #1B3526;
+  --color-emerald-600: #172D20;
+  --color-emerald-700: #13251B;
+  --color-emerald-800: #0F1E15;
+  --color-emerald-900: #0B1710;
+  --color-emerald-950: #07100B;
 
-  --color-teal-400: #FFDE42;
-  --color-teal-500: #E6C21E;
-  --color-teal-600: #C29D13;
-  --color-teal-700: #9C7812;
-  --color-teal-800: #816117;
-  --color-teal-900: #6D5019;
+  --color-teal-400: #1F3D2B;
+  --color-teal-500: #1B3526;
+  --color-teal-600: #172D20;
+  --color-teal-700: #13251B;
+  --color-teal-800: #0F1E15;
+  --color-teal-900: #0B1710;
 
-  --color-purple-400: #FFDE42;
-  --color-purple-500: #4C5C2D;
-  --color-purple-600: #313E17;
-  --color-purple-700: #241414;
-  
-  --color-indigo-400: #FFDE42;
-  --color-indigo-500: #4C5C2D;
-  --color-indigo-600: #313E17;
-  --color-indigo-700: #241414;
+  /* purple/indigo → burgundy */
+  --color-purple-400: #8C2F1B;
+  --color-purple-500: #7C2A18;
+  --color-purple-600: #6B2415;
+  --color-purple-700: #5A1F12;
 
-  --color-amber-400: #FFE64A;
-  --color-amber-500: #FFDE42;
-  --color-amber-600: #E6C21E;
-  --color-amber-700: #C29D13;
+  --color-indigo-400: #8C2F1B;
+  --color-indigo-500: #7C2A18;
+  --color-indigo-600: #6B2415;
+  --color-indigo-700: #5A1F12;
+
+  /* amber → gold heritage */
+  --color-amber-400: #D9B53C;
+  --color-amber-500: #C9A227;
+  --color-amber-600: #B08D1E;
+  --color-amber-700: #8F7313;
 }
 
 @layer base {
@@ -175,33 +179,22 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Outfit', 'DM Sans', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
   html {
     font-size: var(--font-size);
   }
 
-  h1 {
-    font-size: var(--text-2xl);
-    font-weight: var(--font-weight-medium);
+  h1, h2, h3 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 700;
     line-height: 1.15;
-    letter-spacing: -0.025em;
   }
 
-  h2 {
-    font-size: var(--text-xl);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.2;
-    letter-spacing: -0.02em;
-  }
-
-  h3 {
-    font-size: var(--text-lg);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.3;
-    letter-spacing: -0.01em;
-  }
+  h1 { font-size: var(--text-3xl); }
+  h2 { font-size: var(--text-2xl); }
+  h3 { font-size: var(--text-xl); }
 
   h4 {
     font-size: var(--text-base);
