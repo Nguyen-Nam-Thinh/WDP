@@ -1,20 +1,11 @@
 import { useNavigate } from 'react-router';
 import {
-  Trophy,
-  Users,
   Timer,
-  TrendingUp,
-  Shield,
-  ChevronRight,
-  Medal,
   Star,
-  Activity,
-  Sparkles,
   Play,
   Eye,
   ArrowRight,
   Flame,
-  Zap,
   BarChart3,
   Lock,
   Globe,
@@ -24,19 +15,14 @@ import {
 import { Button } from '@mui/material';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { useAuth } from '../hooks/useAuth';
-import { ProfileDropdown } from '../components/ProfileDropdown';
+import { PublicShell } from '../components/layout/PublicShell';
+import { GradeBadge } from '../components/shared/GradeBadge';
 import { useEffect, useState } from 'react';
 import { publicApi, type PlatformStats } from '../api/public';
 import { motion } from 'motion/react';
 import useEmblaCarousel from 'embla-carousel-react';
 
-const RANK_COLORS = ['bg-amber-500', 'bg-slate-400', 'bg-orange-700', 'bg-slate-700', 'bg-slate-700'];
-const GRADE_COLOR: Record<string, string> = {
-  G1: 'text-[#FFDE42] border-[#FFDE42]/40 bg-[#FFDE42]/10',
-  G2: 'text-purple-300 border-purple-500/40 bg-purple-500/10',
-  G3: 'text-blue-300 border-blue-500/40 bg-blue-500/10',
-  Maiden: 'text-slate-400 border-slate-600/40 bg-slate-700/20',
-};
+const RANK_COLORS = ['bg-gold text-foreground', 'bg-[#9A937F] text-white', 'bg-[#A85C32] text-white', 'bg-primary text-primary-foreground', 'bg-primary text-primary-foreground'];
 
 function formatCount(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, '')}K+`;
@@ -50,7 +36,7 @@ export function LandingPage() {
   const [loadingStats, setLoadingStats] = useState(true);
 
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: 'start' });
-  
+
   useEffect(() => {
     if (!emblaApi) return;
     const interval = setInterval(() => emblaApi.scrollNext(), 3500);
@@ -87,98 +73,52 @@ export function LandingPage() {
   const statusLabel = (s: string) =>
     s === 'running' ? 'TRỰC TIẾP' : s === 'pre_check' ? 'Chuẩn Bị' : 'Sắp Bắt Đầu';
   const statusBg = (s: string) =>
-    s === 'running' ? 'bg-red-500' : 'bg-amber-500';
+    s === 'running' ? 'bg-secondary' : 'bg-gold';
 
   return (
-    <div className="min-h-screen bg-slate-950 font-sans text-slate-200">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-xl border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-6 py-0 flex items-center justify-between h-[72px]">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
-            <img src="/images/logo.png" alt="RaceTrack Pro" className="w-12 h-12 object-contain" />
-            <span className="text-lg font-extrabold text-white tracking-tight">
-              Race<span className="text-[#FFDE42]">Track</span>
-            </span>
-          </div>
-
-          <div className="hidden md:flex items-center gap-1">
-            <button onClick={() => navigate('/')} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-[#FFDE42] bg-[#FFDE42]/10 transition-all">
-              Trang Chủ
-            </button>
-            <button onClick={() => navigate('/tournaments')} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-all">
-              <Trophy className="w-4 h-4 text-[#FFDE42]" /> Giải Đấu
-            </button>
-            <button onClick={() => navigate('/rankings')} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-all">
-              <Medal className="w-4 h-4 text-[#FFDE42]" /> Bảng Xếp Hạng
-            </button>
-            <button onClick={() => navigate('/predictions')} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-all">
-              <TrendingUp className="w-4 h-4 text-[#FFDE42]" /> Dự Đoán
-              <span className="px-1.5 py-0.5 bg-emerald-500 text-slate-950 text-[9px] font-bold rounded uppercase tracking-wide">TRỰC TIẾP</span>
-            </button>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {user ? (
-              <ProfileDropdown />
-            ) : (
-              <>
-                <Button variant="text" onClick={() => navigate('/login')} sx={{ color: '#94a3b8', textTransform: 'none', fontWeight: 600, fontSize: '14px', px: 2, '&:hover': { color: '#FFDE42', backgroundColor: 'transparent' } }}>
-                  Đăng Nhập
-                </Button>
-                <Button variant="contained" onClick={() => navigate('/register')} sx={{ background: 'linear-gradient(135deg, #FFDE42 0%, #B8860B 100%)', color: '#1a0a00', textTransform: 'none', fontWeight: 700, fontSize: '14px', borderRadius: '10px', px: 3, py: 1, boxShadow: '0 4px 14px 0 rgba(255, 222, 66, 0.35)', '&:hover': { background: 'linear-gradient(135deg, #FFE862 0%, #D4A420 100%)', boxShadow: '0 6px 20px 0 rgba(255, 222, 66, 0.5)', transform: 'translateY(-1px)' } }}>
-                  Bắt Đầu Ngay
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      </nav>
-
+    <PublicShell>
       {/* Hero Section */}
-      <section className="relative overflow-hidden min-h-screen">
+      <section className="relative overflow-hidden">
         <div className="absolute inset-0 z-0">
           <video autoPlay loop muted playsInline
             poster="https://images.unsplash.com/photo-1764333672837-e490785e8306?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1920"
             className="w-full h-full object-cover">
             <source src="/video/banner.mp4" type="video/mp4" />
           </video>
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/40 via-slate-950/20 to-slate-950" />
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/50 via-transparent to-slate-950/50" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#F7F3EA]/85 via-[#F7F3EA]/70 to-background" />
         </div>
 
-        <div className="relative z-10 pt-32 pb-24 px-6">
+        <div className="relative z-10 pt-24 pb-24 px-6">
           <div className="max-w-7xl mx-auto">
             <div className="max-w-3xl">
               {/* Live badge */}
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="inline-flex items-center gap-2 px-4 py-2 bg-[#FFDE42]/20 border border-[#FFDE42]/30 rounded-full mb-8 backdrop-blur-sm">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-primary/30 rounded-full mb-8">
+                <div className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
                 {featuredRace ? (
-                  <span className="text-sm font-medium text-[#FFDE42]">
+                  <span className="text-sm font-medium text-primary">
                     {statusLabel(featuredRace.status)}: {featuredRace.name}
                   </span>
                 ) : (
-                  <span className="text-sm font-medium text-[#FFDE42]">Mùa Giải 2026 Đang Diễn Ra</span>
+                  <span className="text-sm font-medium text-primary">Mùa Giải 2026 Đang Diễn Ra</span>
                 )}
               </motion.div>
 
-              <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }} className="text-5xl md:text-7xl font-extrabold mb-8 text-white tracking-tight leading-tight">
+              <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }} className="font-serif text-5xl md:text-7xl font-bold mb-8 text-foreground tracking-tight leading-[1.1]">
                 Trải Nghiệm <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FFDE42] via-[#E6C21E] to-[#C29D13]">
-                  Cảm Giác Đua Ngựa
-                </span>
+                <span className="italic text-secondary">Cảm Giác Đua Ngựa</span>
               </motion.h1>
 
-              <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="text-xl text-slate-300 mb-10 leading-relaxed max-w-2xl">
+              <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="text-xl text-muted-foreground mb-10 leading-relaxed max-w-2xl">
                 Nền tảng tất cả trong một cho quản lý đua ngựa. Từ vận hành chuồng ngựa đến tương tác khán giả trực tiếp, được hỗ trợ bởi công nghệ tiên tiến.
               </motion.p>
 
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }} className="flex flex-col sm:flex-row items-start gap-4 mb-16">
                 <Button variant="contained" size="large" onClick={() => navigate(user ? '/spectator' : '/register')} endIcon={<ArrowRight />}
-                  sx={{ background: 'linear-gradient(135deg, #FFDE42 0%, #1B0C0C 100%)', padding: '16px 40px', fontSize: '17px', textTransform: 'none', fontWeight: 600, borderRadius: '12px', boxShadow: '0 10px 30px -5px rgba(255, 222, 66, 0.5)', '&:hover': { background: 'linear-gradient(135deg, #FFDE42 0%, #4C5C2D 100%)', boxShadow: '0 15px 40px -5px rgba(255, 222, 66, 0.6)' } }}>
+                  sx={{ background: '#1F3D2B', color: '#F7F3EA', padding: '16px 40px', fontSize: '17px', textTransform: 'none', fontWeight: 600, borderRadius: 0, boxShadow: 'none', '&:hover': { background: '#172D20', boxShadow: 'none' } }}>
                   {user ? 'Vào Dashboard' : 'Bắt Đầu Miễn Phí'}
                 </Button>
                 <Button variant="outlined" size="large" onClick={() => navigate('/tournaments')} startIcon={<Play className="w-4 h-4" />}
-                  sx={{ borderColor: 'rgba(255,255,255,0.2)', color: 'white', padding: '16px 40px', fontSize: '17px', textTransform: 'none', fontWeight: 600, borderRadius: '12px', backdropFilter: 'blur(10px)', '&:hover': { borderColor: 'rgba(255,255,255,0.4)', backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}>
+                  sx={{ borderColor: '#1F3D2B', color: '#1F3D2B', padding: '16px 40px', fontSize: '17px', textTransform: 'none', fontWeight: 600, borderRadius: 0, '&:hover': { borderColor: '#1F3D2B', backgroundColor: 'rgba(31, 61, 43, 0.06)' } }}>
                   Xem Giải Đấu
                 </Button>
               </motion.div>
@@ -189,36 +129,36 @@ export function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-24 px-6 bg-slate-900">
+      <section className="py-24 px-6 bg-card border-y border-border">
         <div className="max-w-7xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="text-center mb-16">
-            <div className="inline-block px-4 py-1.5 bg-[#FFDE42]/10 border border-[#FFDE42]/20 rounded-full mb-6">
-              <span className="text-sm font-medium text-[#FFDE42]">Tại Sao Chọn RaceTrack</span>
+            <div className="inline-block px-4 py-1.5 border border-secondary/30 rounded-full mb-6">
+              <span className="text-sm font-medium uppercase tracking-[0.15em] text-secondary">Tại Sao Chọn The Paddock</span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 tracking-tight" style={{ textWrap: 'balance' }}>
+            <h2 className="font-serif text-4xl md:text-5xl font-bold text-foreground mb-6 tracking-tight" style={{ textWrap: 'balance' }}>
               Mọi Thứ Bạn Cần Để <br className="hidden md:block" />
               Quản Lý Đua Ngựa Chuyên Nghiệp
             </h2>
-            <p className="text-lg text-slate-400 max-w-2xl mx-auto">
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Xây dựng cho chủ ngựa, kỵ sĩ, trọng tài và khán giả. Một hệ sinh thái hoàn chỉnh được hỗ trợ bởi công nghệ hiện đại.
             </p>
           </motion.div>
 
           <div className="grid md:grid-cols-2 gap-4 mb-16">
             {features.map((feature, idx) => (
-              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: idx * 0.1 }} key={idx} className="group flex items-start gap-5 bg-slate-950/50 backdrop-blur-sm border border-white/5 rounded-2xl p-6 hover:border-[#FFDE42]/20 transition-all">
-                <div className="w-14 h-14 bg-[#FFDE42]/10 rounded-xl flex items-center justify-center shrink-0 border border-[#FFDE42]/15 group-hover:bg-[#FFDE42]/15 transition-colors">
-                  <feature.icon className="w-7 h-7 text-[#FFDE42]" />
+              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: idx * 0.1 }} key={idx} className="group flex items-start gap-5 bg-background border border-border p-6 hover:border-primary transition-colors">
+                <div className="w-14 h-14 bg-primary/10 flex items-center justify-center shrink-0 border border-primary/15 group-hover:bg-primary/15 transition-colors">
+                  <feature.icon className="w-7 h-7 text-primary" />
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold text-white mb-1.5">{feature.title}</h3>
-                  <p className="text-sm text-slate-400 leading-relaxed">{feature.description}</p>
+                  <h3 className="font-serif text-base font-bold text-foreground mb-1.5">{feature.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
                 </div>
               </motion.div>
             ))}
           </div>
 
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900" ref={emblaRef}>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="overflow-hidden border border-border bg-card" ref={emblaRef}>
             <div className="flex">
               {[
                 { src: "https://images.unsplash.com/photo-1760041870925-0a6ed8220ce4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080", title: "Cơ Sở Vật Chất Đẳng Cấp Thế Giới", sub: "Đua Ngựa Chuyên Nghiệp" },
@@ -226,12 +166,12 @@ export function LandingPage() {
                 { src: "https://images.unsplash.com/photo-1613085411234-9c83af5562d8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080", title: "Đường Đua Rực Lửa", sub: "Trải Nghiệm Trực Tiếp" },
                 { src: "https://images.unsplash.com/photo-1766170449400-be0022117c24?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1920", title: "Giải Đấu Toàn Cầu", sub: "Sự Kiện Thường Niên" }
               ].map((img, i) => (
-                <div key={i} className="relative flex-[0_0_100%] min-w-0 md:flex-[0_0_60%] lg:flex-[0_0_50%] h-[400px] group border-r border-slate-900/50 cursor-grab active:cursor-grabbing">
+                <div key={i} className="relative flex-[0_0_100%] min-w-0 md:flex-[0_0_60%] lg:flex-[0_0_50%] h-[400px] group border-r border-border cursor-grab active:cursor-grabbing">
                   <ImageWithFallback src={img.src} alt={img.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#23201A]/80 via-[#23201A]/10 to-transparent" />
                   <div className="absolute bottom-6 left-6">
-                    <div className="text-[#FFDE42] font-medium mb-2 text-sm">{img.sub}</div>
-                    <h3 className="text-2xl font-bold text-white">{img.title}</h3>
+                    <div className="text-gold font-medium mb-2 text-sm uppercase tracking-[0.15em]">{img.sub}</div>
+                    <h3 className="font-serif text-2xl font-bold text-white">{img.title}</h3>
                   </div>
                 </div>
               ))}
@@ -241,38 +181,38 @@ export function LandingPage() {
       </section>
 
       {/* Live Racing & Top Performers Section */}
-      <section className="py-24 px-6 bg-slate-950 border-y border-white/5">
+      <section className="py-24 px-6 bg-background">
         <div className="max-w-7xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="flex flex-col md:flex-row items-end justify-between mb-12">
             <div>
               {featuredRace ? (
                 <>
                   <div className="flex items-center gap-3 mb-3">
-                    <div className={`flex items-center gap-2 text-white text-xs font-bold px-3 py-1.5 rounded-md uppercase tracking-wide ${statusBg(featuredRace.status)}`}>
+                    <div className={`flex items-center gap-2 text-white text-xs font-bold px-3 py-1.5 uppercase tracking-wide ${statusBg(featuredRace.status)}`}>
                       <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
                       {statusLabel(featuredRace.status)}
                     </div>
-                    <span className="text-slate-400 text-sm">{featuredRace.tournamentName}</span>
+                    <span className="text-muted-foreground text-sm">{featuredRace.tournamentName}</span>
                   </div>
-                  <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">{featuredRace.name}</h2>
-                  <p className="text-slate-400">
+                  <h2 className="font-serif text-3xl md:text-4xl font-bold text-foreground mb-2">{featuredRace.name}</h2>
+                  <p className="text-muted-foreground">
                     Cự ly {featuredRace.distance}m · Giải thưởng {featuredRace.purse.toLocaleString()} coins
                   </p>
                 </>
               ) : (
                 <>
-                  <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
-                    Trực Tiếp & Sắp Diễn Ra
+                  <h2 className="font-serif text-3xl md:text-4xl font-bold text-foreground mb-4 flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full bg-secondary animate-pulse" />
+                    Trực Tiếp &amp; Sắp Diễn Ra
                   </h2>
-                  <p className="text-lg text-slate-400">Theo dõi các cuộc đua và ngựa hàng đầu hệ thống.</p>
+                  <p className="text-lg text-muted-foreground">Theo dõi các cuộc đua và ngựa hàng đầu hệ thống.</p>
                 </>
               )}
             </div>
             {stats?.liveRaces && stats.liveRaces.length > 1 && (
               <div className="flex items-center gap-2 mt-4 md:mt-0">
                 {stats.liveRaces.slice(1).map(r => (
-                  <span key={r._id} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-slate-400 font-medium">
+                  <span key={r._id} className="px-3 py-1.5 bg-card border border-border text-xs text-muted-foreground font-medium">
                     {r.name}
                   </span>
                 ))}
@@ -282,47 +222,47 @@ export function LandingPage() {
 
           <div className="grid lg:grid-cols-3 gap-8 lg:items-start">
             {/* Live Player */}
-            <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="lg:col-span-2 relative group rounded-2xl overflow-hidden border border-white/10 bg-slate-900 shadow-2xl">
+            <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="lg:col-span-2 relative group overflow-hidden border border-border bg-card">
               <div className="aspect-[16/9] w-full relative">
                 <ImageWithFallback src="https://images.unsplash.com/photo-1613085411234-9c83af5562d8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080" alt="Đua Ngựa Trực Tiếp" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#23201A]/85 via-[#23201A]/20 to-transparent" />
 
                 <div className="absolute top-6 left-6 flex items-center gap-3">
                   {featuredRace ? (
-                    <div className={`text-white text-xs font-bold px-3 py-1.5 rounded-md flex items-center gap-2 uppercase tracking-wide ${statusBg(featuredRace.status)}`}>
+                    <div className={`text-white text-xs font-bold px-3 py-1.5 flex items-center gap-2 uppercase tracking-wide ${statusBg(featuredRace.status)}`}>
                       <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
                       {statusLabel(featuredRace.status)}
                     </div>
                   ) : (
-                    <div className="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-md flex items-center gap-2 uppercase tracking-wide">
+                    <div className="bg-secondary text-white text-xs font-bold px-3 py-1.5 flex items-center gap-2 uppercase tracking-wide">
                       <div className="w-2 h-2 bg-white rounded-full animate-pulse" /> Live
                     </div>
                   )}
-                  <div className="bg-slate-900/60 backdrop-blur-md text-white text-xs font-medium px-3 py-1.5 rounded-md flex items-center gap-2 border border-white/10">
+                  <div className="bg-[#23201A]/60 backdrop-blur-md text-white text-xs font-medium px-3 py-1.5 flex items-center gap-2 border border-white/20">
                     <Eye className="w-4 h-4" /> {formatCount(stats?.totalSpectators ?? 0)}
                   </div>
                 </div>
 
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <button onClick={() => navigate(user ? '/spectator' : '/register')} className="w-20 h-20 bg-[#FFDE42]/90 text-[#1B0C0C] rounded-full flex items-center justify-center backdrop-blur-sm shadow-[0_0_30px_rgba(255,222,66,0.5)] hover:bg-[#E6C21E] hover:scale-110 transition-all duration-300">
+                  <button type="button" onClick={() => navigate(user ? '/spectator' : '/register')} className="w-20 h-20 bg-[#F7F3EA]/90 text-primary rounded-full flex items-center justify-center backdrop-blur-sm hover:bg-[#F7F3EA] hover:scale-110 transition-all duration-300">
                     <Play className="w-8 h-8 ml-1 fill-current" />
                   </button>
                 </div>
 
                 <div className="absolute bottom-6 left-6 right-6 flex items-end justify-between">
                   <div>
-                    <div className="text-[#FFDE42] font-medium mb-1 flex items-center gap-2">
+                    <div className="text-gold font-medium mb-1 flex items-center gap-2">
                       <Timer className="w-4 h-4" />
                       {featuredRace ? `Cự Ly: ${featuredRace.distance}m` : 'Cự Ly: 2400m'}
                     </div>
-                    <h3 className="text-2xl font-bold text-white">
+                    <h3 className="font-serif text-2xl font-bold text-white">
                       {featuredRace?.name ?? 'Chung Kết Vô Địch'}
                     </h3>
                   </div>
                   {featuredRace && (
                     <div className="text-right hidden sm:block">
-                      <div className="text-slate-300 text-sm mb-1">Giải Thưởng</div>
-                      <div className="text-[#FFDE42] font-bold">{featuredRace.purse.toLocaleString()} coins</div>
+                      <div className="text-white/70 text-sm mb-1">Giải Thưởng</div>
+                      <div className="text-gold font-bold">{featuredRace.purse.toLocaleString()} coins</div>
                     </div>
                   )}
                 </div>
@@ -330,61 +270,59 @@ export function LandingPage() {
             </motion.div>
 
             {/* Top Performers Board */}
-            <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.2 }} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 flex flex-col">
+            <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.2 }} className="bg-card border border-border p-6 flex flex-col">
               <div className="flex items-center justify-between mb-5">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Flame className="w-5 h-5 text-orange-500" />
+                <h3 className="font-serif text-lg font-bold text-foreground flex items-center gap-2">
+                  <Flame className="w-5 h-5 text-secondary" />
                   Ngựa Xuất Sắc Nhất
                 </h3>
-                <span className="text-xs font-medium text-[#FFDE42] bg-[#FFDE42]/10 px-2 py-1 rounded">Top {Math.min(stats?.topHorses?.length ?? 3, 3)}</span>
+                <span className="text-xs font-medium text-secondary border border-secondary/30 px-2 py-1">Top {Math.min(stats?.topHorses?.length ?? 3, 3)}</span>
               </div>
 
               <div className="flex-1 space-y-3">
                 {loadingStats ? (
                   Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="bg-slate-900/50 border border-white/5 rounded-xl p-4 animate-pulse">
-                      <div className="h-4 bg-slate-700 rounded w-3/4 mb-2" />
-                      <div className="h-2 bg-slate-800 rounded w-full" />
+                    <div key={i} className="bg-background border border-border p-4 animate-pulse">
+                      <div className="h-4 bg-muted rounded w-3/4 mb-2" />
+                      <div className="h-2 bg-muted rounded w-full" />
                     </div>
                   ))
                 ) : stats?.topHorses && stats.topHorses.length > 0 ? (
                   stats.topHorses.slice(0, 3).map((horse) => (
-                    <div key={horse._id} className="bg-slate-900/50 border border-white/5 rounded-xl p-3 hover:border-[#FFDE42]/30 transition-colors">
+                    <div key={horse._id} className="bg-background border border-border p-3 hover:border-primary transition-colors">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2.5">
-                          <div className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-white ${RANK_COLORS[horse.rank - 1] ?? 'bg-slate-700'}`}>
+                          <div className={`w-6 h-6 flex items-center justify-center text-xs font-bold ${RANK_COLORS[horse.rank - 1] ?? 'bg-primary text-primary-foreground'}`}>
                             {horse.rank}
                           </div>
                           <div>
-                            <div className="font-semibold text-white text-sm">{horse.name}</div>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${GRADE_COLOR[horse.currentGrade] ?? GRADE_COLOR.Maiden}`}>
-                              {horse.currentGrade}
-                            </span>
+                            <div className="font-semibold text-foreground text-sm">{horse.name}</div>
+                            <GradeBadge grade={horse.currentGrade} />
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="text-sm font-bold text-[#FFDE42]">{horse.totalPoints}</div>
-                          <div className="text-[10px] text-slate-500 uppercase">Điểm</div>
+                          <div className="text-sm font-bold text-gold tabular-nums">{horse.totalPoints}</div>
+                          <div className="text-[10px] text-muted-foreground uppercase">Điểm</div>
                         </div>
                       </div>
                       <div>
                         <div className="flex justify-between text-xs mb-1">
-                          <span className="text-slate-400">{horse.winCount}/{horse.raceCount} thắng</span>
-                          <span className="text-white font-medium">{horse.winRate}%</span>
+                          <span className="text-muted-foreground">{horse.winCount}/{horse.raceCount} thắng</span>
+                          <span className="text-foreground font-medium tabular-nums">{horse.winRate}%</span>
                         </div>
-                        <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-[#FFDE42] to-[#E6C21E] rounded-full transition-all" style={{ width: `${horse.winRate}%` }} />
+                        <div className="h-1.5 bg-muted overflow-hidden">
+                          <div className="h-full bg-primary transition-all" style={{ width: `${horse.winRate}%` }} />
                         </div>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-8 text-slate-500 text-sm">Chưa có dữ liệu</div>
+                  <div className="text-center py-8 text-muted-foreground text-sm">Chưa có dữ liệu</div>
                 )}
               </div>
 
               <Button variant="contained" fullWidth onClick={() => navigate('/rankings')}
-                sx={{ mt: 3, background: 'linear-gradient(135deg, #FFDE42 0%, #E6C21E 100%)', color: '#1B0C0C', textTransform: 'none', fontWeight: 700, py: 1.5, borderRadius: '10px', '&:hover': { background: 'linear-gradient(135deg, #FFE866 0%, #FFDE42 100%)' } }}>
+                sx={{ mt: 3, background: '#1F3D2B', color: '#F7F3EA', textTransform: 'none', fontWeight: 700, py: 1.5, borderRadius: 0, boxShadow: 'none', '&:hover': { background: '#172D20', boxShadow: 'none' } }}>
                 Xem Toàn Bộ Xếp Hạng
               </Button>
             </motion.div>
@@ -393,103 +331,103 @@ export function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 px-6 bg-slate-950">
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="max-w-6xl mx-auto relative rounded-3xl overflow-hidden">
+      <section className="py-24 px-6 bg-background">
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="max-w-6xl mx-auto relative overflow-hidden">
           <div className="absolute inset-0">
             <ImageWithFallback src="https://images.unsplash.com/photo-1766170449400-be0022117c24?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1920" alt="Giải Vô Địch Đua Ngựa" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-br from-[#1B0C0C]/95 via-slate-900/90 to-[#313E17]/95" />
+            <div className="absolute inset-0 bg-gradient-to-br from-[#1F3D2B]/95 via-[#1F3D2B]/90 to-[#8C2F1B]/90" />
           </div>
 
           <div className="relative z-10 text-center p-12 md:p-20">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/20 rounded-full mb-8 backdrop-blur-sm">
-              <Star className="w-4 h-4 text-[#FFDE42]" />
-              <span className="text-sm font-medium text-[#FFDE42]">Được Tin Tưởng Bởi Các Chuyên Gia Đua Ngựa</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 border border-white/30 rounded-full mb-8 backdrop-blur-sm">
+              <Star className="w-4 h-4 text-gold" />
+              <span className="text-sm font-medium text-[#F7F3EA]">Được Tin Tưởng Bởi Các Chuyên Gia Đua Ngựa</span>
             </div>
 
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 tracking-tight">Sẵn Sàng Tham Gia Tương Lai?</h2>
-            <p className="text-xl text-emerald-50 mb-10 max-w-2xl mx-auto leading-relaxed">
+            <h2 className="font-serif text-4xl md:text-5xl font-bold text-white mb-6 tracking-tight">Sẵn Sàng Tham Gia Tương Lai?</h2>
+            <p className="text-xl text-[#F7F3EA]/90 mb-10 max-w-2xl mx-auto leading-relaxed">
               Tham gia cùng{' '}
-              <span className="text-[#FFDE42] font-bold">{loadingStats ? '...' : formatCount(stats?.totalSpectators ?? 0)}</span>{' '}
-              khán giả, kỵ sĩ và chủ ngựa đã sử dụng RaceTrack để quản lý và trải nghiệm đua ngựa chưa từng có.
+              <span className="text-gold font-bold">{loadingStats ? '...' : formatCount(stats?.totalSpectators ?? 0)}</span>{' '}
+              khán giả, kỵ sĩ và chủ ngựa đã sử dụng The Paddock để quản lý và trải nghiệm đua ngựa chưa từng có.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button variant="contained" size="large" onClick={() => navigate(user ? '/spectator' : '/register')} endIcon={<ArrowRight />}
-                sx={{ background: 'white', color: '#1B0C0C', padding: '16px 48px', fontSize: '18px', fontWeight: 700, textTransform: 'none', borderRadius: '14px', boxShadow: '0 10px 30px -5px rgba(0,0,0,0.3)', '&:hover': { background: '#f8fafc', transform: 'translateY(-2px)', boxShadow: '0 15px 40px -5px rgba(0,0,0,0.4)' } }}>
+                sx={{ background: '#F7F3EA', color: '#1F3D2B', padding: '16px 48px', fontSize: '18px', fontWeight: 700, textTransform: 'none', borderRadius: 0, boxShadow: 'none', '&:hover': { background: '#FFFFFF', boxShadow: 'none' } }}>
                 {user ? 'Vào Dashboard' : 'Bắt Đầu Miễn Phí'}
               </Button>
               {!user && (
                 <Button variant="outlined" size="large" onClick={() => navigate('/login')}
-                  sx={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white', padding: '16px 48px', fontSize: '18px', fontWeight: 600, textTransform: 'none', borderRadius: '14px', backdropFilter: 'blur(10px)', '&:hover': { borderColor: 'rgba(255,255,255,0.5)', backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}>
+                  sx={{ borderColor: 'rgba(247,243,234,0.5)', color: '#F7F3EA', padding: '16px 48px', fontSize: '18px', fontWeight: 600, textTransform: 'none', borderRadius: 0, '&:hover': { borderColor: '#F7F3EA', backgroundColor: 'rgba(247, 243, 234, 0.1)' } }}>
                   Đăng Nhập
                 </Button>
               )}
             </div>
 
-            <div className="mt-12 flex items-center justify-center gap-8 text-slate-100">
-              <div className="flex items-center gap-2"><Check className="w-5 h-5 text-[#FFDE42]" /><span>Không cần thẻ tín dụng</span></div>
-              <div className="hidden sm:flex items-center gap-2"><Check className="w-5 h-5 text-[#FFDE42]" /><span>Miễn phí mãi mãi</span></div>
+            <div className="mt-12 flex items-center justify-center gap-8 text-[#F7F3EA]">
+              <div className="flex items-center gap-2"><Check className="w-5 h-5 text-gold" /><span>Không cần thẻ tín dụng</span></div>
+              <div className="hidden sm:flex items-center gap-2"><Check className="w-5 h-5 text-gold" /><span>Miễn phí mãi mãi</span></div>
             </div>
           </div>
         </motion.div>
       </section>
 
       {/* Footer */}
-      <footer className="py-16 px-6 border-t border-white/5 bg-slate-950">
+      <footer className="py-16 px-6 border-t border-border bg-card">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-12 mb-12">
             <div className="md:col-span-1">
               <div className="flex items-center gap-3 mb-4">
-                <img src="/images/logo.png" alt="RaceTrack Pro" className="w-16 h-16 object-contain" />
-                <span className="text-xl font-bold text-white">RaceTrack<span className="text-[#FFDE42]">Pro</span></span>
+                <img src="/images/logo.png" alt="The Paddock" className="w-16 h-16 object-contain" />
+                <span className="font-serif text-xl font-bold text-primary">The Paddock</span>
               </div>
-              <p className="text-sm text-slate-400 leading-relaxed">Nền tảng tất cả trong một cho quản lý đua ngựa chuyên nghiệp và tương tác khán giả.</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">Nền tảng tất cả trong một cho quản lý đua ngựa chuyên nghiệp và tương tác khán giả.</p>
             </div>
             <div>
-              <h4 className="text-white font-semibold mb-4">Nền Tảng</h4>
-              <ul className="space-y-3 text-sm text-slate-400">
-                <li><a href="#" className="hover:text-[#FFDE42] transition-colors">Chủ Ngựa</a></li>
-                <li><a href="#" className="hover:text-[#FFDE42] transition-colors">Kỵ Sĩ</a></li>
-                <li><a href="#" className="hover:text-[#FFDE42] transition-colors">Trọng Tài</a></li>
-                <li><a href="#" className="hover:text-[#FFDE42] transition-colors">Khán Giả</a></li>
+              <h4 className="font-serif text-foreground font-bold mb-4">Nền Tảng</h4>
+              <ul className="space-y-3 text-sm text-muted-foreground">
+                <li><a href="#" className="hover:text-secondary transition-colors">Chủ Ngựa</a></li>
+                <li><a href="#" className="hover:text-secondary transition-colors">Kỵ Sĩ</a></li>
+                <li><a href="#" className="hover:text-secondary transition-colors">Trọng Tài</a></li>
+                <li><a href="#" className="hover:text-secondary transition-colors">Khán Giả</a></li>
               </ul>
             </div>
             <div>
-              <h4 className="text-white font-semibold mb-4">Tài Nguyên</h4>
-              <ul className="space-y-3 text-sm text-slate-400">
-                <li><a href="#" className="hover:text-[#FFDE42] transition-colors">Tài Liệu</a></li>
-                <li><a href="#" className="hover:text-[#FFDE42] transition-colors">Tham Chiếu API</a></li>
-                <li><a href="#" className="hover:text-[#FFDE42] transition-colors">Hướng Dẫn</a></li>
-                <li><a href="#" className="hover:text-[#FFDE42] transition-colors">Hỗ Trợ</a></li>
+              <h4 className="font-serif text-foreground font-bold mb-4">Tài Nguyên</h4>
+              <ul className="space-y-3 text-sm text-muted-foreground">
+                <li><a href="#" className="hover:text-secondary transition-colors">Tài Liệu</a></li>
+                <li><a href="#" className="hover:text-secondary transition-colors">Tham Chiếu API</a></li>
+                <li><a href="#" className="hover:text-secondary transition-colors">Hướng Dẫn</a></li>
+                <li><a href="#" className="hover:text-secondary transition-colors">Hỗ Trợ</a></li>
               </ul>
             </div>
             <div>
-              <h4 className="text-white font-semibold mb-4">Công Ty</h4>
-              <ul className="space-y-3 text-sm text-slate-400">
-                <li><a href="#" className="hover:text-[#FFDE42] transition-colors">Về Chúng Tôi</a></li>
-                <li><a href="#" className="hover:text-[#FFDE42] transition-colors">Tuyển Dụng</a></li>
-                <li><a href="#" className="hover:text-[#FFDE42] transition-colors">Chính Sách Bảo Mật</a></li>
-                <li><a href="#" className="hover:text-[#FFDE42] transition-colors">Điều Khoản Dịch Vụ</a></li>
+              <h4 className="font-serif text-foreground font-bold mb-4">Công Ty</h4>
+              <ul className="space-y-3 text-sm text-muted-foreground">
+                <li><a href="#" className="hover:text-secondary transition-colors">Về Chúng Tôi</a></li>
+                <li><a href="#" className="hover:text-secondary transition-colors">Tuyển Dụng</a></li>
+                <li><a href="#" className="hover:text-secondary transition-colors">Chính Sách Bảo Mật</a></li>
+                <li><a href="#" className="hover:text-secondary transition-colors">Điều Khoản Dịch Vụ</a></li>
               </ul>
             </div>
           </div>
 
-          <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-slate-500">© 2026 RaceTrack. Đã đăng ký bản quyền.</p>
+          <div className="pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground">© 2026 The Paddock. Đã đăng ký bản quyền.</p>
             <div className="flex items-center gap-6">
-              <a href="#" className="text-slate-400 hover:text-[#FFDE42] transition-colors">
+              <a href="#" className="text-muted-foreground hover:text-secondary transition-colors">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/></svg>
               </a>
-              <a href="#" className="text-slate-400 hover:text-[#FFDE42] transition-colors">
+              <a href="#" className="text-muted-foreground hover:text-secondary transition-colors">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
               </a>
-              <a href="#" className="text-slate-400 hover:text-[#FFDE42] transition-colors">
+              <a href="#" className="text-muted-foreground hover:text-secondary transition-colors">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
               </a>
             </div>
           </div>
         </div>
       </footer>
-    </div>
+    </PublicShell>
   );
 }
