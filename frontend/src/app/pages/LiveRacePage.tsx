@@ -34,19 +34,19 @@ import {
 // ─── helpers ────────────────────────────────────────────────────────────────────
 
 const GRADE_COLORS: Record<string, string> = {
-  G1: "#fbbf24",
-  G2: "#60a5fa",
-  G3: "#34d399",
-  Maiden: "#94a3b8",
+  G1: "#8F7318",
+  G2: "#8C2F1B",
+  G3: "#1F3D2B",
+  Maiden: "#7A7468",
 };
 
 function positionBadge(pos: number) {
   const base =
-    "w-10 h-10 flex items-center justify-center rounded-xl font-bold text-white text-sm shrink-0";
-  if (pos === 1) return `${base} bg-amber-500`;
-  if (pos === 2) return `${base} bg-slate-400`;
-  if (pos === 3) return `${base} bg-orange-500`;
-  return `${base} bg-slate-700 text-slate-300`;
+    "w-10 h-10 flex items-center justify-center font-bold text-sm shrink-0";
+  if (pos === 1) return `${base} bg-gold text-foreground`;
+  if (pos === 2) return `${base} bg-[#9A937F] text-white`;
+  if (pos === 3) return `${base} bg-[#A85C32] text-white`;
+  return `${base} bg-muted text-muted-foreground`;
 }
 
 function formatMs(ms: number) {
@@ -61,32 +61,32 @@ const PODIUM_CONFIG = [
   {
     // 2nd — left
     blockH: 88,
-    gradient: "linear-gradient(160deg, #94a3b8 0%, #475569 100%)",
-    ringColor: "rgba(148,163,184,0.35)",
-    badgeBg: "linear-gradient(135deg, #cbd5e1, #94a3b8)",
-    badgeText: "#1e293b",
+    gradient: "linear-gradient(160deg, #9A937F 0%, #7A7468 100%)",
+    ringColor: "rgba(122,116,104,0.35)",
+    badgeBg: "linear-gradient(135deg, #E3DCCB, #9A937F)",
+    badgeText: "#23201A",
     label: "2ND",
-    labelColor: "#94a3b8",
+    labelColor: "#7A7468",
   },
   {
     // 1st — center
     blockH: 120,
-    gradient: "linear-gradient(160deg, #fde68a 0%, #f59e0b 55%, #b45309 100%)",
-    ringColor: "rgba(251,191,36,0.5)",
-    badgeBg: "linear-gradient(135deg, #fef08a, #fbbf24)",
-    badgeText: "#78350f",
+    gradient: "linear-gradient(160deg, #E5C95A 0%, #C9A227 55%, #8F7318 100%)",
+    ringColor: "rgba(201,162,39,0.5)",
+    badgeBg: "linear-gradient(135deg, #F0E3A8, #C9A227)",
+    badgeText: "#5C4A0E",
     label: "1ST",
-    labelColor: "#fbbf24",
+    labelColor: "#8F7318",
   },
   {
     // 3rd — right
     blockH: 66,
-    gradient: "linear-gradient(160deg, #fb923c 0%, #c2410c 100%)",
-    ringColor: "rgba(251,146,60,0.35)",
-    badgeBg: "linear-gradient(135deg, #fdba74, #ea580c)",
-    badgeText: "#fff7ed",
+    gradient: "linear-gradient(160deg, #C77B45 0%, #A85C32 100%)",
+    ringColor: "rgba(168,92,50,0.35)",
+    badgeBg: "linear-gradient(135deg, #E0A878, #A85C32)",
+    badgeText: "#FFF7ED",
     label: "3RD",
-    labelColor: "#fb923c",
+    labelColor: "#A85C32",
   },
 ] as const;
 
@@ -105,7 +105,7 @@ function Podium({
       <div
         className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 w-56 h-40 rounded-full blur-3xl opacity-25"
         style={{
-          background: "radial-gradient(circle, #fbbf24 0%, transparent 70%)",
+          background: "radial-gradient(circle, #C9A227 0%, transparent 70%)",
         }}
       />
 
@@ -126,8 +126,8 @@ function Podium({
                   <div
                     className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0"
                     style={{
-                      background: "linear-gradient(135deg, #fde68a, #f59e0b)",
-                      boxShadow: "0 0 10px rgba(251,191,36,0.6)",
+                      background: "linear-gradient(135deg, #F0E3A8, #C9A227)",
+                      boxShadow: "0 0 10px rgba(201,162,39,0.6)",
                     }}
                   >
                     <img
@@ -140,13 +140,13 @@ function Podium({
                 </div>
               )}
               <div
-                className={`font-bold text-white leading-tight truncate ${isWinner ? "text-base max-w-[108px]" : "text-xs max-w-[88px]"}`}
+                className={`font-bold text-foreground leading-tight truncate ${isWinner ? "font-serif text-base max-w-[108px]" : "text-xs max-w-[88px]"}`}
               >
                 {r.horseName}
               </div>
               {r.prizeAmount > 0 && (
                 <div
-                  className={`font-semibold mt-0.5 ${isWinner ? "text-[#FFDE42] text-sm" : "text-slate-300 text-[11px]"}`}
+                  className={`font-semibold mt-0.5 tabular-nums ${isWinner ? "text-[#8F7318] text-sm" : "text-muted-foreground text-[11px]"}`}
                 >
                   +{r.prizeAmount.toLocaleString()}
                 </div>
@@ -190,7 +190,7 @@ function Podium({
               <span
                 className="relative z-10 text-[10px] font-bold tracking-widest opacity-80"
                 style={{
-                  color: isWinner ? "#78350f" : "rgba(255,255,255,0.7)",
+                  color: isWinner ? "#5C4A0E" : "rgba(255,255,255,0.85)",
                 }}
               >
                 {cfg.label}
@@ -414,40 +414,41 @@ export function LiveRacePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#1B0C0C] via-slate-950 to-slate-900 flex items-center justify-center">
-        <div className="w-10 h-10 border-2 border-[#FFDE42] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#1B0C0C] via-slate-950 to-slate-900 text-white">
+    <div className="min-h-screen bg-background text-foreground">
       {/* ── Sticky header ── */}
-      <div className="sticky top-0 z-10 bg-slate-950/80 backdrop-blur-md border-b border-white/10 px-4 py-3">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b-2 border-primary px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <button
+            type="button"
             onClick={() => navigate("/spectator")}
-            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+            className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
           >
             <ChevronLeft className="w-5 h-5" />
             <span className="text-sm hidden sm:inline">Quay lại</span>
           </button>
 
           <div className="text-center">
-            <h1 className="text-white font-bold text-sm sm:text-base truncate max-w-44 sm:max-w-64">
+            <h1 className="font-serif text-foreground font-bold text-sm sm:text-base truncate max-w-44 sm:max-w-64">
               {race?.name ?? "Đang tải..."}
             </h1>
             <div className="flex items-center justify-center gap-2 mt-0.5">
               {race && (
                 <span
-                  className="text-xs font-medium"
+                  className="text-xs font-bold uppercase tracking-wider"
                   style={{ color: GRADE_COLORS[race.grade] }}
                 >
                   {race.grade}
                 </span>
               )}
               {race && (
-                <span className="text-xs text-slate-500">{race.distance}m</span>
+                <span className="text-xs text-muted-foreground">{race.distance}m</span>
               )}
             </div>
           </div>
@@ -455,25 +456,25 @@ export function LiveRacePage() {
           {/* Phase badge */}
           <div className="flex items-center">
             {phase === "pre" && race?.status === "running" && (
-              <div className="flex items-center gap-1.5 bg-amber-500/20 border border-amber-500/30 rounded-full px-3 py-1">
-                <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
-                <span className="text-amber-300 text-xs font-medium">
+              <div className="flex items-center gap-1.5 bg-gold/15 border border-gold/40 rounded-full px-3 py-1">
+                <div className="w-2 h-2 bg-gold rounded-full animate-pulse" />
+                <span className="text-[#8F7318] text-xs font-medium">
                   Chuẩn bị
                 </span>
               </div>
             )}
             {(phase === "started" || phase === "racing") && (
-              <div className="flex items-center gap-1.5 bg-red-500/20 border border-red-500/30 rounded-full px-3 py-1">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                <span className="text-red-300 text-xs font-medium">
+              <div className="flex items-center gap-1.5 bg-secondary/10 border border-secondary/30 rounded-full px-3 py-1">
+                <div className="w-2 h-2 bg-secondary rounded-full animate-pulse" />
+                <span className="text-secondary text-xs font-medium">
                   TRỰC TIẾP
                 </span>
               </div>
             )}
             {phase === "finished" && (
-              <div className="flex items-center gap-1.5 bg-emerald-500/20 border border-emerald-500/30 rounded-full px-3 py-1">
-                <Flag className="w-3 h-3 text-emerald-400" />
-                <span className="text-emerald-300 text-xs font-medium">
+              <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/30 rounded-full px-3 py-1">
+                <Flag className="w-3 h-3 text-primary" />
+                <span className="text-primary text-xs font-medium">
                   Kết thúc
                 </span>
               </div>
@@ -498,21 +499,21 @@ export function LiveRacePage() {
             RACE TIMER — only while racing
         ════════════════════════════════════════════════════════════ */}
         {phase === "racing" && (
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+          <div className="bg-card border border-border p-4">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-red-400" />
-                <span className="text-white text-sm font-semibold">
+                <Clock className="w-4 h-4 text-secondary" />
+                <span className="text-foreground text-sm font-semibold">
                   Tiến trình đường đua
                 </span>
               </div>
-              <div className="text-red-400 text-sm font-mono font-bold">
+              <div className="text-secondary text-sm font-mono font-bold">
                 {elapsed}s / {total}s
               </div>
             </div>
-            <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+            <div className="h-2 bg-muted overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-red-500 to-amber-400 rounded-full transition-all duration-1000"
+                className="h-full bg-secondary transition-all duration-1000"
                 style={{ width: `${progressPct}%` }}
               />
             </div>
@@ -523,23 +524,24 @@ export function LiveRacePage() {
             PHASE: pre — waiting for race to start
         ════════════════════════════════════════════════════════════ */}
         {phase === "pre" && (
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+          <div className="bg-card border border-border p-5">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center">
-                <Play className="w-5 h-5 text-amber-400 animate-pulse" />
+              <div className="w-10 h-10 bg-gold/15 flex items-center justify-center">
+                <Play className="w-5 h-5 text-[#8F7318] animate-pulse" />
               </div>
               <div>
-                <h2 className="text-white font-bold">Cuộc đua sắp bắt đầu</h2>
-                <p className="text-slate-400 text-xs">
+                <h2 className="font-serif text-foreground font-bold">Cuộc đua sắp bắt đầu</h2>
+                <p className="text-muted-foreground text-xs">
                   Các ngựa đang chờ tín hiệu xuất phát
                 </p>
               </div>
             </div>
             {(user?.role as string) === "admin" && (
               <button
+                type="button"
                 onClick={handleForceSimulate}
                 disabled={simulating}
-                className="w-full mb-4 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-semibold text-sm hover:bg-amber-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full mb-4 flex items-center justify-center gap-2 py-2.5 bg-gold/15 border border-gold/50 text-[#8F7318] font-semibold text-sm hover:bg-gold/25 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Zap className="w-4 h-4" />
                 {simulating ? "Đang khởi động..." : "Chạy Mô Phỏng (Admin)"}
@@ -547,7 +549,7 @@ export function LiveRacePage() {
             )}
             {lineup.length > 0 && (
               <div>
-                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3 flex items-center gap-2">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
                   <Users className="w-3.5 h-3.5" /> Danh sách thi đấu (
                   {lineup.length} ngựa)
                 </div>
@@ -555,7 +557,7 @@ export function LiveRacePage() {
                   {lineup.map((h, i) => (
                     <div
                       key={h.horseId}
-                      className={`flex items-center gap-3 p-2.5 rounded-xl ${myBetHorseIds.has(h.horseId) ? "bg-yellow-500/10 border border-[#FFDE42]/25" : "bg-slate-800/40"}`}
+                      className={`flex items-center gap-3 p-2.5 border ${myBetHorseIds.has(h.horseId) ? "bg-gold/10 border-gold/40" : "bg-background border-border"}`}
                     >
                       <div
                         className="w-4 h-4 rounded-full shrink-0"
@@ -567,17 +569,17 @@ export function LiveRacePage() {
                         }}
                       />
                       <div className="flex-1 min-w-0">
-                        <div className="text-white text-sm font-medium truncate">
+                        <div className="text-foreground text-sm font-medium truncate">
                           {h.horseName}
                         </div>
                         {h.jockeyName && (
-                          <div className="text-slate-400 text-xs">
+                          <div className="text-muted-foreground text-xs">
                             {h.jockeyName}
                           </div>
                         )}
                       </div>
                       {myBetHorseIds.has(h.horseId) && (
-                        <Star className="w-3.5 h-3.5 text-[#FFDE42] fill-[#FFDE42] shrink-0" />
+                        <Star className="w-3.5 h-3.5 text-gold fill-[#C9A227] shrink-0" />
                       )}
                     </div>
                   ))}
@@ -591,12 +593,12 @@ export function LiveRacePage() {
             PHASE: started — race just kicked off
         ════════════════════════════════════════════════════════════ */}
         {phase === "started" && (
-          <div className="bg-red-500/10 border border-red-500/25 rounded-2xl p-5 text-center">
-            <div className="w-14 h-14 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-              <Play className="w-7 h-7 text-red-400" />
+          <div className="bg-secondary/8 border border-secondary/25 p-5 text-center">
+            <div className="w-14 h-14 bg-secondary/15 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Play className="w-7 h-7 text-secondary" />
             </div>
-            <h2 className="text-white font-bold text-lg">Xuất phát!</h2>
-            <p className="text-slate-400 text-sm mt-1">
+            <h2 className="font-serif text-foreground font-bold text-lg">Xuất phát!</h2>
+            <p className="text-muted-foreground text-sm mt-1">
               {horses.length} ngựa đã rời cổng — theo dõi trên đường đua
             </p>
           </div>
@@ -606,13 +608,13 @@ export function LiveRacePage() {
             PHASE: racing — live leaderboard
         ════════════════════════════════════════════════════════════ */}
         {phase === "racing" && positions.length > 0 && (
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+          <div className="bg-card border border-border p-5">
             <div className="flex items-center gap-2 mb-4">
-              <Activity className="w-4 h-4 text-red-400" />
-              <h3 className="text-white font-semibold text-sm">
+              <Activity className="w-4 h-4 text-secondary" />
+              <h3 className="font-serif text-foreground font-bold text-sm">
                 Bảng xếp hạng trực tiếp
               </h3>
-              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse ml-auto" />
+              <div className="w-2 h-2 bg-secondary rounded-full animate-pulse ml-auto" />
             </div>
             <div className="space-y-2">
               {positions.map((pos: SocketPosition) => {
@@ -622,11 +624,11 @@ export function LiveRacePage() {
                 return (
                   <div
                     key={pos.horseId}
-                    className={`flex items-center gap-3 p-3 rounded-xl transition-all ${isMyBet ? "bg-yellow-500/10 border border-[#FFDE42]/25" : "bg-slate-800/40"}`}
+                    className={`flex items-center gap-3 p-3 transition-all border ${isMyBet ? "bg-gold/10 border-gold/40" : "bg-background border-border"}`}
                   >
                     {/* Rank badge */}
                     <div
-                      className={`w-8 h-8 flex items-center justify-center rounded-lg font-bold text-white text-sm shrink-0 ${pos.rank === 1 ? "bg-amber-500" : pos.rank === 2 ? "bg-slate-400" : pos.rank === 3 ? "bg-orange-500" : "bg-slate-700"}`}
+                      className={`w-8 h-8 flex items-center justify-center font-bold text-sm shrink-0 ${pos.rank === 1 ? "bg-gold text-foreground" : pos.rank === 2 ? "bg-[#9A937F] text-white" : pos.rank === 3 ? "bg-[#A85C32] text-white" : "bg-muted text-muted-foreground"}`}
                     >
                       {pos.rank}
                     </div>
@@ -637,27 +639,27 @@ export function LiveRacePage() {
                     />
                     {/* Name */}
                     <div className="flex-1 min-w-0">
-                      <span className="text-white font-medium text-sm truncate block">
+                      <span className="text-foreground font-medium text-sm truncate block">
                         {pos.horseName}
                       </span>
                     </div>
                     {/* Progress bar */}
                     <div className="w-28 sm:w-40 shrink-0">
-                      <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
+                      <div className="h-3 bg-muted rounded-full overflow-hidden">
                         <div
                           className="h-full rounded-full transition-all duration-1000 ease-out"
                           style={{
                             width: `${Math.max(pos.progressPct, 2)}%`,
-                            backgroundColor: isMyBet ? "#FFDE42" : color,
+                            backgroundColor: isMyBet ? "#C9A227" : color,
                           }}
                         />
                       </div>
                     </div>
-                    <div className="text-xs text-slate-400 w-10 text-right shrink-0">
+                    <div className="text-xs text-muted-foreground w-10 text-right shrink-0 tabular-nums">
                       {pos.progressPct.toFixed(0)}%
                     </div>
                     {isMyBet && (
-                      <Star className="w-4 h-4 text-[#FFDE42] fill-[#FFDE42] shrink-0" />
+                      <Star className="w-4 h-4 text-gold fill-[#C9A227] shrink-0" />
                     )}
                   </div>
                 );
@@ -672,12 +674,12 @@ export function LiveRacePage() {
         {phase === "finished" && displayResults.length > 0 && (
           <div className="space-y-5">
             {/* Podium */}
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+            <div className="bg-card border border-border p-5">
               <div className="flex items-center gap-2 justify-center mb-1">
                 <div
                   className="w-6 h-6 rounded overflow-hidden flex-shrink-0"
                   style={{
-                    background: "linear-gradient(135deg, #fde68a, #f59e0b)",
+                    background: "linear-gradient(135deg, #F0E3A8, #C9A227)",
                   }}
                 >
                   <img
@@ -687,7 +689,7 @@ export function LiveRacePage() {
                     style={{ mixBlendMode: "multiply" }}
                   />
                 </div>
-                <h3 className="text-white font-bold text-lg">
+                <h3 className="font-serif text-foreground font-bold text-lg">
                   Kết quả chung cuộc
                 </h3>
               </div>
@@ -695,14 +697,14 @@ export function LiveRacePage() {
             </div>
 
             {/* Full results table */}
-            <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
-              <div className="px-5 py-4 border-b border-white/10 flex items-center gap-2">
-                <Medal className="w-4 h-4 text-slate-400" />
-                <h3 className="text-white font-semibold text-sm">
+            <div className="bg-card border border-border overflow-hidden">
+              <div className="px-5 py-4 border-b border-border flex items-center gap-2">
+                <Medal className="w-4 h-4 text-muted-foreground" />
+                <h3 className="font-serif text-foreground font-bold text-sm">
                   Bảng xếp hạng đầy đủ
                 </h3>
               </div>
-              <div className="divide-y divide-white/5">
+              <div className="divide-y divide-border">
                 {displayResults.map((r) => {
                   const colorIdx = colorMap[r.horseId] ?? 0;
                   const color = HORSE_COLORS[colorIdx % HORSE_COLORS.length];
@@ -717,7 +719,7 @@ export function LiveRacePage() {
                   return (
                     <div
                       key={r.horseId}
-                      className={`flex items-center gap-3 px-5 py-3.5 ${isMyHorse ? "bg-yellow-500/5" : "hover:bg-white/5"} transition-colors`}
+                      className={`flex items-center gap-3 px-5 py-3.5 ${isMyHorse ? "bg-gold/5" : "hover:bg-muted/40"} transition-colors`}
                     >
                       <div className={positionBadge(r.position)}>
                         {r.position}
@@ -728,7 +730,7 @@ export function LiveRacePage() {
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-white font-semibold text-sm">
+                          <span className="text-foreground font-semibold text-sm">
                             {r.horseName}
                           </span>
                           {isMyHorse && (
@@ -736,8 +738,8 @@ export function LiveRacePage() {
                               label="Cược của bạn"
                               size="small"
                               sx={{
-                                bgcolor: "rgba(255,222,66,0.15)",
-                                color: "#FFDE42",
+                                bgcolor: "rgba(201,162,39,0.15)",
+                                color: "#8F7318",
                                 fontSize: "0.62rem",
                                 height: "18px",
                               }}
@@ -745,34 +747,34 @@ export function LiveRacePage() {
                           )}
                         </div>
                         {r.jockeyName && (
-                          <div className="text-slate-400 text-xs">
+                          <div className="text-muted-foreground text-xs">
                             {r.jockeyName}
                           </div>
                         )}
                       </div>
                       <div className="text-right shrink-0 space-y-0.5">
                         {r.finishTime > 0 && (
-                          <div className="text-slate-400 text-xs">
+                          <div className="text-muted-foreground text-xs">
                             {formatMs(r.finishTime)}
                           </div>
                         )}
                         {r.prizeAmount > 0 && (
-                          <div className="text-[#FFDE42] text-xs font-semibold flex items-center gap-0.5 justify-end">
+                          <div className="text-[#8F7318] text-xs font-semibold flex items-center gap-0.5 justify-end tabular-nums">
                             <Coins className="w-3 h-3" />
                             {r.prizeAmount.toLocaleString()}
                           </div>
                         )}
                         {r.pointsEarned > 0 && (
-                          <div className="text-blue-400 text-xs">
+                          <div className="text-primary text-xs tabular-nums">
                             +{r.pointsEarned} pts
                           </div>
                         )}
                       </div>
                       {isMyHorse &&
                         (betWon ? (
-                          <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+                          <CheckCircle className="w-5 h-5 text-primary shrink-0" />
                         ) : (
-                          <XCircle className="w-5 h-5 text-red-400 shrink-0" />
+                          <XCircle className="w-5 h-5 text-destructive shrink-0" />
                         ))}
                     </div>
                   );
@@ -782,9 +784,9 @@ export function LiveRacePage() {
 
             {/* My bets summary */}
             {myBets.length > 0 && (
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-                <h3 className="text-white font-semibold mb-3 flex items-center gap-2 text-sm">
-                  <Star className="w-4 h-4 text-[#FFDE42]" /> Cược của bạn
+              <div className="bg-card border border-border p-5">
+                <h3 className="font-serif text-foreground font-bold mb-3 flex items-center gap-2 text-sm">
+                  <Star className="w-4 h-4 text-gold" /> Cược của bạn
                 </h3>
                 <div className="space-y-2">
                   {myBets.map((bet) => {
@@ -800,18 +802,18 @@ export function LiveRacePage() {
                     return (
                       <div
                         key={bet._id}
-                        className={`flex items-center gap-3 p-3 rounded-xl ${won ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-red-500/10 border border-red-500/20"}`}
+                        className={`flex items-center gap-3 p-3 border ${won ? "bg-primary/8 border-primary/25" : "bg-destructive/8 border-destructive/25"}`}
                       >
                         {won ? (
-                          <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+                          <CheckCircle className="w-5 h-5 text-primary shrink-0" />
                         ) : (
-                          <XCircle className="w-5 h-5 text-red-400 shrink-0" />
+                          <XCircle className="w-5 h-5 text-destructive shrink-0" />
                         )}
                         <div className="flex-1 min-w-0">
-                          <div className="text-white text-sm font-medium">
+                          <div className="text-foreground text-sm font-medium">
                             {bet.horseId.name}
                           </div>
-                          <div className="text-slate-400 text-xs">
+                          <div className="text-muted-foreground text-xs">
                             {bet.betType === "win"
                               ? "Thắng"
                               : bet.betType === "place"
@@ -822,19 +824,19 @@ export function LiveRacePage() {
                         </div>
                         <div className="text-right shrink-0">
                           {won ? (
-                            <div className="text-emerald-400 font-bold text-sm">
+                            <div className="text-primary font-bold text-sm tabular-nums">
                               +
                               {Math.floor(
                                 bet.amount * bet.multiplier,
                               ).toLocaleString()}
                             </div>
                           ) : (
-                            <div className="text-red-400 text-sm">
+                            <div className="text-destructive text-sm tabular-nums">
                               -{bet.amount.toLocaleString()}
                             </div>
                           )}
                           {pos !== undefined && (
-                            <div className="text-slate-500 text-xs">
+                            <div className="text-muted-foreground text-xs">
                               Về #{pos}
                             </div>
                           )}
@@ -847,8 +849,9 @@ export function LiveRacePage() {
             )}
 
             <button
+              type="button"
               onClick={() => navigate("/spectator")}
-              className="w-full py-3 rounded-xl bg-[#FFDE42] text-[#1B0C0C] font-bold hover:bg-[#E6C21E] transition-colors"
+              className="w-full py-3 bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-colors"
             >
               Quay lại trang chủ
             </button>
@@ -857,16 +860,16 @@ export function LiveRacePage() {
 
         {/* ── My bets panel (while race is active) ── */}
         {phase !== "finished" && myBets.length > 0 && (
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-            <h3 className="text-white font-semibold mb-3 flex items-center gap-2 text-sm">
-              <Star className="w-4 h-4 text-[#FFDE42]" /> Cược của bạn trong
+          <div className="bg-card border border-border p-4">
+            <h3 className="font-serif text-foreground font-bold mb-3 flex items-center gap-2 text-sm">
+              <Star className="w-4 h-4 text-gold" /> Cược của bạn trong
               race này
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {myBets.map((bet) => (
                 <div
                   key={bet._id}
-                  className="flex items-center gap-3 p-3 bg-yellow-500/5 border border-[#FFDE42]/20 rounded-xl"
+                  className="flex items-center gap-3 p-3 bg-gold/5 border border-gold/30"
                 >
                   <div
                     className="w-3 h-3 rounded-full shrink-0"
@@ -878,10 +881,10 @@ export function LiveRacePage() {
                     }}
                   />
                   <div className="flex-1 min-w-0">
-                    <div className="text-white text-sm font-medium truncate">
+                    <div className="text-foreground text-sm font-medium truncate">
                       {bet.horseId.name}
                     </div>
-                    <div className="text-slate-400 text-xs">
+                    <div className="text-muted-foreground text-xs">
                       {bet.betType === "win"
                         ? "Thắng"
                         : bet.betType === "place"
@@ -890,7 +893,7 @@ export function LiveRacePage() {
                       · {bet.amount.toLocaleString()} coins
                     </div>
                   </div>
-                  <div className="text-[#FFDE42] text-sm font-bold shrink-0">
+                  <div className="text-[#8F7318] text-sm font-bold shrink-0">
                     ×{bet.multiplier}
                   </div>
                 </div>
