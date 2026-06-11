@@ -83,7 +83,7 @@ export function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen flex bg-[#0a0a0a] font-sans">
+    <div className="min-h-screen flex bg-background font-sans">
       <style>{`
         @keyframes slideInLeft {
           from { opacity: 0; transform: translateX(-50px); }
@@ -96,58 +96,57 @@ export function ForgotPassword() {
       `}</style>
 
       {/* Form Section - Left */}
-      <div 
+      <div
         className="w-full lg:w-1/2 flex flex-col justify-center p-6 lg:p-8 relative z-10"
         style={{ animation: 'slideInLeft 0.6s ease-out forwards' }}
       >
-        {/* Dynamic Background Effects for Mobile */}
-        <div className="absolute top-0 left-0 w-96 h-96 bg-[#FFDE42] rounded-full mix-blend-screen filter blur-[150px] opacity-10 lg:hidden"></div>
-
         <div className="w-full max-w-md mx-auto relative flex flex-col justify-center min-h-[calc(100vh-3rem)] lg:min-h-0">
           <button
+            type="button"
             onClick={() => navigate('/login')}
-            className="group flex items-center gap-2 text-slate-400 hover:text-[#FFDE42] mb-6 transition-colors text-sm font-medium"
+            className="group flex items-center gap-2 text-muted-foreground hover:text-primary mb-6 transition-colors text-sm font-medium"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             Quay lại Đăng nhập
           </button>
 
           <div className="mb-8">
-            <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-2">Quên mật khẩu</h2>
-            <p className="text-sm text-slate-400">
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-foreground tracking-tight mb-2">Quên mật khẩu</h2>
+            <p className="text-sm text-muted-foreground">
               {step === 1 && 'Nhập email của bạn để nhận mã xác nhận'}
               {step === 2 && 'Nhập mã xác nhận đã được gửi đến email của bạn'}
               {step === 3 && 'Tạo mật khẩu mới cho tài khoản của bạn'}
             </p>
-            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-            {success && <p className="text-emerald-500 text-sm mt-2">{success}</p>}
+            {error && <p className="text-destructive text-sm mt-2">{error}</p>}
+            {success && <p className="text-primary text-sm mt-2">{success}</p>}
           </div>
 
           <div className="space-y-4">
             {step === 1 && (
               <>
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">Email</label>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-foreground mb-1.5">Email</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                      <Mail className="h-4 w-4 text-slate-500" />
+                      <Mail className="h-4 w-4 text-muted-foreground" />
                     </div>
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="email@example.com"
-                      className="block w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#FFDE42]/50 focus:border-[#FFDE42] transition-all"
+                      className="block w-full pl-10 pr-4 py-2.5 bg-card border border-border text-foreground text-sm placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
                     />
                   </div>
                 </div>
 
                 <button
+                  type="button"
                   onClick={handleSendCode}
                   disabled={loading}
-                  className="w-full relative group overflow-hidden rounded-xl bg-[#FFDE42] text-black font-bold py-2.5 mt-5 transition-all hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(255,222,66,0.4)] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-primary text-primary-foreground font-semibold uppercase tracking-wider py-2.5 mt-5 transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <span className="relative z-10 text-sm">{loading ? 'Đang Xử Lý...' : 'Gửi Mã Xác Nhận'}</span>
+                  <span className="text-sm">{loading ? 'Đang Xử Lý...' : 'Gửi Mã Xác Nhận'}</span>
                 </button>
               </>
             )}
@@ -155,27 +154,28 @@ export function ForgotPassword() {
             {step === 2 && (
               <>
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">Mã Xác Nhận</label>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-foreground mb-1.5">Mã Xác Nhận</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                      <KeyRound className="h-4 w-4 text-slate-500" />
+                      <KeyRound className="h-4 w-4 text-muted-foreground" />
                     </div>
                     <input
                       type="text"
                       value={code}
                       onChange={(e) => setCode(e.target.value)}
                       placeholder="Nhập mã 6 chữ số"
-                      className="block w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#FFDE42]/50 focus:border-[#FFDE42] transition-all tracking-widest"
+                      className="block w-full pl-10 pr-4 py-2.5 bg-card border border-border text-foreground text-sm placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all tracking-widest"
                     />
                   </div>
                 </div>
 
                 <button
+                  type="button"
                   onClick={handleVerifyCode}
                   disabled={loading}
-                  className="w-full relative group overflow-hidden rounded-xl bg-[#FFDE42] text-black font-bold py-2.5 mt-5 transition-all hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(255,222,66,0.4)] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-primary text-primary-foreground font-semibold uppercase tracking-wider py-2.5 mt-5 transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <span className="relative z-10 text-sm">{loading ? 'Đang Xử Lý...' : 'Xác Nhận Mã'}</span>
+                  <span className="text-sm">{loading ? 'Đang Xử Lý...' : 'Xác Nhận Mã'}</span>
                 </button>
               </>
             )}
@@ -183,22 +183,22 @@ export function ForgotPassword() {
             {step === 3 && (
               <>
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">Mật khẩu mới</label>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-foreground mb-1.5">Mật khẩu mới</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                      <Lock className="h-4 w-4 text-slate-500" />
+                      <Lock className="h-4 w-4 text-muted-foreground" />
                     </div>
                     <input
                       type={showNewPassword ? "text" : "password"}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="block w-full pl-10 pr-10 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#FFDE42]/50 focus:border-[#FFDE42] transition-all"
+                      className="block w-full pl-10 pr-10 py-2.5 bg-card border border-border text-foreground text-sm placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
                     />
                     <button
                       type="button"
                       onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                      className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                     >
                       {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -206,22 +206,22 @@ export function ForgotPassword() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">Xác nhận mật khẩu mới</label>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-foreground mb-1.5">Xác nhận mật khẩu mới</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                      <Lock className="h-4 w-4 text-slate-500" />
+                      <Lock className="h-4 w-4 text-muted-foreground" />
                     </div>
                     <input
                       type={showConfirmPassword ? "text" : "password"}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="block w-full pl-10 pr-10 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#FFDE42]/50 focus:border-[#FFDE42] transition-all"
+                      className="block w-full pl-10 pr-10 py-2.5 bg-card border border-border text-foreground text-sm placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                      className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                     >
                       {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -229,11 +229,12 @@ export function ForgotPassword() {
                 </div>
 
                 <button
+                  type="button"
                   onClick={handleResetPassword}
                   disabled={loading}
-                  className="w-full relative group overflow-hidden rounded-xl bg-[#FFDE42] text-black font-bold py-2.5 mt-5 transition-all hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(255,222,66,0.4)] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-primary text-primary-foreground font-semibold uppercase tracking-wider py-2.5 mt-5 transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <span className="relative z-10 text-sm">{loading ? 'Đang Xử Lý...' : 'Đổi Mật Khẩu'}</span>
+                  <span className="text-sm">{loading ? 'Đang Xử Lý...' : 'Đổi Mật Khẩu'}</span>
                 </button>
               </>
             )}
@@ -242,25 +243,25 @@ export function ForgotPassword() {
       </div>
 
       {/* Branding Section - Right */}
-      <div 
+      <div
         className="hidden lg:flex lg:w-1/2 relative items-end justify-center overflow-hidden pb-12 px-12"
         style={{ animation: 'fadeIn 1s ease-out forwards' }}
       >
         <div className="absolute inset-0 bg-[url('/images/login-bg.png')] bg-cover bg-center transition-transform duration-[10000ms] hover:scale-105"></div>
         {/* Soft edge gradient to blend with the form on the left */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a] via-transparent to-transparent opacity-90"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-[#F7F3EA] via-transparent to-transparent opacity-90"></div>
         {/* Bottom gradient just enough to make the text readable */}
-        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/40 to-transparent"></div>
-        
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#1F3D2B] via-[#1F3D2B]/40 to-transparent"></div>
+
         <div className="relative z-10 w-full text-left">
           <div className="flex items-center gap-3 mb-6">
-             <img src="/images/logo.png" alt="RaceTrack Pro" className="w-12 h-12 object-contain" />
-             <span className="text-white font-bold tracking-wide text-lg drop-shadow-md">RaceTrack Pro</span>
+             <img src="/images/logo.png" alt="The Paddock" className="w-12 h-12 object-contain" />
+             <span className="font-serif text-white font-bold tracking-wide text-lg drop-shadow-md">The Paddock</span>
           </div>
-          <h1 className="text-2xl xl:text-3xl font-bold text-white mb-2 leading-tight drop-shadow-lg">
+          <h1 className="font-serif text-2xl xl:text-3xl font-bold text-white mb-2 leading-tight drop-shadow-lg">
             Khôi phục tài khoản<br/>an toàn và nhanh chóng
           </h1>
-          <p className="text-sm text-slate-300 max-w-md drop-shadow-md">
+          <p className="text-sm text-[#F7F3EA]/90 max-w-md drop-shadow-md">
             Lấy lại quyền truy cập để tiếp tục theo dõi và quản lý các giải đấu đua ngựa chuyên nghiệp.
           </p>
         </div>

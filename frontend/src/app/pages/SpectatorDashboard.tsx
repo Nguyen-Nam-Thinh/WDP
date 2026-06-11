@@ -1,35 +1,22 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import {
-  Users,
   Calendar,
   Trophy,
   TrendingUp,
-  LogOut,
-  Menu,
-  X,
   Target,
   Gift,
   Play,
   Medal,
-  Star,
-  DollarSign,
-  Clock,
   Sparkles,
-  Bell,
-  Filter,
-  Search,
   Flame,
   Award,
   Activity,
   ChevronRight,
-  ChevronDown,
   Coins,
   Eye,
   CheckCircle,
-  XCircle,
   AlertCircle,
-  User,
   Wallet,
   History,
   CreditCard,
@@ -37,10 +24,11 @@ import {
   Smartphone,
   Bitcoin,
   Copy,
-  Shield
+  Shield,
+  Home
 } from 'lucide-react';
 import { Button, Chip, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
-import { ProfileDropdown } from '../components/ProfileDropdown';
+import { AppShell, type NavItem } from '../components/layout/AppShell';
 import { useAuth } from '../hooks/useAuth';
 import { useWallet } from '../hooks/useWallet';
 import { raceApi, type Race } from '../api/race';
@@ -49,12 +37,31 @@ import { tournamentApi, type Tournament } from '../api/tournament';
 import { rankingsApi, type HorseRanking, type JockeyRanking, type OwnerRanking, type SpectatorRanking } from '../api/rankings';
 import { toast } from 'sonner';
 
+const SPECTATOR_NAV: NavItem[] = [
+  { to: '/spectator', label: 'Tổng Quan', icon: <Home /> },
+  { to: '/tournaments', label: 'Giải Đấu', icon: <Trophy /> },
+  { to: '/predictions', label: 'Dự Đoán', icon: <TrendingUp /> },
+  { to: '/rankings', label: 'Xếp Hạng', icon: <Medal /> },
+  { to: '/spectator/bet-history', label: 'Lịch Sử Cược', icon: <History /> },
+  { to: '/spectator/deposit', label: 'Nạp Xu', icon: <Wallet /> },
+];
+
+// MUI input style cho nền sáng
+const lightSelectSx = {
+  color: '#23201A',
+  '.MuiOutlinedInput-notchedOutline': { borderColor: '#E3DCCB' },
+  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#C9C2B0' },
+  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#1F3D2B' },
+  '.MuiSvgIcon-root': { color: '#7A7468' },
+  background: '#FFFFFF',
+  borderRadius: 0,
+};
+
 export function SpectatorDashboard() {
   const navigate = useNavigate();
   const { user, token } = useAuth();
   const { formatted: walletBalance } = useWallet();
   const [activeTab, setActiveTab] = useState('tournaments');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [predictionModalOpen, setPredictionModalOpen] = useState(false);
   const [tournamentDetailsModalOpen, setTournamentDetailsModalOpen] = useState(false);
   const [depositPortalOpen, setDepositPortalOpen] = useState(false);
@@ -155,7 +162,6 @@ export function SpectatorDashboard() {
   const [selectedHorse, setSelectedHorse] = useState('');
   const [betAmount, setBetAmount] = useState('');
   const [rankingType, setRankingType] = useState('horses');
-  const [rankingFilter, setRankingFilter] = useState('all-time');
   const [tournamentFilter, setTournamentFilter] = useState('all');
 
   // ── Real rankings data ──
@@ -197,147 +203,6 @@ export function SpectatorDashboard() {
       setLoadingLeaderboard(false);
     }
   };
-  const profileMenuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
-        setProfileMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const mockUser = {
-    name: 'Alex Morgan',
-    email: 'alex.morgan@email.com',
-    avatar: 'AM',
-    level: 'Thành Viên Vàng',
-    joinDate: '01/2025',
-    totalBets: 18,
-    winRate: '67%',
-    balance: '$1,350',
-    rank: 4,
-    verified: true,
-  };
-
-
-  const liveRaces = [
-    {
-      id: 1,
-      tournament: 'Giải Vô Địch Ưu Tú 2026',
-      raceName: 'Cuộc Đua 12 - Vòng Chung Kết',
-      grade: 'Grade A',
-      distance: '2400m',
-      status: 'Đang Diễn Ra',
-      elapsed: '2:45',
-      referee: 'John Martinez',
-      leaders: [
-        { position: 1, horse: 'Thunder Strike', jockey: 'Mike Johnson', speed: '58 km/h', distance: '450m' },
-        { position: 2, horse: 'Golden Arrow', jockey: 'Sarah Williams', speed: '57 km/h', distance: '455m' },
-        { position: 3, horse: 'Storm Chaser', jockey: 'David Chen', speed: '56 km/h', distance: '462m' },
-        { position: 4, horse: 'Wind Runner', jockey: 'Emma Davis', speed: '55 km/h', distance: '470m' },
-        { position: 5, horse: 'Crimson Glory', jockey: 'Alex Kim', speed: '54 km/h', distance: '480m' }
-      ]
-    }
-  ];
-
-  const upcomingRaces = [
-    {
-      id: 1,
-      date: '2026-05-25',
-      time: '14:00',
-      tournament: 'Giải Vô Địch Ưu Tú 2026',
-      raceName: 'Cuộc Đua 13 - Tứ Kết',
-      grade: 'Grade A',
-      distance: '2000m',
-      referee: 'Michael Brown',
-      status: 'Đang Mở',
-      cutoffTime: '2026-05-25 13:45',
-      horses: [
-        { id: 'h1', name: 'Blazing Star', jockey: 'Tom Wilson', odds: '2.5x' },
-        { id: 'h2', name: 'Night Fury', jockey: 'Lisa Anderson', odds: '3.2x' },
-        { id: 'h3', name: 'Silver Bullet', jockey: 'Chris Lee', odds: '4.0x' },
-        { id: 'h4', name: 'Desert Storm', jockey: 'Maria Garcia', odds: '5.5x' },
-        { id: 'h5', name: 'Royal Thunder', jockey: 'James Miller', odds: '6.0x' }
-      ],
-      predicted: false
-    },
-    {
-      id: 2,
-      date: '2026-05-25',
-      time: '16:00',
-      tournament: 'Giải Vô Địch Ưu Tú 2026',
-      raceName: 'Cuộc Đua 14 - Bán Kết',
-      grade: 'Grade A',
-      distance: '2400m',
-      referee: 'Sarah Johnson',
-      status: 'Kiểm Tra Trước',
-      cutoffTime: '2026-05-25 15:45',
-      horses: [
-        { id: 'h6', name: 'Phoenix Rising', jockey: 'Robert Taylor', odds: '3.0x' },
-        { id: 'h7', name: 'Ocean Wave', jockey: 'Jennifer White', odds: '3.5x' },
-        { id: 'h8', name: 'Mountain King', jockey: 'Daniel Brown', odds: '4.2x' }
-      ],
-      predicted: true
-    }
-  ];
-
-  const myPredictions = [
-    {
-      id: 1,
-      race: 'Cuộc Đua 10 - Cổ Điển Mùa Xuân',
-      tournament: 'Giải Vô Địch Ưu Tú 2026',
-      date: '2026-05-20',
-      betType: 'Thắng',
-      predicted: 'Thunder Strike',
-      actual: 'Thunder Strike',
-      amount: 100,
-      multiplier: '3.0x',
-      status: 'won',
-      reward: 300
-    },
-    {
-      id: 2,
-      race: 'Cuộc Đua 9 - Cúp Chiến Thắng',
-      tournament: 'Giải Mùa Xuân',
-      date: '2026-05-18',
-      betType: 'Về Đích Hạng 3',
-      predicted: 'Storm Runner',
-      actual: 'Golden Arrow',
-      amount: 150,
-      multiplier: '2.0x',
-      status: 'lost',
-      reward: 0
-    },
-    {
-      id: 3,
-      race: 'Cuộc Đua 8 - Derby Ưu Tú',
-      tournament: 'Giải Vô Địch Ưu Tú 2026',
-      date: '2026-05-15',
-      betType: 'Về Đích Hạng 3',
-      predicted: 'Wild Fire',
-      actual: 'Wild Fire',
-      amount: 200,
-      multiplier: '1.5x',
-      status: 'won',
-      reward: 300
-    },
-    {
-      id: 4,
-      race: 'Cuộc Đua 7 - Nước Rút Vàng',
-      tournament: 'Chung Kết Derby Vàng',
-      date: '2026-05-12',
-      betType: 'Thắng',
-      predicted: 'Midnight Star',
-      actual: 'Midnight Star',
-      amount: 250,
-      multiplier: '3.0x',
-      status: 'won',
-      reward: 750
-    }
-  ];
 
   const depositHistory = [
     { id: 'DEP001', date: '2026-05-28 10:30', amount: '$500', method: 'Chuyển Khoản Ngân Hàng', status: 'Thành Công', reference: 'TRX-987654321' },
@@ -353,14 +218,6 @@ export function SpectatorDashboard() {
     { id: 'BET004', date: '2026-05-25 09:15', race: 'Cuộc Đua 8 - Khởi Động', amount: 150, type: 'Thắng', horse: 'Wild Fire', odds: '5.5x', status: 'won', reward: 825 },
   ];
 
-
-  const notifications = [
-    { id: 1, type: 'won', title: 'Dự Đoán Thắng!', message: 'Cược của bạn vào Thunder Strike đã thắng! +$300', amount: 300, time: '5 phút trước', read: false },
-    { id: 2, type: 'starting', title: 'Cuộc Đua Sắp Bắt Đầu', message: 'Cuộc Đua 13 bắt đầu trong 15 phút', time: '12 phút trước', read: false },
-    { id: 3, type: 'result', title: 'Kết Quả Đã Công Bố', message: 'Kết quả Cuộc Đua 10 đã có', time: '1 giờ trước', read: true },
-    { id: 4, type: 'lost', title: 'Dự Đoán Thua', message: 'Cược của bạn vào Storm Runner không thắng', time: '2 giờ trước', read: true }
-  ];
-
   const pendingBets = myBets.filter(b => b.status === 'pending').length;
   const wonBets = myBets.filter(b => b.status === 'won').length;
   const settledBets = myBets.filter(b => b.status === 'won' || b.status === 'lost').length;
@@ -368,10 +225,10 @@ export function SpectatorDashboard() {
   const totalWinnings = myBets.reduce((s, b) => s + (b.payoutAmount || 0), 0);
 
   const stats = [
-    { label: 'Số Dư Ví', value: walletBalance ?? '...', icon: Coins, color: 'from-[#FFDE42] to-[#E6C21E]' },
-    { label: 'Cược Đang Chờ', value: String(pendingBets), icon: Target, color: 'from-blue-500 to-blue-600' },
-    { label: 'Tỷ Lệ Thắng', value: settledBets > 0 ? `${winRate}%` : '—', icon: TrendingUp, color: 'from-amber-500 to-amber-600' },
-    { label: 'Tổng Tiền Thắng', value: totalWinnings > 0 ? `+${totalWinnings.toLocaleString()}` : '0', icon: Gift, color: 'from-purple-500 to-purple-600' },
+    { label: 'Số Dư Ví', value: walletBalance ?? '...', icon: Coins, iconCls: 'bg-gold text-foreground' },
+    { label: 'Cược Đang Chờ', value: String(pendingBets), icon: Target, iconCls: 'bg-primary text-primary-foreground' },
+    { label: 'Tỷ Lệ Thắng', value: settledBets > 0 ? `${winRate}%` : '—', icon: TrendingUp, iconCls: 'bg-secondary text-white' },
+    { label: 'Tổng Tiền Thắng', value: totalWinnings > 0 ? `+${totalWinnings.toLocaleString()}` : '0', icon: Gift, iconCls: 'bg-[#7A7468] text-white' },
   ];
 
   const handleOpenPrediction = async (race: any) => {
@@ -435,24 +292,23 @@ export function SpectatorDashboard() {
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getTournamentStatusColor = (status: string) => {
     switch (status) {
-      case 'Đang Mở': return 'bg-[#FFDE42]/10 text-[#FFDE42] border-[#FFDE42]/30';
-      case 'Đang Diễn Ra': return 'bg-red-500/10 text-red-400 border-red-500/30';
-      case 'Đã Kết Thúc': return 'bg-slate-500/10 text-slate-400 border-slate-500/30';
-      case 'Kiểm Tra Trước': return 'bg-amber-500/10 text-amber-400 border-amber-500/30';
-      case 'Đã Đóng': return 'bg-slate-600/10 text-slate-400 border-slate-600/30';
-      default: return 'bg-slate-500/10 text-slate-400 border-slate-500/30';
+      case 'ongoing': return 'bg-secondary';
+      case 'upcoming': return 'bg-primary';
+      case 'finished': return 'bg-[#7A7468]';
+      case 'cancelled': return 'bg-destructive';
+      default: return 'bg-[#7A7468]';
     }
   };
 
-  const getTournamentStatusColor = (status: string) => {
+  const getTournamentStatusHex = (status: string) => {
     switch (status) {
-      case 'ongoing': return 'bg-[#FFDE42]';
-      case 'upcoming': return 'bg-blue-500';
-      case 'finished': return 'bg-slate-500';
-      case 'cancelled': return 'bg-red-500';
-      default: return 'bg-slate-500';
+      case 'ongoing': return '#8C2F1B';
+      case 'upcoming': return '#1F3D2B';
+      case 'finished': return '#7A7468';
+      case 'cancelled': return '#B42318';
+      default: return '#7A7468';
     }
   };
 
@@ -471,61 +327,21 @@ export function SpectatorDashboard() {
     return t.status === tournamentFilter;
   });
 
-  const totalPredictions = myPredictions.length;
-  const wonPredictions = myPredictions.filter(p => p.status === 'won').length;
-  const accuracyRate = totalPredictions > 0 ? ((wonPredictions / totalPredictions) * 100).toFixed(0) : '0';
-
   return (
-    <div className="min-h-screen bg-slate-950 font-sans">
-      {/* Top Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-lg border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="cursor-pointer" onClick={() => navigate('/')}>
-              <img src="/images/logo.png" alt="RaceTrack Logo" className="w-12 h-12 object-contain drop-shadow-md" />
-            </div>
-            <div>
-              <div className="text-white font-semibold">Khu Vực Khán Giả</div>
-              <div className="text-sm text-slate-400">Chào mừng, {user?.fullName || 'Khán Giả'}</div>
-            </div>
-          </div>
-
-          <div className="hidden md:flex items-center gap-4">
-            {/* Wallet Balance Badge */}
-            <div className="flex items-center gap-2 bg-[#FFDE42]/10 border border-[#FFDE42]/20 px-4 py-2 rounded-xl">
-              <Coins className="w-4 h-4 text-[#FFDE42]" />
-              <span className="text-[#FFDE42] font-bold text-sm">{walletBalance ?? user?.balance ?? '...'}</span>
-            </div>
-
-            {/* Notifications */}
-            <button className="relative p-2 hover:bg-white/5 rounded-lg transition-colors">
-              <Bell className="w-5 h-5 text-slate-400" />
-              <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-slate-950"></div>
-            </button>
-
-            {/* Profile Dropdown */}
-            <ProfileDropdown />
-          </div>
-
-          <button className="md:hidden text-white" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-            {mobileMenuOpen ? <X /> : <Menu />}
-          </button>
-        </div>
-      </nav>
-
-      <div className="pt-24 max-w-7xl mx-auto px-6 py-8">
+    <AppShell roleLabel="SPECTATOR" nav={SPECTATOR_NAV}>
+      <div className="max-w-7xl mx-auto">
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {stats.map((stat, idx) => (
-            <div key={idx} className="relative bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-5 hover:-translate-y-1 transition-all hover:border-white/10 flex flex-col overflow-hidden">
+            <div key={idx} className="relative bg-card border border-border p-5 hover:-translate-y-1 transition-all hover:border-primary flex flex-col overflow-hidden">
               <div className="flex items-center justify-between mb-3">
-                <div className={`w-10 h-10 bg-gradient-to-br ${stat.color} rounded-lg flex items-center justify-center shadow-lg shrink-0`}>
-                  <stat.icon className="w-5 h-5 text-white" />
+                <div className={`w-10 h-10 ${stat.iconCls} flex items-center justify-center shrink-0`}>
+                  <stat.icon className="w-5 h-5" />
                 </div>
               </div>
-              <div className="text-2xl font-bold text-white mb-1 tabular-nums break-all">{stat.value}</div>
-              <div className="text-xs text-slate-500 font-medium leading-tight mt-auto uppercase tracking-wide">{stat.label}</div>
-              {idx === 0 && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#FFDE42]/60 to-transparent" />}
+              <div className="font-serif text-2xl font-bold text-foreground mb-1 tabular-nums break-all">{stat.value}</div>
+              <div className="text-xs text-muted-foreground font-medium leading-tight mt-auto uppercase tracking-wide">{stat.label}</div>
+              {idx === 0 && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />}
             </div>
           ))}
         </div>
@@ -541,12 +357,13 @@ export function SpectatorDashboard() {
             { id: 'leaderboard', label: 'Bảng Dẫn Đầu', icon: Award }
           ].map(tab => (
             <button
+              type="button"
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all whitespace-nowrap font-medium ${
+              className={`flex items-center gap-2 px-5 py-2.5 transition-all whitespace-nowrap font-medium ${
                 activeTab === tab.id
-                  ? 'bg-[#FFDE42] text-[#1B0C0C] shadow-lg shadow-[#FFDE42]/30'
-                  : 'bg-white/5 text-slate-400 hover:bg-white/10 border border-white/5'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-card text-muted-foreground hover:text-foreground border border-border'
               }`}
             >
               <tab.icon className="w-4 h-4" />
@@ -560,8 +377,8 @@ export function SpectatorDashboard() {
           <div>
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
               <div>
-                <h2 className="text-3xl font-bold text-white mb-2">Giải Đấu</h2>
-                <p className="text-slate-400">Duyệt qua tất cả các giải đấu đua ngựa và thông tin chi tiết</p>
+                <h2 className="font-serif text-3xl font-bold text-foreground mb-2">Giải Đấu</h2>
+                <p className="text-muted-foreground">Duyệt qua tất cả các giải đấu đua ngựa và thông tin chi tiết</p>
               </div>
 
               <div className="flex gap-3">
@@ -569,15 +386,7 @@ export function SpectatorDashboard() {
                   <Select
                     value={tournamentFilter}
                     onChange={(e) => setTournamentFilter(e.target.value)}
-                    sx={{
-                      color: 'white',
-                      '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.1)' },
-                      '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.2)' },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#FFDE42' },
-                      '.MuiSvgIcon-root': { color: '#94a3b8' },
-                      background: 'rgba(255,255,255,0.05)',
-                      borderRadius: '12px'
-                    }}
+                    sx={lightSelectSx}
                   >
                     <MenuItem key="all" value="all">Tất Cả Trạng Thái</MenuItem>
                     <MenuItem key="ongoing" value="ongoing">Đang Diễn Ra</MenuItem>
@@ -590,48 +399,47 @@ export function SpectatorDashboard() {
 
             {loadingTournaments ? (
               <div className="flex justify-center py-16">
-                <div className="w-8 h-8 border-2 border-[#FFDE42] border-t-transparent rounded-full animate-spin" />
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               </div>
             ) : filteredTournaments.length === 0 ? (
-              <div className="bg-white/5 border border-white/5 rounded-2xl p-12 text-center">
-                <Trophy className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                <p className="text-slate-400">Không có giải đấu nào</p>
+              <div className="bg-card border border-border p-12 text-center">
+                <Trophy className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+                <p className="text-muted-foreground">Không có giải đấu nào</p>
               </div>
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredTournaments.map((tournament) => (
-                  <div key={tournament._id} className="group bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden hover:border-[#FFDE42]/30 transition-all">
-                    <div className="relative h-36 overflow-hidden flex items-end p-4" style={{ background: 'linear-gradient(135deg, #1e1a10 0%, #241414 40%, #1a1f0e 100%)' }}>
-                      <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, #FFDE42 0%, transparent 50%), radial-gradient(circle at 80% 20%, #4C5C2D 0%, transparent 40%)' }} />
+                  <div key={tournament._id} className="group bg-card border border-border overflow-hidden hover:border-primary transition-all">
+                    <div className="relative h-36 overflow-hidden flex items-end p-4 border-b border-border" style={{ background: `linear-gradient(135deg, ${getTournamentStatusHex(tournament.status)}1F, ${getTournamentStatusHex(tournament.status)}08)` }}>
                       <div className="absolute top-4 right-4">
                         <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getTournamentStatusColor(tournament.status)}`}>
                           {getTournamentStatusLabel(tournament.status)}
                         </span>
                       </div>
-                      <h3 className="text-xl font-bold text-white leading-tight pr-24 relative z-10">{tournament.name}</h3>
+                      <h3 className="font-serif text-xl font-bold text-foreground leading-tight pr-24 relative z-10">{tournament.name}</h3>
                     </div>
 
                     <div className="p-5">
                       <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
                         <div>
-                          <div className="text-slate-500 text-xs mb-1">Bắt Đầu</div>
-                          <div className="text-white font-medium">{new Date(tournament.startDate).toLocaleDateString('vi-VN')}</div>
+                          <div className="text-muted-foreground text-xs mb-1">Bắt Đầu</div>
+                          <div className="text-foreground font-medium">{new Date(tournament.startDate).toLocaleDateString('vi-VN')}</div>
                         </div>
                         <div>
-                          <div className="text-slate-500 text-xs mb-1">Kết Thúc</div>
-                          <div className="text-white font-medium">{new Date(tournament.endDate).toLocaleDateString('vi-VN')}</div>
+                          <div className="text-muted-foreground text-xs mb-1">Kết Thúc</div>
+                          <div className="text-foreground font-medium">{new Date(tournament.endDate).toLocaleDateString('vi-VN')}</div>
                         </div>
                       </div>
 
                       {tournament.location && (
-                        <div className="bg-white/5 rounded-lg p-3 mb-4 flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-blue-400 shrink-0" />
-                          <span className="text-slate-300 text-sm">{tournament.location}</span>
+                        <div className="bg-background border border-border p-3 mb-4 flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-primary shrink-0" />
+                          <span className="text-foreground text-sm">{tournament.location}</span>
                         </div>
                       )}
 
                       {tournament.description && (
-                        <p className="text-slate-400 text-sm mb-4 line-clamp-2">{tournament.description}</p>
+                        <p className="text-muted-foreground text-sm mb-4 line-clamp-2">{tournament.description}</p>
                       )}
 
                       <Button
@@ -640,10 +448,11 @@ export function SpectatorDashboard() {
                         onClick={() => handleOpenTournamentDetails(tournament)}
                         endIcon={<ChevronRight className="w-4 h-4" />}
                         sx={{
-                          borderColor: 'rgba(255,222,66,0.3)',
-                          color: '#FFDE42',
-                          borderRadius: '10px',
-                          '&:hover': { borderColor: '#FFDE42', backgroundColor: 'rgba(255, 222, 66, 0.1)' }
+                          borderColor: '#1F3D2B',
+                          color: '#1F3D2B',
+                          borderRadius: 0,
+                          textTransform: 'none',
+                          '&:hover': { borderColor: '#1F3D2B', backgroundColor: 'rgba(31,61,43,0.06)' }
                         }}
                       >
                         Xem Chi Tiết
@@ -660,16 +469,17 @@ export function SpectatorDashboard() {
         {activeTab === 'live' && (
           <div>
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-              <h2 className="text-3xl font-bold text-white">Đang Trực Tiếp</h2>
+              <div className="w-3 h-3 bg-secondary rounded-full animate-pulse" />
+              <h2 className="font-serif text-3xl font-bold text-foreground">Đang Trực Tiếp</h2>
               <Chip
                 label={`${liveRacesData.length} Đang Hoạt Động`}
                 size="small"
-                sx={{ backgroundColor: liveRacesData.length > 0 ? '#ef4444' : '#475569', color: 'white' }}
+                sx={{ backgroundColor: liveRacesData.length > 0 ? '#8C2F1B' : '#7A7468', color: 'white' }}
               />
               <button
+                type="button"
                 onClick={loadSchedule}
-                className="ml-auto text-xs text-slate-400 hover:text-white transition-colors flex items-center gap-1"
+                className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
               >
                 <Activity className="w-3 h-3" />
                 Làm mới
@@ -678,59 +488,59 @@ export function SpectatorDashboard() {
 
             {loadingSchedule ? (
               <div className="flex justify-center py-16">
-                <div className="w-8 h-8 border-2 border-[#FFDE42] border-t-transparent rounded-full animate-spin" />
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               </div>
             ) : liveRacesData.length > 0 ? (
               <div className="space-y-6">
                 {liveRacesData.map(race => {
                   const myBetOnRace = myBets.some(b => (b.raceId as any)?._id === race._id && b.status === 'pending');
                   const isRunning = race.status === 'running';
-                  const borderColor = isRunning ? 'border-red-500/30' : 'border-amber-500/20';
+                  const borderColor = isRunning ? 'border-secondary/40' : 'border-gold/50';
                   const statusLabel = isRunning ? 'TRỰC TIẾP' : race.status === 'pre_check' ? 'Chuẩn bị' : 'Đóng cược';
-                  const statusBg = isRunning ? '#ef4444' : '#f59e0b';
+                  const statusBg = isRunning ? '#8C2F1B' : '#C9A227';
                   return (
-                    <div key={race._id} className={`bg-white/5 backdrop-blur-md border ${borderColor} rounded-2xl p-6`}>
+                    <div key={race._id} className={`bg-card border ${borderColor} p-6`}>
                       <div className="flex items-center justify-between mb-5">
                         <div className="flex items-center gap-3 flex-wrap">
-                          <div className={`w-3 h-3 rounded-full animate-pulse shrink-0 ${isRunning ? 'bg-red-500' : 'bg-amber-400'}`} />
+                          <div className={`w-3 h-3 rounded-full animate-pulse shrink-0 ${isRunning ? 'bg-secondary' : 'bg-gold'}`} />
                           <div>
-                            <h3 className="text-xl font-bold text-white">{race.name}</h3>
-                            <p className="text-sm text-slate-400">{race.distance}m • {new Date(race.scheduledTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</p>
+                            <h3 className="font-serif text-xl font-bold text-foreground">{race.name}</h3>
+                            <p className="text-sm text-muted-foreground">{race.distance}m • {new Date(race.scheduledTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</p>
                           </div>
-                          <Chip label={statusLabel} size="small" sx={{ backgroundColor: statusBg, color: 'white', fontWeight: 'bold' }} />
+                          <Chip label={statusLabel} size="small" sx={{ backgroundColor: statusBg, color: statusBg === '#C9A227' ? '#23201A' : 'white', fontWeight: 'bold' }} />
                           {myBetOnRace && (
-                            <Chip label="✓ Bạn đã cược" size="small" sx={{ bgcolor: '#FFDE42', color: '#1B0C0C', fontWeight: 'bold', fontSize: '0.7rem' }} />
+                            <Chip label="✓ Bạn đã cược" size="small" sx={{ bgcolor: '#C9A227', color: '#23201A', fontWeight: 'bold', fontSize: '0.7rem' }} />
                           )}
                         </div>
                         <Chip
                           label={race.grade}
                           size="small"
-                          sx={{ bgcolor: 'rgba(245,158,11,0.15)', color: '#fbbf24', border: '1px solid #f59e0b', fontWeight: 'bold' }}
+                          sx={{ bgcolor: 'rgba(201,162,39,0.15)', color: '#8F7318', border: '1px solid #C9A227', fontWeight: 'bold' }}
                         />
                       </div>
 
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-5">
-                        <div className="bg-white/5 rounded-xl p-3">
-                          <div className="text-xs text-slate-400 mb-1">Cấp Hạng</div>
-                          <div className="text-white font-semibold">{race.grade}</div>
+                        <div className="bg-background border border-border p-3">
+                          <div className="text-xs text-muted-foreground mb-1">Cấp Hạng</div>
+                          <div className="text-foreground font-semibold">{race.grade}</div>
                         </div>
-                        <div className="bg-white/5 rounded-xl p-3">
-                          <div className="text-xs text-slate-400 mb-1">Cự Ly</div>
-                          <div className="text-white font-semibold">{race.distance}m</div>
+                        <div className="bg-background border border-border p-3">
+                          <div className="text-xs text-muted-foreground mb-1">Cự Ly</div>
+                          <div className="text-foreground font-semibold">{race.distance}m</div>
                         </div>
-                        <div className="bg-white/5 rounded-xl p-3">
-                          <div className="text-xs text-slate-400 mb-1">Giải Thưởng</div>
-                          <div className="text-[#FFDE42] font-semibold">{race.purse.toLocaleString()} coins</div>
+                        <div className="bg-background border border-border p-3">
+                          <div className="text-xs text-muted-foreground mb-1">Giải Thưởng</div>
+                          <div className="text-[#8F7318] font-semibold tabular-nums">{race.purse.toLocaleString()} coins</div>
                         </div>
                       </div>
 
-                      <div className={`${isRunning ? 'bg-red-500/5 border-red-500/20' : 'bg-amber-500/5 border-amber-500/20'} border rounded-xl p-4 mb-4 flex items-center gap-3`}>
-                        <div className={`w-8 h-8 ${isRunning ? 'bg-red-500/20' : 'bg-amber-500/20'} rounded-full flex items-center justify-center shrink-0`}>
-                          <Activity className={`w-4 h-4 ${isRunning ? 'text-red-400' : 'text-amber-400'}`} />
+                      <div className={`${isRunning ? 'bg-secondary/8 border-secondary/25' : 'bg-gold/10 border-gold/40'} border p-4 mb-4 flex items-center gap-3`}>
+                        <div className={`w-8 h-8 ${isRunning ? 'bg-secondary/15' : 'bg-gold/20'} rounded-full flex items-center justify-center shrink-0`}>
+                          <Activity className={`w-4 h-4 ${isRunning ? 'text-secondary' : 'text-[#8F7318]'}`} />
                         </div>
                         <div>
-                          <div className="text-white text-sm font-medium">{isRunning ? 'Cuộc đua đang diễn ra' : 'Cuộc đua sắp bắt đầu'}</div>
-                          <div className="text-slate-400 text-xs">Vào xem trực tiếp để theo dõi vị trí ngựa và nhận kết quả ngay khi hoàn thành</div>
+                          <div className="text-foreground text-sm font-medium">{isRunning ? 'Cuộc đua đang diễn ra' : 'Cuộc đua sắp bắt đầu'}</div>
+                          <div className="text-muted-foreground text-xs">Vào xem trực tiếp để theo dõi vị trí ngựa và nhận kết quả ngay khi hoàn thành</div>
                         </div>
                       </div>
 
@@ -740,13 +550,14 @@ export function SpectatorDashboard() {
                         startIcon={<Eye />}
                         onClick={() => navigate(`/spectator/race/${race._id}`)}
                         sx={{
-                          background: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)',
-                          borderRadius: '12px',
+                          background: '#8C2F1B',
+                          borderRadius: 0,
                           py: 1.5,
                           fontWeight: 700,
                           textTransform: 'none',
                           fontSize: '0.95rem',
-                          '&:hover': { background: 'linear-gradient(135deg, #f87171 0%, #ef4444 100%)' }
+                          boxShadow: 'none',
+                          '&:hover': { background: '#6B2415', boxShadow: 'none' }
                         }}
                       >
                         Xem Trực Tiếp
@@ -756,14 +567,14 @@ export function SpectatorDashboard() {
                 })}
               </div>
             ) : (
-              <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-12 text-center">
-                <Play className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                <h3 className="text-xl text-white font-semibold mb-2">Không Có Cuộc Đua Trực Tiếp</h3>
-                <p className="text-slate-400 mb-6">Hiện chưa có cuộc đua nào đang chạy</p>
+              <div className="bg-card border border-border p-12 text-center">
+                <Play className="w-16 h-16 text-muted-foreground/40 mx-auto mb-4" />
+                <h3 className="font-serif text-xl text-foreground font-bold mb-2">Không Có Cuộc Đua Trực Tiếp</h3>
+                <p className="text-muted-foreground mb-6">Hiện chưa có cuộc đua nào đang chạy</p>
                 <Button
                   variant="outlined"
                   onClick={() => setActiveTab('schedule')}
-                  sx={{ borderColor: 'rgba(255,222,66,0.4)', color: '#FFDE42', borderRadius: '10px', textTransform: 'none', '&:hover': { borderColor: '#FFDE42', backgroundColor: 'rgba(255,222,66,0.05)' } }}
+                  sx={{ borderColor: '#1F3D2B', color: '#1F3D2B', borderRadius: 0, textTransform: 'none', '&:hover': { borderColor: '#1F3D2B', backgroundColor: 'rgba(31,61,43,0.06)' } }}
                 >
                   Xem Lịch Trình Sắp Tới
                 </Button>
@@ -776,18 +587,18 @@ export function SpectatorDashboard() {
         {activeTab === 'schedule' && (
           <div>
             <div className="mb-6">
-              <h2 className="text-3xl font-bold text-white mb-2">Lịch Trình Đua & Đặt Cược</h2>
-              <p className="text-slate-400">Các cuộc đua đang mở — đặt cược trước khi hết hạn</p>
+              <h2 className="font-serif text-3xl font-bold text-foreground mb-2">Lịch Trình Đua &amp; Đặt Cược</h2>
+              <p className="text-muted-foreground">Các cuộc đua đang mở — đặt cược trước khi hết hạn</p>
             </div>
 
             {loadingSchedule ? (
               <div className="flex justify-center py-16">
-                <div className="w-8 h-8 border-2 border-[#FFDE42] border-t-transparent rounded-full animate-spin" />
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               </div>
             ) : scheduleRaces.length === 0 ? (
-              <div className="bg-white/5 border border-white/5 rounded-2xl p-12 text-center">
-                <Trophy className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                <p className="text-slate-400">Hiện không có cuộc đua nào đang mở đặt cược</p>
+              <div className="bg-card border border-border p-12 text-center">
+                <Trophy className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+                <p className="text-muted-foreground">Hiện không có cuộc đua nào đang mở đặt cược</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -798,34 +609,34 @@ export function SpectatorDashboard() {
                   const canBet = (race.status === 'open' || race.status === 'closed') && !cutoffPassed;
 
                   return (
-                    <div key={race._id} className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-6 hover:border-[#FFDE42]/30 transition-all">
+                    <div key={race._id} className="bg-card border border-border p-6 hover:border-primary transition-all">
                       <div className="flex flex-col lg:flex-row gap-6">
                         <div className="flex-1">
                           <div className="flex flex-wrap items-center gap-3 mb-4">
-                            <Trophy className="w-5 h-5 text-[#FFDE42]" />
-                            <h3 className="text-xl font-bold text-white">{race.name}</h3>
-                            <Chip label={race.grade} size="small" sx={{ bgcolor: 'rgba(245,158,11,0.2)', color: '#fbbf24', border: '1px solid #f59e0b', fontWeight: 'bold', fontSize: '0.7rem' }} />
+                            <Trophy className="w-5 h-5 text-[#8F7318]" />
+                            <h3 className="font-serif text-xl font-bold text-foreground">{race.name}</h3>
+                            <Chip label={race.grade} size="small" sx={{ bgcolor: 'rgba(201,162,39,0.15)', color: '#8F7318', border: '1px solid #C9A227', fontWeight: 'bold', fontSize: '0.7rem' }} />
                             {myBetOnRace && (
-                              <Chip label="✓ Đã Đặt Cược" size="small" sx={{ bgcolor: '#FFDE42', color: '#1B0C0C', fontWeight: 'bold', fontSize: '0.7rem' }} />
+                              <Chip label="✓ Đã Đặt Cược" size="small" sx={{ bgcolor: '#C9A227', color: '#23201A', fontWeight: 'bold', fontSize: '0.7rem' }} />
                             )}
                           </div>
 
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
                             <div>
-                              <div className="text-slate-500 text-xs mb-1">Thời Gian Đua</div>
-                              <div className="text-white font-medium">{new Date(race.scheduledTime).toLocaleString('vi-VN')}</div>
+                              <div className="text-muted-foreground text-xs mb-1">Thời Gian Đua</div>
+                              <div className="text-foreground font-medium">{new Date(race.scheduledTime).toLocaleString('vi-VN')}</div>
                             </div>
                             <div>
-                              <div className="text-slate-500 text-xs mb-1">Cự Ly</div>
-                              <div className="text-white font-medium">{race.distance}m</div>
+                              <div className="text-muted-foreground text-xs mb-1">Cự Ly</div>
+                              <div className="text-foreground font-medium">{race.distance}m</div>
                             </div>
                             <div>
-                              <div className="text-slate-500 text-xs mb-1">Giải Thưởng</div>
-                              <div className="text-[#FFDE42] font-semibold">${race.purse?.toLocaleString()}</div>
+                              <div className="text-muted-foreground text-xs mb-1">Giải Thưởng</div>
+                              <div className="text-[#8F7318] font-semibold tabular-nums">${race.purse?.toLocaleString()}</div>
                             </div>
                             <div>
-                              <div className="text-slate-500 text-xs mb-1">Hạn Đặt Cược</div>
-                              <div className={`font-medium text-sm ${cutoffPassed ? 'text-red-400' : 'text-emerald-400'}`}>
+                              <div className="text-muted-foreground text-xs mb-1">Hạn Đặt Cược</div>
+                              <div className={`font-medium text-sm ${cutoffPassed ? 'text-destructive' : 'text-primary'}`}>
                                 {bettingCutoff.toLocaleString('vi-VN')}
                               </div>
                             </div>
@@ -836,18 +647,18 @@ export function SpectatorDashboard() {
                           {canBet ? (
                             <Button fullWidth variant="contained" startIcon={<Target />}
                               onClick={() => handleOpenPrediction(race)}
-                              sx={{ background: 'linear-gradient(135deg, #FFDE42 0%, #E6C21E 100%)', color: '#1B0C0C', borderRadius: '12px', py: 1.5, fontWeight: 700, textTransform: 'none', '&:hover': { background: 'linear-gradient(135deg, #FFDE42 0%, #C29D13 100%)' } }}>
+                              sx={{ background: '#8C2F1B', color: 'white', borderRadius: 0, py: 1.5, fontWeight: 700, textTransform: 'none', boxShadow: 'none', '&:hover': { background: '#6B2415', boxShadow: 'none' } }}>
                               Đặt Cược
                             </Button>
                           ) : (
-                            <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-center">
-                              <AlertCircle className="w-5 h-5 text-amber-400 mx-auto mb-1" />
-                              <div className="text-xs text-amber-400 font-medium">Đã Đóng Cược</div>
+                            <div className="bg-gold/10 border border-gold/40 p-3 text-center">
+                              <AlertCircle className="w-5 h-5 text-[#8F7318] mx-auto mb-1" />
+                              <div className="text-xs text-[#8F7318] font-medium">Đã Đóng Cược</div>
                             </div>
                           )}
                           <Button fullWidth variant="outlined" startIcon={<Eye />}
                             onClick={() => navigate(`/spectator/race/${race._id}`)}
-                            sx={{ borderColor: 'rgba(255,255,255,0.2)', color: '#94a3b8', borderRadius: '12px', py: 1, fontWeight: 600, textTransform: 'none', fontSize: '0.8rem', '&:hover': { borderColor: '#FFDE42', color: '#FFDE42', backgroundColor: 'rgba(255,222,66,0.05)' } }}>
+                            sx={{ borderColor: '#E3DCCB', color: '#7A7468', borderRadius: 0, py: 1, fontWeight: 600, textTransform: 'none', fontSize: '0.8rem', '&:hover': { borderColor: '#1F3D2B', color: '#1F3D2B', backgroundColor: 'rgba(31,61,43,0.04)' } }}>
                             Xem Race
                           </Button>
                         </div>
@@ -864,34 +675,34 @@ export function SpectatorDashboard() {
         {activeTab === 'deposit-history' && (
           <div>
             <div className="mb-6">
-              <h2 className="text-3xl font-bold text-white mb-2">Lịch Sử Nạp</h2>
-              <p className="text-slate-400">Theo dõi các giao dịch nạp tiền của bạn</p>
+              <h2 className="font-serif text-3xl font-bold text-foreground mb-2">Lịch Sử Nạp</h2>
+              <p className="text-muted-foreground">Theo dõi các giao dịch nạp tiền của bạn</p>
             </div>
-            <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden">
+            <div className="bg-card border border-border overflow-hidden">
               <table className="w-full">
-                <thead className="bg-slate-900/50">
+                <thead className="bg-muted/50">
                   <tr>
-                    <th className="text-left px-6 py-4 text-sm font-semibold text-slate-300">Mã Giao Dịch</th>
-                    <th className="text-left px-6 py-4 text-sm font-semibold text-slate-300">Ngày</th>
-                    <th className="text-left px-6 py-4 text-sm font-semibold text-slate-300">Số Tiền</th>
-                    <th className="text-left px-6 py-4 text-sm font-semibold text-slate-300">Phương Thức</th>
-                    <th className="text-left px-6 py-4 text-sm font-semibold text-slate-300">Trạng Thái</th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-muted-foreground">Mã Giao Dịch</th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-muted-foreground">Ngày</th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-muted-foreground">Số Tiền</th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-muted-foreground">Phương Thức</th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-muted-foreground">Trạng Thái</th>
                   </tr>
                 </thead>
                 <tbody>
                   {depositHistory.map((deposit) => (
-                    <tr key={deposit.id} className="border-t border-white/5 hover:bg-white/5 transition-colors">
-                      <td className="px-6 py-4 text-slate-400">{deposit.reference}</td>
-                      <td className="px-6 py-4 text-slate-300">{deposit.date}</td>
-                      <td className="px-6 py-4 text-[#FFDE42] font-bold">{deposit.amount}</td>
-                      <td className="px-6 py-4 text-white">{deposit.method}</td>
+                    <tr key={deposit.id} className="border-t border-border hover:bg-muted/40 transition-colors">
+                      <td className="px-6 py-4 text-muted-foreground">{deposit.reference}</td>
+                      <td className="px-6 py-4 text-foreground">{deposit.date}</td>
+                      <td className="px-6 py-4 text-[#8F7318] font-bold tabular-nums">{deposit.amount}</td>
+                      <td className="px-6 py-4 text-foreground">{deposit.method}</td>
                       <td className="px-6 py-4">
                         <Chip
                           label={deposit.status}
                           size="small"
                           sx={{
-                            backgroundColor: deposit.status === 'Thành Công' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
-                            color: deposit.status === 'Thành Công' ? '#10b981' : '#f59e0b',
+                            backgroundColor: deposit.status === 'Thành Công' ? 'rgba(31,61,43,0.12)' : 'rgba(201,162,39,0.15)',
+                            color: deposit.status === 'Thành Công' ? '#1F3D2B' : '#8F7318',
                             fontWeight: 600
                           }}
                         />
@@ -908,46 +719,46 @@ export function SpectatorDashboard() {
         {activeTab === 'bet-history' && (
           <div>
             <div className="mb-6">
-              <h2 className="text-3xl font-bold text-white mb-2">Lịch Sử Cược</h2>
-              <p className="text-slate-400">Xem lại tất cả các vé cược của bạn</p>
+              <h2 className="font-serif text-3xl font-bold text-foreground mb-2">Lịch Sử Cược</h2>
+              <p className="text-muted-foreground">Xem lại tất cả các vé cược của bạn</p>
             </div>
-            <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden">
+            <div className="bg-card border border-border overflow-hidden">
               <table className="w-full">
-                <thead className="bg-slate-900/50">
+                <thead className="bg-muted/50">
                   <tr>
-                    <th className="text-left px-6 py-4 text-sm font-semibold text-slate-300">Cuộc Đua</th>
-                    <th className="text-left px-6 py-4 text-sm font-semibold text-slate-300">Ngày</th>
-                    <th className="text-left px-6 py-4 text-sm font-semibold text-slate-300">Cược / Ngựa</th>
-                    <th className="text-left px-6 py-4 text-sm font-semibold text-slate-300">Số Tiền</th>
-                    <th className="text-left px-6 py-4 text-sm font-semibold text-slate-300">Hệ Số</th>
-                    <th className="text-left px-6 py-4 text-sm font-semibold text-slate-300">Trạng Thái</th>
-                    <th className="text-left px-6 py-4 text-sm font-semibold text-slate-300">Thực Nhận</th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-muted-foreground">Cuộc Đua</th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-muted-foreground">Ngày</th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-muted-foreground">Cược / Ngựa</th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-muted-foreground">Số Tiền</th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-muted-foreground">Hệ Số</th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-muted-foreground">Trạng Thái</th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-muted-foreground">Thực Nhận</th>
                   </tr>
                 </thead>
                 <tbody>
                   {betHistory.map((bet) => (
-                    <tr key={bet.id} className="border-t border-white/5 hover:bg-white/5 transition-colors">
-                      <td className="px-6 py-4 text-white font-medium">{bet.race}</td>
-                      <td className="px-6 py-4 text-slate-300">{bet.date}</td>
+                    <tr key={bet.id} className="border-t border-border hover:bg-muted/40 transition-colors">
+                      <td className="px-6 py-4 text-foreground font-medium">{bet.race}</td>
+                      <td className="px-6 py-4 text-foreground">{bet.date}</td>
                       <td className="px-6 py-4">
-                        <div className="text-blue-400 text-xs font-medium mb-1">{bet.type}</div>
-                        <div className="text-white">{bet.horse}</div>
+                        <div className="text-primary text-xs font-medium mb-1">{bet.type}</div>
+                        <div className="text-foreground">{bet.horse}</div>
                       </td>
-                      <td className="px-6 py-4 text-white">${bet.amount}</td>
-                      <td className="px-6 py-4 text-slate-400">{bet.odds}</td>
+                      <td className="px-6 py-4 text-foreground tabular-nums">${bet.amount}</td>
+                      <td className="px-6 py-4 text-muted-foreground">{bet.odds}</td>
                       <td className="px-6 py-4">
                         <Chip
                           label={bet.status === 'won' ? 'Thắng' : bet.status === 'lost' ? 'Thua' : 'Chờ'}
                           size="small"
                           sx={{
-                            backgroundColor: bet.status === 'won' ? '#FFDE42' : bet.status === 'lost' ? '#ef4444' : 'rgba(100, 116, 139, 0.5)',
-                            color: bet.status === 'won' ? '#1B0C0C' : 'white',
+                            backgroundColor: bet.status === 'won' ? '#1F3D2B' : bet.status === 'lost' ? '#B42318' : '#EDE7D8',
+                            color: bet.status === 'won' || bet.status === 'lost' ? 'white' : '#7A7468',
                             fontWeight: 600
                           }}
                         />
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`font-bold ${bet.status === 'won' ? 'text-[#FFDE42]' : 'text-slate-500'}`}>
+                        <span className={`font-bold tabular-nums ${bet.status === 'won' ? 'text-[#8F7318]' : 'text-muted-foreground'}`}>
                           {bet.status === 'won' ? `+$${bet.reward}` : '-'}
                         </span>
                       </td>
@@ -964,18 +775,18 @@ export function SpectatorDashboard() {
           <div>
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
               <div>
-                <h2 className="text-3xl font-bold text-white mb-2">Lịch Sử Đặt Cược</h2>
-                <p className="text-slate-400">Theo dõi các cược của bạn</p>
+                <h2 className="font-serif text-3xl font-bold text-foreground mb-2">Lịch Sử Đặt Cược</h2>
+                <p className="text-muted-foreground">Theo dõi các cược của bạn</p>
               </div>
               {myBets.length > 0 && (
                 <div className="flex gap-6">
                   <div className="text-right">
-                    <div className="text-sm text-slate-400">Thắng / Tổng</div>
-                    <div className="text-2xl font-bold text-[#FFDE42]">{myBets.filter(b => b.status === 'won').length} / {myBets.length}</div>
+                    <div className="text-sm text-muted-foreground">Thắng / Tổng</div>
+                    <div className="font-serif text-2xl font-bold text-foreground tabular-nums">{myBets.filter(b => b.status === 'won').length} / {myBets.length}</div>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm text-slate-400">Tổng Tiền Thắng</div>
-                    <div className="text-2xl font-bold text-[#FFDE42]">+${myBets.reduce((s, b) => s + (b.payoutAmount || 0), 0).toLocaleString()}</div>
+                    <div className="text-sm text-muted-foreground">Tổng Tiền Thắng</div>
+                    <div className="font-serif text-2xl font-bold text-[#8F7318] tabular-nums">+${myBets.reduce((s, b) => s + (b.payoutAmount || 0), 0).toLocaleString()}</div>
                   </div>
                 </div>
               )}
@@ -983,70 +794,71 @@ export function SpectatorDashboard() {
 
             {loadingBets ? (
               <div className="flex justify-center py-16">
-                <div className="w-8 h-8 border-2 border-[#FFDE42] border-t-transparent rounded-full animate-spin" />
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               </div>
             ) : myBets.length === 0 ? (
-              <div className="bg-white/5 border border-white/5 rounded-2xl p-12 text-center">
-                <Target className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                <p className="text-slate-400">Bạn chưa đặt cược nào. Vào tab Lịch Trình để đặt cược!</p>
+              <div className="bg-card border border-border p-12 text-center">
+                <Target className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+                <p className="text-muted-foreground">Bạn chưa đặt cược nào. Vào tab Lịch Trình để đặt cược!</p>
               </div>
             ) : (
-              <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden">
+              <div className="bg-card border border-border overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="bg-slate-900/50">
+                    <thead className="bg-muted/50">
                       <tr>
-                        <th className="text-left px-5 py-4 text-sm font-semibold text-slate-300">Cuộc Đua</th>
-                        <th className="text-left px-5 py-4 text-sm font-semibold text-slate-300">Ngày</th>
-                        <th className="text-left px-5 py-4 text-sm font-semibold text-slate-300">Loại Cược</th>
-                        <th className="text-left px-5 py-4 text-sm font-semibold text-slate-300">Ngựa</th>
-                        <th className="text-left px-5 py-4 text-sm font-semibold text-slate-300">Tiền Cược</th>
-                        <th className="text-left px-5 py-4 text-sm font-semibold text-slate-300">Hệ Số</th>
-                        <th className="text-left px-5 py-4 text-sm font-semibold text-slate-300">Trạng Thái</th>
-                        <th className="text-left px-5 py-4 text-sm font-semibold text-slate-300">Kết Quả</th>
-                        <th className="px-5 py-4 text-sm font-semibold text-slate-300"></th>
+                        <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">Cuộc Đua</th>
+                        <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">Ngày</th>
+                        <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">Loại Cược</th>
+                        <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">Ngựa</th>
+                        <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">Tiền Cược</th>
+                        <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">Hệ Số</th>
+                        <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">Trạng Thái</th>
+                        <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">Kết Quả</th>
+                        <th className="px-5 py-4 text-sm font-semibold text-muted-foreground"></th>
                       </tr>
                     </thead>
                     <tbody>
                       {myBets.map(bet => {
                         const statusMap: Record<string, { label: string; color: string }> = {
-                          pending: { label: 'Chờ kết quả', color: 'bg-amber-500/20 text-amber-300' },
-                          won: { label: 'Thắng', color: 'bg-emerald-500/20 text-emerald-300' },
-                          lost: { label: 'Thua', color: 'bg-red-500/20 text-red-400' },
-                          cancelled: { label: 'Đã hủy', color: 'bg-slate-500/20 text-slate-400' },
-                          refunded: { label: 'Đã hoàn', color: 'bg-blue-500/20 text-blue-400' },
+                          pending: { label: 'Chờ kết quả', color: 'bg-gold/15 text-[#8F7318]' },
+                          won: { label: 'Thắng', color: 'bg-primary/10 text-primary' },
+                          lost: { label: 'Thua', color: 'bg-destructive/10 text-destructive' },
+                          cancelled: { label: 'Đã hủy', color: 'bg-muted text-muted-foreground' },
+                          refunded: { label: 'Đã hoàn', color: 'bg-secondary/10 text-secondary' },
                         };
                         const st = statusMap[bet.status] || statusMap.pending;
                         const betTypeLabel: Record<string, string> = { win: 'Thắng (Hạng 1)', place: 'Hạng 2', show: 'Hạng 3' };
                         const race = bet.raceId as any;
                         const horse = bet.horseId as any;
                         return (
-                          <tr key={bet._id} className="border-t border-white/5 hover:bg-white/5 transition-colors">
+                          <tr key={bet._id} className="border-t border-border hover:bg-muted/40 transition-colors">
                             <td className="px-5 py-4">
-                              <div className="text-white font-medium">{race?.name || '-'}</div>
-                              <div className="text-xs text-slate-400">{race?.grade}</div>
+                              <div className="text-foreground font-medium">{race?.name || '-'}</div>
+                              <div className="text-xs text-muted-foreground">{race?.grade}</div>
                             </td>
-                            <td className="px-5 py-4 text-slate-300 text-sm">{new Date(bet.createdAt).toLocaleDateString('vi-VN')}</td>
+                            <td className="px-5 py-4 text-foreground text-sm">{new Date(bet.createdAt).toLocaleDateString('vi-VN')}</td>
                             <td className="px-5 py-4">
-                              <span className="px-2 py-1 bg-blue-500/10 text-blue-400 rounded text-xs font-medium">{betTypeLabel[bet.betType]}</span>
+                              <span className="px-2 py-1 bg-primary/10 text-primary text-xs font-medium">{betTypeLabel[bet.betType]}</span>
                             </td>
-                            <td className="px-5 py-4 text-slate-200 font-medium">{horse?.name || '-'}</td>
-                            <td className="px-5 py-4 text-white">${bet.amount.toLocaleString()}</td>
-                            <td className="px-5 py-4 text-[#FFDE42] font-semibold">{bet.multiplier}x</td>
+                            <td className="px-5 py-4 text-foreground font-medium">{horse?.name || '-'}</td>
+                            <td className="px-5 py-4 text-foreground tabular-nums">${bet.amount.toLocaleString()}</td>
+                            <td className="px-5 py-4 text-[#8F7318] font-semibold">{bet.multiplier}x</td>
                             <td className="px-5 py-4">
-                              <span className={`px-2 py-1 rounded text-xs font-semibold ${st.color}`}>{st.label}</span>
+                              <span className={`px-2 py-1 text-xs font-semibold ${st.color}`}>{st.label}</span>
                             </td>
                             <td className="px-5 py-4">
-                              <span className={`font-bold ${bet.status === 'won' ? 'text-[#FFDE42]' : 'text-slate-500'}`}>
+                              <span className={`font-bold tabular-nums ${bet.status === 'won' ? 'text-[#8F7318]' : 'text-muted-foreground'}`}>
                                 {bet.status === 'won' ? `+$${bet.payoutAmount?.toLocaleString()}` : '-'}
                               </span>
                             </td>
                             <td className="px-5 py-4">
                               {bet.status === 'pending' && (
                                 <button
+                                  type="button"
                                   disabled={cancellingBetId === bet._id}
                                   onClick={() => handleCancelBet(bet._id)}
-                                  className="text-xs text-red-400 hover:text-red-300 border border-red-500/30 px-2 py-1 rounded transition-colors disabled:opacity-50"
+                                  className="text-xs text-destructive hover:text-destructive/80 border border-destructive/30 px-2 py-1 transition-colors disabled:opacity-50"
                                 >
                                   {cancellingBetId === bet._id ? '...' : 'Hủy'}
                                 </button>
@@ -1066,24 +878,24 @@ export function SpectatorDashboard() {
         {/* Rankings Tab */}
         {activeTab === 'rankings' && (() => {
           const gradeColor: Record<string, string> = {
-            G1: 'bg-[#FFDE42]/20 text-[#FFDE42] border-[#FFDE42]/40',
-            G2: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
-            G3: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
-            Maiden: 'bg-slate-600/30 text-slate-400 border-slate-600/40',
+            G1: 'bg-gold text-foreground border-gold',
+            G2: 'border-secondary text-secondary',
+            G3: 'border-primary text-primary',
+            Maiden: 'border-muted-foreground text-muted-foreground',
           };
           const rankBadge = (rank: number) => (
-            <div className={`w-12 h-12 shrink-0 flex items-center justify-center rounded-xl text-sm font-bold shadow-lg ${
-              rank === 1 ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-white' :
-              rank === 2 ? 'bg-gradient-to-br from-slate-300 to-slate-500 text-slate-900' :
-              rank === 3 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white' :
-              'bg-white/10 text-slate-400'
+            <div className={`w-12 h-12 shrink-0 flex items-center justify-center text-sm font-bold ${
+              rank === 1 ? 'bg-gold text-foreground' :
+              rank === 2 ? 'bg-[#9A937F] text-white' :
+              rank === 3 ? 'bg-[#A85C32] text-white' :
+              'bg-muted text-muted-foreground'
             }`}>
               {rank <= 3 ? <Medal className="w-5 h-5" /> : `#${rank}`}
             </div>
           );
           const winBar = (rate: number) => (
-            <div className="w-full bg-white/10 rounded-full h-1.5 mt-1">
-              <div className="bg-[#FFDE42] h-1.5 rounded-full" style={{ width: `${Math.min(rate, 100)}%` }} />
+            <div className="w-full bg-muted h-1.5 mt-1">
+              <div className="bg-primary h-1.5" style={{ width: `${Math.min(rate, 100)}%` }} />
             </div>
           );
           const activeList = rankingType === 'horses' ? horseRankings
@@ -1095,14 +907,14 @@ export function SpectatorDashboard() {
               {/* Header */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 <div>
-                  <h2 className="text-3xl font-bold text-white mb-1">Bảng Xếp Hạng</h2>
-                  <p className="text-slate-400 text-sm">Dữ liệu tích lũy toàn sự nghiệp</p>
+                  <h2 className="font-serif text-3xl font-bold text-foreground mb-1">Bảng Xếp Hạng</h2>
+                  <p className="text-muted-foreground text-sm">Dữ liệu tích lũy toàn sự nghiệp</p>
                 </div>
-                <div className="flex gap-2 p-1 bg-white/5 rounded-xl border border-white/5">
+                <div className="flex gap-2 p-1 bg-card border border-border">
                   {(['horses', 'jockeys', 'owners'] as const).map((t) => (
-                    <button key={t} onClick={() => setRankingType(t)}
-                      className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                        rankingType === t ? 'bg-[#FFDE42] text-slate-900 shadow' : 'text-slate-400 hover:text-white'
+                    <button type="button" key={t} onClick={() => setRankingType(t)}
+                      className={`px-4 py-2 text-sm font-semibold transition-all ${
+                        rankingType === t ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
                       }`}>
                       {t === 'horses' ? '🐎 Ngựa' : t === 'jockeys' ? '🏇 Kỵ Sĩ' : '👑 Chủ Ngựa'}
                     </button>
@@ -1112,126 +924,126 @@ export function SpectatorDashboard() {
 
               {loadingRankings ? (
                 <div className="flex justify-center py-16">
-                  <div className="w-8 h-8 border-2 border-[#FFDE42] border-t-transparent rounded-full animate-spin" />
+                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : activeList.length === 0 ? (
-                <div className="bg-white/5 border border-white/5 rounded-2xl p-12 text-center">
-                  <Trophy className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                  <p className="text-slate-400">Chưa có dữ liệu xếp hạng</p>
+                <div className="bg-card border border-border p-12 text-center">
+                  <Trophy className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
+                  <p className="text-muted-foreground">Chưa có dữ liệu xếp hạng</p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {rankingType === 'horses' && horseRankings.map((h) => (
-                    <div key={h._id} className={`group flex items-center gap-4 p-4 rounded-2xl border transition-all hover:-translate-y-0.5 ${
-                      h.rank <= 3 ? 'bg-gradient-to-r from-white/8 to-white/3 border-white/10' : 'bg-white/4 border-white/5 hover:border-white/10'
+                    <div key={h._id} className={`group flex items-center gap-4 p-4 bg-card border transition-all hover:-translate-y-0.5 ${
+                      h.rank <= 3 ? 'border-gold/50' : 'border-border hover:border-primary'
                     }`}>
                       {rankBadge(h.rank)}
 
                       {/* Name + owner + grade */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-white font-bold truncate">{h.name}</span>
-                          <span className={`text-xs px-2 py-0.5 rounded-full border font-semibold shrink-0 ${gradeColor[h.currentGrade] || gradeColor.Maiden}`}>
+                          <span className="text-foreground font-bold truncate">{h.name}</span>
+                          <span className={`text-xs px-2 py-0.5 border font-semibold shrink-0 uppercase tracking-wider ${gradeColor[h.currentGrade] || gradeColor.Maiden}`}>
                             {h.currentGrade}
                           </span>
                         </div>
-                        <span className="text-xs text-slate-500">Chủ: {h.owner}</span>
+                        <span className="text-xs text-muted-foreground">Chủ: {h.owner}</span>
                       </div>
 
                       {/* Stats */}
                       <div className="hidden md:grid grid-cols-4 gap-6 text-center">
                         <div>
-                          <div className="text-lg font-bold text-white">{h.totalPoints.toLocaleString()}</div>
-                          <div className="text-xs text-slate-500">Điểm</div>
+                          <div className="text-lg font-bold text-foreground tabular-nums">{h.totalPoints.toLocaleString()}</div>
+                          <div className="text-xs text-muted-foreground">Điểm</div>
                         </div>
                         <div>
-                          <div className="text-lg font-bold text-[#FFDE42]">{h.winCount}</div>
-                          <div className="text-xs text-slate-500">Thắng</div>
+                          <div className="text-lg font-bold text-[#8F7318] tabular-nums">{h.winCount}</div>
+                          <div className="text-xs text-muted-foreground">Thắng</div>
                         </div>
                         <div>
-                          <div className="text-lg font-bold text-emerald-400">{h.winRate}%</div>
+                          <div className="text-lg font-bold text-primary tabular-nums">{h.winRate}%</div>
                           {winBar(h.winRate)}
                         </div>
                         <div>
-                          <div className="text-lg font-bold text-purple-400">{h.totalEarnings.toLocaleString()}</div>
-                          <div className="text-xs text-slate-500">Coins</div>
+                          <div className="text-lg font-bold text-secondary tabular-nums">{h.totalEarnings.toLocaleString()}</div>
+                          <div className="text-xs text-muted-foreground">Coins</div>
                         </div>
                       </div>
 
                       {/* Mobile compact */}
                       <div className="md:hidden text-right">
-                        <div className="text-[#FFDE42] font-bold">{h.totalPoints} pts</div>
-                        <div className="text-xs text-slate-500">{h.winRate}% win</div>
+                        <div className="text-[#8F7318] font-bold tabular-nums">{h.totalPoints} pts</div>
+                        <div className="text-xs text-muted-foreground">{h.winRate}% win</div>
                       </div>
                     </div>
                   ))}
 
                   {rankingType === 'jockeys' && jockeyRankings.map((j) => (
-                    <div key={j._id} className={`group flex items-center gap-4 p-4 rounded-2xl border transition-all hover:-translate-y-0.5 ${
-                      j.rank <= 3 ? 'bg-gradient-to-r from-white/8 to-white/3 border-white/10' : 'bg-white/4 border-white/5 hover:border-white/10'
+                    <div key={j._id} className={`group flex items-center gap-4 p-4 bg-card border transition-all hover:-translate-y-0.5 ${
+                      j.rank <= 3 ? 'border-gold/50' : 'border-border hover:border-primary'
                     }`}>
                       {rankBadge(j.rank)}
 
                       <div className="flex-1 min-w-0">
-                        <div className="text-white font-bold truncate">{j.name}</div>
-                        <div className="text-xs text-slate-500">{j.experienceYears} năm kinh nghiệm</div>
+                        <div className="text-foreground font-bold truncate">{j.name}</div>
+                        <div className="text-xs text-muted-foreground">{j.experienceYears} năm kinh nghiệm</div>
                       </div>
 
                       <div className="hidden md:grid grid-cols-3 gap-6 text-center">
                         <div>
-                          <div className="text-lg font-bold text-white">{j.raceCount}</div>
-                          <div className="text-xs text-slate-500">Cuộc Đua</div>
+                          <div className="text-lg font-bold text-foreground tabular-nums">{j.raceCount}</div>
+                          <div className="text-xs text-muted-foreground">Cuộc Đua</div>
                         </div>
                         <div>
-                          <div className="text-lg font-bold text-[#FFDE42]">{j.winCount}</div>
-                          <div className="text-xs text-slate-500">Thắng</div>
+                          <div className="text-lg font-bold text-[#8F7318] tabular-nums">{j.winCount}</div>
+                          <div className="text-xs text-muted-foreground">Thắng</div>
                         </div>
                         <div>
-                          <div className="text-lg font-bold text-emerald-400">{j.winRate}%</div>
+                          <div className="text-lg font-bold text-primary tabular-nums">{j.winRate}%</div>
                           {winBar(j.winRate)}
                         </div>
                       </div>
 
                       <div className="md:hidden text-right">
-                        <div className="text-[#FFDE42] font-bold">{j.winCount} thắng</div>
-                        <div className="text-xs text-slate-500">{j.winRate}% win</div>
+                        <div className="text-[#8F7318] font-bold tabular-nums">{j.winCount} thắng</div>
+                        <div className="text-xs text-muted-foreground">{j.winRate}% win</div>
                       </div>
                     </div>
                   ))}
 
                   {rankingType === 'owners' && ownerRankings.map((o) => (
-                    <div key={o._id} className={`group flex items-center gap-4 p-4 rounded-2xl border transition-all hover:-translate-y-0.5 ${
-                      o.rank <= 3 ? 'bg-gradient-to-r from-white/8 to-white/3 border-white/10' : 'bg-white/4 border-white/5 hover:border-white/10'
+                    <div key={o._id} className={`group flex items-center gap-4 p-4 bg-card border transition-all hover:-translate-y-0.5 ${
+                      o.rank <= 3 ? 'border-gold/50' : 'border-border hover:border-primary'
                     }`}>
                       {rankBadge(o.rank)}
 
                       <div className="flex-1 min-w-0">
-                        <div className="text-white font-bold truncate">{o.name}</div>
-                        <div className="text-xs text-slate-500">{o.totalHorses} ngựa · {o.totalRaces} cuộc đua</div>
+                        <div className="text-foreground font-bold truncate">{o.name}</div>
+                        <div className="text-xs text-muted-foreground">{o.totalHorses} ngựa · {o.totalRaces} cuộc đua</div>
                       </div>
 
                       <div className="hidden md:grid grid-cols-4 gap-6 text-center">
                         <div>
-                          <div className="text-lg font-bold text-white">{o.totalHorses}</div>
-                          <div className="text-xs text-slate-500">Ngựa</div>
+                          <div className="text-lg font-bold text-foreground tabular-nums">{o.totalHorses}</div>
+                          <div className="text-xs text-muted-foreground">Ngựa</div>
                         </div>
                         <div>
-                          <div className="text-lg font-bold text-[#FFDE42]">{o.totalWins}</div>
-                          <div className="text-xs text-slate-500">Thắng</div>
+                          <div className="text-lg font-bold text-[#8F7318] tabular-nums">{o.totalWins}</div>
+                          <div className="text-xs text-muted-foreground">Thắng</div>
                         </div>
                         <div>
-                          <div className="text-lg font-bold text-emerald-400">{o.winRate}%</div>
+                          <div className="text-lg font-bold text-primary tabular-nums">{o.winRate}%</div>
                           {winBar(o.winRate)}
                         </div>
                         <div>
-                          <div className="text-lg font-bold text-purple-400">{o.totalEarnings.toLocaleString()}</div>
-                          <div className="text-xs text-slate-500">Coins</div>
+                          <div className="text-lg font-bold text-secondary tabular-nums">{o.totalEarnings.toLocaleString()}</div>
+                          <div className="text-xs text-muted-foreground">Coins</div>
                         </div>
                       </div>
 
                       <div className="md:hidden text-right">
-                        <div className="text-[#FFDE42] font-bold">{o.totalWins} thắng</div>
-                        <div className="text-xs text-slate-500">{o.winRate}% win</div>
+                        <div className="text-[#8F7318] font-bold tabular-nums">{o.totalWins} thắng</div>
+                        <div className="text-xs text-muted-foreground">{o.winRate}% win</div>
                       </div>
                     </div>
                   ))}
@@ -1247,43 +1059,43 @@ export function SpectatorDashboard() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
               <div>
-                <h2 className="text-3xl font-bold text-white mb-1">Bảng Dẫn Đầu Khán Giả</h2>
-                <p className="text-slate-400 text-sm">Xếp hạng theo tổng tiền thắng cược</p>
+                <h2 className="font-serif text-3xl font-bold text-foreground mb-1">Bảng Dẫn Đầu Khán Giả</h2>
+                <p className="text-muted-foreground text-sm">Xếp hạng theo tổng tiền thắng cược</p>
               </div>
-              <button onClick={loadLeaderboard}
-                className="flex items-center gap-2 text-xs text-slate-400 hover:text-white transition-colors px-3 py-2 bg-white/5 rounded-lg border border-white/5">
+              <button type="button" onClick={loadLeaderboard}
+                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-2 bg-card border border-border">
                 <Activity className="w-3.5 h-3.5" /> Làm mới
               </button>
             </div>
 
             {loadingLeaderboard ? (
               <div className="flex justify-center py-16">
-                <div className="w-8 h-8 border-2 border-[#FFDE42] border-t-transparent rounded-full animate-spin" />
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               </div>
             ) : spectatorRankings.length === 0 ? (
-              <div className="bg-white/5 border border-white/5 rounded-2xl p-12 text-center">
-                <Award className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                <p className="text-slate-400 mb-2">Chưa có ai vào bảng xếp hạng</p>
-                <p className="text-slate-500 text-sm">Hãy đặt cược và thắng để xuất hiện ở đây!</p>
+              <div className="bg-card border border-border p-12 text-center">
+                <Award className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
+                <p className="text-muted-foreground mb-2">Chưa có ai vào bảng xếp hạng</p>
+                <p className="text-muted-foreground/70 text-sm">Hãy đặt cược và thắng để xuất hiện ở đây!</p>
               </div>
             ) : (
               <div className="space-y-2">
                 {spectatorRankings.map((entry) => {
                   const isMe = entry._id === user?._id;
                   return (
-                    <div key={entry._id} className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${
+                    <div key={entry._id} className={`flex items-center gap-4 p-4 bg-card border transition-all ${
                       isMe
-                        ? 'bg-[#FFDE42]/5 border-[#FFDE42]/30 shadow-lg shadow-[#FFDE42]/10'
+                        ? 'border-gold bg-gold/5'
                         : entry.rank <= 3
-                        ? 'bg-gradient-to-r from-white/8 to-white/3 border-white/10'
-                        : 'bg-white/4 border-white/5 hover:border-white/10'
+                        ? 'border-gold/50'
+                        : 'border-border hover:border-primary'
                     }`}>
                       {/* Rank badge */}
-                      <div className={`w-12 h-12 shrink-0 flex items-center justify-center rounded-xl text-sm font-bold shadow-lg ${
-                        entry.rank === 1 ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-white' :
-                        entry.rank === 2 ? 'bg-gradient-to-br from-slate-300 to-slate-500 text-slate-900' :
-                        entry.rank === 3 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white' :
-                        isMe ? 'bg-[#FFDE42]/20 text-[#FFDE42] border border-[#FFDE42]/40' : 'bg-white/10 text-slate-400'
+                      <div className={`w-12 h-12 shrink-0 flex items-center justify-center text-sm font-bold ${
+                        entry.rank === 1 ? 'bg-gold text-foreground' :
+                        entry.rank === 2 ? 'bg-[#9A937F] text-white' :
+                        entry.rank === 3 ? 'bg-[#A85C32] text-white' :
+                        isMe ? 'bg-gold/20 text-[#8F7318] border border-gold/50' : 'bg-muted text-muted-foreground'
                       }`}>
                         {entry.rank <= 3 ? <Medal className="w-5 h-5" /> : `#${entry.rank}`}
                       </div>
@@ -1291,41 +1103,41 @@ export function SpectatorDashboard() {
                       {/* Avatar + name */}
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
-                          isMe ? 'bg-[#FFDE42] text-slate-900' : 'bg-slate-700 text-slate-300'
+                          isMe ? 'bg-gold text-foreground' : 'bg-primary text-primary-foreground'
                         }`}>
                           {entry.name.charAt(0).toUpperCase()}
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-white font-semibold truncate">{entry.name}</span>
-                            {isMe && <Chip label="Bạn" size="small" sx={{ bgcolor: '#FFDE42', color: '#1B0C0C', fontWeight: 700, height: 18, fontSize: '0.65rem' }} />}
+                            <span className="text-foreground font-semibold truncate">{entry.name}</span>
+                            {isMe && <Chip label="Bạn" size="small" sx={{ bgcolor: '#C9A227', color: '#23201A', fontWeight: 700, height: 18, fontSize: '0.65rem' }} />}
                           </div>
-                          <div className="text-xs text-slate-500">{entry.totalBets} cược · {entry.winRate}% thắng</div>
+                          <div className="text-xs text-muted-foreground">{entry.totalBets} cược · {entry.winRate}% thắng</div>
                         </div>
                       </div>
 
                       {/* Stats */}
                       <div className="hidden md:flex items-center gap-8">
                         <div className="text-center">
-                          <div className="text-sm font-bold text-[#FFDE42]">{entry.wonBets}/{entry.totalBets}</div>
-                          <div className="text-xs text-slate-500">Thắng/Tổng</div>
+                          <div className="text-sm font-bold text-[#8F7318] tabular-nums">{entry.wonBets}/{entry.totalBets}</div>
+                          <div className="text-xs text-muted-foreground">Thắng/Tổng</div>
                         </div>
                         <div className="text-center">
-                          <div className={`text-sm font-bold ${entry.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                          <div className={`text-sm font-bold tabular-nums ${entry.profit >= 0 ? 'text-primary' : 'text-destructive'}`}>
                             {entry.profit >= 0 ? '+' : ''}{entry.profit.toLocaleString()}
                           </div>
-                          <div className="text-xs text-slate-500">Lợi nhuận</div>
+                          <div className="text-xs text-muted-foreground">Lợi nhuận</div>
                         </div>
                         <div className="text-center min-w-[90px]">
-                          <div className="text-lg font-bold text-white">{entry.totalPayout.toLocaleString()}</div>
-                          <div className="text-xs text-slate-500">Tổng nhận</div>
+                          <div className="text-lg font-bold text-foreground tabular-nums">{entry.totalPayout.toLocaleString()}</div>
+                          <div className="text-xs text-muted-foreground">Tổng nhận</div>
                         </div>
                       </div>
 
                       {/* Mobile */}
                       <div className="md:hidden text-right shrink-0">
-                        <div className="text-[#FFDE42] font-bold text-sm">{entry.totalPayout.toLocaleString()}</div>
-                        <div className={`text-xs ${entry.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        <div className="text-[#8F7318] font-bold text-sm tabular-nums">{entry.totalPayout.toLocaleString()}</div>
+                        <div className={`text-xs tabular-nums ${entry.profit >= 0 ? 'text-primary' : 'text-destructive'}`}>
                           {entry.profit >= 0 ? '+' : ''}{entry.profit.toLocaleString()}
                         </div>
                       </div>
@@ -1336,17 +1148,17 @@ export function SpectatorDashboard() {
             )}
 
             {/* CTA */}
-            <div className="mt-8 bg-gradient-to-br from-[#FFDE42]/20 via-amber-900/10 to-slate-900 border border-[#FFDE42]/20 rounded-2xl p-8 text-center">
-              <div className="w-14 h-14 bg-[#FFDE42]/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Flame className="w-8 h-8 text-[#FFDE42]" />
+            <div className="mt-8 bg-card border border-gold/40 p-8 text-center">
+              <div className="w-14 h-14 bg-gold/15 flex items-center justify-center mx-auto mb-4">
+                <Flame className="w-8 h-8 text-[#8F7318]" />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-2">Leo Lên Đỉnh Cao!</h3>
-              <p className="text-slate-400 mb-6 max-w-md mx-auto text-sm">
+              <h3 className="font-serif text-2xl font-bold text-foreground mb-2">Leo Lên Đỉnh Cao!</h3>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto text-sm">
                 Đặt cược thông minh và liên tục để tích lũy chiến thắng, leo hạng và được ghi danh trên bảng dẫn đầu.
               </p>
               <Button variant="contained" startIcon={<Target />}
                 onClick={() => setActiveTab('schedule')}
-                sx={{ background: 'linear-gradient(135deg,#FFDE42,#E6C21E)', color: '#1B0C0C', fontWeight: 700, borderRadius: '12px', px: 4, textTransform: 'none', '&:hover': { background: 'linear-gradient(135deg,#FFE866,#FFDE42)' } }}>
+                sx={{ background: '#1F3D2B', color: '#F7F3EA', fontWeight: 700, borderRadius: 0, px: 4, textTransform: 'none', boxShadow: 'none', '&:hover': { background: '#172D20', boxShadow: 'none' } }}>
                 Đặt Cược Ngay
               </Button>
             </div>
@@ -1362,35 +1174,35 @@ export function SpectatorDashboard() {
         fullWidth
         PaperProps={{
           sx: {
-            background: '#0f172a',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '16px'
+            background: '#FFFFFF',
+            border: '1px solid #E3DCCB',
+            borderRadius: 0
           }
         }}
       >
-        <DialogTitle sx={{ color: 'white', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+        <DialogTitle sx={{ color: '#23201A', borderBottom: '1px solid #E3DCCB' }}>
           <div className="flex items-center gap-3">
-            <Target className="w-6 h-6 text-[#FFDE42]" />
-            <span>Đặt Cược</span>
+            <Target className="w-6 h-6 text-secondary" />
+            <span className="font-serif font-bold">Đặt Cược</span>
           </div>
         </DialogTitle>
         <DialogContent sx={{ mt: 3 }}>
           {selectedRace && (
             <div>
-              <div className="bg-white/5 rounded-xl p-4 mb-6">
-                <h3 className="text-white font-bold mb-1">{selectedRace.name}</h3>
+              <div className="bg-background border border-border p-4 mb-6">
+                <h3 className="font-serif text-foreground font-bold mb-1">{selectedRace.name}</h3>
                 <div className="flex flex-wrap gap-4 mt-2 text-sm">
-                  <span className="text-slate-400">Hạng: <span className="text-[#FFDE42] font-medium">{selectedRace.grade}</span></span>
-                  <span className="text-slate-400">Cự Ly: <span className="text-white">{selectedRace.distance}m</span></span>
-                  <span className="text-slate-400">Giải Thưởng: <span className="text-[#FFDE42] font-medium">${selectedRace.purse?.toLocaleString()}</span></span>
+                  <span className="text-muted-foreground">Hạng: <span className="text-[#8F7318] font-medium">{selectedRace.grade}</span></span>
+                  <span className="text-muted-foreground">Cự Ly: <span className="text-foreground">{selectedRace.distance}m</span></span>
+                  <span className="text-muted-foreground">Giải Thưởng: <span className="text-[#8F7318] font-medium">${selectedRace.purse?.toLocaleString()}</span></span>
                 </div>
               </div>
 
               <div className="space-y-4">
                 <FormControl fullWidth>
-                  <InputLabel sx={{ color: '#94a3b8' }}>Loại Cược</InputLabel>
+                  <InputLabel sx={{ color: '#7A7468' }}>Loại Cược</InputLabel>
                   <Select value={betType} onChange={(e) => setBetType(e.target.value)} label="Loại Cược"
-                    sx={{ color: 'white', '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.1)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.2)' }, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#FFDE42' }, '.MuiSvgIcon-root': { color: '#94a3b8' } }}>
+                    sx={lightSelectSx}>
                     <MenuItem value="win">Thắng — ngựa về hạng 1 (hệ số 3.0x)</MenuItem>
                     <MenuItem value="place">Về Nhì — ngựa về hạng 2 (hệ số 2.0x)</MenuItem>
                     <MenuItem value="show">Về Ba — ngựa về hạng 3 (hệ số 1.5x)</MenuItem>
@@ -1398,9 +1210,9 @@ export function SpectatorDashboard() {
                 </FormControl>
 
                 <FormControl fullWidth>
-                  <InputLabel sx={{ color: '#94a3b8' }}>Chọn Ngựa *</InputLabel>
+                  <InputLabel sx={{ color: '#7A7468' }}>Chọn Ngựa *</InputLabel>
                   <Select value={selectedHorse} onChange={(e) => setSelectedHorse(e.target.value)} label="Chọn Ngựa *"
-                    sx={{ color: 'white', '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.1)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.2)' }, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#FFDE42' }, '.MuiSvgIcon-root': { color: '#94a3b8' } }}>
+                    sx={lightSelectSx}>
                     {selectedRaceRegistrations.length > 0
                       ? selectedRaceRegistrations.map((h: any) => (
                           <MenuItem key={h.horseId} value={h.horseId}>
@@ -1414,18 +1226,18 @@ export function SpectatorDashboard() {
 
                 <TextField fullWidth label="Số Tiền Cược ($) *" type="number" value={betAmount}
                   onChange={(e) => setBetAmount(e.target.value)} placeholder="Nhập số tiền (tối thiểu 1)"
-                  sx={{ '& .MuiInputLabel-root': { color: '#94a3b8' }, '& .MuiOutlinedInput-root': { color: 'white', '& fieldset': { borderColor: 'rgba(255,255,255,0.1)' }, '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.2)' }, '&.Mui-focused fieldset': { borderColor: '#10b981' } } }} />
+                  sx={{ '& .MuiInputLabel-root': { color: '#7A7468' }, '& .MuiOutlinedInput-root': { color: '#23201A', borderRadius: 0, '& fieldset': { borderColor: '#E3DCCB' }, '&:hover fieldset': { borderColor: '#C9C2B0' }, '&.Mui-focused fieldset': { borderColor: '#1F3D2B' } } }} />
 
-                <div className="bg-[#FFDE42]/10 border border-[#FFDE42]/30 rounded-xl p-4">
+                <div className="bg-gold/10 border border-gold/40 p-4">
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-slate-400">Tiềm năng thắng:</span>
-                    <span className="text-[#FFDE42] font-bold text-lg">
+                    <span className="text-muted-foreground">Tiềm năng thắng:</span>
+                    <span className="text-[#8F7318] font-bold text-lg tabular-nums">
                       {betAmount && !isNaN(Number(betAmount)) && Number(betAmount) > 0
                         ? `$${Math.floor(Number(betAmount) * BET_MULTIPLIERS[betType as BetType]).toLocaleString()}`
                         : '$0'}
                     </span>
                   </div>
-                  <div className="flex justify-between text-xs text-slate-500">
+                  <div className="flex justify-between text-xs text-muted-foreground">
                     <span>Hệ số: {BET_MULTIPLIERS[betType as BetType]}x</span>
                     <span>Phí sẽ trừ ngay từ ví</span>
                   </div>
@@ -1434,11 +1246,11 @@ export function SpectatorDashboard() {
             </div>
           )}
         </DialogContent>
-        <DialogActions sx={{ p: 3, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-          <Button onClick={() => setPredictionModalOpen(false)} sx={{ color: '#94a3b8' }}>Hủy</Button>
+        <DialogActions sx={{ p: 3, borderTop: '1px solid #E3DCCB' }}>
+          <Button onClick={() => setPredictionModalOpen(false)} sx={{ color: '#7A7468', textTransform: 'none' }}>Hủy</Button>
           <Button onClick={handleSubmitPrediction} variant="contained"
             disabled={!selectedHorse || !betAmount || placingBet}
-            sx={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', textTransform: 'none', fontWeight: 700, '&:hover': { background: 'linear-gradient(135deg, #FFDE42 0%, #b8960a 100%)' } }}>
+            sx={{ background: '#8C2F1B', textTransform: 'none', fontWeight: 700, borderRadius: 0, boxShadow: 'none', '&:hover': { background: '#6B2415', boxShadow: 'none' } }}>
             {placingBet ? '...' : 'Xác Nhận Đặt Cược'}
           </Button>
         </DialogActions>
@@ -1451,22 +1263,22 @@ export function SpectatorDashboard() {
         fullWidth
         PaperProps={{
           sx: {
-            background: '#0f172a',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '16px'
+            background: '#FFFFFF',
+            border: '1px solid #E3DCCB',
+            borderRadius: 0
           }
         }}
       >
         {selectedTournamentForDetails && (
           <>
-            <DialogTitle sx={{ color: 'white', borderBottom: '1px solid rgba(255,255,255,0.1)', p: 3 }}>
+            <DialogTitle sx={{ color: '#23201A', borderBottom: '1px solid #E3DCCB', p: 3 }}>
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-white">{selectedTournamentForDetails.name}</h2>
+                <h2 className="font-serif text-2xl font-bold text-foreground">{selectedTournamentForDetails.name}</h2>
                 <Chip
                   label={getTournamentStatusLabel(selectedTournamentForDetails.status)}
                   sx={{
-                    bgcolor: getTournamentStatusColor(selectedTournamentForDetails.status),
-                    color: selectedTournamentForDetails.status === 'ongoing' ? '#1B0C0C' : 'white',
+                    bgcolor: getTournamentStatusHex(selectedTournamentForDetails.status),
+                    color: 'white',
                     fontWeight: 'bold'
                   }}
                 />
@@ -1474,46 +1286,46 @@ export function SpectatorDashboard() {
             </DialogTitle>
             <DialogContent sx={{ p: 3 }}>
               <div className="mt-4 grid md:grid-cols-2 gap-6">
-                <div className="bg-white/5 border border-white/5 rounded-xl p-5">
-                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-blue-400" /> Thời Gian
+                <div className="bg-background border border-border p-5">
+                  <h3 className="font-serif text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-primary" /> Thời Gian
                   </h3>
                   <div className="space-y-4">
                     <div>
-                      <div className="text-sm text-slate-400">Bắt Đầu</div>
-                      <div className="text-white font-medium">{new Date(selectedTournamentForDetails.startDate).toLocaleDateString('vi-VN')}</div>
+                      <div className="text-sm text-muted-foreground">Bắt Đầu</div>
+                      <div className="text-foreground font-medium">{new Date(selectedTournamentForDetails.startDate).toLocaleDateString('vi-VN')}</div>
                     </div>
                     <div>
-                      <div className="text-sm text-slate-400">Kết Thúc</div>
-                      <div className="text-white font-medium">{new Date(selectedTournamentForDetails.endDate).toLocaleDateString('vi-VN')}</div>
+                      <div className="text-sm text-muted-foreground">Kết Thúc</div>
+                      <div className="text-foreground font-medium">{new Date(selectedTournamentForDetails.endDate).toLocaleDateString('vi-VN')}</div>
                     </div>
                     {selectedTournamentForDetails.location && (
                       <div>
-                        <div className="text-sm text-slate-400">Địa Điểm</div>
-                        <div className="text-white font-medium">{selectedTournamentForDetails.location}</div>
+                        <div className="text-sm text-muted-foreground">Địa Điểm</div>
+                        <div className="text-foreground font-medium">{selectedTournamentForDetails.location}</div>
                       </div>
                     )}
                   </div>
                 </div>
 
-                <div className="bg-white/5 border border-white/5 rounded-xl p-5">
-                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                    <Trophy className="w-5 h-5 text-amber-400" /> Mô Tả
+                <div className="bg-background border border-border p-5">
+                  <h3 className="font-serif text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                    <Trophy className="w-5 h-5 text-[#8F7318]" /> Mô Tả
                   </h3>
                   {selectedTournamentForDetails.description ? (
-                    <p className="text-slate-300 text-sm leading-relaxed">{selectedTournamentForDetails.description}</p>
+                    <p className="text-foreground text-sm leading-relaxed">{selectedTournamentForDetails.description}</p>
                   ) : (
-                    <p className="text-slate-500 text-sm italic">Chưa có mô tả</p>
+                    <p className="text-muted-foreground text-sm italic">Chưa có mô tả</p>
                   )}
                 </div>
               </div>
             </DialogContent>
-            <DialogActions sx={{ p: 3, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-              <Button onClick={() => setTournamentDetailsModalOpen(false)} sx={{ color: '#94a3b8' }}>Đóng</Button>
-              <Button 
-                variant="contained" 
+            <DialogActions sx={{ p: 3, borderTop: '1px solid #E3DCCB' }}>
+              <Button onClick={() => setTournamentDetailsModalOpen(false)} sx={{ color: '#7A7468', textTransform: 'none' }}>Đóng</Button>
+              <Button
+                variant="contained"
                 onClick={() => { setTournamentDetailsModalOpen(false); setActiveTab('schedule'); }}
-                sx={{ background: '#FFDE42', color: '#1B0C0C', fontWeight: 'bold', '&:hover': { background: '#E6C21E' } }}
+                sx={{ background: '#1F3D2B', color: '#F7F3EA', fontWeight: 'bold', borderRadius: 0, textTransform: 'none', boxShadow: 'none', '&:hover': { background: '#172D20', boxShadow: 'none' } }}
               >
                 Xem Lịch Trình Ngay
               </Button>
@@ -1530,34 +1342,33 @@ export function SpectatorDashboard() {
         fullWidth
         PaperProps={{
           sx: {
-            background: '#0f172a',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '20px',
+            background: '#FFFFFF',
+            border: '1px solid #E3DCCB',
+            borderRadius: 0,
             overflow: 'hidden'
           }
         }}
       >
         {/* Modal Header */}
-        <div className="relative bg-gradient-to-r from-[#FFDE42]/20 via-amber-900/10 to-transparent border-b border-white/10 p-6">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#FFDE42]/5 to-transparent pointer-events-none" />
+        <div className="relative bg-gold/10 border-b border-border p-6">
           <div className="flex items-center justify-between relative">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-[#FFDE42] to-amber-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30">
-                <Wallet className="w-6 h-6 text-slate-900" />
+              <div className="w-12 h-12 bg-gold flex items-center justify-center">
+                <Wallet className="w-6 h-6 text-foreground" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-white">Cổng Nạp Tiền</h2>
-                <p className="text-slate-400 text-sm mt-0.5">An toàn · Nhanh chóng · Tiện lợi</p>
+                <h2 className="font-serif text-xl font-bold text-foreground">Cổng Nạp Tiền</h2>
+                <p className="text-muted-foreground text-sm mt-0.5">An toàn · Nhanh chóng · Tiện lợi</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg">
-                <Shield className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="text-emerald-400 text-xs font-semibold">Bảo Mật SSL</span>
+              <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 px-3 py-1.5">
+                <Shield className="w-3.5 h-3.5 text-primary" />
+                <span className="text-primary text-xs font-semibold">Bảo Mật SSL</span>
               </div>
               <div className="text-right">
-                <div className="text-xs text-slate-400">Số Dư Hiện Tại</div>
-                <div className="text-[#FFDE42] font-bold text-lg">{user.balance}</div>
+                <div className="text-xs text-muted-foreground">Số Dư Hiện Tại</div>
+                <div className="text-[#8F7318] font-bold text-lg tabular-nums">{walletBalance ?? '...'}</div>
               </div>
             </div>
           </div>
@@ -1566,15 +1377,15 @@ export function SpectatorDashboard() {
           <div className="flex items-center gap-2 mt-5">
             {['Chọn Phương Thức', 'Nhập Số Tiền', 'Xác Nhận'].map((step, i) => (
               <div key={i} className="flex items-center gap-2 flex-1">
-                <div className={`flex items-center gap-2 ${i + 1 <= depositStep ? 'text-[#FFDE42]' : 'text-slate-600'}`}>
+                <div className={`flex items-center gap-2 ${i + 1 <= depositStep ? 'text-[#8F7318]' : 'text-muted-foreground/60'}`}>
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${
-                    i + 1 < depositStep ? 'bg-[#FFDE42] border-[#FFDE42] text-slate-900' :
-                    i + 1 === depositStep ? 'border-[#FFDE42] text-[#FFDE42]' :
-                    'border-slate-700 text-slate-600'
+                    i + 1 < depositStep ? 'bg-gold border-gold text-foreground' :
+                    i + 1 === depositStep ? 'border-gold text-[#8F7318]' :
+                    'border-border text-muted-foreground/60'
                   }`}>{i + 1 < depositStep ? <CheckCircle className="w-3.5 h-3.5" /> : i + 1}</div>
                   <span className="text-xs font-medium whitespace-nowrap hidden sm:block">{step}</span>
                 </div>
-                {i < 2 && <div className={`flex-1 h-0.5 mx-1 rounded-full ${i + 1 < depositStep ? 'bg-[#FFDE42]' : 'bg-slate-800'}`} />}
+                {i < 2 && <div className={`flex-1 h-0.5 mx-1 rounded-full ${i + 1 < depositStep ? 'bg-gold' : 'bg-muted'}`} />}
               </div>
             ))}
           </div>
@@ -1584,43 +1395,44 @@ export function SpectatorDashboard() {
           {/* STEP 1: Choose Method */}
           {depositStep === 1 && (
             <div className="p-6 space-y-4">
-              <h3 className="text-white font-semibold mb-4">Chọn phương thức nạp tiền</h3>
+              <h3 className="font-serif text-foreground font-bold mb-4">Chọn phương thức nạp tiền</h3>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { id: 'bank', icon: Building2, label: 'Chuyển Khoản Ngân Hàng', sub: 'Vietcombank, Techcombank, MB Bank...', time: '5-30 phút', color: 'text-blue-400', bg: 'from-blue-500/20 to-blue-900/10', border: 'border-blue-500/30', limit: 'Tối thiểu: $10' },
-                  { id: 'card', icon: CreditCard, label: 'Thẻ Tín Dụng / Ghi Nợ', sub: 'Visa, Mastercard, JCB', time: '1-5 phút', color: 'text-purple-400', bg: 'from-purple-500/20 to-purple-900/10', border: 'border-purple-500/30', limit: 'Tối thiểu: $20' },
-                  { id: 'ewallet', icon: Smartphone, label: 'Ví Điện Tử', sub: 'MoMo, ZaloPay, VNPay', time: 'Tức thì', color: 'text-pink-400', bg: 'from-pink-500/20 to-pink-900/10', border: 'border-pink-500/30', limit: 'Tối thiểu: $5' },
-                  { id: 'crypto', icon: Bitcoin, label: 'Tiền Điện Tử', sub: 'USDT (TRC20), BTC, ETH', time: '10-30 phút', color: 'text-amber-400', bg: 'from-amber-500/20 to-amber-900/10', border: 'border-amber-500/30', limit: 'Tối thiểu: $50' },
+                  { id: 'bank', icon: Building2, label: 'Chuyển Khoản Ngân Hàng', sub: 'Vietcombank, Techcombank, MB Bank...', time: '5-30 phút', color: 'text-primary', limit: 'Tối thiểu: $10' },
+                  { id: 'card', icon: CreditCard, label: 'Thẻ Tín Dụng / Ghi Nợ', sub: 'Visa, Mastercard, JCB', time: '1-5 phút', color: 'text-secondary', limit: 'Tối thiểu: $20' },
+                  { id: 'ewallet', icon: Smartphone, label: 'Ví Điện Tử', sub: 'MoMo, ZaloPay, VNPay', time: 'Tức thì', color: 'text-secondary', limit: 'Tối thiểu: $5' },
+                  { id: 'crypto', icon: Bitcoin, label: 'Tiền Điện Tử', sub: 'USDT (TRC20), BTC, ETH', time: '10-30 phút', color: 'text-[#8F7318]', limit: 'Tối thiểu: $50' },
                 ].map(method => (
                   <button
+                    type="button"
                     key={method.id}
                     onClick={() => setDepositMethod(method.id)}
-                    className={`relative p-4 rounded-xl border-2 text-left transition-all hover:scale-[1.02] ${
+                    className={`relative p-4 border-2 text-left transition-all hover:scale-[1.02] ${
                       depositMethod === method.id
-                        ? `bg-gradient-to-br ${method.bg} ${method.border} shadow-lg`
-                        : 'bg-white/5 border-white/10 hover:border-white/20'
+                        ? 'bg-primary/5 border-primary'
+                        : 'bg-background border-border hover:border-muted-foreground/40'
                     }`}
                   >
                     {depositMethod === method.id && (
-                      <div className="absolute top-3 right-3 w-5 h-5 bg-[#FFDE42] rounded-full flex items-center justify-center">
-                        <CheckCircle className="w-3 h-3 text-slate-900" />
+                      <div className="absolute top-3 right-3 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                        <CheckCircle className="w-3 h-3 text-primary-foreground" />
                       </div>
                     )}
                     <method.icon className={`w-8 h-8 mb-3 ${method.color}`} />
-                    <div className="text-white font-semibold text-sm mb-1">{method.label}</div>
-                    <div className="text-slate-400 text-xs mb-2">{method.sub}</div>
+                    <div className="text-foreground font-semibold text-sm mb-1">{method.label}</div>
+                    <div className="text-muted-foreground text-xs mb-2">{method.sub}</div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-emerald-400 font-medium">⚡ {method.time}</span>
-                      <span className="text-xs text-slate-500">{method.limit}</span>
+                      <span className="text-xs text-primary font-medium">⚡ {method.time}</span>
+                      <span className="text-xs text-muted-foreground">{method.limit}</span>
                     </div>
                   </button>
                 ))}
               </div>
 
               {/* Info Alert */}
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 flex gap-3">
-                <AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-blue-300">
+              <div className="bg-primary/5 border border-primary/20 p-4 flex gap-3">
+                <AlertCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-foreground">
                   <span className="font-semibold">Hướng Dẫn: </span>
                   Chọn phương thức nạp phù hợp với bạn. Tất cả giao dịch đều được mã hóa và bảo mật. Nếu cần hỗ trợ, liên hệ 24/7 qua chat trực tiếp.
                 </div>
@@ -1632,46 +1444,47 @@ export function SpectatorDashboard() {
           {depositStep === 2 && (
             <div className="p-6 space-y-5">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 bg-[#FFDE42]/10 rounded-lg flex items-center justify-center">
-                  {depositMethod === 'bank' && <Building2 className="w-5 h-5 text-blue-400" />}
-                  {depositMethod === 'card' && <CreditCard className="w-5 h-5 text-purple-400" />}
-                  {depositMethod === 'ewallet' && <Smartphone className="w-5 h-5 text-pink-400" />}
-                  {depositMethod === 'crypto' && <Bitcoin className="w-5 h-5 text-amber-400" />}
+                <div className="w-10 h-10 bg-gold/15 flex items-center justify-center">
+                  {depositMethod === 'bank' && <Building2 className="w-5 h-5 text-primary" />}
+                  {depositMethod === 'card' && <CreditCard className="w-5 h-5 text-secondary" />}
+                  {depositMethod === 'ewallet' && <Smartphone className="w-5 h-5 text-secondary" />}
+                  {depositMethod === 'crypto' && <Bitcoin className="w-5 h-5 text-[#8F7318]" />}
                 </div>
                 <div>
-                  <div className="text-white font-bold">
+                  <div className="text-foreground font-bold">
                     {depositMethod === 'bank' && 'Chuyển Khoản Ngân Hàng'}
                     {depositMethod === 'card' && 'Thẻ Tín Dụng / Ghi Nợ'}
                     {depositMethod === 'ewallet' && 'Ví Điện Tử'}
                     {depositMethod === 'crypto' && 'Tiền Điện Tử (USDT)'}
                   </div>
-                  <div className="text-slate-400 text-sm">Điền thông tin nạp tiền bên dưới</div>
+                  <div className="text-muted-foreground text-sm">Điền thông tin nạp tiền bên dưới</div>
                 </div>
               </div>
 
               {/* Amount Input */}
               <div>
-                <label className="text-sm text-slate-400 mb-2 block">Số Tiền Muốn Nạp (USD)</label>
+                <label className="text-sm text-muted-foreground mb-2 block">Số Tiền Muốn Nạp (USD)</label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">$</span>
                   <input
                     type="number"
                     value={depositAmountInput}
                     onChange={(e) => setDepositAmountInput(e.target.value)}
                     placeholder="0.00"
-                    className="w-full bg-slate-800/80 border border-white/10 rounded-xl pl-8 pr-4 py-3.5 text-white text-xl font-bold placeholder-slate-600 focus:outline-none focus:border-[#FFDE42]/60 focus:ring-1 focus:ring-[#FFDE42]/30 transition-all"
+                    className="w-full bg-background border border-border pl-8 pr-4 py-3.5 text-foreground text-xl font-bold placeholder-muted-foreground/60 focus:outline-none focus:border-primary transition-all"
                   />
                 </div>
                 {/* Quick Amount Buttons */}
                 <div className="flex gap-2 mt-3">
                   {['50', '100', '200', '500', '1000'].map(amt => (
                     <button
+                      type="button"
                       key={amt}
                       onClick={() => setDepositAmountInput(amt)}
-                      className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-all ${
+                      className={`flex-1 py-2 text-xs font-bold border transition-all ${
                         depositAmountInput === amt
-                          ? 'bg-[#FFDE42] text-slate-900 border-[#FFDE42]'
-                          : 'bg-white/5 text-slate-400 border-white/10 hover:border-[#FFDE42]/40 hover:text-white'
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background text-muted-foreground border-border hover:border-primary hover:text-foreground'
                       }`}
                     >
                       ${amt}
@@ -1682,25 +1495,25 @@ export function SpectatorDashboard() {
 
               {/* Payment Details Based on Method */}
               {depositMethod === 'bank' && (
-                <div className="bg-slate-800/50 border border-white/10 rounded-xl p-5 space-y-4">
+                <div className="bg-background border border-border p-5 space-y-4">
                   <div className="flex items-center justify-between mb-1">
-                    <h4 className="text-white font-semibold flex items-center gap-2"><Building2 className="w-4 h-4 text-blue-400" /> Thông Tin Tài Khoản</h4>
-                    <span className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">Đang Hoạt Động</span>
+                    <h4 className="text-foreground font-semibold flex items-center gap-2"><Building2 className="w-4 h-4 text-primary" /> Thông Tin Tài Khoản</h4>
+                    <span className="text-xs bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full">Đang Hoạt Động</span>
                   </div>
                   {[
                     { label: 'Ngân Hàng', value: 'Vietcombank (VCB)' },
                     { label: 'Số Tài Khoản', value: '1020 4857 2934 8800', copy: true },
                     { label: 'Chủ Tài Khoản', value: 'CONG TY TNHH RACING VN' },
                     { label: 'Chi Nhánh', value: 'TP. Hồ Chí Minh' },
-                    { label: 'Nội Dung CK', value: `NAP ${user.name.replace(' ', '').toUpperCase()} ${depositAmountInput || '___'}USD`, copy: true },
+                    { label: 'Nội Dung CK', value: `NAP ${(user?.fullName ?? 'USER').replace(/ /g, '').toUpperCase()} ${depositAmountInput || '___'}USD`, copy: true },
                   ].map((item, i) => (
-                    <div key={i} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
-                      <span className="text-slate-400 text-sm">{item.label}</span>
+                    <div key={i} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                      <span className="text-muted-foreground text-sm">{item.label}</span>
                       <div className="flex items-center gap-2">
-                        <span className="text-white font-medium text-sm">{item.value}</span>
+                        <span className="text-foreground font-medium text-sm">{item.value}</span>
                         {item.copy && (
-                          <button className="p-1 hover:bg-white/10 rounded transition-colors" title="Sao chép">
-                            <Copy className="w-3.5 h-3.5 text-slate-400 hover:text-[#FFDE42]" />
+                          <button type="button" className="p-1 hover:bg-muted rounded transition-colors" title="Sao chép">
+                            <Copy className="w-3.5 h-3.5 text-muted-foreground hover:text-primary" />
                           </button>
                         )}
                       </div>
@@ -1710,56 +1523,56 @@ export function SpectatorDashboard() {
               )}
 
               {depositMethod === 'ewallet' && (
-                <div className="bg-slate-800/50 border border-white/10 rounded-xl p-5">
-                  <h4 className="text-white font-semibold mb-4 flex items-center gap-2"><Smartphone className="w-4 h-4 text-pink-400" /> Chọn Ví Điện Tử</h4>
+                <div className="bg-background border border-border p-5">
+                  <h4 className="text-foreground font-semibold mb-4 flex items-center gap-2"><Smartphone className="w-4 h-4 text-secondary" /> Chọn Ví Điện Tử</h4>
                   <div className="grid grid-cols-3 gap-3 mb-4">
                     {['MoMo', 'ZaloPay', 'VNPay'].map(w => (
-                      <button key={w} className="bg-slate-700/50 hover:bg-[#FFDE42]/10 border border-white/10 hover:border-[#FFDE42]/40 rounded-lg py-3 text-white text-sm font-medium transition-all">
+                      <button type="button" key={w} className="bg-card hover:bg-primary/5 border border-border hover:border-primary py-3 text-foreground text-sm font-medium transition-all">
                         {w}
                       </button>
                     ))}
                   </div>
-                  <div className="bg-slate-900/50 rounded-lg p-4 text-center">
-                    <div className="w-24 h-24 bg-white rounded-lg mx-auto mb-3 flex items-center justify-center">
-                      <div className="text-slate-900 text-xs font-mono text-center">QR Code<br/>Preview</div>
+                  <div className="bg-muted/40 p-4 text-center">
+                    <div className="w-24 h-24 bg-white border border-border mx-auto mb-3 flex items-center justify-center">
+                      <div className="text-foreground text-xs font-mono text-center">QR Code<br/>Preview</div>
                     </div>
-                    <p className="text-slate-400 text-xs">Mở app ví và quét mã QR hoặc nhập số điện thoại: <span className="text-white font-semibold">0909.888.777</span></p>
+                    <p className="text-muted-foreground text-xs">Mở app ví và quét mã QR hoặc nhập số điện thoại: <span className="text-foreground font-semibold">0909.888.777</span></p>
                   </div>
                 </div>
               )}
 
               {depositMethod === 'crypto' && (
-                <div className="bg-slate-800/50 border border-white/10 rounded-xl p-5 space-y-3">
-                  <h4 className="text-white font-semibold flex items-center gap-2"><Bitcoin className="w-4 h-4 text-amber-400" /> Địa Chỉ Nạp USDT (TRC20)</h4>
-                  <div className="bg-slate-900 rounded-lg p-4 flex items-center justify-between gap-2">
-                    <span className="text-emerald-400 font-mono text-xs break-all">TRX7YmK9...4xPQm8NvL2sW</span>
-                    <button className="p-1.5 hover:bg-white/10 rounded-lg flex-shrink-0"><Copy className="w-4 h-4 text-slate-400 hover:text-[#FFDE42]" /></button>
+                <div className="bg-background border border-border p-5 space-y-3">
+                  <h4 className="text-foreground font-semibold flex items-center gap-2"><Bitcoin className="w-4 h-4 text-[#8F7318]" /> Địa Chỉ Nạp USDT (TRC20)</h4>
+                  <div className="bg-muted/40 border border-border p-4 flex items-center justify-between gap-2">
+                    <span className="text-primary font-mono text-xs break-all">TRX7YmK9...4xPQm8NvL2sW</span>
+                    <button type="button" className="p-1.5 hover:bg-muted flex-shrink-0"><Copy className="w-4 h-4 text-muted-foreground hover:text-primary" /></button>
                   </div>
-                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-xs text-amber-300">
+                  <div className="bg-gold/10 border border-gold/40 p-3 text-xs text-[#8F7318]">
                     ⚠️ Chỉ gửi <strong>USDT TRC20</strong>. Gửi sai mạng sẽ mất tiền vĩnh viễn. Tối thiểu $50.
                   </div>
                 </div>
               )}
 
               {depositMethod === 'card' && (
-                <div className="bg-slate-800/50 border border-white/10 rounded-xl p-5 space-y-4">
-                  <h4 className="text-white font-semibold flex items-center gap-2"><CreditCard className="w-4 h-4 text-purple-400" /> Thông Tin Thẻ</h4>
+                <div className="bg-background border border-border p-5 space-y-4">
+                  <h4 className="text-foreground font-semibold flex items-center gap-2"><CreditCard className="w-4 h-4 text-secondary" /> Thông Tin Thẻ</h4>
                   {['Số Thẻ (16 chữ số)', 'Tên Chủ Thẻ', 'Ngày Hết Hạn (MM/YY)', 'Mã CVV'].map((ph, i) => (
                     <div key={i} className="relative">
                       <input type={i === 3 ? 'password' : 'text'} placeholder={ph}
-                        className="w-full bg-slate-900/80 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-purple-500/60 focus:ring-1 focus:ring-purple-500/30 transition-all text-sm" />
+                        className="w-full bg-card border border-border px-4 py-3 text-foreground placeholder-muted-foreground/60 focus:outline-none focus:border-primary transition-all text-sm" />
                     </div>
                   ))}
                 </div>
               )}
 
               {/* Important Notice */}
-              <div className="bg-[#FFDE42]/5 border border-[#FFDE42]/20 rounded-xl p-4">
+              <div className="bg-gold/5 border border-gold/30 p-4">
                 <div className="flex gap-3">
-                  <AlertCircle className="w-5 h-5 text-[#FFDE42] flex-shrink-0 mt-0.5" />
+                  <AlertCircle className="w-5 h-5 text-[#8F7318] flex-shrink-0 mt-0.5" />
                   <div className="text-sm space-y-1.5">
-                    <div className="text-[#FFDE42] font-semibold">Lưu Ý Quan Trọng</div>
-                    <ul className="text-slate-400 space-y-1 list-disc list-inside text-xs">
+                    <div className="text-[#8F7318] font-semibold">Lưu Ý Quan Trọng</div>
+                    <ul className="text-muted-foreground space-y-1 list-disc list-inside text-xs">
                       <li>Nhập đúng nội dung chuyển khoản để hệ thống tự động xác nhận</li>
                       <li>Tiền sẽ được cộng vào tài khoản trong vòng 5-30 phút</li>
                       <li>Hỗ trợ 24/7: support@racingvn.com hoặc Hotline 1800-8888</li>
@@ -1773,34 +1586,35 @@ export function SpectatorDashboard() {
           {/* STEP 3: Confirm */}
           {depositStep === 3 && (
             <div className="p-6 flex flex-col items-center text-center space-y-6">
-              <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-full flex items-center justify-center shadow-xl shadow-emerald-500/30 mt-2">
-                <CheckCircle className="w-10 h-10 text-white" />
+              <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center mt-2">
+                <CheckCircle className="w-10 h-10 text-primary-foreground" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-white mb-2">Yêu Cầu Đã Gửi!</h3>
-                <p className="text-slate-400 max-w-sm mx-auto">Chúng tôi đã nhận được yêu cầu nạp <span className="text-[#FFDE42] font-bold">${depositAmountInput}</span> của bạn. Hệ thống sẽ xử lý trong vài phút.</p>
+                <h3 className="font-serif text-2xl font-bold text-foreground mb-2">Yêu Cầu Đã Gửi!</h3>
+                <p className="text-muted-foreground max-w-sm mx-auto">Chúng tôi đã nhận được yêu cầu nạp <span className="text-[#8F7318] font-bold">${depositAmountInput}</span> của bạn. Hệ thống sẽ xử lý trong vài phút.</p>
               </div>
-              <div className="w-full bg-slate-800/50 border border-white/10 rounded-xl p-5 text-left space-y-3">
+              <div className="w-full bg-background border border-border p-5 text-left space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Mã Giao Dịch</span>
-                  <span className="text-white font-mono font-semibold">TRX-{Date.now().toString().slice(-8)}</span>
+                  <span className="text-muted-foreground">Mã Giao Dịch</span>
+                  <span className="text-foreground font-mono font-semibold">TRX-{Date.now().toString().slice(-8)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Số Tiền</span>
-                  <span className="text-[#FFDE42] font-bold">${depositAmountInput}</span>
+                  <span className="text-muted-foreground">Số Tiền</span>
+                  <span className="text-[#8F7318] font-bold tabular-nums">${depositAmountInput}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Trạng Thái</span>
-                  <span className="text-amber-400 font-semibold">Đang Xử Lý</span>
+                  <span className="text-muted-foreground">Trạng Thái</span>
+                  <span className="text-[#8F7318] font-semibold">Đang Xử Lý</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Thời Gian</span>
-                  <span className="text-white">{new Date().toLocaleTimeString('vi-VN')}</span>
+                  <span className="text-muted-foreground">Thời Gian</span>
+                  <span className="text-foreground">{new Date().toLocaleTimeString('vi-VN')}</span>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => { setDepositPortalOpen(false); setDepositStep(1); setDepositAmountInput(''); setActiveTab('deposit-history'); }}
-                className="text-sm text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors"
+                className="text-sm text-secondary hover:text-secondary/80 underline underline-offset-2 transition-colors"
               >
                 Xem Lịch Sử Nạp Tiền →
               </button>
@@ -1808,16 +1622,16 @@ export function SpectatorDashboard() {
           )}
         </DialogContent>
 
-        <DialogActions sx={{ p: 3, borderTop: '1px solid rgba(255,255,255,0.07)', gap: 1 }}>
+        <DialogActions sx={{ p: 3, borderTop: '1px solid #E3DCCB', gap: 1 }}>
           {depositStep > 1 && depositStep < 3 && (
-            <Button onClick={() => setDepositStep(s => s - 1)} sx={{ color: '#94a3b8', textTransform: 'none' }}>
+            <Button onClick={() => setDepositStep(s => s - 1)} sx={{ color: '#7A7468', textTransform: 'none' }}>
               ← Quay Lại
             </Button>
           )}
           <div className="flex-1" />
           <Button
             onClick={() => { setDepositPortalOpen(false); setDepositStep(1); setDepositAmountInput(''); }}
-            sx={{ color: '#64748b', textTransform: 'none' }}
+            sx={{ color: '#7A7468', textTransform: 'none' }}
           >
             {depositStep === 3 ? 'Đóng' : 'Hủy'}
           </Button>
@@ -1827,14 +1641,15 @@ export function SpectatorDashboard() {
               disabled={depositStep === 2 && !depositAmountInput}
               onClick={() => setDepositStep(s => s + 1)}
               sx={{
-                background: 'linear-gradient(135deg, #FFDE42 0%, #E6C21E 100%)',
-                color: '#1B0C0C',
+                background: '#1F3D2B',
+                color: '#F7F3EA',
                 fontWeight: 700,
                 textTransform: 'none',
-                borderRadius: '10px',
+                borderRadius: 0,
                 px: 3,
-                '&:hover': { background: 'linear-gradient(135deg, #FFE866 0%, #FFDE42 100%)' },
-                '&:disabled': { background: 'rgba(100,116,139,0.3)', color: '#64748b' }
+                boxShadow: 'none',
+                '&:hover': { background: '#172D20', boxShadow: 'none' },
+                '&:disabled': { background: '#EDE7D8', color: '#7A7468' }
               }}
             >
               {depositStep === 1 ? 'Tiếp Theo →' : 'Xác Nhận Nạp Tiền'}
@@ -1842,6 +1657,6 @@ export function SpectatorDashboard() {
           )}
         </DialogActions>
       </Dialog>
-    </div>
+    </AppShell>
   );
 }

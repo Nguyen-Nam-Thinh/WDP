@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { Navbar } from "../components/Navbar";
+import { PublicShell } from "../components/layout/PublicShell";
+import { GradeBadge } from "../components/shared/GradeBadge";
 import {
   Zap,
   Target,
@@ -8,29 +9,23 @@ import {
   Clock,
   Trophy,
   Users,
-  Flame,
   Activity,
   Eye,
   Check,
   AlertCircle,
   Lock,
   LogIn,
-  Medal,
   Flag,
-  MapPin,
-  Wind,
   ChevronRight,
   Award,
   ArrowUpRight,
   Crown,
   Sparkles,
-  Info,
   Loader2,
   Bot,
   RefreshCw,
   TrendingUp,
 } from "lucide-react";
-import { Button } from "@mui/material";
 import { useAuth } from "../hooks/useAuth";
 import {
   raceApi,
@@ -55,22 +50,6 @@ interface HorseEntry {
   jockeyExperience?: number;
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-const formColor = (pos: number) => {
-  if (pos === 1) return "bg-emerald-500 text-white";
-  if (pos === 2) return "bg-blue-500 text-white";
-  if (pos === 3) return "bg-amber-500 text-white";
-  return "bg-slate-700 text-slate-400";
-};
-
-const GRADE_COLOR: Record<string, string> = {
-  G1: "text-[#FFDE42] border-[#FFDE42]/40 bg-[#FFDE42]/10",
-  G2: "text-purple-300 border-purple-500/40 bg-purple-500/10",
-  G3: "text-blue-300 border-blue-500/40 bg-blue-500/10",
-  Maiden: "text-slate-400 border-slate-600/40 bg-slate-700/20",
-};
-
 // ─── Login Gate Modal ─────────────────────────────────────────────────────────
 
 function LoginGateModal({
@@ -83,46 +62,31 @@ function LoginGateModal({
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-black/80 backdrop-blur-md"
+        className="absolute inset-0 bg-foreground/40 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div
-        className="relative w-full max-w-md rounded-3xl overflow-hidden"
-        style={{
-          background: "linear-gradient(135deg,#0F1117,#141820)",
-          border: "1px solid rgba(255,255,255,0.1)",
-        }}
-      >
-        <div
-          className="h-1 w-full"
-          style={{ background: "linear-gradient(90deg,#10b981,#06b6d4)" }}
-        />
+      <div className="relative w-full max-w-md overflow-hidden bg-card border border-border shadow-xl">
+        <div className="h-1 w-full bg-primary" />
         <div className="p-8 text-center">
-          {/* <div className="w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#10b981,#06b6d4)', boxShadow: '0 0 40px rgba(16,185,129,0.3)' }}>
-            <Lock className="w-9 h-9 text-white" />
-          </div> */}
-          <h2 className="text-2xl font-black text-white mb-3">
+          <h2 className="font-serif text-2xl font-bold text-foreground mb-3">
             Yêu Cầu Đăng Nhập
           </h2>
-          <p className="text-slate-400 leading-relaxed mb-8">
-            Bạn cần <strong className="text-white">đăng nhập</strong> để đặt
+          <p className="text-muted-foreground leading-relaxed mb-8">
+            Bạn cần <strong className="text-foreground">đăng nhập</strong> để đặt
             cược và xem lịch sử dự đoán.
           </p>
           <div className="space-y-3">
             <button
+              type="button"
               onClick={onLogin}
-              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-base font-bold transition-all hover:opacity-90"
-              style={{
-                background: "linear-gradient(135deg,#10b981,#06b6d4)",
-                color: "white",
-                boxShadow: "0 8px 24px rgba(16,185,129,0.3)",
-              }}
+              className="w-full flex items-center justify-center gap-2 py-3.5 text-base font-bold bg-primary text-primary-foreground transition-colors hover:bg-primary/90"
             >
               <LogIn className="w-5 h-5" /> Đăng Nhập Ngay
             </button>
             <button
+              type="button"
               onClick={onClose}
-              className="w-full py-3 rounded-2xl text-sm font-medium text-slate-500 hover:text-white transition-colors"
+              className="w-full py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               Tiếp tục xem (không đặt cược)
             </button>
@@ -138,25 +102,25 @@ function LoginGateModal({
 const AUTH_FEATURES = [
   {
     icon: Bot,
-    color: "#10b981",
+    color: "#1F3D2B",
     label: "Dự đoán AI",
     desc: "Xác suất chiến thắng từng ngựa theo mô hình XGBoost",
   },
   {
     icon: Zap,
-    color: "#F59E0B",
+    color: "#C9A227",
     label: "Đặt cược",
     desc: "Win / Place / Show với hệ số nhân cố định x1.5 – x3",
   },
   {
     icon: BarChart3,
-    color: "#8B5CF6",
+    color: "#8C2F1B",
     label: "Lịch sử cá cược",
     desc: "Theo dõi tỷ lệ đúng và tổng coin thắng của bạn",
   },
   {
     icon: Trophy,
-    color: "#06b6d4",
+    color: "#7A7468",
     label: "Kết quả cuộc đua",
     desc: "Xem bảng xếp hạng và thông tin ngựa/kỵ sĩ sau mỗi race",
   },
@@ -173,74 +137,38 @@ function AuthGate({
     <div className="relative max-w-7xl mx-auto px-6 pt-24 pb-24">
       {/* Blurred preview rows */}
       <div
-        className="pointer-events-none select-none blur-[6px] opacity-30 mb-0"
+        className="pointer-events-none select-none blur-[6px] opacity-40 mb-0"
         aria-hidden
       >
-        <div className="h-12 rounded-2xl bg-white/5 mb-3" />
+        <div className="h-12 bg-muted mb-3" />
         <div className="grid grid-cols-2 gap-4">
-          <div className="h-48 rounded-2xl bg-white/4" />
-          <div className="h-48 rounded-2xl bg-white/4" />
+          <div className="h-48 bg-muted" />
+          <div className="h-48 bg-muted" />
         </div>
       </div>
 
       {/* Gate card — overlaps the blur */}
       <div className="relative -mt-32 z-10">
-        {/* Outer glow */}
-        <div
-          className="absolute -inset-px rounded-3xl pointer-events-none"
-          style={{
-            background:
-              "linear-gradient(135deg,rgba(16,185,129,0.25),rgba(6,182,212,0.12),rgba(139,92,246,0.15))",
-            filter: "blur(1px)",
-          }}
-        />
-
-        <div
-          className="relative rounded-3xl overflow-hidden"
-          style={{
-            background: "linear-gradient(160deg,#0d1117,#111820)",
-            border: "1px solid rgba(255,255,255,0.09)",
-          }}
-        >
+        <div className="relative overflow-hidden bg-card border border-border shadow-lg">
           {/* Top accent bar */}
-          <div
-            className="h-1 w-full"
-            style={{
-              background: "linear-gradient(90deg,#10b981,#06b6d4,#8B5CF6)",
-            }}
-          />
+          <div className="h-1 w-full bg-primary" />
 
           <div className="px-8 py-12 md:px-14 md:py-14">
             <div className="flex flex-col lg:flex-row items-center gap-12">
               {/* Left — icon + text */}
               <div className="flex-1 text-center lg:text-left">
 
-                <div
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-5 text-xs font-bold uppercase tracking-widest"
-                  style={{
-                    background: "rgba(16,185,129,0.1)",
-                    border: "1px solid rgba(16,185,129,0.25)",
-                    color: "#10b981",
-                  }}
-                >
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-5 text-xs font-bold uppercase tracking-widest border border-primary/30 text-primary">
                   <AlertCircle className="w-3 h-3" />
                   Yêu cầu đăng nhập
                 </div>
 
-                <h2 className="text-3xl md:text-4xl font-black text-white mb-4 leading-tight">
+                <h2 className="font-serif text-3xl md:text-4xl font-bold text-foreground mb-4 leading-tight">
                   Đăng nhập để mở khóa
                   <br />
-                  <span
-                    style={{
-                      background: "linear-gradient(135deg,#10b981,#06b6d4)",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                    }}
-                  >
-                    toàn bộ tính năng
-                  </span>
+                  <span className="italic text-secondary">toàn bộ tính năng</span>
                 </h2>
-                <p className="text-slate-400 leading-relaxed max-w-md mx-auto lg:mx-0 mb-8">
+                <p className="text-muted-foreground leading-relaxed max-w-md mx-auto lg:mx-0 mb-8">
                   Trang dự đoán yêu cầu tài khoản để bảo vệ dữ liệu cá cược và
                   cung cấp phân tích AI cá nhân hóa cho bạn.
                 </p>
@@ -248,24 +176,17 @@ function AuthGate({
                 {/* CTAs */}
                 <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
                   <button
+                    type="button"
                     onClick={onLogin}
-                    className="flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-2xl text-base font-bold transition-all hover:opacity-90 active:scale-[.98]"
-                    style={{
-                      background: "linear-gradient(135deg,#10b981,#06b6d4)",
-                      color: "white",
-                      boxShadow: "0 8px 28px rgba(16,185,129,0.3)",
-                    }}
+                    className="flex items-center justify-center gap-2.5 px-7 py-3.5 text-base font-bold bg-primary text-primary-foreground transition-colors hover:bg-primary/90 active:scale-[.98]"
                   >
                     <LogIn className="w-5 h-5" />
                     Đăng Nhập Ngay
                   </button>
                   <button
+                    type="button"
                     onClick={onRegister}
-                    className="flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-2xl text-base font-semibold transition-all hover:border-white/30 hover:text-white"
-                    style={{
-                      border: "1px solid rgba(255,255,255,0.12)",
-                      color: "#94a3b8",
-                    }}
+                    className="flex items-center justify-center gap-2.5 px-7 py-3.5 text-base font-semibold border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary"
                   >
                     <Users className="w-5 h-5" />
                     Tạo Tài Khoản
@@ -275,20 +196,16 @@ function AuthGate({
 
               {/* Right — feature list */}
               <div className="w-full lg:w-80 shrink-0 space-y-3">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-4 text-center lg:text-left">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4 text-center lg:text-left">
                   Bạn sẽ mở khóa được
                 </p>
                 {AUTH_FEATURES.map(({ icon: Icon, color, label, desc }) => (
                   <div
                     key={label}
-                    className="flex items-start gap-4 p-4 rounded-2xl transition-colors"
-                    style={{
-                      background: "rgba(255,255,255,0.03)",
-                      border: "1px solid rgba(255,255,255,0.06)",
-                    }}
+                    className="flex items-start gap-4 p-4 bg-background border border-border transition-colors"
                   >
                     <div
-                      className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                      className="w-9 h-9 flex items-center justify-center shrink-0"
                       style={{
                         background: `${color}18`,
                         border: `1px solid ${color}30`,
@@ -297,10 +214,10 @@ function AuthGate({
                       <Icon className="w-4 h-4" style={{ color }} />
                     </div>
                     <div>
-                      <div className="text-sm font-bold text-white mb-0.5">
+                      <div className="text-sm font-bold text-foreground mb-0.5">
                         {label}
                       </div>
-                      <div className="text-xs text-slate-500 leading-relaxed">
+                      <div className="text-xs text-muted-foreground leading-relaxed">
                         {desc}
                       </div>
                     </div>
@@ -351,7 +268,7 @@ function ResultsBoard({ token }: { token: string | null }) {
 
   if (!token)
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+      <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
         <Lock className="w-12 h-12 mb-4 opacity-30" />
         <p>Đăng nhập để xem kết quả</p>
       </div>
@@ -359,7 +276,7 @@ function ResultsBoard({ token }: { token: string | null }) {
 
   if (finishedRaces.length === 0)
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+      <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
         <Trophy className="w-12 h-12 mb-4 opacity-30" />
         <p>Chưa có cuộc đua nào hoàn thành</p>
       </div>
@@ -368,15 +285,12 @@ function ResultsBoard({ token }: { token: string | null }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center"
-          style={{ background: "linear-gradient(135deg,#F59E0B20,#EF444415)" }}
-        >
-          <Trophy className="w-5 h-5 text-amber-400" />
+        <div className="w-10 h-10 flex items-center justify-center bg-gold/15 border border-gold/30">
+          <Trophy className="w-5 h-5 text-gold" />
         </div>
         <div>
-          <h2 className="text-lg font-black text-white">Kết Quả Chính Thức</h2>
-          <p className="text-xs text-slate-500">
+          <h2 className="font-serif text-lg font-bold text-foreground">Kết Quả Chính Thức</h2>
+          <p className="text-xs text-muted-foreground">
             Bảng kết quả đua ngựa chi tiết
           </p>
         </div>
@@ -386,20 +300,14 @@ function ResultsBoard({ token }: { token: string | null }) {
       <div className="flex gap-2 overflow-x-auto pb-1">
         {finishedRaces.map((r) => (
           <button
+            type="button"
             key={r._id}
             onClick={() => setSelectedRace(r)}
-            className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${selectedRace?._id === r._id ? "text-white" : "text-slate-500 hover:text-slate-300"}`}
-            style={
+            className={`flex-shrink-0 px-4 py-2.5 text-xs font-bold transition-all ${
               selectedRace?._id === r._id
-                ? {
-                    background: "linear-gradient(135deg,#F59E0B,#EF4444)",
-                    boxShadow: "0 4px 16px rgba(245,158,11,0.3)",
-                  }
-                : {
-                    backgroundColor: "rgba(255,255,255,0.05)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                  }
-            }
+                ? "bg-primary text-primary-foreground"
+                : "bg-card border border-border text-muted-foreground hover:text-foreground"
+            }`}
           >
             {r.name}
           </button>
@@ -408,18 +316,11 @@ function ResultsBoard({ token }: { token: string | null }) {
 
       {/* Race info */}
       {selectedRace && (
-        <div
-          className="relative overflow-hidden rounded-2xl p-6"
-          style={{
-            background:
-              "linear-gradient(135deg,rgba(245,158,11,0.12),rgba(239,68,68,0.08))",
-            border: "1px solid rgba(245,158,11,0.25)",
-          }}
-        >
-          <h3 className="text-xl font-black text-white mb-2">
+        <div className="relative overflow-hidden p-6 bg-gold/10 border border-gold/40">
+          <h3 className="font-serif text-xl font-bold text-foreground mb-2">
             {selectedRace.name}
           </h3>
-          <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400">
+          <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <Flag className="w-3 h-3" />
               {selectedRace.grade}
@@ -432,7 +333,7 @@ function ResultsBoard({ token }: { token: string | null }) {
               <Clock className="w-3 h-3" />
               {new Date(selectedRace.scheduledTime).toLocaleDateString("vi-VN")}
             </span>
-            <span className="ml-auto text-amber-400 font-bold">
+            <span className="ml-auto text-[#8F7318] font-bold">
               {selectedRace.purse.toLocaleString()} coins giải thưởng
             </span>
           </div>
@@ -442,95 +343,81 @@ function ResultsBoard({ token }: { token: string | null }) {
       {/* Results */}
       {loading ? (
         <div className="flex justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin text-amber-400" />
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>
       ) : results.length === 0 ? (
-        <div className="text-center py-10 text-slate-500 text-sm">
+        <div className="text-center py-10 text-muted-foreground text-sm">
           Chưa có kết quả
         </div>
       ) : (
-        <div
-          className="overflow-hidden rounded-2xl"
-          style={{ border: "1px solid rgba(255,255,255,0.08)" }}
-        >
-          <div
-            className="grid grid-cols-12 gap-2 px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-600"
-            style={{ backgroundColor: "rgba(255,255,255,0.03)" }}
-          >
+        <div className="overflow-hidden border border-border bg-card">
+          <div className="grid grid-cols-12 gap-2 px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground bg-muted/50">
             <div className="col-span-1 text-center">Hạng</div>
             <div className="col-span-5">Ngựa / Kỵ Sĩ</div>
             <div className="col-span-2 text-center">Thời Gian</div>
             <div className="col-span-2 text-center">Điểm</div>
             <div className="col-span-2 text-right">Giải Thưởng</div>
           </div>
-          <div className="divide-y divide-white/5">
+          <div className="divide-y divide-border">
             {results
               .sort((a, b) => a.position - b.position)
               .map((r, idx) => (
                 <div
                   key={r._id}
-                  className={`grid grid-cols-12 gap-2 px-5 py-4 items-center hover:bg-white/3 ${idx === 0 ? "bg-amber-500/5" : ""}`}
+                  className={`grid grid-cols-12 gap-2 px-5 py-4 items-center hover:bg-muted/40 ${idx === 0 ? "bg-gold/5" : ""}`}
                 >
                   <div className="col-span-1 flex justify-center">
                     {r.position === 1 ? (
-                      <div
-                        className="w-9 h-9 rounded-xl flex items-center justify-center"
-                        style={{
-                          background: "linear-gradient(135deg,#F59E0B,#D97706)",
-                          boxShadow: "0 4px 12px rgba(245,158,11,0.4)",
-                        }}
-                      >
-                        <Crown className="w-4 h-4 text-white" />
+                      <div className="w-9 h-9 flex items-center justify-center bg-gold">
+                        <Crown className="w-4 h-4 text-foreground" />
                       </div>
                     ) : r.position <= 3 ? (
                       <div
-                        className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm"
+                        className="w-9 h-9 flex items-center justify-center font-black text-sm"
                         style={{
-                          background: r.position === 2 ? "#64748B" : "#CD7F32",
+                          background: r.position === 2 ? "#9A937F" : "#A85C32",
                         }}
                       >
                         <span className="text-white">{r.position}</span>
                       </div>
                     ) : (
-                      <div className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold bg-white/5 text-slate-500">
+                      <div className="w-9 h-9 flex items-center justify-center text-sm font-bold bg-muted text-muted-foreground">
                         {r.position}
                       </div>
                     )}
                   </div>
                   <div className="col-span-5">
-                    <div
-                      className={`font-black text-sm ${r.position === 1 ? "text-amber-400" : r.position === 2 ? "text-slate-300" : "text-slate-400"}`}
-                    >
+                    <div className="font-black text-sm text-foreground">
                       {r.horseId?.name ?? "—"}
                       {r.position === 1 && (
-                        <span className="ml-2 text-[10px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/30">
+                        <span className="ml-2 text-[10px] bg-gold/20 text-[#8F7318] px-1.5 py-0.5 border border-gold/40 font-bold">
                           VÔ ĐỊCH
                         </span>
                       )}
                     </div>
                     {r.jockeyId && (
-                      <div className="text-xs text-slate-500 mt-0.5">
+                      <div className="text-xs text-muted-foreground mt-0.5">
                         🏇 {r.jockeyId.fullName}
                       </div>
                     )}
                   </div>
                   <div className="col-span-2 text-center">
-                    <span className="text-sm font-mono text-slate-400">
+                    <span className="text-sm font-mono text-muted-foreground">
                       {(r.finishTime / 1000).toFixed(2)}s
                     </span>
                   </div>
                   <div className="col-span-2 text-center">
-                    <span className="text-amber-400 font-bold">
+                    <span className="text-[#8F7318] font-bold tabular-nums">
                       +{r.pointsEarned}
                     </span>
                   </div>
                   <div className="col-span-2 text-right">
                     {r.prizeAmount > 0 ? (
-                      <span className="text-emerald-400 font-black text-sm">
+                      <span className="text-primary font-black text-sm tabular-nums">
                         {r.prizeAmount.toLocaleString()}
                       </span>
                     ) : (
-                      <span className="text-slate-700 text-xs">—</span>
+                      <span className="text-muted-foreground text-xs">—</span>
                     )}
                   </div>
                 </div>
@@ -576,34 +463,19 @@ function AIPredictionsPanel({
   }, [raceId]);
 
   return (
-    <div
-      className="rounded-2xl overflow-hidden mt-6"
-      style={{
-        background: "rgba(139,92,246,0.06)",
-        border: "1px solid rgba(139,92,246,0.25)",
-      }}
-    >
+    <div className="overflow-hidden mt-6 bg-secondary/5 border border-secondary/25">
       {/* Header */}
-      <div
-        className="px-5 py-4 flex items-center justify-between"
-        style={{ borderBottom: "1px solid rgba(139,92,246,0.15)" }}
-      >
+      <div className="px-5 py-4 flex items-center justify-between border-b border-secondary/15">
         <div className="flex items-center gap-3">
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-            style={{
-              background: "linear-gradient(135deg,#8B5CF6,#6366F1)",
-              boxShadow: "0 4px 16px rgba(139,92,246,0.3)",
-            }}
-          >
+          <div className="w-9 h-9 flex items-center justify-center shrink-0 bg-secondary">
             <Bot className="w-4 h-4 text-white" />
           </div>
           <div>
-            <h3 className="font-black text-white text-sm">
+            <h3 className="font-serif font-bold text-foreground text-sm">
               Dự Đoán AI Thứ Hạng
             </h3>
             {generatedAt && (
-              <p className="text-[10px] text-slate-500 mt-0.5">
+              <p className="text-[10px] text-muted-foreground mt-0.5">
                 {fromCache
                   ? `Cập nhật lúc ${new Date(generatedAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}`
                   : "Vừa phân tích"}
@@ -612,13 +484,10 @@ function AIPredictionsPanel({
           </div>
         </div>
         <button
+          type="button"
           onClick={() => load(true)}
           disabled={loading}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-purple-300 hover:text-white transition-colors disabled:opacity-40"
-          style={{
-            background: "rgba(139,92,246,0.15)",
-            border: "1px solid rgba(139,92,246,0.3)",
-          }}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-secondary border border-secondary/30 bg-secondary/10 hover:bg-secondary/20 transition-colors disabled:opacity-40"
         >
           <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
           Làm mới
@@ -629,24 +498,21 @@ function AIPredictionsPanel({
       <div className="p-4">
         {loading && predictions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 gap-3">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ background: "rgba(139,92,246,0.15)" }}
-            >
-              <Bot className="w-5 h-5 text-purple-400 animate-pulse" />
+            <div className="w-10 h-10 flex items-center justify-center bg-secondary/15">
+              <Bot className="w-5 h-5 text-secondary animate-pulse" />
             </div>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-muted-foreground">
               Gemini AI đang phân tích...
             </p>
-            <p className="text-xs text-slate-600">Thường mất 1–3 giây</p>
+            <p className="text-xs text-muted-foreground/70">Thường mất 1–3 giây</p>
           </div>
         ) : error ? (
-          <div className="flex items-center gap-3 py-4 px-2 text-sm text-red-400">
+          <div className="flex items-center gap-3 py-4 px-2 text-sm text-destructive">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
         ) : predictions.length === 0 ? (
-          <div className="text-center py-6 text-sm text-slate-500">
+          <div className="text-center py-6 text-sm text-muted-foreground">
             Chưa có đủ dữ liệu để dự đoán
           </div>
         ) : (
@@ -654,73 +520,55 @@ function AIPredictionsPanel({
             {predictions.map((p) => (
               <div
                 key={p.horseId}
-                className="rounded-xl p-3.5 transition-all"
-                style={{
-                  background:
-                    p.rank <= 3
-                      ? "rgba(139,92,246,0.08)"
-                      : "rgba(255,255,255,0.02)",
-                  border:
-                    p.rank <= 3
-                      ? "1px solid rgba(139,92,246,0.2)"
-                      : "1px solid rgba(255,255,255,0.05)",
-                }}
+                className={`p-3.5 transition-all border ${
+                  p.rank <= 3
+                    ? "bg-card border-secondary/25"
+                    : "bg-card border-border"
+                }`}
               >
                 <div className="flex items-center gap-3 mb-2">
                   {/* Rank badge */}
                   {p.rank === 1 ? (
-                    <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                      style={{
-                        background: "linear-gradient(135deg,#F59E0B,#D97706)",
-                        boxShadow: "0 3px 10px rgba(245,158,11,0.4)",
-                      }}
-                    >
-                      <Crown className="w-4 h-4 text-white" />
+                    <div className="w-8 h-8 flex items-center justify-center shrink-0 bg-gold">
+                      <Crown className="w-4 h-4 text-foreground" />
                     </div>
                   ) : p.rank === 2 ? (
                     <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm font-black text-white"
-                      style={{ background: "#64748B" }}
+                      className="w-8 h-8 flex items-center justify-center shrink-0 text-sm font-black text-white"
+                      style={{ background: "#9A937F" }}
                     >
                       {p.rank}
                     </div>
                   ) : p.rank === 3 ? (
                     <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm font-black text-white"
-                      style={{ background: "#CD7F32" }}
+                      className="w-8 h-8 flex items-center justify-center shrink-0 text-sm font-black text-white"
+                      style={{ background: "#A85C32" }}
                     >
                       {p.rank}
                     </div>
                   ) : (
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm font-bold text-slate-500 bg-white/5">
+                    <div className="w-8 h-8 flex items-center justify-center shrink-0 text-sm font-bold text-muted-foreground bg-muted">
                       {p.rank}
                     </div>
                   )}
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-black text-white text-sm truncate">
+                      <span className="font-black text-foreground text-sm truncate">
                         {p.horseName}
                       </span>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-xs text-purple-300 font-bold">
+                        <span className="text-xs text-secondary font-bold tabular-nums">
                           {p.winProbability}%
                         </span>
-                        <span className="text-[10px] text-slate-600">win</span>
+                        <span className="text-[10px] text-muted-foreground">win</span>
                       </div>
                     </div>
                     {/* Win probability bar */}
-                    <div className="mt-1.5 h-1.5 bg-white/8 rounded-full overflow-hidden">
+                    <div className="mt-1.5 h-1.5 bg-muted overflow-hidden">
                       <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${p.winProbability}%`,
-                          background:
-                            p.rank === 1
-                              ? "linear-gradient(90deg,#F59E0B,#D97706)"
-                              : "linear-gradient(90deg,#8B5CF6,#6366F1)",
-                        }}
+                        className={`h-full transition-all duration-500 ${p.rank === 1 ? "bg-gold" : "bg-secondary"}`}
+                        style={{ width: `${p.winProbability}%` }}
                       />
                     </div>
                   </div>
@@ -728,10 +576,10 @@ function AIPredictionsPanel({
 
                 {/* Stats row */}
                 <div className="flex items-center ml-11">
-                  <div className="flex items-center gap-1 text-[10px] text-slate-500">
+                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                     <TrendingUp className="w-3 h-3" />
                     Top 3:{" "}
-                    <span className="text-emerald-400 font-bold ml-0.5">
+                    <span className="text-primary font-bold ml-0.5 tabular-nums">
                       {p.top3Probability}%
                     </span>
                   </div>
@@ -743,7 +591,7 @@ function AIPredictionsPanel({
 
         {/* Footer */}
         {!loading && !error && predictions.length > 0 && (
-          <div className="mt-3 flex items-center gap-1.5 text-[10px] text-slate-600">
+          <div className="mt-3 flex items-center gap-1.5 text-[10px] text-muted-foreground">
             <Bot className="w-3 h-3" />
             <span>Powered by Gemini AI · Chỉ mang tính tham khảo</span>
           </div>
@@ -873,15 +721,7 @@ export function PredictionsPage() {
   const totalWon = myBets.reduce((s, b) => s + (b.payoutAmount || 0), 0);
 
   return (
-    <div
-      className="min-h-screen text-slate-200"
-      style={{
-        backgroundColor: "#09090F",
-        fontFamily: "'Inter','Segoe UI',sans-serif",
-      }}
-    >
-      <Navbar />
-
+    <PublicShell>
       {showLoginModal && (
         <LoginGateModal
           onClose={() => setShowLoginModal(false)}
@@ -889,53 +729,20 @@ export function PredictionsPage() {
         />
       )}
 
-      {/* BG glows */}
-      <div className="absolute inset-x-0 top-0 h-[600px] pointer-events-none overflow-hidden">
-        <div
-          className="absolute top-0 left-1/3 w-96 h-96 rounded-full opacity-8"
-          style={{
-            background: "radial-gradient(circle,#10b981,transparent 70%)",
-            filter: "blur(90px)",
-          }}
-        />
-        <div
-          className="absolute top-20 right-1/3 w-80 h-80 rounded-full opacity-6"
-          style={{
-            background: "radial-gradient(circle,#06b6d4,transparent 70%)",
-            filter: "blur(90px)",
-          }}
-        />
-      </div>
-
       {/* Header — chỉ hiện khi đã đăng nhập */}
-      {isLoggedIn && <div className="relative pt-28 pb-4 px-6">
+      {isLoggedIn && <div className="relative pt-14 pb-4 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col lg:flex-row items-start lg:items-end justify-between gap-10">
             <div>
-              <div
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 text-sm font-bold uppercase tracking-widest"
-                style={{
-                  background: "rgba(16,185,129,0.12)",
-                  border: "1px solid rgba(16,185,129,0.25)",
-                  color: "#10b981",
-                }}
-              >
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 text-sm font-bold uppercase tracking-widest border border-primary/30 text-primary">
                 <Zap className="w-4 h-4" /> Dự Đoán &amp; Cược
               </div>
-              <h1 className="text-5xl md:text-6xl font-black text-white mb-4 leading-none tracking-tight">
+              <h1 className="font-serif text-5xl md:text-6xl font-bold text-foreground mb-4 leading-none tracking-tight">
                 Dự Đoán
                 <br />
-                <span
-                  style={{
-                    background: "linear-gradient(135deg,#10b981,#06b6d4)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                  }}
-                >
-                  Cuộc Đua
-                </span>
+                <span className="italic text-secondary">Cuộc Đua</span>
               </h1>
-              <p className="text-lg text-slate-400 max-w-xl leading-relaxed">
+              <p className="text-lg text-muted-foreground max-w-xl leading-relaxed">
                 Phân tích xu hướng, xem phong độ ngựa và đưa ra dự đoán chính
                 xác.
               </p>
@@ -945,38 +752,31 @@ export function PredictionsPage() {
                 {
                   label: "Tỷ Lệ Đúng",
                   value: isLoggedIn ? `${winRate}%` : "—",
-                  color: "#10b981",
-                  bg: "rgba(16,185,129,0.1)",
-                  border: "rgba(16,185,129,0.25)",
+                  color: "#1F3D2B",
                   icon: Target,
                 },
                 {
                   label: "Đã Cược",
                   value: isLoggedIn ? String(myBets.length) : "—",
-                  color: "#F59E0B",
-                  bg: "rgba(245,158,11,0.1)",
-                  border: "rgba(245,158,11,0.25)",
+                  color: "#8F7318",
                   icon: BarChart3,
                 },
                 {
                   label: "Tổng Thắng",
                   value: isLoggedIn ? `${(totalWon / 1000).toFixed(0)}K` : "—",
-                  color: "#8B5CF6",
-                  bg: "rgba(139,92,246,0.1)",
-                  border: "rgba(139,92,246,0.25)",
+                  color: "#8C2F1B",
                   icon: Sparkles,
                 },
-              ].map(({ label, value, color, bg, border, icon: Icon }) => (
+              ].map(({ label, value, color, icon: Icon }) => (
                 <div
                   key={label}
-                  className="flex flex-col items-center text-center px-5 py-4 rounded-2xl"
-                  style={{ backgroundColor: bg, border: `1px solid ${border}` }}
+                  className="flex flex-col items-center text-center px-5 py-4 bg-card border border-border"
                 >
                   <Icon className="w-4 h-4 mb-2" style={{ color }} />
-                  <div className="text-2xl font-black" style={{ color }}>
+                  <div className="font-serif text-2xl font-bold tabular-nums" style={{ color }}>
                     {value}
                   </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5 uppercase tracking-wider">
+                  <div className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-wider">
                     {label}
                   </div>
                 </div>
@@ -997,27 +797,17 @@ export function PredictionsPage() {
       {/* Tabs + Content — chỉ hiện khi đã đăng nhập */}
       {isLoggedIn && (
         <>
-          <div
-            className="sticky top-[72px] z-30 border-b border-white/8 px-6"
-            style={{
-              backgroundColor: "#09090FEE",
-              backdropFilter: "blur(20px)",
-            }}
-          >
+          <div className="sticky top-[64px] z-30 border-b border-border px-6 bg-background/95 backdrop-blur-sm">
             <div className="max-w-7xl mx-auto flex gap-0">
               {[
                 ["predict", "Đặt Dự Đoán", Target],
                 ["results", "Kết Quả Chính Thức", Trophy],
               ].map(([key, label, Icon]: any) => (
                 <button
+                  type="button"
                   key={key}
                   onClick={() => setActiveTab(key)}
-                  className={`flex items-center gap-2 px-6 py-4 text-sm font-bold border-b-2 transition-all uppercase tracking-wider ${activeTab === key ? "" : "border-transparent text-slate-500 hover:text-slate-300"}`}
-                  style={
-                    activeTab === key
-                      ? { borderBottomColor: "#10b981", color: "#10b981" }
-                      : {}
-                  }
+                  className={`flex items-center gap-2 px-6 py-4 text-sm font-bold border-b-2 transition-all uppercase tracking-wider ${activeTab === key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
                 >
                   <Icon className="w-4 h-4" /> {label}
                 </button>
@@ -1033,15 +823,9 @@ export function PredictionsPage() {
                 {/* Left: Race + Participants */}
                 <div className="lg:col-span-2 space-y-8">
                   {selectedRace?.status === "running" && (
-                    <div
-                      className="flex items-center gap-4 px-5 py-4 rounded-2xl"
-                      style={{
-                        background: "rgba(239,68,68,0.08)",
-                        border: "1px solid rgba(239,68,68,0.2)",
-                      }}
-                    >
-                      <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_12px_rgba(239,68,68,0.9)]" />
-                      <span className="text-sm font-bold text-red-400 uppercase tracking-widest">
+                    <div className="flex items-center gap-4 px-5 py-4 bg-secondary/8 border border-secondary/25">
+                      <div className="w-2.5 h-2.5 rounded-full bg-secondary animate-pulse" />
+                      <span className="text-sm font-bold text-secondary uppercase tracking-widest">
                         Đang Diễn Ra Trực Tiếp
                       </span>
                     </div>
@@ -1049,61 +833,47 @@ export function PredictionsPage() {
 
                   {/* Race selector */}
                   <div>
-                    <h2 className="text-sm font-black text-slate-500 uppercase tracking-widest mb-4">
+                    <h2 className="text-sm font-black text-muted-foreground uppercase tracking-widest mb-4">
                       Chọn Cuộc Đua
                     </h2>
                     {loadingRaces ? (
                       <div className="flex justify-center py-8">
-                        <Loader2 className="w-6 h-6 animate-spin text-emerald-400" />
+                        <Loader2 className="w-6 h-6 animate-spin text-primary" />
                       </div>
                     ) : races.length === 0 ? (
-                      <div
-                        className="p-6 rounded-2xl text-center text-slate-500 text-sm"
-                        style={{
-                          background: "rgba(255,255,255,0.03)",
-                          border: "1px solid rgba(255,255,255,0.06)",
-                        }}
-                      >
+                      <div className="p-6 text-center text-muted-foreground text-sm bg-card border border-border">
                         Không có cuộc đua nào đang mở đặt cược
                       </div>
                     ) : (
                       <div className="grid sm:grid-cols-2 gap-3">
                         {races.map((race) => (
                           <button
+                            type="button"
                             key={race._id}
                             onClick={() => {
                               setSelectedRace(race);
                               setSelectedHorseIdx(null);
                               setBetAmount("");
                             }}
-                            className="p-4 rounded-2xl border text-left transition-all hover:-translate-y-0.5"
-                            style={
+                            className={`p-4 border text-left transition-all hover:-translate-y-0.5 ${
                               selectedRace?._id === race._id
-                                ? {
-                                    background: "rgba(16,185,129,0.1)",
-                                    borderColor: "rgba(16,185,129,0.4)",
-                                    boxShadow:
-                                      "0 4px 20px rgba(16,185,129,0.1)",
-                                  }
-                                : {
-                                    background: "rgba(255,255,255,0.03)",
-                                    borderColor: "rgba(255,255,255,0.08)",
-                                  }
-                            }
+                                ? "bg-primary/10 border-primary/50"
+                                : "bg-card border-border"
+                            }`}
                           >
                             <div className="flex items-start justify-between mb-3">
-                              <h3 className="font-bold text-white text-sm leading-tight pr-2">
+                              <h3 className="font-serif font-bold text-foreground text-sm leading-tight pr-2">
                                 {race.name}
                               </h3>
                               <span
-                                className={`shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase ${race.status === "running" ? "bg-red-500 text-white" : "bg-blue-600/80 text-white"}`}
+                                className={`shrink-0 px-2.5 py-1 text-[10px] font-black uppercase ${race.status === "running" ? "bg-secondary text-white" : "bg-primary text-primary-foreground"}`}
                               >
                                 {race.status === "running"
                                   ? "● TRỰC TIẾP"
                                   : "Mở Cược"}
                               </span>
                             </div>
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                               <span className="flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
                                 {new Date(race.scheduledTime).toLocaleString(
@@ -1147,18 +917,14 @@ export function PredictionsPage() {
                       ].map(({ label, value, icon: Icon }) => (
                         <div
                           key={label}
-                          className="flex items-center gap-3 p-3 rounded-xl"
-                          style={{
-                            background: "rgba(255,255,255,0.03)",
-                            border: "1px solid rgba(255,255,255,0.06)",
-                          }}
+                          className="flex items-center gap-3 p-3 bg-card border border-border"
                         >
-                          <Icon className="w-4 h-4 text-slate-500 shrink-0" />
+                          <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
                           <div>
-                            <div className="text-[10px] text-slate-600 uppercase tracking-wider">
+                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
                               {label}
                             </div>
-                            <div className="text-xs font-semibold text-white truncate">
+                            <div className="text-xs font-semibold text-foreground truncate">
                               {value}
                             </div>
                           </div>
@@ -1182,22 +948,15 @@ export function PredictionsPage() {
                   {/* Participants */}
                   {selectedRace && (
                     <div>
-                      <h2 className="text-sm font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                      <h2 className="text-sm font-black text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
                         <Activity className="w-4 h-4" /> Ngựa Tham Gia
                       </h2>
                       {loadingHorses ? (
                         <div className="flex justify-center py-10">
-                          <Loader2 className="w-6 h-6 animate-spin text-emerald-400" />
+                          <Loader2 className="w-6 h-6 animate-spin text-primary" />
                         </div>
                       ) : horses.length === 0 ? (
-                        <div
-                          className="text-center py-8 text-slate-500 text-sm"
-                          style={{
-                            background: "rgba(255,255,255,0.02)",
-                            border: "1px dashed rgba(255,255,255,0.08)",
-                            borderRadius: "16px",
-                          }}
-                        >
+                        <div className="text-center py-8 text-muted-foreground text-sm bg-card border border-dashed border-border">
                           Chưa có ngựa đăng ký
                         </div>
                       ) : (
@@ -1206,40 +965,26 @@ export function PredictionsPage() {
                             <div
                               key={h.horseId}
                               onClick={() => setSelectedHorseIdx(idx)}
-                              className="relative overflow-hidden rounded-2xl cursor-pointer transition-all hover:-translate-y-0.5"
-                              style={
+                              className={`relative overflow-hidden cursor-pointer transition-all hover:-translate-y-0.5 border ${
                                 selectedHorseIdx === idx
-                                  ? {
-                                      background: "rgba(16,185,129,0.08)",
-                                      border: "1px solid rgba(16,185,129,0.35)",
-                                      boxShadow:
-                                        "0 4px 20px rgba(16,185,129,0.1)",
-                                    }
-                                  : {
-                                      background: "rgba(255,255,255,0.03)",
-                                      border:
-                                        "1px solid rgba(255,255,255,0.07)",
-                                    }
-                              }
+                                  ? "bg-primary/10 border-primary/50"
+                                  : "bg-card border-border"
+                              }`}
                             >
                               <div className="pl-5 pr-5 py-4">
                                 <div className="flex items-center justify-between mb-3">
                                   <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black shrink-0 bg-white/10 text-white">
+                                    <div className="w-10 h-10 flex items-center justify-center text-sm font-black shrink-0 bg-muted text-foreground">
                                       {idx + 1}
                                     </div>
                                     <div>
                                       <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="font-black text-white">
+                                        <span className="font-black text-foreground">
                                           {h.horseName}
                                         </span>
-                                        <span
-                                          className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${GRADE_COLOR[h.currentGrade] ?? GRADE_COLOR.Maiden}`}
-                                        >
-                                          {h.currentGrade}
-                                        </span>
+                                        <GradeBadge grade={h.currentGrade} />
                                       </div>
-                                      <div className="text-xs text-slate-500">
+                                      <div className="text-xs text-muted-foreground">
                                         {h.jockeyName
                                           ? `🏇 ${h.jockeyName}`
                                           : "Chưa có kỵ sĩ"}
@@ -1250,25 +995,25 @@ export function PredictionsPage() {
                                     </div>
                                   </div>
                                   <div className="text-right shrink-0">
-                                    <div className="text-xl font-black text-amber-400">
+                                    <div className="font-serif text-xl font-bold text-[#8F7318] tabular-nums">
                                       {h.totalPoints}
                                     </div>
-                                    <div className="text-[10px] text-slate-600 uppercase tracking-wider">
+                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
                                       Điểm
                                     </div>
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                  <span className="text-[10px] text-slate-600 uppercase tracking-wider shrink-0">
+                                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider shrink-0">
                                     Win Rate:
                                   </span>
-                                  <div className="flex-1 h-1.5 bg-white/8 rounded-full overflow-hidden">
+                                  <div className="flex-1 h-1.5 bg-muted overflow-hidden">
                                     <div
-                                      className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full"
+                                      className="h-full bg-primary"
                                       style={{ width: `${h.winRate}%` }}
                                     />
                                   </div>
-                                  <span className="text-xs font-bold text-emerald-400 shrink-0">
+                                  <span className="text-xs font-bold text-primary shrink-0 tabular-nums">
                                     {h.winRate}%
                                   </span>
                                 </div>
@@ -1284,35 +1029,23 @@ export function PredictionsPage() {
                 {/* Right: Bet panel + history */}
                 <div className="space-y-5">
                   {/* Bet panel */}
-                  <div
-                    className="rounded-2xl overflow-hidden"
-                    style={{
-                      background: "rgba(15,17,23,0.95)",
-                      border: "1px solid rgba(255,255,255,0.1)",
-                    }}
-                  >
-                    <div className="px-6 py-5 border-b border-white/8 flex items-center gap-3">
-                      <div
-                        className="w-9 h-9 rounded-xl flex items-center justify-center"
-                        style={{
-                          background: "linear-gradient(135deg,#10b981,#06b6d4)",
-                          boxShadow: "0 4px 16px rgba(16,185,129,0.3)",
-                        }}
-                      >
+                  <div className="overflow-hidden bg-card border border-border">
+                    <div className="px-6 py-5 border-b border-border flex items-center gap-3">
+                      <div className="w-9 h-9 flex items-center justify-center bg-secondary">
                         <Zap className="w-4 h-4 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-black text-white">Đặt Cược</h3>
+                        <h3 className="font-serif font-bold text-foreground">Đặt Cược</h3>
                         {!isLoggedIn && (
-                          <p className="text-[10px] text-red-400">
+                          <p className="text-[10px] text-destructive">
                             Yêu cầu đăng nhập
                           </p>
                         )}
                       </div>
                       {!isLoggedIn && (
-                        <div className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-500/10 border border-red-500/20">
-                          <Lock className="w-3 h-3 text-red-400" />
-                          <span className="text-[10px] font-bold text-red-400">
+                        <div className="ml-auto flex items-center gap-1.5 px-2.5 py-1 bg-destructive/10 border border-destructive/20">
+                          <Lock className="w-3 h-3 text-destructive" />
+                          <span className="text-[10px] font-bold text-destructive">
                             Khóa
                           </span>
                         </div>
@@ -1323,28 +1056,16 @@ export function PredictionsPage() {
                       {/* Bet type */}
                       {isLoggedIn && (
                         <div className="mb-4">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">
+                          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">
                             Loại Cược
                           </label>
                           <div className="grid grid-cols-3 gap-2">
                             {(["win", "place", "show"] as const).map((bt) => (
                               <button
+                                type="button"
                                 key={bt}
                                 onClick={() => setBetType(bt)}
-                                className={`py-2 rounded-xl text-xs font-bold transition-all ${betType === bt ? "text-emerald-400" : "text-slate-500 hover:text-white"}`}
-                                style={
-                                  betType === bt
-                                    ? {
-                                        background: "rgba(16,185,129,0.15)",
-                                        border:
-                                          "1px solid rgba(16,185,129,0.4)",
-                                      }
-                                    : {
-                                        background: "rgba(255,255,255,0.04)",
-                                        border:
-                                          "1px solid rgba(255,255,255,0.1)",
-                                      }
-                                }
+                                className={`py-2 text-xs font-bold transition-all border ${betType === bt ? "text-primary bg-primary/10 border-primary/50" : "text-muted-foreground hover:text-foreground bg-background border-border"}`}
                               >
                                 {bt === "win"
                                   ? `Win ${BET_MULTIPLIERS.win}x`
@@ -1359,34 +1080,24 @@ export function PredictionsPage() {
 
                       {/* Selected horse */}
                       {selectedHorse ? (
-                        <div
-                          className="mb-5 p-4 rounded-xl"
-                          style={{
-                            background: "rgba(16,185,129,0.08)",
-                            border: "1px solid rgba(16,185,129,0.25)",
-                          }}
-                        >
-                          <div className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest mb-2">
+                        <div className="mb-5 p-4 bg-primary/8 border border-primary/30">
+                          <div className="text-[10px] text-primary font-bold uppercase tracking-widest mb-2">
                             Đã Chọn
                           </div>
-                          <div className="font-black text-white">
+                          <div className="font-black text-foreground">
                             {selectedHorse.horseName}
                           </div>
-                          <div className="text-xs text-slate-500 mt-0.5">
+                          <div className="text-xs text-muted-foreground mt-0.5">
                             {selectedHorse.jockeyName ?? "Chưa có kỵ sĩ"}
                           </div>
                         </div>
                       ) : (
                         <div
-                          className="mb-5 p-5 rounded-xl text-center cursor-pointer"
-                          style={{
-                            background: "rgba(255,255,255,0.02)",
-                            border: "1px dashed rgba(255,255,255,0.1)",
-                          }}
+                          className="mb-5 p-5 text-center cursor-pointer bg-background border border-dashed border-border"
                           onClick={() => !isLoggedIn && setShowLoginModal(true)}
                         >
-                          <AlertCircle className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-                          <p className="text-sm text-slate-500">
+                          <AlertCircle className="w-8 h-8 text-muted-foreground/60 mx-auto mb-2" />
+                          <p className="text-sm text-muted-foreground">
                             Chọn ngựa từ danh sách
                           </p>
                         </div>
@@ -1394,7 +1105,7 @@ export function PredictionsPage() {
 
                       {/* Amount */}
                       <div className="mb-4">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">
                           Số Tiền Cược (coins)
                         </label>
                         <div className="relative">
@@ -1407,31 +1118,26 @@ export function PredictionsPage() {
                               !isLoggedIn && setShowLoginModal(true)
                             }
                             readOnly={!isLoggedIn}
-                            className="w-full rounded-xl px-4 py-3 text-white text-sm placeholder:text-slate-600 focus:outline-none transition-all"
+                            className="w-full px-4 py-3 text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-all bg-background border border-border"
                             style={{
-                              background: "rgba(255,255,255,0.05)",
-                              border: "1px solid rgba(255,255,255,0.1)",
                               cursor: isLoggedIn ? "text" : "not-allowed",
                             }}
                           />
                           {!isLoggedIn && (
-                            <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
+                            <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                           )}
                         </div>
                         <div className="grid grid-cols-4 gap-1.5 mt-2">
                           {[100, 500, 1000, 5000].map((v) => (
                             <button
+                              type="button"
                               key={v}
                               onClick={() =>
                                 isLoggedIn
                                   ? setBetAmount(String(v))
                                   : setShowLoginModal(true)
                               }
-                              className="py-2 rounded-lg text-[10px] font-bold text-slate-500 hover:text-white transition-all"
-                              style={{
-                                background: "rgba(255,255,255,0.04)",
-                                border: "1px solid rgba(255,255,255,0.06)",
-                              }}
+                              className="py-2 text-[10px] font-bold text-muted-foreground hover:text-foreground transition-all bg-background border border-border"
                             >
                               {v >= 1000 ? `${v / 1000}K` : v}
                             </button>
@@ -1441,49 +1147,34 @@ export function PredictionsPage() {
 
                       {/* Potential win */}
                       {potentialWin !== null && isLoggedIn && (
-                        <div
-                          className="mb-5 p-4 rounded-xl flex items-center justify-between"
-                          style={{
-                            background: "rgba(245,158,11,0.08)",
-                            border: "1px solid rgba(245,158,11,0.2)",
-                          }}
-                        >
+                        <div className="mb-5 p-4 flex items-center justify-between bg-gold/10 border border-gold/40">
                           <div>
-                            <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">
+                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">
                               Tiềm Năng Thắng ({multiplier}x)
                             </div>
-                            <div className="text-xl font-black text-amber-400">
+                            <div className="font-serif text-xl font-bold text-[#8F7318] tabular-nums">
                               {potentialWin.toLocaleString()} coins
                             </div>
                           </div>
-                          <ArrowUpRight className="w-6 h-6 text-amber-400 opacity-60" />
+                          <ArrowUpRight className="w-6 h-6 text-[#8F7318] opacity-60" />
                         </div>
                       )}
 
                       {/* CTA */}
                       {!isLoggedIn ? (
                         <button
+                          type="button"
                           onClick={() => setShowLoginModal(true)}
-                          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-black transition-all hover:opacity-90"
-                          style={{
-                            background:
-                              "linear-gradient(135deg,#10b981,#06b6d4)",
-                            color: "white",
-                            boxShadow: "0 8px 24px rgba(16,185,129,0.25)",
-                          }}
+                          className="w-full flex items-center justify-center gap-2 py-3.5 text-sm font-black bg-primary text-primary-foreground transition-colors hover:bg-primary/90"
                         >
                           <LogIn className="w-4 h-4" /> Đăng Nhập Để Cược
                         </button>
                       ) : (
                         <button
+                          type="button"
                           onClick={handleBetClick}
                           disabled={!selectedHorse || !betAmount || placing}
-                          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-black transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-                          style={{
-                            background:
-                              "linear-gradient(135deg,#10b981,#06b6d4)",
-                            color: "white",
-                          }}
+                          className="w-full flex items-center justify-center gap-2 py-3.5 text-sm font-black bg-secondary text-white transition-colors hover:bg-secondary/90 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           {placing ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -1497,46 +1188,36 @@ export function PredictionsPage() {
                   </div>
 
                   {/* Bet history */}
-                  <div
-                    className="rounded-2xl overflow-hidden"
-                    style={{
-                      background: "rgba(255,255,255,0.03)",
-                      border: "1px solid rgba(255,255,255,0.1)",
-                    }}
-                  >
-                    <div
-                      className="px-5 py-4 flex items-center justify-between"
-                      style={{
-                        borderBottom: "1px solid rgba(255,255,255,0.08)",
-                      }}
-                    >
-                      <h3 className="text-sm font-black text-white flex items-center gap-2">
-                        <Eye className="w-4 h-4 text-slate-500" /> Lịch Sử Cược
+                  <div className="overflow-hidden bg-card border border-border">
+                    <div className="px-5 py-4 flex items-center justify-between border-b border-border">
+                      <h3 className="font-serif text-sm font-bold text-foreground flex items-center gap-2">
+                        <Eye className="w-4 h-4 text-muted-foreground" /> Lịch Sử Cược
                       </h3>
                       {!isLoggedIn && (
-                        <Lock className="w-3.5 h-3.5 text-slate-600" />
+                        <Lock className="w-3.5 h-3.5 text-muted-foreground" />
                       )}
                     </div>
                     <div className="p-3 space-y-2">
                       {!isLoggedIn ? (
                         <div className="py-8 text-center">
-                          <Lock className="w-8 h-8 text-slate-700 mx-auto mb-3" />
-                          <p className="text-sm text-slate-600">
+                          <Lock className="w-8 h-8 text-muted-foreground/50 mx-auto mb-3" />
+                          <p className="text-sm text-muted-foreground">
                             Đăng nhập để xem lịch sử
                           </p>
                           <button
+                            type="button"
                             onClick={() => setShowLoginModal(true)}
-                            className="mt-3 text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1 mx-auto"
+                            className="mt-3 text-xs font-bold text-primary hover:text-primary/80 transition-colors flex items-center gap-1 mx-auto"
                           >
                             Đăng nhập ngay <ChevronRight className="w-3 h-3" />
                           </button>
                         </div>
                       ) : loadingBets ? (
                         <div className="flex justify-center py-6">
-                          <Loader2 className="w-5 h-5 animate-spin text-slate-500" />
+                          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                         </div>
                       ) : myBets.length === 0 ? (
-                        <div className="py-6 text-center text-sm text-slate-600">
+                        <div className="py-6 text-center text-sm text-muted-foreground">
                           Chưa có lịch sử cược
                         </div>
                       ) : (
@@ -1546,18 +1227,14 @@ export function PredictionsPage() {
                           return (
                             <div
                               key={bet._id}
-                              className="p-3 rounded-xl"
-                              style={{
-                                background: "rgba(255,255,255,0.03)",
-                                border: "1px solid rgba(255,255,255,0.06)",
-                              }}
+                              className="p-3 bg-background border border-border"
                             >
                               <div className="flex items-start justify-between gap-2 mb-1">
-                                <span className="text-xs text-slate-400 leading-tight">
+                                <span className="text-xs text-muted-foreground leading-tight">
                                   {race?.name ?? "Race"}
                                 </span>
                                 <span
-                                  className={`shrink-0 px-2 py-0.5 rounded-md text-[10px] font-black uppercase ${bet.status === "won" ? "bg-emerald-500/15 text-emerald-400" : bet.status === "lost" ? "bg-red-500/15 text-red-400" : "bg-amber-500/15 text-amber-400"}`}
+                                  className={`shrink-0 px-2 py-0.5 text-[10px] font-black uppercase ${bet.status === "won" ? "bg-primary/10 text-primary" : bet.status === "lost" ? "bg-destructive/10 text-destructive" : "bg-gold/15 text-[#8F7318]"}`}
                                 >
                                   {bet.status === "won"
                                     ? "✓ Thắng"
@@ -1566,15 +1243,15 @@ export function PredictionsPage() {
                                       : "⏳ Chờ"}
                                 </span>
                               </div>
-                              <div className="font-bold text-white text-sm mb-1">
+                              <div className="font-bold text-foreground text-sm mb-1">
                                 {horse?.name ?? "—"}
                               </div>
                               <div className="flex items-center justify-between text-xs">
-                                <span className="text-slate-600">
+                                <span className="text-muted-foreground">
                                   {bet.betType} · {bet.amount.toLocaleString()}c
                                 </span>
                                 <span
-                                  className={`font-bold ${bet.status === "won" ? "text-emerald-400" : bet.status === "lost" ? "text-red-400 line-through" : "text-amber-400"}`}
+                                  className={`font-bold tabular-nums ${bet.status === "won" ? "text-primary" : bet.status === "lost" ? "text-destructive line-through" : "text-[#8F7318]"}`}
                                 >
                                   +
                                   {Math.floor(
@@ -1598,6 +1275,6 @@ export function PredictionsPage() {
           </div>
         </>
       )}
-    </div>
+    </PublicShell>
   );
 }
