@@ -51,7 +51,8 @@ import {
   BarChart,
   Bar,
 } from "recharts";
-import { ProfileDropdown } from "../components/ProfileDropdown";
+import { AppShell, type NavItem } from "../components/layout/AppShell";
+import { Home } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useWallet } from "../hooks/useWallet";
 import { horseApi, Horse } from "../api/horse";
@@ -67,6 +68,12 @@ const GRADE_COLORS: Record<string, string> = {
   G2: "#8b5cf6",
   G1: "#C9A227",
 };
+
+const OWNER_NAV: NavItem[] = [
+  { to: "/horse-owner", label: "Tổng Quan", icon: <Home /> },
+  { to: "/tournaments", label: "Giải Đấu", icon: <Trophy /> },
+  { to: "/rankings", label: "Xếp Hạng", icon: <Medal /> },
+];
 
 export function HorseOwnerDashboard() {
   const navigate = useNavigate();
@@ -522,45 +529,8 @@ export function HorseOwnerDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 font-sans">
-      {/* Top Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-lg border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="cursor-pointer" onClick={() => navigate("/")}>
-              <img
-                src="/images/logo.png"
-                alt="RaceTrack Logo"
-                className="w-12 h-12 object-contain drop-shadow-md"
-              />
-            </div>
-            <div>
-              <div className="text-white font-semibold">Cổng Chủ Ngựa</div>
-              <div className="text-sm text-slate-400">
-                Xin chào, {user?.fullName || 'Chủ Ngựa'}
-              </div>
-            </div>
-          </div>
-
-          <div className="hidden md:flex items-center gap-4">
-            {/* Wallet Balance Badge */}
-            <div className="flex items-center gap-2 bg-[#C9A227]/10 border border-[#C9A227]/20 px-4 py-2 rounded-xl">
-              <Coins className="w-4 h-4 text-[#C9A227]" />
-              <span className="text-[#C9A227] font-bold text-sm">{walletBalance !== null ? `${walletBalance?.toLocaleString('vi-VN')} coin` : (user?.balance ?? '...')}</span>
-            </div>
-            <ProfileDropdown />
-          </div>
-
-          <button
-            className="md:hidden text-white"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X /> : <Menu />}
-          </button>
-        </div>
-      </nav>
-
-      <div className="pt-24 max-w-7xl mx-auto px-6 py-8">
+    <AppShell roleLabel="HORSE OWNER" nav={OWNER_NAV}>
+      <div className="max-w-7xl mx-auto">
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {stats.map((stat, idx) => (
@@ -2415,6 +2385,6 @@ export function HorseOwnerDashboard() {
           </Button>
         </DialogActions>
       </Dialog>
-    </div>
+    </AppShell>
   );
 }
