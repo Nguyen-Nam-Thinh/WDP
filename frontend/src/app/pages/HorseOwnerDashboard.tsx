@@ -62,10 +62,10 @@ import { invitationApi } from "../api/invitation";
 import { registrationApi, Registration } from "../api/registration";
 
 const GRADE_COLORS: Record<string, string> = {
-  Maiden: "#64748b",
+  Maiden: "#7A7468",
   G3: "#3b82f6",
   G2: "#8b5cf6",
-  G1: "#f59e0b",
+  G1: "#C9A227",
 };
 
 export function HorseOwnerDashboard() {
@@ -517,7 +517,7 @@ export function HorseOwnerDashboard() {
       label: "Số Dư Ví",
       value: "$45,800",
       icon: Wallet,
-      color: "from-[#FFDE42] to-[#1B0C0C]",
+      color: "from-[#C9A227] to-[#8F7318]",
     },
   ];
 
@@ -544,9 +544,9 @@ export function HorseOwnerDashboard() {
 
           <div className="hidden md:flex items-center gap-4">
             {/* Wallet Balance Badge */}
-            <div className="flex items-center gap-2 bg-[#FFDE42]/10 border border-[#FFDE42]/20 px-4 py-2 rounded-xl">
-              <Coins className="w-4 h-4 text-[#FFDE42]" />
-              <span className="text-[#FFDE42] font-bold text-sm">{walletBalance !== null ? `${walletBalance?.toLocaleString('vi-VN')} coin` : (user?.balance ?? '...')}</span>
+            <div className="flex items-center gap-2 bg-[#C9A227]/10 border border-[#C9A227]/20 px-4 py-2 rounded-xl">
+              <Coins className="w-4 h-4 text-[#C9A227]" />
+              <span className="text-[#C9A227] font-bold text-sm">{walletBalance !== null ? `${walletBalance?.toLocaleString('vi-VN')} coin` : (user?.balance ?? '...')}</span>
             </div>
             <ProfileDropdown />
           </div>
@@ -597,7 +597,7 @@ export function HorseOwnerDashboard() {
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all whitespace-nowrap font-medium ${
                 activeTab === tab.id
-                  ? "bg-[#FFDE42] text-[#1B0C0C] shadow-lg shadow-[#FFDE42]/25"
+                  ? "bg-[#C9A227] text-[#23201A] shadow-lg shadow-[#C9A227]/25"
                   : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/5"
               }`}
             >
@@ -625,13 +625,13 @@ export function HorseOwnerDashboard() {
                 onClick={() => setAddHorseOpen(true)}
                 sx={{
                   background:
-                    "linear-gradient(135deg, #FFDE42 0%, #1B0C0C 100%)",
+                    "linear-gradient(135deg, #C9A227 0%, #8F7318 100%)",
                   textTransform: "none",
                   fontWeight: 600,
                   boxShadow: "0 4px 6px -1px rgba(255, 222, 66, 0.2)",
                   "&:hover": {
                     background:
-                      "linear-gradient(135deg, #FFDE42 0%, #4C5C2D 100%)",
+                      "linear-gradient(135deg, #C9A227 0%, #4C5C2D 100%)",
                   },
                 }}
               >
@@ -660,7 +660,7 @@ export function HorseOwnerDashboard() {
                 return (
                 <div
                   key={horse._id}
-                  className="group bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden hover:border-[#FFDE42]/30 transition-all"
+                  className="group bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden hover:border-[#C9A227]/30 transition-all"
                 >
                   <div className="h-48 overflow-hidden relative bg-slate-900 flex items-center justify-center">
                     {horse.primaryImageUrl ? (
@@ -696,7 +696,7 @@ export function HorseOwnerDashboard() {
                       {horse.breed ?? "—"} • {ageYears} tuổi
                       <span
                         className="ml-2 px-1.5 py-0.5 rounded text-xs font-bold text-white"
-                        style={{ backgroundColor: GRADE_COLORS[horse.currentGrade] ?? "#f59e0b" }}
+                        style={{ backgroundColor: GRADE_COLORS[horse.currentGrade] ?? "#C9A227" }}
                       >
                         {horse.currentGrade}
                       </span>
@@ -705,11 +705,11 @@ export function HorseOwnerDashboard() {
                     <div className="grid grid-cols-2 gap-3 mb-6">
                       <div className="bg-slate-900/50 p-3 rounded-xl border border-white/5">
                         <div className="text-xs text-slate-400 mb-1">Thành Tích</div>
-                        <div className="text-[#FFDE42] font-semibold">{horse.winCount} thắng / {horse.raceCount} trận</div>
+                        <div className="text-[#C9A227] font-semibold">{horse.winCount} thắng / {horse.raceCount} trận</div>
                       </div>
                       <div className="bg-slate-900/50 p-3 rounded-xl border border-white/5">
                         <div className="text-xs text-slate-400 mb-1">Tỷ Lệ Thắng</div>
-                        <div className="text-[#FFDE42] font-semibold">{winRate}%</div>
+                        <div className="text-[#C9A227] font-semibold">{winRate}%</div>
                       </div>
                       <div className="bg-slate-900/50 p-3 rounded-xl border border-white/5">
                         <div className="text-xs text-slate-400 mb-1">Điểm Tích Lũy</div>
@@ -717,7 +717,7 @@ export function HorseOwnerDashboard() {
                       </div>
                       <div className="bg-slate-900/50 p-3 rounded-xl border border-white/5">
                         <div className="text-xs text-slate-400 mb-1">Tiền Thưởng</div>
-                        <div className="text-[#10b981] font-semibold">${horse.totalEarnings.toLocaleString()}</div>
+                        <div className="text-[#1F3D2B] font-semibold">${horse.totalEarnings.toLocaleString()}</div>
                       </div>
                     </div>
 
@@ -743,11 +743,11 @@ export function HorseOwnerDashboard() {
                         variant="outlined"
                         onClick={() => openViewHorse(horse)}
                         sx={{
-                          borderColor: "#FFDE42",
-                          color: "#FFDE42",
+                          borderColor: "#C9A227",
+                          color: "#C9A227",
                           textTransform: "none",
                           "&:hover": {
-                            borderColor: "#E6C21E",
+                            borderColor: "#B08D1E",
                             backgroundColor: "rgba(255, 222, 66, 0.1)",
                           },
                         }}
@@ -835,8 +835,8 @@ export function HorseOwnerDashboard() {
                                   backgroundColor: jockey.isActive
                                     ? "rgba(255, 222, 66, 0.2)"
                                     : "rgba(100, 116, 139, 0.2)",
-                                  color: jockey.isActive ? "#FFDE42" : "#94a3b8",
-                                  border: `1px solid ${jockey.isActive ? "#FFDE42" : "#475569"}`,
+                                  color: jockey.isActive ? "#C9A227" : "#94a3b8",
+                                  border: `1px solid ${jockey.isActive ? "#C9A227" : "#475569"}`,
                                 }}
                               />
                               <Button
@@ -858,9 +858,9 @@ export function HorseOwnerDashboard() {
                                 disabled={!jockey.isActive}
                                 onClick={() => { setInvitingJockey(jockey); setInviteJockeyOpen(true); }}
                                 sx={{
-                                  background: jockey.isActive ? "#FFDE42" : "#334155",
+                                  background: jockey.isActive ? "#C9A227" : "#334155",
                                   textTransform: "none",
-                                  "&:hover": { background: "#E6C21E" },
+                                  "&:hover": { background: "#B08D1E" },
                                 }}
                               >
                                 Thuê
@@ -879,7 +879,7 @@ export function HorseOwnerDashboard() {
                 <h3 className="text-xl font-bold text-white mb-6">Kỵ Sĩ Ưa Thích</h3>
                 <div className="space-y-4">
                   {preferredJockeys.map(jockey => (
-                    <div key={jockey.id} className="p-4 bg-slate-900/50 rounded-xl border border-[#FFDE42]/20">
+                    <div key={jockey.id} className="p-4 bg-slate-900/50 rounded-xl border border-[#C9A227]/20">
                       <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
                           {jockey.name.charAt(0)}
@@ -895,7 +895,7 @@ export function HorseOwnerDashboard() {
                         </div>
                         <div className="bg-slate-950 p-2 rounded-lg">
                           <div className="text-slate-400 text-xs">Tỷ Lệ Thắng</div>
-                          <div className="text-[#FFDE42] font-medium">{jockey.winRate}</div>
+                          <div className="text-[#C9A227] font-medium">{jockey.winRate}</div>
                         </div>
                       </div>
                     </div>
@@ -925,13 +925,13 @@ export function HorseOwnerDashboard() {
                   onClick={() => setScheduleSubTab(t.id)}
                   className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-all ${
                     scheduleSubTab === t.id
-                      ? "border-[#FFDE42] text-[#FFDE42]"
+                      ? "border-[#C9A227] text-[#C9A227]"
                       : "border-transparent text-slate-400 hover:text-white"
                   }`}
                 >
                   {t.label}
                   <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
-                    scheduleSubTab === t.id ? "bg-[#FFDE42]/20 text-[#FFDE42]" : "bg-white/8 text-slate-400"
+                    scheduleSubTab === t.id ? "bg-[#C9A227]/20 text-[#C9A227]" : "bg-white/8 text-slate-400"
                   }`}>{t.count}</span>
                 </button>
               ))}
@@ -939,7 +939,7 @@ export function HorseOwnerDashboard() {
 
             {loadingSchedule ? (
               <div className="flex justify-center py-16">
-                <Loader2 className="w-8 h-8 text-[#FFDE42] animate-spin" />
+                <Loader2 className="w-8 h-8 text-[#C9A227] animate-spin" />
               </div>
             ) : (
               <>
@@ -959,27 +959,27 @@ export function HorseOwnerDashboard() {
                         const jockey = reg.jockeyId as any;
                         const preStatus = reg.preCheckResult?.status;
                         return (
-                          <div key={reg._id} className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-5 hover:border-[#FFDE42]/20 transition-all">
+                          <div key={reg._id} className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-5 hover:border-[#C9A227]/20 transition-all">
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                               <div className="flex-1">
                                 <div className="flex items-center gap-3 mb-3 flex-wrap">
                                   <div className="w-9 h-9 bg-slate-800 rounded-lg flex items-center justify-center flex-shrink-0">
-                                    <Calendar className="w-4 h-4 text-[#FFDE42]" />
+                                    <Calendar className="w-4 h-4 text-[#C9A227]" />
                                   </div>
                                   <div>
                                     <h4 className="text-white font-bold">{race?.name}</h4>
                                     <div className="text-slate-400 text-xs">{race?.scheduledTime ? new Date(race.scheduledTime).toLocaleString("vi-VN") : ""}</div>
                                   </div>
-                                  <Chip label={race?.grade} size="small" sx={{ height: "20px", fontSize: "0.65rem", bgcolor: "rgba(245,158,11,0.2)", color: "#fbbf24", border: "1px solid #f59e0b", fontWeight: "bold" }} />
+                                  <Chip label={race?.grade} size="small" sx={{ height: "20px", fontSize: "0.65rem", bgcolor: "rgba(201,162,39,0.2)", color: "#8F7318", border: "1px solid #C9A227", fontWeight: "bold" }} />
                                   <Chip label={race?.status === "open" ? "Mở ĐK" : race?.status === "closed" ? "Đóng ĐK" : race?.status === "pre_check" ? "Kiểm tra" : race?.status} size="small" sx={{ height: "20px", fontSize: "0.65rem", bgcolor: "rgba(99,102,241,0.15)", color: "#a5b4fc", border: "1px solid #6366f1" }} />
                                   {preStatus && preStatus !== "pending" && (
-                                    <Chip label={preStatus === "passed" ? "✓ Đã duyệt" : "✗ Bị loại"} size="small" sx={{ height: "20px", fontSize: "0.65rem", bgcolor: preStatus === "passed" ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)", color: preStatus === "passed" ? "#34d399" : "#f87171", border: `1px solid ${preStatus === "passed" ? "#10b981" : "#ef4444"}` }} />
+                                    <Chip label={preStatus === "passed" ? "✓ Đã duyệt" : "✗ Bị loại"} size="small" sx={{ height: "20px", fontSize: "0.65rem", bgcolor: preStatus === "passed" ? "rgba(16,185,129,0.15)" : "rgba(180,35,24,0.15)", color: preStatus === "passed" ? "#34d399" : "#B42318", border: `1px solid ${preStatus === "passed" ? "#1F3D2B" : "#B42318"}` }} />
                                   )}
                                 </div>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                                   <div>
                                     <div className="text-slate-500 text-xs mb-1">Ngựa</div>
-                                    <div className="text-white font-medium flex items-center gap-1"><Sparkles className="w-3 h-3 text-[#FFDE42]" />{horse?.name}</div>
+                                    <div className="text-white font-medium flex items-center gap-1"><Sparkles className="w-3 h-3 text-[#C9A227]" />{horse?.name}</div>
                                   </div>
                                   <div>
                                     <div className="text-slate-500 text-xs mb-1">Kỵ Sĩ</div>
@@ -1001,7 +1001,7 @@ export function HorseOwnerDashboard() {
                               {race?.status === "open" && (
                                 <Button variant="outlined" size="small" disabled={cancellingRegId === reg._id}
                                   onClick={() => handleCancelRegistration(reg._id)}
-                                  sx={{ borderColor: "rgba(239,68,68,0.4)", color: "#f87171", textTransform: "none", whiteSpace: "nowrap", "&:hover": { borderColor: "#ef4444", bgcolor: "rgba(239,68,68,0.1)" } }}>
+                                  sx={{ borderColor: "rgba(180,35,24,0.4)", color: "#B42318", textTransform: "none", whiteSpace: "nowrap", "&:hover": { borderColor: "#B42318", bgcolor: "rgba(180,35,24,0.1)" } }}>
                                   {cancellingRegId === reg._id ? <Loader2 className="w-4 h-4 animate-spin" /> : "Hủy (hoàn 40%)"}
                                 </Button>
                               )}
@@ -1028,7 +1028,7 @@ export function HorseOwnerDashboard() {
                         const alreadyRegistered = isHorseRegistered(race._id);
                         const cutoffPassed = new Date() > new Date(race.cutoffTime);
                         return (
-                          <div key={race._id} className={`bg-white/5 backdrop-blur-md border rounded-2xl p-6 transition-all ${alreadyRegistered ? "border-[#FFDE42]/30" : "border-white/5 hover:border-[#FFDE42]/20"}`}>
+                          <div key={race._id} className={`bg-white/5 backdrop-blur-md border rounded-2xl p-6 transition-all ${alreadyRegistered ? "border-[#C9A227]/30" : "border-white/5 hover:border-[#C9A227]/20"}`}>
                             <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                               <div className="flex-1">
                                 <div className="flex items-center gap-3 mb-4 flex-wrap">
@@ -1039,8 +1039,8 @@ export function HorseOwnerDashboard() {
                                     <h4 className="text-xl font-bold text-white">{race.name}</h4>
                                     <div className="text-slate-400 text-sm">{new Date(race.scheduledTime).toLocaleString("vi-VN")}</div>
                                   </div>
-                                  <Chip label={race.grade} size="small" sx={{ height: "20px", fontSize: "0.65rem", bgcolor: "rgba(245,158,11,0.2)", color: "#fbbf24", border: "1px solid #f59e0b", fontWeight: "bold" }} />
-                                  {alreadyRegistered && <Chip label="✓ Đã đăng ký" size="small" sx={{ height: "20px", fontSize: "0.65rem", bgcolor: "rgba(255,222,66,0.15)", color: "#FFDE42", border: "1px solid #FFDE42" }} />}
+                                  <Chip label={race.grade} size="small" sx={{ height: "20px", fontSize: "0.65rem", bgcolor: "rgba(201,162,39,0.2)", color: "#8F7318", border: "1px solid #C9A227", fontWeight: "bold" }} />
+                                  {alreadyRegistered && <Chip label="✓ Đã đăng ký" size="small" sx={{ height: "20px", fontSize: "0.65rem", bgcolor: "rgba(255,222,66,0.15)", color: "#C9A227", border: "1px solid #C9A227" }} />}
                                 </div>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-900/40 rounded-xl p-4 border border-white/5">
                                   <div>
@@ -1049,7 +1049,7 @@ export function HorseOwnerDashboard() {
                                   </div>
                                   <div>
                                     <div className="text-slate-500 text-xs uppercase mb-1 flex items-center gap-1"><Trophy className="w-3 h-3" /> Giải Thưởng</div>
-                                    <div className="text-[#FFDE42] font-semibold">{race.purse?.toLocaleString()} coin</div>
+                                    <div className="text-[#C9A227] font-semibold">{race.purse?.toLocaleString()} coin</div>
                                   </div>
                                   <div>
                                     <div className="text-slate-500 text-xs uppercase mb-1 flex items-center gap-1"><DollarSign className="w-3 h-3" /> Phí ĐK</div>
@@ -1089,7 +1089,7 @@ export function HorseOwnerDashboard() {
                               </div>
                               <div className="md:ml-4 flex-shrink-0">
                                 {alreadyRegistered ? (
-                                  <Button disabled variant="outlined" sx={{ borderColor: "rgba(255,222,66,0.3)", color: "#FFDE42", textTransform: "none", opacity: 0.7, whiteSpace: "nowrap" }}>
+                                  <Button disabled variant="outlined" sx={{ borderColor: "rgba(255,222,66,0.3)", color: "#C9A227", textTransform: "none", opacity: 0.7, whiteSpace: "nowrap" }}>
                                     Đã đăng ký
                                   </Button>
                                 ) : cutoffPassed ? (
@@ -1102,7 +1102,7 @@ export function HorseOwnerDashboard() {
                                   </Button>
                                 ) : (
                                   <Button variant="contained" onClick={() => handleOpenRegisterDialog(race)}
-                                    sx={{ background: "#FFDE42", color: "#1B0C0C", textTransform: "none", fontWeight: 700, whiteSpace: "nowrap", "&:hover": { background: "#E6C21E" } }}>
+                                    sx={{ background: "#C9A227", color: "#23201A", textTransform: "none", fontWeight: 700, whiteSpace: "nowrap", "&:hover": { background: "#B08D1E" } }}>
                                     Đăng Ký Ngay
                                   </Button>
                                 )}
@@ -1131,7 +1131,7 @@ export function HorseOwnerDashboard() {
               <h3 className="text-xl font-bold text-white mb-6">Lịch Sử Kết Quả</h3>
 
               {loadingResults ? (
-                <div className="flex justify-center py-12"><Loader2 className="w-7 h-7 animate-spin text-[#FFDE42]" /></div>
+                <div className="flex justify-center py-12"><Loader2 className="w-7 h-7 animate-spin text-[#C9A227]" /></div>
               ) : raceResults.length === 0 ? (
                 <div className="text-center py-12 text-slate-500">
                   <Trophy className="w-12 h-12 mx-auto mb-3 opacity-20" />
@@ -1160,7 +1160,7 @@ export function HorseOwnerDashboard() {
                               <div className="text-xs text-slate-400 mt-0.5">
                                 {new Date(r.raceId?.scheduledTime).toLocaleDateString("vi-VN")}
                                 {" · "}
-                                <span className="text-[#FFDE42]">{r.horseId?.name}</span>
+                                <span className="text-[#C9A227]">{r.horseId?.name}</span>
                                 {r.jockeyId && <span className="text-slate-500"> · {r.jockeyId.fullName}</span>}
                               </div>
                               <div className="flex gap-2 mt-1">
@@ -1170,7 +1170,7 @@ export function HorseOwnerDashboard() {
                             </div>
                           </div>
                           <div className="text-right shrink-0">
-                            <div className="text-[#FFDE42] font-bold">{r.prizeAmount > 0 ? `+${r.prizeAmount.toLocaleString()} coin` : "—"}</div>
+                            <div className="text-[#C9A227] font-bold">{r.prizeAmount > 0 ? `+${r.prizeAmount.toLocaleString()} coin` : "—"}</div>
                             <div className="text-blue-400 text-sm">+{r.pointsEarned} pts</div>
                             <div className="text-xs text-slate-500 mt-0.5">{(r.finishTime / 1000).toFixed(2)}s</div>
                           </div>
@@ -1194,7 +1194,7 @@ export function HorseOwnerDashboard() {
 
             <div className="grid md:grid-cols-3 gap-8">
               <div className="md:col-span-1 space-y-6">
-                <div className="bg-gradient-to-br from-[#FFDE42] to-[#1B0C0C] rounded-3xl p-8 relative overflow-hidden shadow-2xl shadow-[#FFDE42]/50">
+                <div className="bg-gradient-to-br from-[#C9A227] to-[#8F7318] rounded-3xl p-8 relative overflow-hidden shadow-2xl shadow-[#C9A227]/50">
                   <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/3 blur-3xl"></div>
 
                   <div className="relative z-10">
@@ -1212,7 +1212,7 @@ export function HorseOwnerDashboard() {
                         startIcon={<Plus />}
                         sx={{
                           background: "white",
-                          color: "#1B0C0C",
+                          color: "#23201A",
                           fontWeight: 600,
                           textTransform: "none",
                           "&:hover": { background: "#f8fafc" },
@@ -1248,7 +1248,7 @@ export function HorseOwnerDashboard() {
                     </div>
                     <div className="flex justify-between items-center pb-4 border-b border-white/5">
                       <span className="text-slate-400">Tổng Thắng</span>
-                      <span className="text-[#FFDE42] font-medium">$45,000</span>
+                      <span className="text-[#C9A227] font-medium">$45,000</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-slate-400">Tổng Chi Phí</span>
@@ -1262,7 +1262,7 @@ export function HorseOwnerDashboard() {
                 <h3 className="text-xl font-bold text-white mb-6">Lịch Sử Giao Dịch</h3>
 
                 {loadingTx ? (
-                  <div className="flex justify-center py-12"><Loader2 className="w-7 h-7 animate-spin text-[#FFDE42]" /></div>
+                  <div className="flex justify-center py-12"><Loader2 className="w-7 h-7 animate-spin text-[#C9A227]" /></div>
                 ) : txList.length === 0 ? (
                   <div className="text-center py-12 text-slate-500">
                     <DollarSign className="w-10 h-10 mx-auto mb-3 opacity-20" />
@@ -1281,7 +1281,7 @@ export function HorseOwnerDashboard() {
                         return (
                           <div key={tx._id} className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-white/5 hover:bg-slate-800/50 transition-colors">
                             <div className="flex items-center gap-4">
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isCredit ? "bg-[#FFDE42]/20 text-[#FFDE42]" : "bg-red-500/20 text-red-400"}`}>
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isCredit ? "bg-[#C9A227]/20 text-[#C9A227]" : "bg-red-500/20 text-red-400"}`}>
                                 {isCredit ? <ArrowDownRight className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
                               </div>
                               <div>
@@ -1290,7 +1290,7 @@ export function HorseOwnerDashboard() {
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className={`font-bold ${isCredit ? "text-[#FFDE42]" : "text-red-400"}`}>
+                              <div className={`font-bold ${isCredit ? "text-[#C9A227]" : "text-red-400"}`}>
                                 {isCredit ? "+" : ""}{tx.amount.toLocaleString()} coin
                               </div>
                               <div className="text-xs text-slate-500">Số dư: {tx.balanceAfter.toLocaleString()}</div>
@@ -1351,7 +1351,7 @@ export function HorseOwnerDashboard() {
               ))}
               <div
                 onClick={() => horseImageInputRef.current?.click()}
-                className="w-32 h-32 flex-shrink-0 rounded-xl border-2 border-dashed border-slate-600 flex flex-col items-center justify-center text-slate-400 hover:text-white hover:border-[#FFDE42] cursor-pointer transition-colors"
+                className="w-32 h-32 flex-shrink-0 rounded-xl border-2 border-dashed border-slate-600 flex flex-col items-center justify-center text-slate-400 hover:text-white hover:border-[#C9A227] cursor-pointer transition-colors"
               >
                 <ImageIcon className="w-8 h-8 mb-2" />
                 <span className="text-sm font-medium text-center">Tải Ảnh Lên</span>
@@ -1377,7 +1377,7 @@ export function HorseOwnerDashboard() {
                   color: "white",
                   "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
                   "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
-                  "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
+                  "&.Mui-focused fieldset": { borderColor: "#C9A227" },
                 },
               }}
             />
@@ -1394,7 +1394,7 @@ export function HorseOwnerDashboard() {
                     color: "white",
                     "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
                     "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
-                    "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
+                    "&.Mui-focused fieldset": { borderColor: "#C9A227" },
                   },
                 }}
               />
@@ -1409,7 +1409,7 @@ export function HorseOwnerDashboard() {
                     color: "white",
                     "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
                     "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
-                    "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
+                    "&.Mui-focused fieldset": { borderColor: "#C9A227" },
                   },
                 }}
               />
@@ -1429,7 +1429,7 @@ export function HorseOwnerDashboard() {
                     color: "white",
                     "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
                     "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
-                    "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
+                    "&.Mui-focused fieldset": { borderColor: "#C9A227" },
                   },
                 }}
               />
@@ -1445,7 +1445,7 @@ export function HorseOwnerDashboard() {
                     color: "white",
                     "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
                     "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
-                    "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
+                    "&.Mui-focused fieldset": { borderColor: "#C9A227" },
                   },
                 }}
               />
@@ -1459,7 +1459,7 @@ export function HorseOwnerDashboard() {
                   color: "white",
                   "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
                   "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
-                  "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
+                  "&.Mui-focused fieldset": { borderColor: "#C9A227" },
                   "& .MuiSelect-icon": { color: "#94a3b8" },
                 },
               }}
@@ -1484,7 +1484,7 @@ export function HorseOwnerDashboard() {
                     color: "white",
                     "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
                     "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
-                    "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
+                    "&.Mui-focused fieldset": { borderColor: "#C9A227" },
                     "& .MuiSelect-icon": { color: "#94a3b8" },
                   },
                 }}
@@ -1510,7 +1510,7 @@ export function HorseOwnerDashboard() {
                     color: "white",
                     "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
                     "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
-                    "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
+                    "&.Mui-focused fieldset": { borderColor: "#C9A227" },
                     "& .MuiSelect-icon": { color: "#94a3b8" },
                   },
                 }}
@@ -1552,9 +1552,9 @@ export function HorseOwnerDashboard() {
             onClick={handleCreateHorse}
             disabled={creatingHorse}
             sx={{
-              background: "#FFDE42",
+              background: "#C9A227",
               textTransform: "none",
-              "&:hover": { background: "#E6C21E" },
+              "&:hover": { background: "#B08D1E" },
               "&.Mui-disabled": { background: "rgba(255,222,66,0.4)" },
             }}
           >
@@ -1606,7 +1606,7 @@ export function HorseOwnerDashboard() {
               ))}
               <div
                 onClick={() => editHorseImageInputRef.current?.click()}
-                className="w-32 h-32 flex-shrink-0 rounded-xl border-2 border-dashed border-slate-600 flex flex-col items-center justify-center text-slate-400 hover:text-white hover:border-[#FFDE42] cursor-pointer transition-colors"
+                className="w-32 h-32 flex-shrink-0 rounded-xl border-2 border-dashed border-slate-600 flex flex-col items-center justify-center text-slate-400 hover:text-white hover:border-[#C9A227] cursor-pointer transition-colors"
               >
                 <ImageIcon className="w-8 h-8 mb-2" />
                 <span className="text-sm font-medium text-center">Thêm Ảnh</span>
@@ -1632,7 +1632,7 @@ export function HorseOwnerDashboard() {
                   color: "white",
                   "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
                   "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
-                  "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
+                  "&.Mui-focused fieldset": { borderColor: "#C9A227" },
                 },
               }}
             />
@@ -1649,7 +1649,7 @@ export function HorseOwnerDashboard() {
                     color: "white",
                     "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
                     "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
-                    "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
+                    "&.Mui-focused fieldset": { borderColor: "#C9A227" },
                   },
                 }}
               />
@@ -1664,7 +1664,7 @@ export function HorseOwnerDashboard() {
                     color: "white",
                     "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
                     "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
-                    "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
+                    "&.Mui-focused fieldset": { borderColor: "#C9A227" },
                   },
                 }}
               />
@@ -1684,7 +1684,7 @@ export function HorseOwnerDashboard() {
                     color: "white",
                     "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
                     "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
-                    "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
+                    "&.Mui-focused fieldset": { borderColor: "#C9A227" },
                   },
                 }}
               />
@@ -1700,7 +1700,7 @@ export function HorseOwnerDashboard() {
                     color: "white",
                     "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
                     "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
-                    "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
+                    "&.Mui-focused fieldset": { borderColor: "#C9A227" },
                   },
                 }}
               />
@@ -1714,7 +1714,7 @@ export function HorseOwnerDashboard() {
                   color: "white",
                   "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
                   "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
-                  "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
+                  "&.Mui-focused fieldset": { borderColor: "#C9A227" },
                   "& .MuiSelect-icon": { color: "#94a3b8" },
                 },
               }}
@@ -1739,7 +1739,7 @@ export function HorseOwnerDashboard() {
                     color: "white",
                     "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
                     "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
-                    "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
+                    "&.Mui-focused fieldset": { borderColor: "#C9A227" },
                     "& .MuiSelect-icon": { color: "#94a3b8" },
                   },
                 }}
@@ -1765,7 +1765,7 @@ export function HorseOwnerDashboard() {
                     color: "white",
                     "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
                     "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
-                    "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
+                    "&.Mui-focused fieldset": { borderColor: "#C9A227" },
                     "& .MuiSelect-icon": { color: "#94a3b8" },
                   },
                 }}
@@ -1802,9 +1802,9 @@ export function HorseOwnerDashboard() {
             onClick={handleUpdateHorse}
             disabled={updatingHorse}
             sx={{
-              background: "#FFDE42",
+              background: "#C9A227",
               textTransform: "none",
-              "&:hover": { background: "#E6C21E" },
+              "&:hover": { background: "#B08D1E" },
               "&.Mui-disabled": { background: "rgba(255,222,66,0.4)" },
             }}
           >
@@ -1881,7 +1881,7 @@ export function HorseOwnerDashboard() {
                           key={idx}
                           onClick={() => setViewHorseActiveImage(imgUrl)}
                           className={`w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
-                            viewHorseActiveImage === imgUrl ? "border-[#FFDE42] opacity-100 scale-105" : "border-transparent opacity-50 hover:opacity-100 hover:scale-105"
+                            viewHorseActiveImage === imgUrl ? "border-[#C9A227] opacity-100 scale-105" : "border-transparent opacity-50 hover:opacity-100 hover:scale-105"
                           }`}
                         >
                           <img src={imgUrl} alt="thumbnail" className="w-full h-full object-cover bg-slate-800" />
@@ -1897,7 +1897,7 @@ export function HorseOwnerDashboard() {
                     label={viewingHorse.isActive ? "Hoạt Động" : "Không Hoạt Động"}
                     size="small"
                     sx={{
-                      backgroundColor: viewingHorse.isActive ? "#10b981" : "#64748b",
+                      backgroundColor: viewingHorse.isActive ? "#1F3D2B" : "#7A7468",
                       color: "white",
                       fontWeight: 500,
                     }}
@@ -1906,7 +1906,7 @@ export function HorseOwnerDashboard() {
                     label={viewingHorse.currentGrade}
                     size="small"
                     sx={{
-                      backgroundColor: GRADE_COLORS[viewingHorse.currentGrade] ?? "#f59e0b",
+                      backgroundColor: GRADE_COLORS[viewingHorse.currentGrade] ?? "#C9A227",
                       color: "white",
                       fontWeight: 600,
                     }}
@@ -1930,10 +1930,10 @@ export function HorseOwnerDashboard() {
                   <h4 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider">Sự Nghiệp</h4>
                   <ul className="space-y-2 text-sm">
                     <li className="flex justify-between"><span className="text-slate-500">Tổng số trận:</span> <span className="text-white font-medium">{viewingHorse.raceCount} trận</span></li>
-                    <li className="flex justify-between"><span className="text-slate-500">Số trận thắng:</span> <span className="text-[#FFDE42] font-bold">{viewingHorse.winCount} trận</span></li>
+                    <li className="flex justify-between"><span className="text-slate-500">Số trận thắng:</span> <span className="text-[#C9A227] font-bold">{viewingHorse.winCount} trận</span></li>
                     <li className="flex justify-between"><span className="text-slate-500">Tỷ lệ thắng:</span> <span className="text-white font-medium">{viewingHorse.raceCount > 0 ? Math.round((viewingHorse.winCount / viewingHorse.raceCount) * 100) : 0}%</span></li>
                     <li className="flex justify-between"><span className="text-slate-500">Tổng điểm:</span> <span className="text-emerald-400 font-bold">{viewingHorse.totalPoints} pts</span></li>
-                    <li className="flex justify-between"><span className="text-slate-500">Tiền thưởng:</span> <span className="text-[#10b981] font-bold">${viewingHorse.totalEarnings.toLocaleString()}</span></li>
+                    <li className="flex justify-between"><span className="text-slate-500">Tiền thưởng:</span> <span className="text-[#1F3D2B] font-bold">${viewingHorse.totalEarnings.toLocaleString()}</span></li>
                   </ul>
                 </div>
               </div>
@@ -1991,7 +1991,7 @@ export function HorseOwnerDashboard() {
                 color: "white",
                 "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
                 "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
-                "&.Mui-focused fieldset": { borderColor: "#10b981" },
+                "&.Mui-focused fieldset": { borderColor: "#1F3D2B" },
               },
             }}
           />
@@ -2012,9 +2012,9 @@ export function HorseOwnerDashboard() {
             variant="contained"
             onClick={() => setTopupOpen(false)}
             sx={{
-              background: "#10b981",
+              background: "#1F3D2B",
               textTransform: "none",
-              "&:hover": { background: "#059669" },
+              "&:hover": { background: "#172D20" },
             }}
           >
             Xác Nhận Nạp Tiền
@@ -2070,8 +2070,8 @@ export function HorseOwnerDashboard() {
                     sx={{
                       mt: 1,
                       backgroundColor: viewingJockey.isActive ? "rgba(255,222,66,0.2)" : "rgba(100,116,139,0.2)",
-                      color: viewingJockey.isActive ? "#FFDE42" : "#94a3b8",
-                      border: `1px solid ${viewingJockey.isActive ? "#FFDE42" : "#475569"}`,
+                      color: viewingJockey.isActive ? "#C9A227" : "#94a3b8",
+                      border: `1px solid ${viewingJockey.isActive ? "#C9A227" : "#475569"}`,
                     }}
                   />
                 </div>
@@ -2089,7 +2089,7 @@ export function HorseOwnerDashboard() {
                       key={stat.label}
                       className="bg-slate-800/90 backdrop-blur rounded-xl p-3 text-center border border-white/5"
                     >
-                      <div className="text-[#FFDE42] text-lg font-bold">{stat.value}</div>
+                      <div className="text-[#C9A227] text-lg font-bold">{stat.value}</div>
                       <div className="text-slate-400 text-xs mt-0.5">{stat.label}</div>
                     </div>
                   ))}
@@ -2134,11 +2134,11 @@ export function HorseOwnerDashboard() {
                   disabled={!viewingJockey.isActive}
                   onClick={() => { setViewJockeyOpen(false); setInvitingJockey(viewingJockey); setInviteJockeyOpen(true); }}
                   sx={{
-                    background: viewingJockey.isActive ? "#FFDE42" : "#334155",
-                    color: viewingJockey.isActive ? "#0f172a" : "#64748b",
+                    background: viewingJockey.isActive ? "#C9A227" : "#334155",
+                    color: viewingJockey.isActive ? "#0f172a" : "#7A7468",
                     textTransform: "none",
                     fontWeight: 600,
-                    "&:hover": { background: "#E6C21E" },
+                    "&:hover": { background: "#B08D1E" },
                   }}
                 >
                   Thuê kỵ sĩ này
@@ -2182,12 +2182,12 @@ export function HorseOwnerDashboard() {
           {(() => {
             const darkSelect = {
               "& .MuiInputLabel-root": { color: "#94a3b8" },
-              "& .MuiInputLabel-root.Mui-focused": { color: "#FFDE42" },
+              "& .MuiInputLabel-root.Mui-focused": { color: "#C9A227" },
               "& .MuiOutlinedInput-root": {
                 color: "white",
                 "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
                 "&:hover fieldset": { borderColor: "rgba(255,255,255,0.25)" },
-                "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
+                "&.Mui-focused fieldset": { borderColor: "#C9A227" },
                 "& .MuiSelect-icon": { color: "#94a3b8" },
               },
               "& .MuiOutlinedInput-root.Mui-disabled": {
@@ -2199,7 +2199,7 @@ export function HorseOwnerDashboard() {
                 sx: {
                   bgcolor: "#1e293b",
                   border: "1px solid rgba(255,255,255,0.1)",
-                  "& .MuiMenuItem-root": { color: "white", "&:hover": { bgcolor: "rgba(255,255,255,0.05)" }, "&.Mui-selected": { bgcolor: "rgba(255,222,66,0.15)", color: "#FFDE42" } },
+                  "& .MuiMenuItem-root": { color: "white", "&:hover": { bgcolor: "rgba(255,255,255,0.05)" }, "&.Mui-selected": { bgcolor: "rgba(255,222,66,0.15)", color: "#C9A227" } },
                 },
               },
             };
@@ -2318,12 +2318,12 @@ export function HorseOwnerDashboard() {
                   inputProps={{ maxLength: 500 }}
                   sx={{
                     "& .MuiInputLabel-root": { color: "#94a3b8" },
-                    "& .MuiInputLabel-root.Mui-focused": { color: "#FFDE42" },
+                    "& .MuiInputLabel-root.Mui-focused": { color: "#C9A227" },
                     "& .MuiOutlinedInput-root": {
                       color: "white",
                       "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
                       "&:hover fieldset": { borderColor: "rgba(255,255,255,0.25)" },
-                      "&.Mui-focused fieldset": { borderColor: "#FFDE42" },
+                      "&.Mui-focused fieldset": { borderColor: "#C9A227" },
                     },
                   }}
                 />
@@ -2345,13 +2345,13 @@ export function HorseOwnerDashboard() {
             disabled={!inviteForm.raceId || !inviteForm.horseId || submittingInvite}
             onClick={handleSubmitInvite}
             sx={{
-              background: "#FFDE42",
+              background: "#C9A227",
               color: "#0f172a",
               textTransform: "none",
               fontWeight: 600,
               minWidth: 120,
-              "&:hover": { background: "#E6C21E" },
-              "&.Mui-disabled": { background: "#334155", color: "#64748b" },
+              "&:hover": { background: "#B08D1E" },
+              "&.Mui-disabled": { background: "#334155", color: "#7A7468" },
             }}
           >
             {submittingInvite ? (
@@ -2382,7 +2382,7 @@ export function HorseOwnerDashboard() {
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div><span className="text-slate-400">Hạng: </span><span className="text-white">{selectedRaceForReg.grade}</span></div>
                   <div><span className="text-slate-400">Cự ly: </span><span className="text-white">{selectedRaceForReg.distance}m</span></div>
-                  <div><span className="text-slate-400">Giải thưởng: </span><span className="text-[#FFDE42] font-bold">${selectedRaceForReg.purse?.toLocaleString()}</span></div>
+                  <div><span className="text-slate-400">Giải thưởng: </span><span className="text-[#C9A227] font-bold">${selectedRaceForReg.purse?.toLocaleString()}</span></div>
                   <div><span className="text-slate-400">Phí đăng ký: </span><span className="text-red-400 font-bold">${selectedRaceForReg.registrationFee?.toLocaleString()}</span></div>
                 </div>
                 <div className="mt-2 text-xs text-amber-400 flex items-center gap-1">
@@ -2392,7 +2392,7 @@ export function HorseOwnerDashboard() {
               </div>
             )}
             <FormControl fullWidth
-              sx={{ "& .MuiInputLabel-root": { color: "#94a3b8" }, "& .MuiOutlinedInput-root": { color: "white", "& fieldset": { borderColor: "rgba(255,255,255,0.1)" }, "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" }, "&.Mui-focused fieldset": { borderColor: "#FFDE42" }, "& .MuiSelect-icon": { color: "#94a3b8" } } }}
+              sx={{ "& .MuiInputLabel-root": { color: "#94a3b8" }, "& .MuiOutlinedInput-root": { color: "white", "& fieldset": { borderColor: "rgba(255,255,255,0.1)" }, "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" }, "&.Mui-focused fieldset": { borderColor: "#C9A227" }, "& .MuiSelect-icon": { color: "#94a3b8" } } }}
             >
               <InputLabel>Chọn Ngựa *</InputLabel>
               <Select label="Chọn Ngựa *" value={regHorseId} onChange={e => setRegHorseId(e.target.value)}>
@@ -2410,7 +2410,7 @@ export function HorseOwnerDashboard() {
             Hủy
           </Button>
           <Button variant="contained" onClick={handleSubmitRegistration} disabled={!regHorseId || submittingReg}
-            sx={{ background: "#10b981", textTransform: "none", fontWeight: 700, "&:hover": { background: "#059669" } }}>
+            sx={{ background: "#1F3D2B", textTransform: "none", fontWeight: 700, "&:hover": { background: "#172D20" } }}>
             {submittingReg ? <Loader2 className="w-4 h-4 animate-spin" /> : "Xác Nhận Đăng Ký"}
           </Button>
         </DialogActions>
