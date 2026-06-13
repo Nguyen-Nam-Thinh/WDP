@@ -4,6 +4,7 @@ import {
   TextInput, Alert, ActivityIndicator, ScrollView, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { raceService } from '../../services/api/race.service';
 import { betService } from '../../services/api/bet.service';
 import { Race, RaceHorse, Bet, BetType } from '../../types';
@@ -12,7 +13,7 @@ import { BET_MULTIPLIERS, BET_TYPE_LABEL, RACE_STATUS_LABEL } from '../../consta
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 const GRADE_COLORS: Record<string, string> = {
-  G1: '#fbbf24', G2: '#a78bfa', G3: '#60a5fa', Maiden: '#34d399',
+  G1: '#8F7318', G2: '#8C2F1B', G3: '#1F3D2B', Maiden: '#7A7468',
 };
 
 // ── Place Bet Modal ──────────────────────────────────────────────────────────
@@ -79,24 +80,32 @@ function PlaceBetModal({
               ? <ActivityIndicator color={colors.accent} style={{ marginVertical: spacing.md }} />
               : horses.length === 0
                 ? <Text style={modal.empty}>Chưa có ngựa đăng ký</Text>
-                : horses.map((h) => (
-                  <TouchableOpacity
-                    key={h._id}
-                    style={[modal.horseRow, selectedHorse === h.horseId._id && modal.horseRowSelected]}
-                    onPress={() => setSelectedHorse(h.horseId._id)}
-                  >
-                    <View style={modal.horseLeft}>
-                      <Text style={modal.horseName}>{h.horseId.name}</Text>
-                      {h.jockeyId && <Text style={modal.jockeyName}>🏇 {h.jockeyId.fullName}</Text>}
-                    </View>
-                    <View style={[modal.gradeBadge, { borderColor: (GRADE_COLORS[h.horseId.currentGrade ?? 'Maiden'] ?? '#fff') + '60' }]}>
-                      <Text style={[modal.gradeText, { color: GRADE_COLORS[h.horseId.currentGrade ?? 'Maiden'] ?? '#fff' }]}>
-                        {h.horseId.currentGrade ?? '—'}
-                      </Text>
-                    </View>
-                    {selectedHorse === h.horseId._id && <Ionicons name="checkmark-circle" size={20} color={colors.accent} />}
-                  </TouchableOpacity>
-                ))
+                : horses.map((h, idx) => {
+                  const hid = typeof h.horseId === 'object' ? h.horseId?._id : h.horseId;
+                  const hname = typeof h.horseId === 'object' ? h.horseId?.name : h.horseName;
+                  const jname = typeof h.jockeyId === 'object' ? h.jockeyId?.fullName : h.jockeyName;
+                  const currentGrade = typeof h.horseId === 'object' ? h.horseId?.currentGrade : (h.currentGrade ?? 'Maiden');
+                  const horseKey = h._id || h.registrationId || hid || String(idx);
+
+                  return (
+                    <TouchableOpacity
+                      key={horseKey}
+                      style={[modal.horseRow, selectedHorse === hid && modal.horseRowSelected]}
+                      onPress={() => { if (hid) setSelectedHorse(hid); }}
+                    >
+                      <View style={modal.horseLeft}>
+                        <Text style={modal.horseName}>{hname}</Text>
+                        {jname ? <Text style={modal.jockeyName}>🏇 {jname}</Text> : null}
+                      </View>
+                      <View style={[modal.gradeBadge, { borderColor: (GRADE_COLORS[currentGrade || 'Maiden'] ?? '#fff') + '60' }]}>
+                        <Text style={[modal.gradeText, { color: GRADE_COLORS[currentGrade || 'Maiden'] ?? '#fff' }]}>
+                          {currentGrade}
+                        </Text>
+                      </View>
+                      {selectedHorse === hid && <Ionicons name="checkmark-circle" size={20} color={colors.accent} />}
+                    </TouchableOpacity>
+                  );
+                })
             }
 
             {/* Bet type */}
@@ -163,8 +172,9 @@ function PlaceBetModal({
 const modal = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
   sheet: {
-    backgroundColor: '#111111', borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    backgroundColor: colors.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24,
     maxHeight: '90%', paddingHorizontal: spacing.lg, paddingTop: spacing.md,
+    borderWidth: 1, borderColor: colors.border,
   },
   handle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: spacing.md },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -213,11 +223,12 @@ const modal = StyleSheet.create({
     backgroundColor: colors.accent, borderRadius: radius.md,
     height: 52, alignItems: 'center', justifyContent: 'center', marginTop: spacing.lg,
   },
-  placeBtnText: { fontSize: fontSize.md, fontWeight: fontWeight.bold, color: '#000' },
+  placeBtnText: { fontSize: fontSize.md, fontWeight: fontWeight.bold, color: '#FFFFFF' },
 });
 
 // ── Bet Card ─────────────────────────────────────────────────────────────────
 function BetCard({ bet, onCancel }: { bet: Bet; onCancel: (id: string) => void }) {
+  const navigation = useNavigation<any>();
   const statusColor = bet.status === 'won' ? colors.success
     : bet.status === 'lost' ? colors.danger
     : bet.status === 'pending' ? colors.warning
@@ -227,28 +238,39 @@ function BetCard({ bet, onCancel }: { bet: Bet; onCancel: (id: string) => void }
     pending: 'Đang Chờ', won: 'Thắng 🎉', lost: 'Thua', cancelled: 'Đã Hủy', refunded: 'Hoàn Tiền',
   };
 
+  const raceId = typeof bet.raceId === 'object' ? bet.raceId._id : bet.raceId;
+
   return (
-    <View style={betCard.card}>
-      <View style={betCard.top}>
-        <Text style={betCard.raceName} numberOfLines={1}>{(bet.raceId as any)?.name ?? '—'}</Text>
-        <View style={[betCard.statusBadge, { backgroundColor: statusColor + '20', borderColor: statusColor + '40' }]}>
-          <Text style={[betCard.statusText, { color: statusColor }]}>{statusLabel[bet.status]}</Text>
+    <TouchableOpacity
+      activeOpacity={0.9}
+      onPress={() => {
+        if (raceId) {
+          navigation.navigate('LiveTab', { screen: 'LiveDetail', params: { raceId } });
+        }
+      }}
+    >
+      <View style={betCard.card}>
+        <View style={betCard.top}>
+          <Text style={betCard.raceName} numberOfLines={1}>{(bet.raceId as any)?.name ?? '—'}</Text>
+          <View style={[betCard.statusBadge, { backgroundColor: statusColor + '20', borderColor: statusColor + '40' }]}>
+            <Text style={[betCard.statusText, { color: statusColor }]}>{statusLabel[bet.status]}</Text>
+          </View>
         </View>
+        <Text style={betCard.horseName}>🐎 {(bet.horseId as any)?.name ?? '—'}</Text>
+        <View style={betCard.row}>
+          <Text style={betCard.meta}>{BET_TYPE_LABEL[bet.betType]}</Text>
+          <Text style={betCard.amount}>{bet.amount} coins</Text>
+        </View>
+        {bet.status === 'won' && (
+          <Text style={betCard.payout}>+{bet.payoutAmount} coins nhận được</Text>
+        )}
+        {bet.status === 'pending' && (
+          <TouchableOpacity style={betCard.cancelBtn} onPress={() => onCancel(bet._id)}>
+            <Text style={betCard.cancelText}>Hủy Cược</Text>
+          </TouchableOpacity>
+        )}
       </View>
-      <Text style={betCard.horseName}>🐎 {(bet.horseId as any)?.name ?? '—'}</Text>
-      <View style={betCard.row}>
-        <Text style={betCard.meta}>{BET_TYPE_LABEL[bet.betType]}</Text>
-        <Text style={betCard.amount}>{bet.amount} coins</Text>
-      </View>
-      {bet.status === 'won' && (
-        <Text style={betCard.payout}>+{bet.payoutAmount} coins nhận được</Text>
-      )}
-      {bet.status === 'pending' && (
-        <TouchableOpacity style={betCard.cancelBtn} onPress={() => onCancel(bet._id)}>
-          <Text style={betCard.cancelText}>Hủy Cược</Text>
-        </TouchableOpacity>
-      )}
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -264,7 +286,7 @@ const betCard = StyleSheet.create({
   horseName: { fontSize: fontSize.sm, color: colors.textMuted },
   row: { flexDirection: 'row', justifyContent: 'space-between' },
   meta: { fontSize: fontSize.xs, color: colors.textSubtle },
-  amount: { fontSize: fontSize.sm, color: colors.accent, fontWeight: fontWeight.semibold },
+  amount: { fontSize: fontSize.sm, color: colors.gold, fontWeight: 'bold' },
   payout: { fontSize: fontSize.sm, color: colors.success, fontWeight: fontWeight.semibold },
   cancelBtn: {
     borderWidth: 1, borderColor: colors.danger + '60', borderRadius: radius.sm,
@@ -375,7 +397,7 @@ export function BetScreen() {
                   disabled={!canBet}
                   onPress={() => openBetModal(item)}
                 >
-                  <Ionicons name="trophy-outline" size={16} color={canBet ? '#000' : colors.textSubtle} />
+                  <Ionicons name="trophy-outline" size={16} color={canBet ? '#FFF' : colors.textSubtle} />
                   <Text style={[styles.betBtnText, !canBet && { color: colors.textSubtle }]}>
                     {canBet ? 'Đặt Cược Ngay' : 'Đã Hết Hạn Cược'}
                   </Text>
@@ -443,7 +465,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent, borderRadius: radius.md, paddingVertical: 12, marginTop: 4,
   },
   betBtnDisabled: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
-  betBtnText: { fontSize: fontSize.sm, fontWeight: fontWeight.bold, color: '#000' },
+  betBtnText: { fontSize: fontSize.sm, fontWeight: fontWeight.bold, color: '#FFFFFF' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80, gap: spacing.md },
   emptyText: { color: colors.textMuted, fontSize: fontSize.md },
 });

@@ -4,6 +4,7 @@ import {
   RefreshControl, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { raceService } from '../../services/api/race.service';
 import { Race } from '../../types';
 import { colors, spacing, radius, fontSize, fontWeight } from '../../constants/theme';
@@ -11,50 +12,56 @@ import { RACE_STATUS_LABEL } from '../../constants/api';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 const GRADE_COLORS: Record<string, string> = {
-  G1: '#fbbf24', G2: '#a78bfa', G3: '#60a5fa', Maiden: '#34d399',
+  G1: '#8F7318', G2: '#8C2F1B', G3: '#1F3D2B', Maiden: '#7A7468',
 };
 
 function RaceCard({ race }: { race: Race }) {
+  const navigation = useNavigation<any>();
   const bettingCutoff = new Date(new Date(race.scheduledTime).getTime() - 60 * 60 * 1000);
   const cutoffPassed = new Date() > bettingCutoff;
   const canBet = race.status === 'open' && !cutoffPassed;
 
   return (
-    <View style={styles.card}>
-      <View style={styles.cardTop}>
-        <View style={[styles.gradeBadge, { borderColor: GRADE_COLORS[race.grade] + '60', backgroundColor: GRADE_COLORS[race.grade] + '20' }]}>
-          <Text style={[styles.gradeText, { color: GRADE_COLORS[race.grade] }]}>{race.grade}</Text>
+    <TouchableOpacity
+      activeOpacity={0.9}
+      onPress={() => navigation.navigate('LiveTab', { screen: 'LiveDetail', params: { raceId: race._id } })}
+    >
+      <View style={styles.card}>
+        <View style={styles.cardTop}>
+          <View style={[styles.gradeBadge, { borderColor: GRADE_COLORS[race.grade] + '60', backgroundColor: GRADE_COLORS[race.grade] + '20' }]}>
+            <Text style={[styles.gradeText, { color: GRADE_COLORS[race.grade] }]}>{race.grade}</Text>
+          </View>
+          <View style={[styles.statusBadge, canBet ? styles.statusOpen : styles.statusClosed]}>
+            <Text style={[styles.statusText, canBet ? { color: colors.success } : { color: colors.textMuted }]}>
+              {RACE_STATUS_LABEL[race.status] ?? race.status}
+            </Text>
+          </View>
         </View>
-        <View style={[styles.statusBadge, canBet ? styles.statusOpen : styles.statusClosed]}>
-          <Text style={[styles.statusText, canBet ? { color: colors.success } : { color: colors.textMuted }]}>
-            {RACE_STATUS_LABEL[race.status] ?? race.status}
-          </Text>
+   
+        <Text style={styles.raceName} numberOfLines={1}>{race.name}</Text>
+   
+        <View style={styles.infoGrid}>
+          <View style={styles.infoItem}>
+            <Ionicons name="time-outline" size={13} color={colors.textSubtle} />
+            <Text style={styles.infoLabel}>{new Date(race.scheduledTime).toLocaleDateString('vi-VN')}</Text>
+          </View>
+          <View style={styles.infoItem}>
+            <Ionicons name="flag-outline" size={13} color={colors.textSubtle} />
+            <Text style={styles.infoLabel}>{race.distance}m</Text>
+          </View>
+          <View style={styles.infoItem}>
+            <Ionicons name="trophy-outline" size={13} color={colors.gold} />
+            <Text style={[styles.infoLabel, { color: colors.gold, fontWeight: 'bold' }]}>{race.purse?.toLocaleString()} coins</Text>
+          </View>
+          <View style={styles.infoItem}>
+            <Ionicons name="calendar-outline" size={13} color={cutoffPassed ? colors.danger : colors.success} />
+            <Text style={[styles.infoLabel, { color: cutoffPassed ? colors.danger : colors.success }]}>
+              {cutoffPassed ? 'Hết hạn cược' : 'Còn cược'}
+            </Text>
+          </View>
         </View>
       </View>
-
-      <Text style={styles.raceName} numberOfLines={1}>{race.name}</Text>
-
-      <View style={styles.infoGrid}>
-        <View style={styles.infoItem}>
-          <Ionicons name="time-outline" size={13} color={colors.textSubtle} />
-          <Text style={styles.infoLabel}>{new Date(race.scheduledTime).toLocaleDateString('vi-VN')}</Text>
-        </View>
-        <View style={styles.infoItem}>
-          <Ionicons name="flag-outline" size={13} color={colors.textSubtle} />
-          <Text style={styles.infoLabel}>{race.distance}m</Text>
-        </View>
-        <View style={styles.infoItem}>
-          <Ionicons name="trophy-outline" size={13} color={colors.accent} />
-          <Text style={[styles.infoLabel, { color: colors.accent }]}>${race.purse?.toLocaleString()}</Text>
-        </View>
-        <View style={styles.infoItem}>
-          <Ionicons name="calendar-outline" size={13} color={cutoffPassed ? colors.danger : colors.success} />
-          <Text style={[styles.infoLabel, { color: cutoffPassed ? colors.danger : colors.success }]}>
-            {cutoffPassed ? 'Hết hạn cược' : 'Còn cược'}
-          </Text>
-        </View>
-      </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 

@@ -15,7 +15,7 @@ const queryClient = new QueryClient({
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <StatusBar style="light" backgroundColor="#0a0a0a" />
+      <StatusBar style="dark" />
       <RootNavigator />
     </QueryClientProvider>
   );

@@ -25,4 +25,9 @@ export const raceService = {
     const res = await apiClient.get(`/races/${raceId}/horses`);
     return res.data.data;
   },
+
+  getRaceResults: async (raceId: string): Promise<{ results: any[] }> => {
+    const res = await apiClient.get(`/races/${raceId}/results`);
+    return res.data.data;
+  },
 };
