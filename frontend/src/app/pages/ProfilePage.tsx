@@ -69,40 +69,40 @@ const recentActivity = [
     title: "Thắng cược – Thunder Strike",
     amount: "+$300",
     time: "5 phút trước",
-    color: "text-[#FFDE42]",
-    dot: "bg-[#FFDE42]",
+    color: "text-[#C9A227]",
+    dot: "bg-[#C9A227]",
   },
   {
     type: "bet",
     title: "Đặt cược – Golden Arrow",
     amount: "-$50",
     time: "2 giờ trước",
-    color: "text-blue-400",
-    dot: "bg-blue-400",
+    color: "text-primary",
+    dot: "bg-primary",
   },
   {
     type: "deposit",
     title: "Nạp tiền thành công",
     amount: "+$500",
     time: "1 ngày trước",
-    color: "text-emerald-400",
-    dot: "bg-emerald-400",
+    color: "text-primary",
+    dot: "bg-primary",
   },
   {
     type: "lost",
     title: "Thua cược – Storm Chaser",
     amount: "-$200",
     time: "2 ngày trước",
-    color: "text-red-400",
-    dot: "bg-red-400",
+    color: "text-[#B42318]",
+    dot: "bg-[#B42318]",
   },
   {
     type: "deposit",
     title: "Nạp tiền thành công",
     amount: "+$200",
     time: "3 ngày trước",
-    color: "text-emerald-400",
-    dot: "bg-emerald-400",
+    color: "text-primary",
+    dot: "bg-primary",
   },
 ];
 
@@ -368,22 +368,22 @@ export function ProfilePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 font-sans">
+    <div className="min-h-screen bg-background font-sans">
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/90 backdrop-blur-lg border-b border-white/5">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-lg border-b border-border">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-4">
           <button
             onClick={() => navigate("/spectator")}
-            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors group"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group"
           >
-            <div className="w-8 h-8 rounded-lg bg-white/5 group-hover:bg-white/10 flex items-center justify-center transition-colors">
+            <div className="w-8 h-8 rounded-lg bg-card group-hover:bg-muted flex items-center justify-center transition-colors">
               <ArrowLeft className="w-4 h-4" />
             </div>
             <span className="text-sm font-medium">Quay Lại</span>
           </button>
-          <div className="w-px h-5 bg-white/10" />
+          <div className="w-px h-5 bg-muted" />
           {/* <div>
-            <div className="text-white font-bold leading-none">
+            <div className="text-foreground font-bold leading-none">
               Hồ Sơ Cá Nhân
             </div>
           </div> */}
@@ -394,15 +394,15 @@ export function ProfilePage() {
         {/* Hero Banner */}
         <div className="relative mt-6 mb-6">
           {/* Background clip riêng để avatar không bị cắt */}
-          <div className="h-40 rounded-2xl overflow-hidden bg-gradient-to-r from-[#FFDE42]/30 via-amber-900/20 to-blue-900/30 relative">
+          <div className="h-40 rounded-2xl overflow-hidden bg-gradient-to-r from-gold/25 via-gold/10 to-secondary/20 relative">
             <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1568572933382-74d440642117?w=1200')] bg-cover bg-center opacity-10" />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#23201A]/50 to-transparent" />
           </div>
 
           {/* Avatar floating — nằm ngoài overflow-hidden */}
           <div className="absolute left-8 bottom-0 translate-y-1/2">
             <div className="relative">
-              <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-[#FFDE42] to-amber-600 flex items-center justify-center text-3xl font-bold text-slate-900 shadow-2xl border-4 border-slate-950 overflow-hidden">
+              <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-[#C9A227] to-[#8F7318] flex items-center justify-center text-3xl font-bold text-[#23201A] shadow-2xl border-4 border-border overflow-hidden">
                 {user.avatarUrl ? (
                   <img
                     src={user.avatarUrl}
@@ -411,19 +411,19 @@ export function ProfilePage() {
                   />
                 ) : (
                   user.avatar || (
-                    <User className="w-10 h-10 text-slate-900/50" />
+                    <User className="w-10 h-10 text-[#23201A]/50" />
                   )
                 )}
               </div>
               <button
                 onClick={handleAvatarClick}
                 disabled={uploadingAvatar}
-                className="absolute -bottom-1 -right-1 w-8 h-8 bg-slate-800 border-2 border-slate-950 rounded-full flex items-center justify-center hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="absolute -bottom-1 -right-1 w-8 h-8 bg-muted border-2 border-border rounded-full flex items-center justify-center hover:bg-muted/70 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Camera className="w-3.5 h-3.5 text-slate-300" />
+                <Camera className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
               {!!user.verified && (
-                <div className="absolute -top-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center border-2 border-slate-950">
+                <div className="absolute -top-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center border-2 border-border">
                   <Shield className="w-3 h-3 text-white" />
                 </div>
               )}
@@ -437,8 +437,8 @@ export function ProfilePage() {
               disabled={saving}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-60 ${
                 editMode
-                  ? "bg-[#FFDE42] text-slate-900"
-                  : "bg-white/10 hover:bg-white/20 text-white border border-white/10"
+                  ? "bg-[#C9A227] text-[#23201A]"
+                  : "bg-muted hover:bg-muted text-foreground border border-border"
               }`}
             >
               <Edit2 className="w-4 h-4" />
@@ -450,14 +450,14 @@ export function ProfilePage() {
         {/* Profile Identity */}
         <div className="ml-36 mb-8">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold text-white">{user.name}</h1>
-            <span className="text-slate-400 text-sm">{user.username}</span>
-            <span className="text-xs bg-[#FFDE42]/20 text-[#FFDE42] px-2.5 py-1 rounded-full font-semibold border border-[#FFDE42]/30">
+            <h1 className="font-serif text-2xl font-bold text-foreground">{user.name}</h1>
+            <span className="text-muted-foreground text-sm">{user.username}</span>
+            <span className="text-xs bg-[#C9A227]/20 text-[#C9A227] px-2.5 py-1 rounded-full font-semibold border border-[#C9A227]/30">
               {user.level}
             </span>
           </div>
-          <p className="text-slate-400 text-sm mt-1.5 max-w-xl">{user.bio}</p>
-          <div className="flex flex-wrap gap-4 mt-3 text-xs text-slate-500">
+          <p className="text-muted-foreground text-sm mt-1.5 max-w-xl">{user.bio}</p>
+          <div className="flex flex-wrap gap-4 mt-3 text-xs text-muted-foreground">
             {user.location && (
               <span className="flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5" />
@@ -492,8 +492,8 @@ export function ProfilePage() {
               onClick={() => setActiveSection(s.id)}
               className={`px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
                 activeSection === s.id
-                  ? "bg-[#FFDE42] text-slate-900 shadow-lg shadow-[#FFDE42]/20"
-                  : "bg-white/5 text-slate-400 hover:bg-white/10 border border-white/5"
+                  ? "bg-[#C9A227] text-[#23201A] shadow-lg shadow-[#C9A227]/20"
+                  : "bg-card text-muted-foreground hover:bg-muted border border-border"
               }`}
             >
               {s.label}
@@ -511,69 +511,69 @@ export function ProfilePage() {
                   label: "Số Dư Ví",
                   value: `${user.balance.toLocaleString()} xu`,
                   icon: Coins,
-                  color: "from-[#FFDE42] to-amber-600",
+                  color: "from-[#C9A227] to-[#8F7318]",
                   sub: `≈ ${(user.balance * 1000).toLocaleString()} VND`,
                 },
                 {
                   label: "Tỷ Lệ Thắng",
                   value: `${winRate}%`,
                   icon: TrendingUp,
-                  color: "from-emerald-500 to-emerald-700",
+                  color: "from-[#1F3D2B] to-[#172D20]",
                   sub: `${user.wonBets}/${user.totalBets} cược`,
                 },
                 {
                   label: "Tổng Đã Thắng",
                   value: `${user.totalWon.toLocaleString()} xu`,
                   icon: Trophy,
-                  color: "from-amber-500 to-amber-700",
+                  color: "from-[#C9A227] to-[#8F7318]",
                   sub: "tổng phần thưởng",
                 },
                 {
                   label: "Hạng Bảng XH",
                   value: user.rank ? `#${user.rank}` : "—",
                   icon: Award,
-                  color: "from-blue-500 to-blue-700",
+                  color: "from-[#8C2F1B] to-[#6B2415]",
                   sub: "top 5 khán giả",
                 },
               ].map((s, i) => (
                 <div
                   key={i}
-                  className="bg-white/5 border border-white/5 rounded-2xl p-5 hover:-translate-y-1 transition-all duration-200"
+                  className="bg-card border border-border rounded-2xl p-5 hover:-translate-y-1 transition-all duration-200"
                 >
                   <div
                     className={`w-10 h-10 bg-gradient-to-br ${s.color} rounded-xl flex items-center justify-center mb-3 shadow-lg`}
                   >
-                    <s.icon className="w-5 h-5 text-white" />
+                    <s.icon className="w-5 h-5 text-foreground" />
                   </div>
-                  <div className="text-xl font-bold text-white mb-0.5">
+                  <div className="font-serif text-xl font-bold text-foreground mb-0.5">
                     {s.value}
                   </div>
-                  <div className="text-sm text-slate-400 font-medium">
+                  <div className="text-sm text-muted-foreground font-medium">
                     {s.label}
                   </div>
-                  <div className="text-xs text-slate-600 mt-0.5">{s.sub}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{s.sub}</div>
                 </div>
               ))}
             </div>
 
             {/* Win Rate Bar */}
-            <div className="bg-white/5 border border-white/5 rounded-2xl p-6">
-              <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-                <Target className="w-5 h-5 text-[#FFDE42]" /> Thống Kê Cược
+            <div className="bg-card border border-border rounded-2xl p-6">
+              <h3 className="text-foreground font-bold mb-4 flex items-center gap-2">
+                <Target className="w-5 h-5 text-[#C9A227]" /> Thống Kê Cược
               </h3>
               <div className="grid md:grid-cols-3 gap-6">
                 <div>
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-slate-400">Tỷ Lệ Thắng</span>
-                    <span className="text-white font-semibold">{winRate}%</span>
+                    <span className="text-muted-foreground">Tỷ Lệ Thắng</span>
+                    <span className="text-foreground font-semibold">{winRate}%</span>
                   </div>
-                  <div className="w-full bg-slate-800 rounded-full h-2.5">
+                  <div className="w-full bg-muted rounded-full h-2.5">
                     <div
-                      className="bg-gradient-to-r from-[#FFDE42] to-emerald-500 h-2.5 rounded-full transition-all"
+                      className="bg-gradient-to-r from-[#C9A227] to-[#1F3D2B] h-2.5 rounded-full transition-all"
                       style={{ width: `${winRate}%` }}
                     />
                   </div>
-                  <div className="flex justify-between text-xs text-slate-600 mt-1">
+                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
                     <span>0%</span>
                     <span>100%</span>
                   </div>
@@ -583,38 +583,38 @@ export function ProfilePage() {
                     {
                       label: "Cược Thắng",
                       value: user.wonBets,
-                      color: "bg-[#FFDE42]",
+                      color: "bg-[#C9A227]",
                     },
                     {
                       label: "Cược Thua",
                       value: user.totalBets - user.wonBets - 1,
-                      color: "bg-red-500",
+                      color: "bg-[#B42318]",
                     },
-                    { label: "Đang Chờ", value: 0, color: "bg-slate-500" },
+                    { label: "Đang Chờ", value: 0, color: "bg-[#7A7468]" },
                   ].map((item, i) => (
                     <div key={i} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div
                           className={`w-2.5 h-2.5 rounded-full ${item.color}`}
                         />
-                        <span className="text-slate-400 text-sm">
+                        <span className="text-muted-foreground text-sm">
                           {item.label}
                         </span>
                       </div>
-                      <span className="text-white font-semibold text-sm">
+                      <span className="text-foreground font-semibold text-sm">
                         {item.value}
                       </span>
                     </div>
                   ))}
                 </div>
-                <div className="bg-slate-900/60 rounded-xl p-4 text-center">
-                  <div className="text-3xl font-bold text-[#FFDE42] mb-1">
+                <div className="bg-muted/50 rounded-xl p-4 text-center">
+                  <div className="text-3xl font-bold text-[#C9A227] mb-1">
                     {user.streak}
                   </div>
-                  <div className="text-white font-semibold flex items-center justify-center gap-1">
+                  <div className="text-foreground font-semibold flex items-center justify-center gap-1">
                     <Flame className="w-4 h-4 text-orange-400" /> Chuỗi Thắng
                   </div>
-                  <div className="text-slate-500 text-xs mt-1">
+                  <div className="text-muted-foreground text-xs mt-1">
                     liên tiếp hiện tại
                   </div>
                 </div>
@@ -622,24 +622,24 @@ export function ProfilePage() {
             </div>
 
             {/* Recent Activity */}
-            <div className="bg-white/5 border border-white/5 rounded-2xl p-6">
-              <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-                <Activity className="w-5 h-5 text-blue-400" /> Hoạt Động Gần Đây
+            <div className="bg-card border border-border rounded-2xl p-6">
+              <h3 className="text-foreground font-bold mb-4 flex items-center gap-2">
+                <Activity className="w-5 h-5 text-primary" /> Hoạt Động Gần Đây
               </h3>
               <div className="space-y-3">
                 {recentActivity.map((act, i) => (
                   <div
                     key={i}
-                    className="flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-colors"
+                    className="flex items-center gap-4 p-3 rounded-xl hover:bg-muted transition-colors"
                   >
                     <div
                       className={`w-2 h-2 rounded-full flex-shrink-0 ${act.dot}`}
                     />
                     <div className="flex-1">
-                      <div className="text-white text-sm font-medium">
+                      <div className="text-foreground text-sm font-medium">
                         {act.title}
                       </div>
-                      <div className="text-slate-500 text-xs mt-0.5">
+                      <div className="text-muted-foreground text-xs mt-0.5">
                         {act.time}
                       </div>
                     </div>
@@ -656,14 +656,14 @@ export function ProfilePage() {
         {/* ===== THÔNG TIN ===== */}
         {activeSection === "info" && (
           <div className="space-y-6">
-            <div className="bg-white/5 border border-white/5 rounded-2xl p-6">
-              <h3 className="text-white font-bold mb-6 flex items-center gap-2">
-                <User className="w-5 h-5 text-blue-400" /> Thông Tin Cá Nhân
+            <div className="bg-card border border-border rounded-2xl p-6">
+              <h3 className="text-foreground font-bold mb-6 flex items-center gap-2">
+                <User className="w-5 h-5 text-primary" /> Thông Tin Cá Nhân
               </h3>
               <div className="grid md:grid-cols-2 gap-6">
                 {infoFields.map((field, i) => (
                   <div key={i}>
-                    <label className="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-2 flex items-center gap-1.5">
+                    <label className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-2 flex items-center gap-1.5">
                       <field.icon className="w-3.5 h-3.5" /> {field.label}
                     </label>
                     {editMode && field.editable ? (
@@ -680,15 +680,15 @@ export function ProfilePage() {
                                 }))
                             : undefined
                         }
-                        className="w-full bg-slate-800/60 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#FFDE42]/60 focus:ring-1 focus:ring-[#FFDE42]/20 transition-all"
+                        className="w-full bg-muted/60 border border-border rounded-xl px-4 py-3 text-foreground text-sm focus:outline-none focus:border-[#C9A227]/60 focus:ring-1 focus:ring-[#C9A227]/20 transition-all"
                       />
                     ) : (
-                      <div className="flex items-center justify-between bg-slate-900/40 rounded-xl px-4 py-3 border border-white/5">
-                        <span className="text-white text-sm">
+                      <div className="flex items-center justify-between bg-card/40 rounded-xl px-4 py-3 border border-border">
+                        <span className="text-foreground text-sm">
                           {field.value || "—"}
                         </span>
                         {!field.editable && (
-                          <span className="text-xs text-slate-600 border border-slate-700 px-2 py-0.5 rounded">
+                          <span className="text-xs text-muted-foreground border border-border px-2 py-0.5 rounded">
                             Cố định
                           </span>
                         )}
@@ -701,7 +701,7 @@ export function ProfilePage() {
               {user.role === "jockey" && (
                 <div className="mt-6 space-y-5">
                   <div>
-                    <label className="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-2 block">
+                    <label className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-2 block">
                       Giới Thiệu Bản Thân
                     </label>
                     {editMode ? (
@@ -714,12 +714,12 @@ export function ProfilePage() {
                           }))
                         }
                         rows={3}
-                        className="w-full bg-slate-800/60 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#FFDE42]/60 resize-none transition-all"
+                        className="w-full bg-muted/60 border border-border rounded-xl px-4 py-3 text-foreground text-sm focus:outline-none focus:border-[#C9A227]/60 resize-none transition-all"
                       />
                     ) : (
-                      <div className="bg-slate-900/40 rounded-xl px-4 py-3 border border-white/5 text-white text-sm min-h-[72px]">
+                      <div className="bg-card/40 rounded-xl px-4 py-3 border border-border text-foreground text-sm min-h-[72px]">
                         {user.bio || (
-                          <span className="text-slate-500">
+                          <span className="text-muted-foreground">
                             Chưa có giới thiệu
                           </span>
                         )}
@@ -729,7 +729,7 @@ export function ProfilePage() {
 
                   {/* Riding style selector */}
                   <div>
-                    <label className="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-2 block">
+                    <label className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-2 block">
                       Phong Cách Cưỡi
                     </label>
                     {editMode ? (
@@ -745,8 +745,8 @@ export function ProfilePage() {
                             onClick={() => setFormState(prev => ({ ...prev, jockeyStyle: opt.value }))}
                             className={`flex flex-col items-center gap-1 p-3 rounded-xl border text-sm font-medium transition-all ${
                               formState.jockeyStyle === opt.value
-                                ? "border-[#FFDE42] bg-[#FFDE42]/10 text-[#FFDE42]"
-                                : "border-white/10 bg-slate-800/40 text-slate-400 hover:border-white/30"
+                                ? "border-[#C9A227] bg-[#C9A227]/10 text-[#C9A227]"
+                                : "border-border bg-muted/40 text-muted-foreground hover:border-white/30"
                             }`}
                           >
                             <span className="text-lg">{opt.icon}</span>
@@ -756,7 +756,7 @@ export function ProfilePage() {
                         ))}
                       </div>
                     ) : (
-                      <div className="bg-slate-900/40 rounded-xl px-4 py-3 border border-white/5 text-white text-sm flex items-center gap-2">
+                      <div className="bg-card/40 rounded-xl px-4 py-3 border border-border text-foreground text-sm flex items-center gap-2">
                         {formState.jockeyStyle === "aggressive" && <><span>⚡</span><span>Aggressive — Dẫn đầu sớm</span></>}
                         {formState.jockeyStyle === "balanced"   && <><span>⚖️</span><span>Balanced — Ổn định đều</span></>}
                         {formState.jockeyStyle === "conservative" && <><span>🎯</span><span>Conservative — Bứt phá cuối</span></>}
@@ -768,12 +768,12 @@ export function ProfilePage() {
             </div>
 
             {/* Membership Info */}
-            {/* <div className="bg-gradient-to-br from-[#FFDE42]/10 via-amber-900/5 to-transparent border border-[#FFDE42]/20 rounded-2xl p-6">
+            {/* <div className="bg-gradient-to-br from-[#C9A227]/10 via-amber-900/5 to-transparent border border-[#C9A227]/20 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-white font-bold flex items-center gap-2">
-                  <Award className="w-5 h-5 text-[#FFDE42]" /> Hội Viên
+                <h3 className="text-foreground font-bold flex items-center gap-2">
+                  <Award className="w-5 h-5 text-[#C9A227]" /> Hội Viên
                 </h3>
-                <span className="text-xs bg-[#FFDE42]/20 text-[#FFDE42] px-3 py-1 rounded-full font-bold border border-[#FFDE42]/30">
+                <span className="text-xs bg-[#C9A227]/20 text-[#C9A227] px-3 py-1 rounded-full font-bold border border-[#C9A227]/30">
                   {user.level}
                 </span>
               </div>
@@ -784,21 +784,21 @@ export function ProfilePage() {
                   { label: 'Tổng Nạp',       value: user.totalDeposited ? `$${user.totalDeposited.toLocaleString()}` : '—' },
                   { label: 'Điểm Uy Tín',    value: '4.8 / 5.0 ⭐' },
                 ].map((item, i) => (
-                  <div key={i} className="bg-slate-900/40 rounded-xl p-3">
-                    <div className="text-slate-400 text-xs mb-1">{item.label}</div>
-                    <div className="text-white font-semibold">{item.value}</div>
+                  <div key={i} className="bg-card/40 rounded-xl p-3">
+                    <div className="text-muted-foreground text-xs mb-1">{item.label}</div>
+                    <div className="text-foreground font-semibold">{item.value}</div>
                   </div>
                 ))}
               </div>
               <div className="mt-4">
-                <div className="flex justify-between text-xs text-slate-400 mb-1.5">
+                <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
                   <span>Tiến Trình Lên Hạng Bạch Kim</span>
                   <span>$2,000 / $5,000</span>
                 </div>
-                <div className="w-full bg-slate-800 rounded-full h-2">
-                  <div className="bg-gradient-to-r from-[#FFDE42] to-amber-500 h-2 rounded-full" style={{ width: '40%' }} />
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div className="bg-gradient-to-r from-[#C9A227] to-[#B08D1E] h-2 rounded-full" style={{ width: '40%' }} />
                 </div>
-                <p className="text-xs text-slate-500 mt-1.5">Nạp thêm $3,000 để lên hạng Bạch Kim và nhận ưu đãi độc quyền.</p>
+                <p className="text-xs text-muted-foreground mt-1.5">Nạp thêm $3,000 để lên hạng Bạch Kim và nhận ưu đãi độc quyền.</p>
               </div>
             </div> */}
           </div>
@@ -806,9 +806,9 @@ export function ProfilePage() {
 
         {/* ===== THÔNG BÁO ===== */}
         {activeSection === "notifications" && (
-          <div className="bg-white/5 border border-white/5 rounded-2xl p-6 space-y-4">
-            <h3 className="text-white font-bold mb-2 flex items-center gap-2">
-              <Bell className="w-5 h-5 text-blue-400" /> Cài Đặt Thông Báo
+          <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+            <h3 className="text-foreground font-bold mb-2 flex items-center gap-2">
+              <Bell className="w-5 h-5 text-primary" /> Cài Đặt Thông Báo
             </h3>
             {[
               {
@@ -838,22 +838,22 @@ export function ProfilePage() {
             ].map((item, i) => (
               <div
                 key={i}
-                className="flex items-center justify-between py-4 border-b border-white/5 last:border-0"
+                className="flex items-center justify-between py-4 border-b border-border last:border-0"
               >
                 <div>
-                  <div className="text-white font-medium text-sm">
+                  <div className="text-foreground font-medium text-sm">
                     {item.label}
                   </div>
-                  <div className="text-slate-500 text-xs mt-0.5">
+                  <div className="text-muted-foreground text-xs mt-0.5">
                     {item.sub}
                   </div>
                 </div>
                 <button
                   onClick={() => item.set(!item.val)}
-                  className={`relative w-12 h-6 rounded-full transition-all duration-300 ${item.val ? "bg-[#FFDE42]" : "bg-slate-700"}`}
+                  className={`relative w-12 h-6 rounded-full transition-all duration-300 ${item.val ? "bg-[#C9A227]" : "bg-muted"}`}
                 >
                   <div
-                    className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all duration-300 ${item.val ? "left-7" : "left-1"}`}
+                    className={`absolute top-1 w-4 h-4 bg-[#FFFFFF] rounded-full shadow transition-all duration-300 ${item.val ? "left-7" : "left-1"}`}
                   />
                 </button>
               </div>
@@ -864,9 +864,9 @@ export function ProfilePage() {
         {/* ===== BẢO MẬT ===== */}
         {activeSection === "security" && (
           <div className="space-y-4">
-            <div className="bg-white/5 border border-white/5 rounded-2xl p-6">
-              <h3 className="text-white font-bold mb-5 flex items-center gap-2">
-                <Shield className="w-5 h-5 text-emerald-400" /> Bảo Mật Tài
+            <div className="bg-card border border-border rounded-2xl p-6">
+              <h3 className="text-foreground font-bold mb-5 flex items-center gap-2">
+                <Shield className="w-5 h-5 text-primary" /> Bảo Mật Tài
                 Khoản
               </h3>
               <div className="space-y-3">
@@ -882,17 +882,17 @@ export function ProfilePage() {
                   <div
                     key={i}
                     onClick={item.onClick}
-                    className="flex items-center justify-between p-4 bg-slate-900/40 rounded-xl border border-white/5 hover:border-white/10 transition-all cursor-pointer"
+                    className="flex items-center justify-between p-4 bg-card/40 rounded-xl border border-border hover:border-border transition-all cursor-pointer"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-                        <item.icon className="w-5 h-5 text-slate-400" />
+                      <div className="w-10 h-10 rounded-xl bg-card flex items-center justify-center">
+                        <item.icon className="w-5 h-5 text-muted-foreground" />
                       </div>
                       <div>
-                        <div className="text-white font-medium text-sm">
+                        <div className="text-foreground font-medium text-sm">
                           {item.label}
                         </div>
-                        <div className="text-slate-500 text-xs mt-0.5">
+                        <div className="text-muted-foreground text-xs mt-0.5">
                           {item.desc}
                         </div>
                       </div>
@@ -902,30 +902,30 @@ export function ProfilePage() {
                         <span
                           className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
                             item.badge === "Đã xác minh"
-                              ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                              : "bg-red-500/10 text-red-400 border border-red-500/20"
+                              ? "bg-primary/10 text-primary border border-primary/20"
+                              : "bg-[#B42318]/10 text-[#B42318] border border-[#B42318]/20"
                           }`}
                         >
                           {item.badge}
                         </span>
                       )}
-                      <ChevronRight className="w-4 h-4 text-slate-600" />
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* <div className="bg-red-500/5 border border-red-500/20 rounded-2xl p-6">
-              <h3 className="text-red-400 font-bold mb-4 flex items-center gap-2">
+            {/* <div className="bg-[#B42318]/5 border border-[#B42318]/20 rounded-2xl p-6">
+              <h3 className="text-[#B42318] font-bold mb-4 flex items-center gap-2">
                 <Lock className="w-5 h-5" /> Vùng Nguy Hiểm
               </h3>
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-white font-medium text-sm">Xoá Tài Khoản</div>
-                  <div className="text-slate-500 text-xs mt-0.5">Hành động này không thể hoàn tác. Toàn bộ dữ liệu sẽ bị xoá vĩnh viễn.</div>
+                  <div className="text-foreground font-medium text-sm">Xoá Tài Khoản</div>
+                  <div className="text-muted-foreground text-xs mt-0.5">Hành động này không thể hoàn tác. Toàn bộ dữ liệu sẽ bị xoá vĩnh viễn.</div>
                 </div>
-                <button className="px-4 py-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 text-sm font-semibold hover:bg-red-500/20 transition-colors">
+                <button className="px-4 py-2 rounded-xl bg-[#B42318]/10 text-[#B42318] border border-[#B42318]/20 text-sm font-semibold hover:bg-red-500/20 transition-colors">
                   Xoá Tài Khoản
                 </button>
               </div>
@@ -936,10 +936,10 @@ export function ProfilePage() {
 
       {/* Change Password Dialog */}
       <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
-        <DialogContent className="bg-slate-900 border border-white/10 text-white max-w-md">
+        <DialogContent className="bg-card border border-border text-foreground max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-white flex items-center gap-2">
-              <Lock className="w-5 h-5 text-[#FFDE42]" /> Đổi Mật Khẩu
+            <DialogTitle className="text-foreground flex items-center gap-2">
+              <Lock className="w-5 h-5 text-[#C9A227]" /> Đổi Mật Khẩu
             </DialogTitle>
           </DialogHeader>
 
@@ -962,7 +962,7 @@ export function ProfilePage() {
               },
             ].map((field) => (
               <div key={field.key}>
-                <label className="text-xs text-slate-400 font-semibold uppercase tracking-wide mb-1.5 block">
+                <label className="text-xs text-muted-foreground font-semibold uppercase tracking-wide mb-1.5 block">
                   {field.label}
                 </label>
                 <div className="relative">
@@ -976,7 +976,7 @@ export function ProfilePage() {
                         [field.key]: e.target.value,
                       }))
                     }
-                    className="w-full bg-slate-800/60 border border-white/10 rounded-xl px-4 py-3 pr-11 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-[#FFDE42]/60 focus:ring-1 focus:ring-[#FFDE42]/20 transition-all"
+                    className="w-full bg-muted/60 border border-border rounded-xl px-4 py-3 pr-11 text-foreground text-sm placeholder-muted-foreground focus:outline-none focus:border-[#C9A227]/60 focus:ring-1 focus:ring-[#C9A227]/20 transition-all"
                   />
                   <button
                     type="button"
@@ -986,7 +986,7 @@ export function ProfilePage() {
                         [field.key]: !prev[field.key],
                       }))
                     }
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {showPasswordFields[field.key] ? (
                       <EyeOff className="w-4 h-4" />
@@ -1008,7 +1008,7 @@ export function ProfilePage() {
                     confirmPassword: "",
                   });
                 }}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-white/5 text-slate-300 text-sm font-semibold hover:bg-white/10 border border-white/10 transition-all"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-card text-muted-foreground text-sm font-semibold hover:bg-muted border border-border transition-all"
               >
                 Hủy
               </button>
@@ -1019,7 +1019,7 @@ export function ProfilePage() {
                   !passwordForm.currentPassword ||
                   !passwordForm.newPassword
                 }
-                className="flex-1 px-4 py-2.5 rounded-xl bg-[#FFDE42] text-slate-900 text-sm font-bold hover:bg-[#FFE862] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-[#C9A227] text-[#23201A] text-sm font-bold hover:bg-[#D9B53C] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 {changingPassword ? "Đang lưu..." : "Xác nhận"}
               </button>
