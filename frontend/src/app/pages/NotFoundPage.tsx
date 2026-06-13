@@ -96,7 +96,7 @@ export function NotFoundPage() {
         angle: 90,
         spread: 80,
         origin: { x: 0.5, y: 0.3 },
-        colors: ['#f59e0b', '#fbbf24', '#7c3aed', '#1e293b'],
+        colors: ['#C9A227', '#1F3D2B', '#8C2F1B', '#8F7318'],
         gravity: 1.4,
         scalar: 0.85,
       });
@@ -147,14 +147,14 @@ export function NotFoundPage() {
   return (
     <div
       ref={containerRef}
-      className="min-h-screen bg-[#07070d] flex items-center justify-center overflow-hidden relative px-4 select-none"
+      className="min-h-screen bg-background flex items-center justify-center overflow-hidden relative px-4 select-none"
     >
       {/* Grid bg */}
       <div
-        className="absolute inset-0 opacity-[0.025] pointer-events-none"
+        className="absolute inset-0 opacity-[0.05] pointer-events-none"
         style={{
           backgroundImage:
-            'repeating-linear-gradient(0deg,transparent,transparent 48px,#fff 48px,#fff 49px),repeating-linear-gradient(90deg,transparent,transparent 48px,#fff 48px,#fff 49px)',
+            'repeating-linear-gradient(0deg,transparent,transparent 48px,#23201A 48px,#23201A 49px),repeating-linear-gradient(90deg,transparent,transparent 48px,#23201A 48px,#23201A 49px)',
         }}
       />
 
@@ -162,7 +162,7 @@ export function NotFoundPage() {
       <div
         ref={glowRef}
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(245,158,11,0.12) 0%, transparent 70%)' }}
+        style={{ background: 'radial-gradient(circle, rgba(201,162,39,0.14) 0%, transparent 70%)' }}
       />
 
       {/* Horse runners */}
@@ -179,7 +179,7 @@ export function NotFoundPage() {
           >
             {emoji}
             <span
-              className="ml-1 text-xs text-amber-500/40 font-mono"
+              className="ml-1 text-xs text-[#8F7318]/40 font-mono"
               style={{ verticalAlign: 'middle' }}
             >
               {'·'.repeat(6 - i)}
@@ -196,15 +196,15 @@ export function NotFoundPage() {
         className="relative z-10 w-full max-w-lg"
       >
         {/* Card border glow */}
-        <div className="absolute -inset-px rounded-2xl bg-gradient-to-br from-amber-500/20 via-transparent to-purple-600/10 pointer-events-none" />
+        <div className="absolute -inset-px rounded-2xl bg-gradient-to-br from-gold/25 via-transparent to-secondary/10 pointer-events-none" />
 
-        <div className="relative rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.07] p-10 text-center">
+        <div className="relative rounded-2xl bg-card backdrop-blur-sm border border-border p-10 text-center">
           {/* Badge */}
           <motion.div
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.1 }}
-            className="stagger-line inline-flex items-center gap-2 px-3 py-1 rounded-full border border-amber-500/25 bg-amber-500/8 text-amber-400 text-xs font-medium mb-6"
+            className="stagger-line inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gold/40 bg-gold/10 text-[#8F7318] text-xs font-medium mb-6"
           >
             <Compass className="w-3 h-3" />
             Lỗi 404 — Không tìm thấy trang
@@ -216,7 +216,7 @@ export function NotFoundPage() {
               className="digit-shimmer text-[9rem] font-black leading-none tracking-tighter"
               style={{
                 background:
-                  'linear-gradient(90deg, #f59e0b 0%, #fde68a 30%, #f59e0b 50%, #fde68a 80%, #f59e0b 100%)',
+                  'linear-gradient(90deg, #C9A227 0%, #E5C95A 30%, #C9A227 50%, #E5C95A 80%, #C9A227 100%)',
                 backgroundSize: '200% auto',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
@@ -228,12 +228,12 @@ export function NotFoundPage() {
           </div>
 
           {/* Title */}
-          <h1 className="stagger-line text-2xl font-bold text-white mb-3">
+          <h1 className="stagger-line font-serif text-2xl font-bold text-foreground mb-3">
             Đường đua không tồn tại
           </h1>
 
           {/* Description */}
-          <p className="stagger-line text-slate-400 text-sm leading-relaxed mb-8 max-w-sm mx-auto">
+          <p className="stagger-line text-muted-foreground text-sm leading-relaxed mb-8 max-w-sm mx-auto">
             Trang bạn đang tìm kiếm đã rời khỏi vạch xuất phát và không thể tìm thấy.
             Có thể nó đã bị di chuyển, xóa, hoặc chưa bao giờ tồn tại.
           </p>
@@ -243,7 +243,7 @@ export function NotFoundPage() {
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
             transition={{ duration: 0.7, delay: 0.9 }}
-            className="stagger-line w-full h-px bg-gradient-to-r from-transparent via-amber-500/25 to-transparent mb-8"
+            className="stagger-line w-full h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent mb-8"
           />
 
           {/* Buttons */}
@@ -258,8 +258,8 @@ export function NotFoundPage() {
                 className={[
                   'relative flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors duration-150 overflow-hidden',
                   primary
-                    ? 'bg-amber-500 hover:bg-amber-400 text-black'
-                    : 'border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white',
+                    ? 'bg-primary hover:bg-primary/90 text-primary-foreground'
+                    : 'border border-border hover:border-primary text-foreground hover:text-primary',
                 ].join(' ')}
               >
                 {/* shimmer sweep on hover */}
@@ -268,7 +268,7 @@ export function NotFoundPage() {
                     initial={{ x: '-100%' }}
                     animate={{ x: '200%' }}
                     transition={{ duration: 0.45, ease: 'easeInOut' }}
-                    className="absolute inset-0 bg-white/10 skew-x-12 pointer-events-none"
+                    className="absolute inset-0 bg-foreground/10 skew-x-12 pointer-events-none"
                   />
                 )}
                 <Icon className="w-4 h-4" />
@@ -278,13 +278,13 @@ export function NotFoundPage() {
           </div>
 
           {/* Quick links */}
-          <div className="stagger-line flex items-center justify-center flex-wrap gap-x-5 gap-y-1.5 text-xs text-slate-600">
+          <div className="stagger-line flex items-center justify-center flex-wrap gap-x-5 gap-y-1.5 text-xs text-muted-foreground">
             <span>Liên kết nhanh:</span>
             {quickLinks.map(({ label, path }) => (
               <button
                 key={path}
                 onClick={() => navigate(path)}
-                className="text-slate-500 hover:text-amber-400 transition-colors duration-150"
+                className="text-muted-foreground hover:text-secondary transition-colors duration-150"
               >
                 {label}
               </button>
