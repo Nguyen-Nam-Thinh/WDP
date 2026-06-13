@@ -746,7 +746,7 @@ export function ProfilePage() {
                             className={`flex flex-col items-center gap-1 p-3 rounded-xl border text-sm font-medium transition-all ${
                               formState.jockeyStyle === opt.value
                                 ? "border-[#C9A227] bg-[#C9A227]/10 text-[#C9A227]"
-                                : "border-border bg-muted/40 text-muted-foreground hover:border-white/30"
+                                : "border-border bg-muted/40 text-muted-foreground hover:border-primary"
                             }`}
                           >
                             <span className="text-lg">{opt.icon}</span>
