@@ -127,8 +127,8 @@ export function ProfileScreen() {
             }
             <View style={styles.avatarEditBadge}>
               {uploading
-                ? <ActivityIndicator size="small" color="#000" />
-                : <Ionicons name="camera" size={14} color="#000" />
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Ionicons name="camera" size={14} color="#fff" />
               }
             </View>
           </TouchableOpacity>
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
   },
   cancelBtnText: { color: colors.textMuted, fontWeight: fontWeight.medium },
   saveBtn: { flex: 1, height: 48, borderRadius: radius.md, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
-  saveBtnText: { color: '#000', fontWeight: fontWeight.bold },
+  saveBtnText: { color: '#FFFFFF', fontWeight: fontWeight.bold },
   actionsSection: {
     backgroundColor: colors.surface, borderRadius: radius.lg,
     borderWidth: 1, borderColor: colors.border, overflow: 'hidden',

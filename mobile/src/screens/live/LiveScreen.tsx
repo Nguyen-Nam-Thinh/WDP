@@ -1,16 +1,22 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
-  View, Text, FlatList, StyleSheet, RefreshControl, ActivityIndicator,
+  View, Text, FlatList, StyleSheet, RefreshControl, ActivityIndicator, TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { raceService } from '../../services/api/race.service';
 import { Race, RaceHorse } from '../../types';
 import { colors, spacing, radius, fontSize, fontWeight } from '../../constants/theme';
+import { LiveStackParamList } from '../../navigation/MainNavigator';
 import Ionicons from '@expo/vector-icons/Ionicons';
+
+type NavigationProp = NativeStackNavigationProp<LiveStackParamList, 'LiveList'>;
 
 const POLL_INTERVAL = 5000;
 
 function LiveRaceCard({ race }: { race: Race }) {
+  const navigation = useNavigation<NavigationProp>();
   const [horses, setHorses] = useState<RaceHorse[]>([]);
 
   useEffect(() => {
@@ -18,42 +24,64 @@ function LiveRaceCard({ race }: { race: Race }) {
   }, [race._id]);
 
   return (
-    <View style={styles.card}>
-      {/* Header */}
-      <View style={styles.cardHeader}>
-        <View style={styles.liveIndicator}>
-          <View style={styles.liveDot} />
-          <Text style={styles.liveText}>LIVE</Text>
+    <TouchableOpacity
+      activeOpacity={0.9}
+      onPress={() => navigation.navigate('LiveDetail', { raceId: race._id })}
+      style={styles.cardWrapper}
+    >
+      <View style={styles.card}>
+        {/* Header */}
+        <View style={styles.cardHeader}>
+          <View style={styles.liveIndicator}>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveText}>LIVE</Text>
+          </View>
+          <View style={styles.cardHeaderRight}>
+            <Text style={[styles.grade, { color: colors.gold }]}>{race.grade}</Text>
+          </View>
         </View>
-        <View style={styles.cardHeaderRight}>
-          <Text style={styles.grade}>{race.grade}</Text>
+
+        <Text style={styles.raceName} numberOfLines={1}>{race.name}</Text>
+        <Text style={styles.raceMeta}>{race.distance}m · Giải: {race.purse?.toLocaleString()} coins</Text>
+
+        {/* Horses leaderboard */}
+        {horses.length > 0 && (
+          <View style={styles.leaderboard}>
+            <Text style={styles.leaderboardTitle}>🏇 Các Ngựa Tham Gia</Text>
+            {horses.slice(0, 4).map((h, idx) => {
+              const horseId = typeof h.horseId === 'object' ? h.horseId?._id : h.horseId;
+              const horseName = typeof h.horseId === 'object' ? h.horseId?.name : h.horseName;
+              const jockeyName = typeof h.jockeyId === 'object' ? h.jockeyId?.fullName : h.jockeyName;
+              const currentGrade = typeof h.horseId === 'object' ? h.horseId?.currentGrade : h.currentGrade;
+              const horseKey = h._id || h.registrationId || horseId || String(idx);
+
+              return (
+                <View key={horseKey} style={styles.horseRow}>
+                  <View style={[styles.positionBadge,
+                    idx === 0 ? styles.pos1 : idx === 1 ? styles.pos2 : idx === 2 ? styles.pos3 : styles.posOther
+                  ]}>
+                    <Text style={styles.positionText}>#{idx + 1}</Text>
+                  </View>
+                  <View style={styles.horseInfo}>
+                    <Text style={styles.horseName}>{horseName}</Text>
+                    {jockeyName ? <Text style={styles.jockeyName}>{jockeyName}</Text> : null}
+                  </View>
+                  <Text style={styles.horseGrade}>{currentGrade ?? '—'}</Text>
+                </View>
+              );
+            })}
+            {horses.length > 4 ? (
+              <Text style={styles.moreHorsesText}>...và {horses.length - 4} chú ngựa khác</Text>
+            ) : null}
+          </View>
+        )}
+
+        <View style={styles.watchLiveBtn}>
+          <Ionicons name="play-circle-outline" size={16} color="#FFFFFF" />
+          <Text style={styles.watchLiveText}>Vào Xem Trực Tiếp</Text>
         </View>
       </View>
-
-      <Text style={styles.raceName} numberOfLines={1}>{race.name}</Text>
-      <Text style={styles.raceMeta}>{race.distance}m · Giải: ${race.purse?.toLocaleString()}</Text>
-
-      {/* Horses leaderboard */}
-      {horses.length > 0 && (
-        <View style={styles.leaderboard}>
-          <Text style={styles.leaderboardTitle}>🏇 Các Ngựa Tham Gia</Text>
-          {horses.slice(0, 8).map((h, idx) => (
-            <View key={h._id} style={styles.horseRow}>
-              <View style={[styles.positionBadge,
-                idx === 0 ? styles.pos1 : idx === 1 ? styles.pos2 : idx === 2 ? styles.pos3 : styles.posOther
-              ]}>
-                <Text style={styles.positionText}>#{idx + 1}</Text>
-              </View>
-              <View style={styles.horseInfo}>
-                <Text style={styles.horseName}>{h.horseId.name}</Text>
-                {h.jockeyId && <Text style={styles.jockeyName}>{h.jockeyId.fullName}</Text>}
-              </View>
-              <Text style={styles.horseGrade}>{h.horseId.currentGrade ?? '—'}</Text>
-            </View>
-          ))}
-        </View>
-      )}
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -130,32 +158,41 @@ const styles = StyleSheet.create({
   pageTitle: { fontSize: fontSize.xxl, fontWeight: fontWeight.extrabold, color: colors.text },
   pollNote: { fontSize: fontSize.xs, color: colors.textSubtle },
   list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.md },
+  cardWrapper: {
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 3,
+    marginBottom: spacing.sm,
+  },
   card: {
-    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.danger + '40',
+    backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: colors.border,
     borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm,
-    shadowColor: colors.danger, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4,
   },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   liveIndicator: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.danger },
   liveText: { fontSize: fontSize.xs, fontWeight: fontWeight.extrabold, color: colors.danger, letterSpacing: 1.5 },
   cardHeaderRight: {},
-  grade: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, color: colors.warning },
+  grade: { fontSize: fontSize.xs, fontWeight: fontWeight.bold },
   raceName: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.text },
   raceMeta: { fontSize: fontSize.xs, color: colors.textMuted },
   leaderboard: { marginTop: 4, gap: 6 },
   leaderboardTitle: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.textMuted, marginBottom: 4 },
-  horseRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, backgroundColor: colors.surfaceHover, borderRadius: radius.sm },
+  horseRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, backgroundColor: colors.bg, borderRadius: radius.sm },
   positionBadge: { width: 32, height: 32, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
-  pos1: { backgroundColor: '#fbbf24' },
-  pos2: { backgroundColor: '#9ca3af' },
-  pos3: { backgroundColor: '#cd7c2f' },
-  posOther: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  pos1: { backgroundColor: '#C9A227' },
+  pos2: { backgroundColor: '#7A7468' },
+  pos3: { backgroundColor: '#8C2F1B' },
+  posOther: { backgroundColor: colors.bgSecondary, borderWidth: 1, borderColor: colors.border },
   positionText: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, color: '#fff' },
   horseInfo: { flex: 1 },
   horseName: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.text },
   jockeyName: { fontSize: fontSize.xs, color: colors.textMuted },
-  horseGrade: { fontSize: fontSize.xs, color: colors.warning, fontWeight: fontWeight.medium },
+  horseGrade: { fontSize: fontSize.xs, color: colors.textMuted, fontWeight: fontWeight.medium },
+  moreHorsesText: { fontSize: 10, color: colors.textSubtle, textAlign: 'center', marginVertical: 2 },
+  watchLiveBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
+    backgroundColor: colors.secondary, borderRadius: radius.md, paddingVertical: 10, marginTop: spacing.xs,
+  },
+  watchLiveText: { fontSize: fontSize.sm, fontWeight: fontWeight.bold, color: '#FFFFFF' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80, gap: spacing.md },
   emptyTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.text },
   emptyDesc: { fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center' },

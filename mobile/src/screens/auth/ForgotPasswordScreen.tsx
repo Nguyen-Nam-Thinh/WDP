@@ -91,7 +91,7 @@ export function ForgotPasswordScreen({ navigation }: Props) {
 
         {step === 'verify' && (
           <View style={styles.section}>
-            <Text style={styles.desc}>Nhập mã 6 chữ số đã gửi tới <Text style={{ color: colors.accent }}>{email}</Text></Text>
+            <Text style={styles.desc}>Nhập mã 6 chữ số đã gửi tới <Text style={{ color: colors.purple, fontWeight: 'bold' }}>{email}</Text></Text>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Mã Xác Nhận</Text>
               <View style={styles.inputRow}>
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent, borderRadius: radius.md,
     height: 52, alignItems: 'center', justifyContent: 'center', marginTop: 4,
   },
-  btnText: { fontSize: fontSize.md, fontWeight: fontWeight.bold, color: '#000' },
+  btnText: { fontSize: fontSize.md, fontWeight: fontWeight.bold, color: '#FFFFFF' },
   doneSection: { alignItems: 'center', gap: spacing.md, marginTop: spacing.xxl },
   doneTitle: { fontSize: fontSize.xxl, fontWeight: fontWeight.extrabold, color: colors.text },
   doneDesc: { color: colors.textMuted, fontSize: fontSize.sm, textAlign: 'center' },

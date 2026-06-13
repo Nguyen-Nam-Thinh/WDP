@@ -134,13 +134,13 @@ const styles = StyleSheet.create({
   input: { flex: 1, color: colors.text, fontSize: fontSize.md },
   eyeBtn: { padding: 4 },
   forgotRow: { alignItems: 'flex-end' },
-  forgotText: { fontSize: fontSize.sm, color: colors.accent, fontWeight: fontWeight.medium },
+  forgotText: { fontSize: fontSize.sm, color: colors.purple, fontWeight: fontWeight.semibold },
   loginBtn: {
     backgroundColor: colors.accent, borderRadius: radius.md,
     height: 52, alignItems: 'center', justifyContent: 'center', marginTop: 4,
   },
-  loginBtnText: { fontSize: fontSize.md, fontWeight: fontWeight.bold, color: '#000' },
+  loginBtnText: { fontSize: fontSize.md, fontWeight: fontWeight.bold, color: '#FFFFFF' },
   registerRow: { flexDirection: 'row', justifyContent: 'center', marginTop: spacing.sm },
   registerText: { color: colors.textMuted, fontSize: fontSize.sm },
-  registerLink: { color: colors.accent, fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
+  registerLink: { color: colors.purple, fontSize: fontSize.sm, fontWeight: fontWeight.bold },
 });

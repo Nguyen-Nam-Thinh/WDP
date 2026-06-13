@@ -175,13 +175,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accentDim, borderWidth: 1, borderColor: colors.accentBorder,
     borderRadius: radius.md, padding: spacing.md,
   },
-  roleText: { color: colors.accent, fontSize: fontSize.sm, fontWeight: fontWeight.medium },
+  roleText: { color: colors.purple, fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
   registerBtn: {
     backgroundColor: colors.accent, borderRadius: radius.md,
     height: 52, alignItems: 'center', justifyContent: 'center', marginTop: 4,
   },
-  registerBtnText: { fontSize: fontSize.md, fontWeight: fontWeight.bold, color: '#000' },
+  registerBtnText: { fontSize: fontSize.md, fontWeight: fontWeight.bold, color: '#FFFFFF' },
   loginRow: { flexDirection: 'row', justifyContent: 'center', marginTop: spacing.sm },
   loginText: { color: colors.textMuted, fontSize: fontSize.sm },
-  loginLink: { color: colors.accent, fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
+  loginLink: { color: colors.purple, fontSize: fontSize.sm, fontWeight: fontWeight.bold },
 });

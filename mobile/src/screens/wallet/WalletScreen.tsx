@@ -1,19 +1,24 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  View, Text, FlatList, StyleSheet, RefreshControl, ActivityIndicator,
+  View, Text, FlatList, StyleSheet, RefreshControl, ActivityIndicator, TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { userService } from '../../services/api/user.service';
 import { Wallet, Transaction, TransactionType } from '../../types';
 import { colors, spacing, radius, fontSize, fontWeight } from '../../constants/theme';
+import { WalletStackParamList } from '../../navigation/MainNavigator';
 import Ionicons from '@expo/vector-icons/Ionicons';
+
+type NavigationProp = NativeStackNavigationProp<WalletStackParamList, 'WalletHome'>;
 
 const TX_ICONS: Record<TransactionType, { icon: string; color: string }> = {
   topup:              { icon: 'add-circle-outline',   color: colors.success },
-  registration_fee:   { icon: 'document-outline',     color: colors.danger },
+  registration_fee:   { icon: 'document-outline',     color: '#8C2F1B' },
   registration_refund:{ icon: 'refresh-outline',      color: colors.warning },
-  prize_payout:       { icon: 'trophy-outline',        color: colors.accent },
-  bet_placed:         { icon: 'arrow-up-outline',     color: colors.danger },
+  prize_payout:       { icon: 'trophy-outline',        color: colors.gold },
+  bet_placed:         { icon: 'arrow-up-outline',     color: '#8C2F1B' },
   bet_payout:         { icon: 'arrow-down-outline',   color: colors.success },
   bet_refund:         { icon: 'refresh-circle-outline',color: colors.warning },
 };
@@ -34,7 +39,7 @@ function TransactionItem({ tx }: { tx: Transaction }) {
 
   return (
     <View style={styles.txItem}>
-      <View style={[styles.txIconBox, { backgroundColor: meta.color + '20' }]}>
+      <View style={[styles.txIconBox, { backgroundColor: meta.color + '15' }]}>
         <Ionicons name={meta.icon as any} size={20} color={meta.color} />
       </View>
       <View style={styles.txInfo}>
@@ -43,7 +48,7 @@ function TransactionItem({ tx }: { tx: Transaction }) {
         <Text style={styles.txDate}>{new Date(tx.createdAt).toLocaleString('vi-VN')}</Text>
       </View>
       <View style={styles.txRight}>
-        <Text style={[styles.txAmount, { color: isPositive ? colors.success : colors.danger }]}>
+        <Text style={[styles.txAmount, { color: isPositive ? colors.success : '#8C2F1B' }]}>
           {isPositive ? '+' : ''}{tx.amount}
         </Text>
         <Text style={styles.txBalance}>Còn: {tx.balanceAfter}</Text>
@@ -53,6 +58,7 @@ function TransactionItem({ tx }: { tx: Transaction }) {
 }
 
 export function WalletScreen() {
+  const navigation = useNavigation<NavigationProp>();
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,7 +85,7 @@ export function WalletScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.center}><ActivityIndicator size="large" color={colors.accent} /></View>
+        <View style={styles.center}><ActivityIndicator size="large" color={colors.primary} /></View>
       </SafeAreaView>
     );
   }
@@ -89,7 +95,7 @@ export function WalletScreen() {
       <FlatList
         data={transactions}
         keyExtractor={(item) => item._id}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.accent} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.primary} />}
         ListHeaderComponent={
           <>
             <Text style={styles.pageTitle}>💰 Ví Của Tôi</Text>
@@ -99,19 +105,20 @@ export function WalletScreen() {
               <Text style={styles.balanceLabel}>Số Dư Hiện Tại</Text>
               <Text style={styles.balanceAmount}>{wallet?.balance?.toLocaleString() ?? '0'}</Text>
               <Text style={styles.balanceCurrency}>COINS</Text>
+              
+              <TouchableOpacity
+                style={styles.depositBtn}
+                onPress={() => navigation.navigate('Deposit')}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="add-circle" size={20} color="#FFFFFF" />
+                <Text style={styles.depositBtnText}>Nạp Thêm Xu</Text>
+              </TouchableOpacity>
+
               <View style={styles.balanceRow}>
                 <Ionicons name="shield-checkmark-outline" size={14} color={colors.success} />
                 <Text style={styles.balanceSafe}>Ví được bảo mật</Text>
               </View>
-            </View>
-
-            {/* Info note about topup */}
-            <View style={styles.topupNote}>
-              <Ionicons name="information-circle-outline" size={18} color={colors.accent} />
-              <Text style={styles.topupNoteText}>
-                Để nạp tiền, vui lòng truy cập web tại{' '}
-                <Text style={{ color: colors.accent }}>RaceTrack Pro</Text>
-              </Text>
             </View>
 
             <Text style={styles.txTitle}>Lịch Sử Giao Dịch</Text>
@@ -138,21 +145,22 @@ const styles = StyleSheet.create({
   },
   balanceCard: {
     margin: spacing.lg, padding: spacing.xl, borderRadius: radius.xl,
-    backgroundColor: colors.accentDim, borderWidth: 1, borderColor: colors.accentBorder,
-    alignItems: 'center', gap: 4,
+    backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: colors.border,
+    alignItems: 'center', gap: 6,
+    // Add simple shadow for premium card look
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
   },
   balanceLabel: { fontSize: fontSize.sm, color: colors.textMuted, fontWeight: fontWeight.medium },
-  balanceAmount: { fontSize: 48, fontWeight: fontWeight.extrabold, color: colors.accent },
-  balanceCurrency: { fontSize: fontSize.sm, color: colors.accent + '80', letterSpacing: 3, fontWeight: fontWeight.bold },
-  balanceRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.sm },
-  balanceSafe: { fontSize: fontSize.xs, color: colors.success },
-  topupNote: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm,
-    marginHorizontal: spacing.lg, marginBottom: spacing.lg,
-    backgroundColor: colors.accentDim, borderRadius: radius.md,
-    padding: spacing.md, borderWidth: 1, borderColor: colors.accentBorder,
+  balanceAmount: { fontSize: 48, fontWeight: fontWeight.extrabold, color: colors.primary },
+  balanceCurrency: { fontSize: fontSize.sm, color: colors.textSubtle, letterSpacing: 3, fontWeight: fontWeight.bold, marginBottom: spacing.sm },
+  depositBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
+    backgroundColor: colors.primary, paddingHorizontal: spacing.lg, paddingVertical: 12,
+    borderRadius: radius.md, width: '100%', marginBottom: spacing.sm,
   },
-  topupNoteText: { flex: 1, fontSize: fontSize.xs, color: colors.textMuted, lineHeight: 18 },
+  depositBtnText: { color: '#FFFFFF', fontSize: fontSize.md, fontWeight: fontWeight.bold },
+  balanceRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.xs },
+  balanceSafe: { fontSize: fontSize.xs, color: colors.success },
   txTitle: {
     fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.text,
     paddingHorizontal: spacing.lg, marginBottom: spacing.sm,
