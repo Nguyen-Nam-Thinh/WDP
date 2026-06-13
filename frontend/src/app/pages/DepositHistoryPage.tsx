@@ -34,16 +34,16 @@ const methodIcons: Record<string, any> = {
 };
 
 const methodColors: Record<string, string> = {
-  bank:    'text-blue-400',
-  card:    'text-purple-400',
-  ewallet: 'text-pink-400',
-  crypto:  'text-amber-400',
+  bank:    'text-primary',
+  card:    'text-secondary',
+  ewallet: 'text-secondary',
+  crypto:  'text-[#8F7318]',
 };
 
 const statusConfig: Record<string, { label: string; bg: string; color: string; dotColor: string }> = {
-  success: { label: 'Thành Công',   bg: 'rgba(16,185,129,0.15)',  color: '#10b981', dotColor: 'bg-emerald-400' },
-  pending: { label: 'Đang Xử Lý',  bg: 'rgba(245,158,11,0.15)', color: '#f59e0b', dotColor: 'bg-amber-400' },
-  failed:  { label: 'Thất Bại',    bg: 'rgba(239,68,68,0.15)',   color: '#ef4444', dotColor: 'bg-red-400' },
+  success: { label: 'Thành Công',   bg: 'rgba(31,61,43,0.12)',  color: '#1F3D2B', dotColor: 'bg-primary' },
+  pending: { label: 'Đang Xử Lý',  bg: 'rgba(201,162,39,0.15)', color: '#8F7318', dotColor: 'bg-gold' },
+  failed:  { label: 'Thất Bại',    bg: 'rgba(180,35,24,0.12)',   color: '#B42318', dotColor: 'bg-[#B42318]' },
 };
 
 export function DepositHistoryPage() {
@@ -67,27 +67,27 @@ export function DepositHistoryPage() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-950 font-sans">
+    <div className="min-h-screen bg-background font-sans">
       {/* Top Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/90 backdrop-blur-lg border-b border-white/5">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-lg border-b border-border">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-4">
           <button
             onClick={() => navigate('/spectator')}
-            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors group"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group"
           >
-            <div className="w-8 h-8 rounded-lg bg-white/5 group-hover:bg-white/10 flex items-center justify-center transition-colors">
+            <div className="w-8 h-8 rounded-lg bg-card group-hover:bg-muted flex items-center justify-center transition-colors">
               <ArrowLeft className="w-4 h-4" />
             </div>
             <span className="text-sm font-medium">Quay Lại</span>
           </button>
-          <div className="w-px h-5 bg-white/10" />
+          <div className="w-px h-5 bg-muted" />
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/30">
-              <DollarSign className="w-5 h-5 text-white" />
+            <div className="w-9 h-9 bg-gradient-to-br from-[#1F3D2B] to-[#172D20] rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/30">
+              <DollarSign className="w-5 h-5 text-foreground"/>
             </div>
             <div>
-              <div className="text-white font-bold leading-none">Lịch Sử Nạp Tiền</div>
-              <div className="text-slate-400 text-xs mt-0.5">Alex Morgan · alex.morgan@email.com</div>
+              <div className="text-foreground font-serif font-bold leading-none text-foreground">Lịch Sử Nạp Tiền</div>
+              <div className="text-muted-foreground text-xs mt-0.5">Alex Morgan · alex.morgan@email.com</div>
             </div>
           </div>
         </div>
@@ -97,18 +97,18 @@ export function DepositHistoryPage() {
         {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
-            { label: 'Tổng Đã Nạp',    value: `$${totalDeposited.toLocaleString()}`, icon: Coins,      color: 'from-[#FFDE42] to-amber-600',  sub: 'giao dịch thành công' },
-            { label: 'Số Lần Nạp',     value: depositHistory.length,                  icon: TrendingUp,  color: 'from-blue-500 to-blue-700',    sub: 'tổng giao dịch' },
-            { label: 'Đang Xử Lý',     value: pendingCount,                            icon: Clock,       color: 'from-amber-500 to-amber-700',  sub: 'chờ xác nhận' },
-            { label: 'Thất Bại',       value: failedCount,                             icon: AlertCircle, color: 'from-red-500 to-red-700',      sub: 'cần kiểm tra' },
+            { label: 'Tổng Đã Nạp',    value: `$${totalDeposited.toLocaleString()}`, icon: Coins,      color: 'from-[#C9A227] to-[#8F7318]',  sub: 'giao dịch thành công' },
+            { label: 'Số Lần Nạp',     value: depositHistory.length,                  icon: TrendingUp,  color: 'from-[#8C2F1B] to-[#6B2415]',    sub: 'tổng giao dịch' },
+            { label: 'Đang Xử Lý',     value: pendingCount,                            icon: Clock,       color: 'from-[#C9A227] to-[#8F7318]',  sub: 'chờ xác nhận' },
+            { label: 'Thất Bại',       value: failedCount,                             icon: AlertCircle, color: 'from-[#B42318] to-[#8C2F1B]',      sub: 'cần kiểm tra' },
           ].map((s, i) => (
-            <div key={i} className="bg-white/5 border border-white/5 rounded-2xl p-5 hover:-translate-y-1 transition-all duration-200">
+            <div key={i} className="bg-card border border-border rounded-2xl p-5 hover:-translate-y-1 transition-all duration-200">
               <div className={`w-10 h-10 bg-gradient-to-br ${s.color} rounded-xl flex items-center justify-center mb-3 shadow-lg`}>
-                <s.icon className="w-5 h-5 text-white" />
+                <s.icon className="w-5 h-5 text-foreground"/>
               </div>
-              <div className="text-2xl font-bold text-white mb-0.5">{s.value}</div>
-              <div className="text-sm text-slate-400 font-medium">{s.label}</div>
-              <div className="text-xs text-slate-600 mt-0.5">{s.sub}</div>
+              <div className="font-serif text-2xl font-bold text-foreground mb-0.5">{s.value}</div>
+              <div className="text-sm text-muted-foreground font-medium">{s.label}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">{s.sub}</div>
             </div>
           ))}
         </div>
@@ -116,13 +116,13 @@ export function DepositHistoryPage() {
         {/* Toolbar */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Tìm theo mã giao dịch, phương thức, ghi chú..."
-              className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#FFDE42]/50 focus:ring-1 focus:ring-[#FFDE42]/20 transition-all"
+              className="w-full bg-card border border-border rounded-xl pl-10 pr-4 py-2.5 text-foreground placeholder-muted-foreground text-sm focus:outline-none focus:border-[#C9A227]/50 focus:ring-1 focus:ring-[#C9A227]/20 transition-all"
             />
           </div>
 
@@ -130,17 +130,17 @@ export function DepositHistoryPage() {
           <div className="relative">
             <button
               onClick={() => setFilterOpen(filterOpen === 'status' ? false : 'status')}
-              className="flex items-center gap-2 bg-white/5 border border-white/10 hover:border-white/20 rounded-xl px-4 py-2.5 text-slate-300 text-sm font-medium transition-all"
+              className="flex items-center gap-2 bg-card border border-border hover:border-border rounded-xl px-4 py-2.5 text-foreground text-sm font-medium transition-all"
             >
               <Filter className="w-4 h-4" />
               {filterStatus === 'all' ? 'Trạng Thái' : statusConfig[filterStatus]?.label}
               <ChevronDown className="w-4 h-4" />
             </button>
             {filterOpen === 'status' && (
-              <div className="absolute right-0 top-full mt-1 bg-slate-900 border border-white/10 rounded-xl shadow-xl z-10 overflow-hidden min-w-36">
+              <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-xl shadow-xl z-10 overflow-hidden min-w-36">
                 {[{ v: 'all', l: 'Tất Cả' }, { v: 'success', l: 'Thành Công' }, { v: 'pending', l: 'Đang Xử Lý' }, { v: 'failed', l: 'Thất Bại' }].map(opt => (
                   <button key={opt.v} onClick={() => { setFilterStatus(opt.v); setFilterOpen(false); }}
-                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${filterStatus === opt.v ? 'bg-[#FFDE42]/10 text-[#FFDE42]' : 'text-slate-300 hover:bg-white/5'}`}>
+                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${filterStatus === opt.v ? 'bg-[#C9A227]/10 text-[#C9A227]' : 'text-foreground hover:bg-muted'}`}>
                     {opt.l}
                   </button>
                 ))}
@@ -152,16 +152,16 @@ export function DepositHistoryPage() {
           <div className="relative">
             <button
               onClick={() => setFilterOpen(filterOpen === 'method' ? false : 'method')}
-              className="flex items-center gap-2 bg-white/5 border border-white/10 hover:border-white/20 rounded-xl px-4 py-2.5 text-slate-300 text-sm font-medium transition-all"
+              className="flex items-center gap-2 bg-card border border-border hover:border-border rounded-xl px-4 py-2.5 text-foreground text-sm font-medium transition-all"
             >
               Phương Thức
               <ChevronDown className="w-4 h-4" />
             </button>
             {filterOpen === 'method' && (
-              <div className="absolute right-0 top-full mt-1 bg-slate-900 border border-white/10 rounded-xl shadow-xl z-10 overflow-hidden min-w-40">
+              <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-xl shadow-xl z-10 overflow-hidden min-w-40">
                 {[{ v: 'all', l: 'Tất Cả' }, { v: 'bank', l: 'Ngân Hàng' }, { v: 'card', l: 'Thẻ Tín Dụng' }, { v: 'ewallet', l: 'Ví Điện Tử' }, { v: 'crypto', l: 'Crypto' }].map(opt => (
                   <button key={opt.v} onClick={() => { setFilterMethod(opt.v); setFilterOpen(false); }}
-                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${filterMethod === opt.v ? 'bg-[#FFDE42]/10 text-[#FFDE42]' : 'text-slate-300 hover:bg-white/5'}`}>
+                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${filterMethod === opt.v ? 'bg-[#C9A227]/10 text-[#C9A227]' : 'text-foreground hover:bg-muted'}`}>
                     {opt.l}
                   </button>
                 ))}
@@ -169,20 +169,20 @@ export function DepositHistoryPage() {
             )}
           </div>
 
-          <button className="flex items-center gap-2 bg-white/5 border border-white/10 hover:border-white/20 rounded-xl px-4 py-2.5 text-slate-300 text-sm font-medium transition-all">
+          <button className="flex items-center gap-2 bg-card border border-border hover:border-border rounded-xl px-4 py-2.5 text-foreground text-sm font-medium transition-all">
             <Download className="w-4 h-4" />
             Xuất CSV
           </button>
         </div>
 
         {/* Table */}
-        <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden">
+        <div className="bg-card backdrop-blur-md border border-border rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-slate-900/60 border-b border-white/5">
+              <thead className="bg-muted/50 border-b border-border">
                 <tr>
                   {['Mã GD', 'Phương Thức', 'Số Tiền', 'Ghi Chú', 'Trạng Thái', 'Thời Gian'].map(h => (
-                    <th key={h} className="text-left px-5 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wide whitespace-nowrap">{h}</th>
+                    <th key={h} className="text-left px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -190,8 +190,8 @@ export function DepositHistoryPage() {
                 {filtered.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-5 py-16 text-center">
-                      <DollarSign className="w-12 h-12 text-slate-700 mx-auto mb-3" />
-                      <div className="text-slate-500 font-medium">Không tìm thấy kết quả</div>
+                      <DollarSign className="w-12 h-12 text-muted-foreground/60 mx-auto mb-3" />
+                      <div className="text-muted-foreground font-medium">Không tìm thấy kết quả</div>
                     </td>
                   </tr>
                 ) : filtered.map(dep => {
@@ -199,29 +199,29 @@ export function DepositHistoryPage() {
                   const Icon = methodIcons[dep.method];
                   const clr  = methodColors[dep.method];
                   return (
-                    <tr key={dep.id} className="border-t border-white/5 hover:bg-white/5 transition-colors">
+                    <tr key={dep.id} className="border-t border-border hover:bg-muted transition-colors">
                       <td className="px-5 py-4">
-                        <span className="text-slate-400 font-mono text-xs">{dep.reference}</span>
+                        <span className="text-muted-foreground font-mono text-xs">{dep.reference}</span>
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-2.5">
-                          <div className={`w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0`}>
+                          <div className={`w-8 h-8 rounded-lg bg-card flex items-center justify-center flex-shrink-0`}>
                             <Icon className={`w-4 h-4 ${clr}`} />
                           </div>
-                          <span className="text-white text-sm font-medium">{dep.methodLabel}</span>
+                          <span className="text-foreground text-sm font-medium">{dep.methodLabel}</span>
                         </div>
                       </td>
                       <td className="px-5 py-4">
-                        <span className="text-[#FFDE42] font-bold text-sm">${dep.amount.toLocaleString()}</span>
+                        <span className="text-[#C9A227] font-bold text-sm">${dep.amount.toLocaleString()}</span>
                       </td>
-                      <td className="px-5 py-4 text-slate-400 text-sm">{dep.note}</td>
+                      <td className="px-5 py-4 text-muted-foreground text-sm">{dep.note}</td>
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg w-fit" style={{ backgroundColor: cfg.bg }}>
                           <div className={`w-1.5 h-1.5 rounded-full ${cfg.dotColor}`} />
                           <span className="text-xs font-semibold" style={{ color: cfg.color }}>{cfg.label}</span>
                         </div>
                       </td>
-                      <td className="px-5 py-4 text-slate-500 text-xs whitespace-nowrap">{dep.date}</td>
+                      <td className="px-5 py-4 text-muted-foreground text-xs whitespace-nowrap">{dep.date}</td>
                     </tr>
                   );
                 })}
@@ -229,13 +229,13 @@ export function DepositHistoryPage() {
             </table>
           </div>
           {filtered.length > 0 && (
-            <div className="px-5 py-3 border-t border-white/5 flex items-center justify-between">
-              <span className="text-slate-500 text-sm">Hiển thị {filtered.length} / {depositHistory.length} giao dịch</span>
+            <div className="px-5 py-3 border-t border-border flex items-center justify-between">
+              <span className="text-muted-foreground text-sm">Hiển thị {filtered.length} / {depositHistory.length} giao dịch</span>
               <div className="flex items-center gap-4">
                 {Object.entries(statusConfig).map(([k, v]) => (
                   <div key={k} className="flex items-center gap-1.5">
                     <div className={`w-2 h-2 rounded-full ${v.dotColor}`} />
-                    <span className="text-xs text-slate-400">{v.label}: {depositHistory.filter(d => d.status === k).length}</span>
+                    <span className="text-xs text-muted-foreground">{v.label}: {depositHistory.filter(d => d.status === k).length}</span>
                   </div>
                 ))}
               </div>
