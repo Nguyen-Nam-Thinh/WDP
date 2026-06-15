@@ -129,5 +129,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent, borderRadius: radius.md,
     height: 52, alignItems: 'center', justifyContent: 'center', marginTop: 8,
   },
-  btnText: { fontSize: fontSize.md, fontWeight: fontWeight.bold, color: '#000' },
+  btnText: { fontSize: fontSize.md, fontWeight: fontWeight.bold, color: '#FFFFFF' },
 });

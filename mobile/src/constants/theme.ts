@@ -1,26 +1,29 @@
 export const colors = {
-  bg: '#0a0a0a',
-  bgSecondary: '#111111',
-  surface: 'rgba(255,255,255,0.05)',
-  surfaceHover: 'rgba(255,255,255,0.08)',
-  border: 'rgba(255,255,255,0.08)',
-  borderHover: 'rgba(255,255,255,0.15)',
-  accent: '#FFDE42',
-  accentDim: 'rgba(255,222,66,0.15)',
-  accentBorder: 'rgba(255,222,66,0.3)',
-  text: '#FFFFFF',
-  textMuted: '#94a3b8',
-  textSubtle: '#64748b',
-  success: '#10b981',
-  successDim: 'rgba(16,185,129,0.15)',
-  danger: '#ef4444',
-  dangerDim: 'rgba(239,68,68,0.15)',
-  warning: '#f59e0b',
-  warningDim: 'rgba(245,158,11,0.15)',
-  purple: '#a855f7',
-  purpleDim: 'rgba(168,85,247,0.15)',
-  blue: '#3b82f6',
-  blueDim: 'rgba(59,130,246,0.15)',
+  bg: '#F7F3EA',              // Cream background
+  bgSecondary: '#EDE7D8',     // Muted secondary background
+  surface: '#FFFFFF',         // White card surfaces
+  surfaceHover: '#F4EFE2',    // Slightly darker surface on tap
+  border: '#E3DCCB',          // Warm light border
+  borderHover: '#C9C2B0',     // Darker border on focus
+  primary: '#1F3D2B',         // Racing green
+  secondary: '#8C2F1B',       // Burgundy
+  accent: '#1F3D2B',          // brand action color: Racing Green
+  accentDim: '#E9E5D9',       // very light tint
+  accentBorder: '#D2C9B5',    // warm border
+  text: '#23201A',            // charcoal/dark brown text
+  textMuted: '#7A7468',       // muted gray-brown
+  textSubtle: '#9A937F',      // light gray-brown
+  success: '#10b981',         // green
+  successDim: 'rgba(16,185,129,0.1)',
+  danger: '#B42318',          // red
+  dangerDim: 'rgba(180,35,24,0.1)',
+  warning: '#f59e0b',         // orange
+  warningDim: 'rgba(245,158,11,0.1)',
+  purple: '#8C2F1B',          // Burgundy
+  purpleDim: 'rgba(140,47,27,0.1)',
+  blue: '#1F3D2B',            // Racing green
+  blueDim: 'rgba(31,61,43,0.1)',
+  gold: '#C9A227',            // Gold
 };
 
 export const spacing = {

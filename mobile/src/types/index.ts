@@ -43,8 +43,9 @@ export interface Race {
 }
 
 export interface RaceHorse {
-  _id: string;
-  horseId: {
+  _id?: string;
+  registrationId?: string;
+  horseId: string | {
     _id: string;
     name: string;
     breed?: string;
@@ -55,12 +56,21 @@ export interface RaceHorse {
     winCount?: number;
     raceCount?: number;
   };
-  jockeyId?: {
+  horseName?: string;
+  breed?: string;
+  gender?: string;
+  currentGrade?: RaceGrade;
+  totalPoints?: number;
+  winRate?: number;
+  imageUrl?: string;
+  jockeyId?: string | null | {
     _id: string;
     fullName: string;
     avatarUrl?: string;
   };
-  status: string;
+  jockeyName?: string | null;
+  jockeyExperience?: number;
+  status?: string;
 }
 
 export interface RaceListResponse {
