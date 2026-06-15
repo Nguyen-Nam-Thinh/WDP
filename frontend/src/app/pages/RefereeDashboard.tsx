@@ -142,7 +142,7 @@ export function RefereeDashboard() {
     }
   }, [token]);
 
-  useEffect(() => { loadAssignedRaces(); }, [loadAssignedRaces]);
+  useEffect(() => { loadAssignedRaces(); loadReports(); }, [loadAssignedRaces, loadReports]);
   useEffect(() => { if (activeTab === 'reports') loadReports(); }, [activeTab, loadReports]);
 
   const initChecksFromRegs = (regs: Registration[]) => {
@@ -284,18 +284,146 @@ export function RefereeDashboard() {
   return (
     <AppShell roleLabel="REFEREE" nav={REFEREE_NAV}>
       <div className="max-w-7xl mx-auto">
-        {/* Stats — only on overview */}
+        {/* Overview */}
         {activeTab === 'overview' && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            {stats.map((s, i) => (
-              <div key={i} className="bg-card backdrop-blur-md border border-border rounded-2xl p-5 hover:-translate-y-1 transition-transform">
-                <div className={`w-10 h-10 bg-gradient-to-br ${s.color} rounded-lg flex items-center justify-center mb-3 shadow-lg`}>
-                  <s.icon className="w-5 h-5 text-white" />
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Stat cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              {stats.map((s, i) => (
+                <div key={i} className="bg-card border border-border p-5 hover:-translate-y-0.5 transition-transform">
+                  <div className={`w-10 h-10 bg-gradient-to-br ${s.color} flex items-center justify-center mb-3 shadow-sm`}>
+                    <s.icon className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="font-serif text-2xl font-bold text-foreground mb-1">{s.value}</div>
+                  <div className="text-sm text-muted-foreground font-medium">{s.label}</div>
                 </div>
-                <div className="font-serif text-2xl font-bold text-foreground mb-1">{s.value}</div>
-                <div className="text-sm text-slate-400 font-medium">{s.label}</div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              {/* Races needing inspection */}
+              <div className="bg-card border border-border p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-serif text-base font-bold text-foreground">Cuộc Đua Cần Kiểm Tra</h3>
+                  <span className="text-xs text-muted-foreground">{assignedRaces.filter(r => r.status === 'pre_check').length} chờ kiểm tra</span>
+                </div>
+                {loadingRaces ? (
+                  <div className="flex items-center justify-center h-[140px] text-muted-foreground text-sm">
+                    <div className="w-5 h-5 border-2 border-[#C9A227]/30 border-t-[#C9A227] rounded-full animate-spin mr-2" />
+                    Đang tải...
+                  </div>
+                ) : assignedRaces.filter(r => r.status === 'pre_check').length > 0 ? (
+                  <div className="space-y-2">
+                    {assignedRaces.filter(r => r.status === 'pre_check').slice(0, 4).map((race, i) => (
+                      <div key={i} className="flex items-center gap-3 p-3 border border-[#C9A227]/30 bg-[#C9A227]/5 hover:bg-[#C9A227]/10 transition-colors">
+                        <div className="w-8 h-8 bg-[#C9A227]/20 border border-[#C9A227]/40 flex items-center justify-center flex-shrink-0">
+                          <ClipboardCheck className="w-4 h-4 text-[#C9A227]" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold text-foreground truncate">{race.name}</div>
+                          <div className="text-xs text-muted-foreground">{race.grade} · {new Date(race.scheduledTime).toLocaleDateString('vi-VN')}</div>
+                        </div>
+                        <span className="text-xs font-bold text-[#8F7318] px-2 py-0.5 bg-[#C9A227]/10 border border-[#C9A227]/30 flex-shrink-0">Chờ KT</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-[140px] text-muted-foreground text-sm gap-2">
+                    <CheckCircle className="w-8 h-8 opacity-30" />
+                    Không có cuộc đua nào cần kiểm tra
+                  </div>
+                )}
               </div>
-            ))}
+
+              {/* Recent reports */}
+              <div className="bg-card border border-border p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-serif text-base font-bold text-foreground">Báo Cáo Gần Đây</h3>
+                  <span className="text-xs text-muted-foreground">{reports.length} báo cáo</span>
+                </div>
+                {loadingReports ? (
+                  <div className="flex items-center justify-center h-[140px] text-muted-foreground text-sm">
+                    <div className="w-5 h-5 border-2 border-[#C9A227]/30 border-t-[#C9A227] rounded-full animate-spin mr-2" />
+                    Đang tải...
+                  </div>
+                ) : reports.length > 0 ? (
+                  <div className="space-y-2">
+                    {reports.slice(0, 4).map((report, i) => {
+                      const isDraft = report.status === 'draft';
+                      return (
+                        <div key={i} className="flex items-center gap-3 p-3 border border-border hover:bg-muted/40 transition-colors">
+                          <div className={`w-8 h-8 flex items-center justify-center flex-shrink-0 ${isDraft ? 'bg-[#C9A227]/10 border border-[#C9A227]/30' : 'bg-[#1F3D2B]/10 border border-[#1F3D2B]/30'}`}>
+                            <FileText className={`w-4 h-4 ${isDraft ? 'text-[#C9A227]' : 'text-[#1F3D2B]'}`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-foreground truncate">{(report.raceId as any)?.name ?? '—'}</div>
+                            <div className="text-xs text-muted-foreground">{report.incidents.length} sự cố · {new Date(report.createdAt).toLocaleDateString('vi-VN')}</div>
+                          </div>
+                          <span className={`text-xs font-bold px-2 py-0.5 flex-shrink-0 ${isDraft ? 'text-[#8F7318] bg-[#C9A227]/10 border border-[#C9A227]/30' : 'text-[#1F3D2B] bg-[#1F3D2B]/10 border border-[#1F3D2B]/30'}`}>
+                            {isDraft ? 'Nháp' : 'Đã nộp'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-[140px] text-muted-foreground text-sm gap-2">
+                    <FileText className="w-8 h-8 opacity-30" />
+                    Chưa có báo cáo nào
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Quick actions + upcoming races */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="bg-card border border-border p-5">
+                <h3 className="font-serif text-base font-bold text-foreground mb-4">Lịch Race Sắp Tới</h3>
+                {assignedRaces.filter(r => ['open', 'closed', 'pre_check'].includes(r.status)).length > 0 ? (
+                  <div className="space-y-2">
+                    {assignedRaces.filter(r => ['open', 'closed', 'pre_check'].includes(r.status)).slice(0, 3).map((race, i) => (
+                      <div key={i} className="flex items-start gap-3 p-2.5 border border-border hover:bg-muted/40 transition-colors">
+                        <div className="w-7 h-7 bg-[#1F3D2B]/10 border border-[#1F3D2B]/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Calendar className="w-3.5 h-3.5 text-[#1F3D2B]" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-foreground truncate">{race.name}</div>
+                          <div className="text-xs text-muted-foreground">{new Date(race.scheduledTime).toLocaleDateString('vi-VN')}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-[100px] text-muted-foreground text-sm gap-2">
+                    <Calendar className="w-7 h-7 opacity-30" />
+                    Không có lịch sắp tới
+                  </div>
+                )}
+              </div>
+
+              <div className="lg:col-span-2 bg-card border border-border p-5">
+                <h3 className="font-serif text-base font-bold text-foreground mb-4">Thao Tác Nhanh</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: 'Kiểm Tra Ngựa', icon: ClipboardCheck, to: '/referee/pre-check', badge: (assignedRaces.filter(r => r.status === 'pre_check').length || null) as number | null },
+                    { label: 'Xem Báo Cáo', icon: FileText, to: '/referee/reports', badge: null as number | null },
+                    { label: 'Cuộc Đua Được Phân Công', icon: Flag, to: '/referee/pre-check', badge: null as number | null },
+                    { label: 'Ghi Nhận Sự Cố', icon: AlertTriangle, to: '/referee/reports', badge: (reports.filter(r => r.status === 'draft').length || null) as number | null },
+                  ].map((action, i) => (
+                    <button key={i} onClick={() => navigate(action.to)}
+                      className="flex items-center gap-3 p-4 border border-border hover:border-[#C9A227]/40 hover:bg-muted/40 transition-all text-left group">
+                      <div className="w-9 h-9 bg-[#1F3D2B]/10 border border-[#1F3D2B]/20 flex items-center justify-center group-hover:bg-[#1F3D2B]/20 transition-colors flex-shrink-0">
+                        <action.icon className="w-4 h-4 text-[#1F3D2B]" />
+                      </div>
+                      <span className="text-sm font-medium text-foreground flex-1">{action.label}</span>
+                      {action.badge ? (
+                        <span className="text-xs font-bold text-white bg-[#8C2F1B] px-1.5 py-0.5">{action.badge}</span>
+                      ) : null}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

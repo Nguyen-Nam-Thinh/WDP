@@ -56,7 +56,7 @@ import { Home } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useWallet } from "../hooks/useWallet";
 import { horseApi, Horse } from "../api/horse";
-import { userApi, JockeyListItem, type Transaction, type OwnerRaceResult } from "../api/user";
+import { userApi, JockeyListItem, type Transaction, type OwnerRaceResult, type OwnerOverview, type MonthlyStatPoint } from "../api/user";
 import { tournamentApi, Tournament } from "../api/tournament";
 import { raceApi, Race } from "../api/race";
 import { invitationApi } from "../api/invitation";
@@ -95,6 +95,29 @@ export function HorseOwnerDashboard() {
     : pathname === "/horse-owner/horses" ? "horses"
     : "overview";
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // ── Overview real data ──
+  const [overview, setOverview] = useState<OwnerOverview | null>(null);
+  const [monthlyStats, setMonthlyStats] = useState<MonthlyStatPoint[]>([]);
+  const [loadingOverview, setLoadingOverview] = useState(false);
+
+  const loadOverviewData = async () => {
+    if (!token) return;
+    setLoadingOverview(true);
+    try {
+      const [ov, ms] = await Promise.all([
+        userApi.getOverviewStats(token),
+        userApi.getMonthlyStats(token),
+      ]);
+      setOverview(ov as unknown as OwnerOverview);
+      setMonthlyStats(ms.monthly);
+    } catch { /* silently ignore */ }
+    finally { setLoadingOverview(false); }
+  };
+
+  useEffect(() => {
+    if (token && activeTab === 'overview') loadOverviewData();
+  }, [token, activeTab]);
 
   // Dialogs
   const [addHorseOpen, setAddHorseOpen] = useState(false);
@@ -540,27 +563,139 @@ export function HorseOwnerDashboard() {
   return (
     <AppShell roleLabel="HORSE OWNER" nav={OWNER_NAV}>
       <div className="max-w-7xl mx-auto">
-        {/* Stats Cards — only on overview */}
+        {/* Overview */}
         {activeTab === "overview" && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            {stats.map((stat, idx) => (
-              <div
-                key={idx}
-                className="bg-card backdrop-blur-md border border-border rounded-2xl p-5 hover:-translate-y-1 transition-transform"
-              >
-                <div
-                  className={`w-10 h-10 bg-gradient-to-br ${stat.color} rounded-lg flex items-center justify-center mb-3 shadow-lg`}
-                >
-                  <stat.icon className="w-5 h-5 text-white" />
+          <div className="space-y-6">
+            {loadingOverview ? (
+              <div className="flex justify-center py-12"><Loader2 className="w-7 h-7 animate-spin text-primary" /></div>
+            ) : (
+              <>
+                {/* Stat cards — real data */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {[
+                    { label: 'Tổng Số Ngựa', value: String(overview?.totalHorses ?? horses.length), icon: Sparkles, accent: 'bg-primary', iconCls: 'bg-primary text-primary-foreground' },
+                    { label: 'Tổng Thắng', value: String(overview?.totalWins ?? 0), icon: Trophy, accent: 'bg-gold', iconCls: 'bg-gold text-foreground' },
+                    { label: 'Tổng Cuộc Đua', value: String(overview?.totalRaces ?? 0), icon: Activity, accent: 'bg-[#7A7468]', iconCls: 'bg-[#7A7468] text-white' },
+                    { label: 'Số Dư Ví', value: walletBalance != null ? `${walletBalance.toLocaleString()} xu` : '—', icon: Wallet, accent: 'bg-secondary', iconCls: 'bg-secondary text-white' },
+                  ].map((s, i) => (
+                    <div key={i} className="relative bg-card border border-border p-5 hover:border-primary transition-colors flex flex-col overflow-hidden">
+                      <div className={`w-10 h-10 ${s.iconCls} flex items-center justify-center shrink-0 mb-3`}>
+                        <s.icon className="w-5 h-5" />
+                      </div>
+                      <div className="font-serif text-2xl font-bold text-foreground mb-1 tabular-nums">{s.value}</div>
+                      <div className="text-xs text-muted-foreground font-medium uppercase tracking-wide mt-auto">{s.label}</div>
+                      <div className={`absolute bottom-0 left-0 right-0 h-0.5 ${s.accent}`} />
+                    </div>
+                  ))}
                 </div>
-                <div className="font-serif text-2xl font-bold text-foreground mb-1">
-                  {stat.value}
+
+                <div className="grid lg:grid-cols-2 gap-6">
+                  {/* Monthly earnings chart */}
+                  <div className="bg-card border border-border p-6">
+                    <h3 className="font-serif text-lg font-bold text-foreground mb-1">Thu Nhập 6 Tháng</h3>
+                    <p className="text-xs text-muted-foreground mb-4">Tổng tiền thưởng từ các race</p>
+                    {monthlyStats.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={180}>
+                        <AreaChart data={monthlyStats} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                          <defs>
+                            <linearGradient id="earningsGrad" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#1F3D2B" stopOpacity={0.15} />
+                              <stop offset="95%" stopColor="#1F3D2B" stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#E3DCCB" vertical={false} />
+                          <XAxis dataKey="month" tick={{ fill: '#7A7468', fontSize: 11 }} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fill: '#7A7468', fontSize: 10 }} axisLine={false} tickLine={false} />
+                          <Tooltip contentStyle={{ background: '#fff', border: '1px solid #E3DCCB', borderRadius: 0, fontSize: 12 }}
+                            formatter={(v: any) => [`${Number(v).toLocaleString()} xu`, 'Thu nhập']} />
+                          <Area type="monotone" dataKey="earnings" stroke="#1F3D2B" strokeWidth={2} fill="url(#earningsGrad)" />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-[180px] flex items-center justify-center text-muted-foreground text-sm">Chưa có dữ liệu race</div>
+                    )}
+                  </div>
+
+                  {/* Recent results */}
+                  <div className="bg-card border border-border p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-serif text-lg font-bold text-foreground">Kết Quả Gần Đây</h3>
+                      <button type="button" onClick={() => navigate('/horse-owner/results')}
+                        className="text-xs text-primary hover:underline flex items-center gap-1">
+                        Xem tất cả <ChevronRight className="w-3 h-3" />
+                      </button>
+                    </div>
+                    {(overview?.recentResults ?? []).length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground text-sm">Chưa có kết quả race nào</div>
+                    ) : (
+                      <div className="space-y-3">
+                        {(overview?.recentResults ?? []).map((r: any, i: number) => {
+                          const posCls = r.position === 1 ? 'bg-gold text-foreground' : r.position === 2 ? 'bg-[#9A937F] text-white' : r.position === 3 ? 'bg-[#A85C32] text-white' : 'bg-muted text-muted-foreground';
+                          return (
+                            <div key={r._id ?? i} className="flex items-center gap-3 py-2.5 border-b border-border last:border-0">
+                              <div className={`w-9 h-9 shrink-0 flex items-center justify-center text-xs font-bold ${posCls}`}>
+                                #{r.position}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-foreground truncate">{r.raceId?.name ?? '—'}</div>
+                                <div className="text-xs text-muted-foreground">{r.horseId?.name ?? '—'} · {r.raceId?.grade}</div>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <div className="text-xs font-bold text-[#8F7318] tabular-nums">
+                                  {r.prizeAmount > 0 ? `+${r.prizeAmount.toLocaleString()}` : '—'}
+                                </div>
+                                <div className="text-xs text-muted-foreground">+{r.pointsEarned} pts</div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="text-sm text-slate-400 font-medium">
-                  {stat.label}
-                </div>
-              </div>
-            ))}
+
+                {/* Top horses */}
+                {horses.length > 0 && (
+                  <div className="bg-card border border-border p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-serif text-lg font-bold text-foreground">Top 3 Ngựa Thu Nhập Cao Nhất</h3>
+                      <button type="button" onClick={() => navigate('/horse-owner/horses')}
+                        className="text-xs text-primary hover:underline flex items-center gap-1">
+                        Quản lý <ChevronRight className="w-3 h-3" />
+                      </button>
+                    </div>
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {[...horses].sort((a, b) => (b.totalEarnings ?? 0) - (a.totalEarnings ?? 0)).slice(0, 3).map(h => {
+                        const wr = h.raceCount > 0 ? Math.round((h.winCount / h.raceCount) * 100) : 0;
+                        return (
+                          <div key={h._id} className="border border-border p-4 flex items-center gap-3 hover:border-primary transition-colors">
+                            <div className="w-12 h-12 shrink-0 bg-muted flex items-center justify-center overflow-hidden">
+                              {h.primaryImageUrl
+                                ? <img src={h.primaryImageUrl} alt={h.name} className="w-full h-full object-cover" />
+                                : <Sparkles className="w-5 h-5 text-muted-foreground" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-0.5">
+                                <span className="font-semibold text-sm text-foreground truncate">{h.name}</span>
+                                <span className="text-[10px] px-1.5 py-0.5 border font-bold uppercase"
+                                  style={{ borderColor: GRADE_COLORS[h.currentGrade], color: GRADE_COLORS[h.currentGrade] }}>
+                                  {h.currentGrade}
+                                </span>
+                              </div>
+                              <div className="text-xs text-muted-foreground">{h.winCount}W / {h.raceCount}R · {wr}%</div>
+                              <div className="w-full bg-muted h-1 mt-1">
+                                <div className="bg-primary h-1" style={{ width: `${wr}%` }} />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+              </>
+            )}
           </div>
         )}
 

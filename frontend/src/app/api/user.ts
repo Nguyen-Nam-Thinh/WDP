@@ -90,6 +90,51 @@ const authHeader = (token: string) => ({
   Authorization: `Bearer ${token}`,
 });
 
+export interface MonthlyStatPoint {
+  month: string;
+  earnings: number;
+  wins: number;
+  races: number;
+}
+
+export interface OwnerOverview {
+  totalHorses: number;
+  totalWins: number;
+  totalEarnings: number;
+  totalRaces: number;
+  walletBalance: number;
+  recentResults: OwnerRaceResult[];
+}
+
+export interface JockeyOverview {
+  pendingInvitations: number;
+  upcomingRaces: any[];
+  totalWins: number;
+  totalRaces: number;
+  walletBalance: number;
+  recentResults: any[];
+}
+
+export interface RefereeOverview {
+  assignedRacesCount: number;
+  pendingChecks: number;
+  totalIncidents: number;
+  submittedReports: number;
+  upcomingRaces: any[];
+  recentReports: any[];
+}
+
+export interface SpectatorOverview {
+  pendingBets: number;
+  wonBets: number;
+  lostBets: number;
+  totalBets: number;
+  totalWinnings: number;
+  winRate: number;
+  walletBalance: number;
+  recentBets: any[];
+}
+
 export const userApi = {
   getMe: async (token: string): Promise<UserProfile> => {
     const response = await fetchWithAuth(`${API_URL}/users/me`, {
@@ -167,6 +212,30 @@ export const userApi = {
       `${API_URL}/users/jockeys?page=${page}&limit=${limit}`,
       { headers: authHeader(token) },
     );
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(getApiErrorMessage((errorData as any).message));
+    }
+    const json = await response.json();
+    return json.data;
+  },
+
+  getOverviewStats: async (token: string): Promise<OwnerOverview & JockeyOverview & RefereeOverview & SpectatorOverview> => {
+    const response = await fetchWithAuth(`${API_URL}/users/me/overview`, {
+      headers: authHeader(token),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(getApiErrorMessage((errorData as any).message));
+    }
+    const json = await response.json();
+    return json.data;
+  },
+
+  getMonthlyStats: async (token: string): Promise<{ monthly: MonthlyStatPoint[] }> => {
+    const response = await fetchWithAuth(`${API_URL}/users/me/monthly-stats`, {
+      headers: authHeader(token),
+    });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(getApiErrorMessage((errorData as any).message));

@@ -85,7 +85,6 @@ export function LandingPage() {
             className="w-full h-full object-cover">
             <source src="/video/banner.mp4" type="video/mp4" />
           </video>
-          <div className="absolute inset-0 bg-gradient-to-b from-[#F7F3EA]/85 via-[#F7F3EA]/70 to-background" />
         </div>
 
         <div className="relative z-10 pt-24 pb-24 px-6">
@@ -104,8 +103,8 @@ export function LandingPage() {
               </motion.div>
 
               <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }} className="font-serif text-5xl md:text-7xl font-bold mb-8 text-foreground tracking-tight leading-[1.1]">
-                Trải Nghiệm <br />
-                <span className="italic text-secondary">Cảm Giác Đua Ngựa</span>
+                Quản Lý Giải Đua Ngựa <br />
+                <span className="italic text-secondary">Chuyên Nghiệp & Thông Minh</span>
               </motion.h1>
 
               <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="text-xl text-muted-foreground mb-10 leading-relaxed max-w-2xl">

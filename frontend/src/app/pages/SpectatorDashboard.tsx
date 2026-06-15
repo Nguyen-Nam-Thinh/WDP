@@ -19,15 +19,12 @@ import {
   AlertCircle,
   Wallet,
   History,
-  CreditCard,
-  Building2,
-  Smartphone,
-  Bitcoin,
-  Copy,
-  Shield,
-  Home
+  Home,
+  XCircle,
+  Clock,
 } from 'lucide-react';
 import { Button, Chip, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { AppShell, type NavItem } from '../components/layout/AppShell';
 import { useAuth } from '../hooks/useAuth';
 import { useWallet } from '../hooks/useWallet';
@@ -35,6 +32,7 @@ import { raceApi, type Race } from '../api/race';
 import { betApi, type Bet, type BetType, BET_MULTIPLIERS } from '../api/bet';
 import { tournamentApi, type Tournament } from '../api/tournament';
 import { rankingsApi, type HorseRanking, type JockeyRanking, type OwnerRanking, type SpectatorRanking } from '../api/rankings';
+import { userApi, type SpectatorOverview } from '../api/user';
 import { toast } from 'sonner';
 
 const SPECTATOR_NAV: NavItem[] = [
@@ -76,11 +74,29 @@ export function SpectatorDashboard() {
   const [tournamentDetailsModalOpen, setTournamentDetailsModalOpen] = useState(false);
   const [depositPortalOpen, setDepositPortalOpen] = useState(false);
 
+  // ── Overview stats ──
+  const [overview, setOverview] = useState<SpectatorOverview | null>(null);
+  const [loadingOverview, setLoadingOverview] = useState(false);
+
+  const loadOverview = async () => {
+    if (!token) return;
+    setLoadingOverview(true);
+    try {
+      const data = await userApi.getOverviewStats(token);
+      setOverview(data as unknown as SpectatorOverview);
+    } catch { /* silently ignore */ }
+    finally { setLoadingOverview(false); }
+  };
+
   useEffect(() => {
     if (!user) {
       navigate('/');
     }
   }, [user, navigate]);
+
+  useEffect(() => {
+    if (token && activeTab === 'overview') loadOverview();
+  }, [token, activeTab]);
 
   // ── Real tournaments ──
   const [tournamentsData, setTournamentsData] = useState<Tournament[]>([]);
@@ -342,19 +358,126 @@ export function SpectatorDashboard() {
       <div className="max-w-7xl mx-auto">
         {/* Stats Cards — only on overview */}
         {activeTab === 'overview' && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            {stats.map((stat, idx) => (
-              <div key={idx} className="relative bg-card border border-border p-5 hover:-translate-y-1 transition-all hover:border-primary flex flex-col overflow-hidden">
-                <div className="flex items-center justify-between mb-3">
-                  <div className={`w-10 h-10 ${stat.iconCls} flex items-center justify-center shrink-0`}>
-                    <stat.icon className="w-5 h-5" />
+          <div className="space-y-6">
+            {/* Stat cards */}
+            {loadingOverview ? (
+              <div className="flex justify-center py-10"><div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {[
+                    { label: 'Số Dư Ví', value: walletBalance ?? '...', icon: Coins, cls: 'bg-gold text-foreground', accent: 'bg-gold' },
+                    { label: 'Cược Đang Chờ', value: String(overview?.pendingBets ?? myBets.filter(b => b.status === 'pending').length), icon: Clock, cls: 'bg-primary text-primary-foreground', accent: 'bg-primary' },
+                    { label: 'Tỷ Lệ Thắng', value: overview ? `${overview.winRate}%` : (settledBets > 0 ? `${winRate}%` : '—'), icon: TrendingUp, cls: 'bg-secondary text-white', accent: 'bg-secondary' },
+                    { label: 'Tổng Tiền Thắng', value: overview ? (overview.totalWinnings > 0 ? `+${overview.totalWinnings.toLocaleString()}` : '0') : (totalWinnings > 0 ? `+${totalWinnings.toLocaleString()}` : '0'), icon: Gift, cls: 'bg-[#7A7468] text-white', accent: 'bg-[#7A7468]' },
+                  ].map((s, i) => (
+                    <div key={i} className="relative bg-card border border-border p-5 hover:border-primary transition-colors flex flex-col overflow-hidden">
+                      <div className={`w-10 h-10 ${s.cls} flex items-center justify-center shrink-0 mb-3`}>
+                        <s.icon className="w-5 h-5" />
+                      </div>
+                      <div className="text-2xl font-bold text-foreground mb-1 tabular-nums break-all">{s.value}</div>
+                      <div className="text-xs text-muted-foreground font-medium uppercase tracking-wide mt-auto">{s.label}</div>
+                      <div className={`absolute bottom-0 left-0 right-0 h-0.5 ${s.accent}`} />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid lg:grid-cols-2 gap-6">
+                  {/* Bet summary chart */}
+                  <div className="bg-card border border-border p-6">
+                    <h3 className="font-serif text-lg font-bold text-foreground mb-4">Thống Kê Cược</h3>
+                    {overview ? (
+                      <ResponsiveContainer width="100%" height={180}>
+                        <BarChart data={[
+                          { name: 'Thắng', value: overview.wonBets },
+                          { name: 'Thua', value: overview.lostBets },
+                          { name: 'Chờ', value: overview.pendingBets },
+                        ]} barSize={40}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#E3DCCB" vertical={false} />
+                          <XAxis dataKey="name" tick={{ fill: '#7A7468', fontSize: 12 }} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fill: '#7A7468', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                          <Tooltip contentStyle={{ background: '#fff', border: '1px solid #E3DCCB', borderRadius: 0, fontSize: 12 }} />
+                          <Bar dataKey="value" radius={0}>
+                            <Cell fill="#1F3D2B" />
+                            <Cell fill="#B42318" />
+                            <Cell fill="#C9A227" />
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-[180px] flex items-center justify-center text-muted-foreground text-sm">Chưa có dữ liệu</div>
+                    )}
+                    <div className="flex gap-4 mt-3">
+                      {[{c:'bg-primary',l:'Thắng'},{c:'bg-destructive',l:'Thua'},{c:'bg-gold',l:'Đang chờ'}].map(x => (
+                        <div key={x.l} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <div className={`w-2.5 h-2.5 ${x.c}`} />{x.l}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Recent bets */}
+                  <div className="bg-card border border-border p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-serif text-lg font-bold text-foreground">Cược Gần Đây</h3>
+                      <button type="button" onClick={() => navigate('/spectator/predictions')}
+                        className="text-xs text-primary hover:underline flex items-center gap-1">
+                        Xem tất cả <ChevronRight className="w-3 h-3" />
+                      </button>
+                    </div>
+                    {(overview?.recentBets ?? myBets.slice(0, 5)).length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground text-sm">Chưa có cược nào</div>
+                    ) : (
+                      <div className="space-y-3">
+                        {(overview?.recentBets ?? myBets.slice(0, 5)).map((bet: any, i: number) => {
+                          const race = bet.raceId;
+                          const horse = bet.horseId;
+                          const statusMap: Record<string, {icon: any; cls: string; label: string}> = {
+                            won:       { icon: CheckCircle, cls: 'text-primary', label: 'Thắng' },
+                            lost:      { icon: XCircle,     cls: 'text-destructive', label: 'Thua' },
+                            pending:   { icon: Clock,        cls: 'text-[#8F7318]', label: 'Chờ' },
+                            cancelled: { icon: XCircle,     cls: 'text-muted-foreground', label: 'Hủy' },
+                          };
+                          const st = statusMap[bet.status] ?? statusMap.pending;
+                          const betTypeLabel: Record<string, string> = { win: 'Win', place: 'Place', show: 'Show' };
+                          return (
+                            <div key={bet._id ?? i} className="flex items-center justify-between py-2.5 border-b border-border last:border-0">
+                              <div className="min-w-0 flex-1">
+                                <div className="text-sm font-medium text-foreground truncate">{race?.name ?? '—'}</div>
+                                <div className="text-xs text-muted-foreground">{horse?.name ?? '—'} · {betTypeLabel[bet.betType] ?? bet.betType}</div>
+                              </div>
+                              <div className="text-right shrink-0 ml-4">
+                                <div className={`flex items-center gap-1 text-xs font-semibold ${st.cls}`}>
+                                  <st.icon className="w-3.5 h-3.5" />{st.label}
+                                </div>
+                                <div className="text-xs text-muted-foreground tabular-nums">
+                                  {bet.status === 'won' ? `+${(bet.payoutAmount||0).toLocaleString()}` : `${bet.amount?.toLocaleString()}`}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="text-2xl font-normal text-foreground mb-1 tabular-nums break-all">{stat.value}</div>
-                <div className="text-xs text-muted-foreground font-medium leading-tight mt-auto uppercase tracking-wide">{stat.label}</div>
-                {idx === 0 && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />}
-              </div>
-            ))}
+
+                {/* Quick actions */}
+                <div className="grid grid-cols-3 gap-4">
+                  {[
+                    { label: 'Đặt Cược', icon: Target, to: '/spectator/schedule', color: 'bg-secondary text-white hover:bg-secondary/90' },
+                    { label: 'Xem Trực Tiếp', icon: Play, to: '/spectator/live', color: 'bg-primary text-primary-foreground hover:bg-primary/90' },
+                    { label: 'Nạp Xu', icon: Coins, to: '/spectator/deposit', color: 'bg-gold text-foreground hover:bg-gold/90' },
+                  ].map(a => (
+                    <button key={a.label} type="button" onClick={() => navigate(a.to)}
+                      className={`flex flex-col items-center justify-center gap-2 p-4 border border-border transition-colors ${a.color}`}>
+                      <a.icon className="w-5 h-5" />
+                      <span className="text-sm font-semibold">{a.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         )}
 

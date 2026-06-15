@@ -32,7 +32,8 @@ import {
   Avatar, LinearProgress, Box, Typography 
 } from '@mui/material';
 import {
-  AreaChart, Area, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, RadarChart
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, RadarChart
 } from 'recharts';
 import { AppShell, type NavItem } from '../components/layout/AppShell';
 import { Home } from 'lucide-react';
@@ -40,6 +41,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useWallet } from '../hooks/useWallet';
 import { invitationApi, JockeyInvitation } from '../api/invitation';
 import { toast } from 'sonner';
+import { userApi, type JockeyOverview, type MonthlyStatPoint } from '../api/user';
 
 const GRADE_COLORS: Record<string, string> = {
   Maiden: '#7A7468',
@@ -79,6 +81,27 @@ export function JockeyDashboard() {
   const [invitations, setInvitations] = useState<JockeyInvitation[]>([]);
   const [loadingInvitations, setLoadingInvitations] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
+
+  const [overview, setOverview] = useState<JockeyOverview | null>(null);
+  const [monthlyStats, setMonthlyStats] = useState<MonthlyStatPoint[]>([]);
+  const [loadingOverview, setLoadingOverview] = useState(false);
+
+  const loadOverviewData = async () => {
+    if (!token) return;
+    setLoadingOverview(true);
+    try {
+      const [ov, ms] = await Promise.all([
+        userApi.getOverviewStats(token),
+        userApi.getMonthlyStats(token),
+      ]);
+      setOverview(ov as unknown as JockeyOverview);
+      setMonthlyStats(ms.monthly);
+    } catch (err: any) {
+      toast.error(err.message || 'Không thể tải dữ liệu tổng quan');
+    } finally {
+      setLoadingOverview(false);
+    }
+  };
 
   const [scheduleSubTab, setScheduleSubTab] = useState<'accepted' | 'rejected'>('accepted');
 
@@ -132,6 +155,10 @@ export function JockeyDashboard() {
   useEffect(() => {
     loadInvitations();
   }, [token]);
+
+  useEffect(() => {
+    if (activeTab === 'overview') loadOverviewData();
+  }, [activeTab, token]);
 
   useEffect(() => {
     if (activeTab === 'schedule') {
@@ -243,22 +270,167 @@ export function JockeyDashboard() {
   return (
     <AppShell roleLabel="JOCKEY" nav={JOCKEY_NAV}>
       <div className="max-w-7xl mx-auto">
-        {/* Quick Stats Cards — only on overview */}
+        {/* Overview */}
         {activeTab === 'overview' && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-8">
-            {stats.map((stat, idx) => (
-              <div key={idx} className="bg-slate-900/60 backdrop-blur-md border border-border rounded-2xl p-6 hover:border-[#C9A227]/30 transition-all hover:shadow-[0_0_20px_rgba(255,222,66,0.1)] group">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="text-sm text-slate-400 font-medium mb-1">{stat.label}</div>
-                    <div className="font-serif text-3xl font-bold text-foreground">{stat.value}</div>
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {loadingOverview ? (
+              <div className="flex items-center justify-center py-16 text-muted-foreground">
+                <div className="w-6 h-6 border-2 border-[#C9A227]/30 border-t-[#C9A227] rounded-full animate-spin mr-3" />
+                Đang tải dữ liệu...
+              </div>
+            ) : (
+              <>
+                {/* Stat cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  {[
+                    { label: 'Tổng Cuộc Đua', value: String(overview?.totalRaces ?? 0), icon: Calendar, color: 'from-[#1F3D2B] to-[#172D20]' },
+                    { label: 'Chiến Thắng', value: String(overview?.totalWins ?? 0), icon: Trophy, color: 'from-[#C9A227] to-[#8F7318]' },
+                    { label: 'Tỷ Lệ Thắng', value: `${overview?.totalRaces ? Math.round(((overview?.totalWins ?? 0) / overview.totalRaces) * 100) : 0}%`, icon: TrendingUp, color: 'from-[#8C2F1B] to-[#6B1F10]' },
+                    { label: 'Số Dư Ví', value: `${(overview?.walletBalance ?? 0).toLocaleString()} xu`, icon: Wallet, color: 'from-[#C9A227] to-[#B08D1E]' },
+                  ].map((s, i) => (
+                    <div key={i} className="bg-card border border-border p-5 hover:-translate-y-0.5 transition-transform">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="text-xs text-muted-foreground font-medium mb-1 uppercase tracking-wide">{s.label}</div>
+                          <div className="font-serif text-3xl font-bold text-foreground">{s.value}</div>
+                        </div>
+                        <div className={`w-10 h-10 bg-gradient-to-br ${s.color} flex items-center justify-center shadow-sm flex-shrink-0`}>
+                          <s.icon className="w-5 h-5 text-white" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                  {/* Monthly chart */}
+                  <div className="bg-card border border-border p-5">
+                    <h3 className="font-serif text-base font-bold text-foreground mb-4">Thành Tích 6 Tháng Gần Đây</h3>
+                    {monthlyStats.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={180}>
+                        <AreaChart data={monthlyStats} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                          <defs>
+                            <linearGradient id="jWins" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#C9A227" stopOpacity={0.35} />
+                              <stop offset="95%" stopColor="#C9A227" stopOpacity={0} />
+                            </linearGradient>
+                            <linearGradient id="jRaces" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#1F3D2B" stopOpacity={0.35} />
+                              <stop offset="95%" stopColor="#1F3D2B" stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#E3DCCB" />
+                          <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#7A7468' }} />
+                          <YAxis tick={{ fontSize: 11, fill: '#7A7468' }} allowDecimals={false} />
+                          <Tooltip contentStyle={{ background: '#fff', border: '1px solid #E3DCCB', borderRadius: 0, fontSize: 12 }} />
+                          <Area type="monotone" dataKey="wins" name="Thắng" stroke="#C9A227" fill="url(#jWins)" strokeWidth={2} />
+                          <Area type="monotone" dataKey="races" name="Tổng Đua" stroke="#1F3D2B" fill="url(#jRaces)" strokeWidth={2} />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-[180px] text-muted-foreground text-sm">Chưa có dữ liệu thống kê</div>
+                    )}
                   </div>
-                  <div className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
-                    <stat.icon className="w-6 h-6 text-white" />
+
+                  {/* Upcoming confirmed races */}
+                  <div className="bg-card border border-border p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-serif text-base font-bold text-foreground">Cuộc Đua Sắp Tới</h3>
+                      <span className="text-xs text-muted-foreground">{(overview?.upcomingRaces ?? []).length} cuộc đua đã xác nhận</span>
+                    </div>
+                    {(overview?.upcomingRaces ?? []).length > 0 ? (
+                      <div className="space-y-2">
+                        {(overview!.upcomingRaces as any[]).slice(0, 4).map((inv: any, i: number) => {
+                          const race = inv.raceId;
+                          const horse = inv.horseId;
+                          if (!race) return null;
+                          return (
+                            <div key={i} className="flex items-center gap-3 p-3 border border-border hover:bg-muted/40 transition-colors">
+                              <div className="w-8 h-8 bg-[#C9A227]/10 border border-[#C9A227]/30 flex items-center justify-center flex-shrink-0">
+                                <Flame className="w-4 h-4 text-[#C9A227]" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-semibold text-foreground truncate">{race.name}</div>
+                                <div className="text-xs text-muted-foreground">{horse?.name} · {new Date(race.scheduledTime).toLocaleDateString('vi-VN')}</div>
+                              </div>
+                              <span className="text-xs font-bold text-[#C9A227] px-2 py-0.5 bg-[#C9A227]/10 border border-[#C9A227]/20 flex-shrink-0">{race.grade}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-[140px] text-muted-foreground text-sm gap-2">
+                        <Calendar className="w-8 h-8 opacity-30" />
+                        Chưa có cuộc đua nào được xác nhận
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
-            ))}
+
+                {/* Bottom: pending invitations + quick actions */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="bg-card border border-border p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-serif text-base font-bold text-foreground">Lời Mời Chờ Xử Lý</h3>
+                      {invitations.length > 0 && (
+                        <span className="text-xs font-bold text-white bg-[#8C2F1B] px-2 py-0.5">{invitations.length}</span>
+                      )}
+                    </div>
+                    {invitations.length > 0 ? (
+                      <div className="space-y-2">
+                        {invitations.slice(0, 3).map((inv, i) => {
+                          const horse = inv.horseId;
+                          const race = inv.raceId;
+                          if (!horse || !race) return null;
+                          return (
+                            <div key={i} className="flex items-center gap-3 p-2.5 border border-border hover:bg-muted/40 transition-colors">
+                              <div className="w-7 h-7 bg-[#8C2F1B]/10 border border-[#8C2F1B]/30 flex items-center justify-center flex-shrink-0">
+                                <Star className="w-3.5 h-3.5 text-[#8C2F1B]" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-foreground truncate">{horse.name}</div>
+                                <div className="text-xs text-muted-foreground truncate">{race.name} · {race.grade}</div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {invitations.length > 3 && (
+                          <p className="text-xs text-muted-foreground text-center pt-1">+{invitations.length - 3} lời mời khác</p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-[100px] text-muted-foreground text-sm gap-2">
+                        <Clock className="w-7 h-7 opacity-30" />
+                        Không có lời mời chờ
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="lg:col-span-2 bg-card border border-border p-5">
+                    <h3 className="font-serif text-base font-bold text-foreground mb-4">Thao Tác Nhanh</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { label: 'Xem Lời Mời', icon: Clock, to: '/jockey/invitations' as string | null, badge: (invitations.length || null) as number | null },
+                        { label: 'Lịch Đua', icon: Calendar, to: '/jockey/schedule' as string | null, badge: null as number | null },
+                        { label: 'Kết Quả', icon: Trophy, to: '/jockey/results' as string | null, badge: null as number | null },
+                        { label: 'Nạp Xu', icon: Coins, to: null as string | null, badge: null as number | null },
+                      ].map((action, i) => (
+                        <button key={i} onClick={() => { if (action.to) navigate(action.to); }}
+                          className="flex items-center gap-3 p-4 border border-border hover:border-[#C9A227]/40 hover:bg-muted/40 transition-all text-left group">
+                          <div className="w-9 h-9 bg-[#C9A227]/10 border border-[#C9A227]/20 flex items-center justify-center group-hover:bg-[#C9A227]/20 transition-colors flex-shrink-0">
+                            <action.icon className="w-4 h-4 text-[#C9A227]" />
+                          </div>
+                          <span className="text-sm font-medium text-foreground flex-1">{action.label}</span>
+                          {action.badge ? (
+                            <span className="text-xs font-bold text-white bg-[#8C2F1B] px-1.5 py-0.5">{action.badge}</span>
+                          ) : null}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
 
