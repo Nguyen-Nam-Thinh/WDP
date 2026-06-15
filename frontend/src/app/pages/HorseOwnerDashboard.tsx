@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Pagination } from "../components/Pagination";
-import { useNavigate } from "react-router";
+import { useNavigate, useLocation } from "react-router";
 import { toast } from "sonner";
 import {
   Plus,
@@ -71,8 +71,11 @@ const GRADE_COLORS: Record<string, string> = {
 
 const OWNER_NAV: NavItem[] = [
   { to: "/horse-owner", label: "Tổng Quan", icon: <Home /> },
-  { to: "/tournaments", label: "Giải Đấu", icon: <Trophy /> },
-  { to: "/rankings", label: "Xếp Hạng", icon: <Medal /> },
+  { to: "/horse-owner/horses", label: "Ngựa Của Tôi", icon: <span className="text-base leading-none">🐎</span> },
+  { to: "/horse-owner/jockeys", label: "Kỵ Sĩ", icon: <Users /> },
+  { to: "/horse-owner/schedule", label: "Lịch Đua", icon: <Calendar /> },
+  { to: "/horse-owner/results", label: "Thành Tích", icon: <TrendingUp /> },
+  { to: "/horse-owner/wallet", label: "Ví Tiền", icon: <Wallet /> },
 ];
 
 export function HorseOwnerDashboard() {
@@ -84,7 +87,13 @@ export function HorseOwnerDashboard() {
     if (!user) navigate("/");
   }, [user, navigate]);
 
-  const [activeTab, setActiveTab] = useState("horses");
+  const { pathname } = useLocation();
+  const activeTab = pathname === "/horse-owner/jockeys" ? "jockeys"
+    : pathname === "/horse-owner/schedule" ? "schedule"
+    : pathname === "/horse-owner/results" ? "results"
+    : pathname === "/horse-owner/wallet" ? "wallet"
+    : pathname === "/horse-owner/horses" ? "horses"
+    : "overview";
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Dialogs
@@ -531,51 +540,29 @@ export function HorseOwnerDashboard() {
   return (
     <AppShell roleLabel="HORSE OWNER" nav={OWNER_NAV}>
       <div className="max-w-7xl mx-auto">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {stats.map((stat, idx) => (
-            <div
-              key={idx}
-              className="bg-card backdrop-blur-md border border-border rounded-2xl p-5 hover:-translate-y-1 transition-transform"
-            >
+        {/* Stats Cards — only on overview */}
+        {activeTab === "overview" && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            {stats.map((stat, idx) => (
               <div
-                className={`w-10 h-10 bg-gradient-to-br ${stat.color} rounded-lg flex items-center justify-center mb-3 shadow-lg`}
+                key={idx}
+                className="bg-card backdrop-blur-md border border-border rounded-2xl p-5 hover:-translate-y-1 transition-transform"
               >
-                <stat.icon className="w-5 h-5 text-white" />
+                <div
+                  className={`w-10 h-10 bg-gradient-to-br ${stat.color} rounded-lg flex items-center justify-center mb-3 shadow-lg`}
+                >
+                  <stat.icon className="w-5 h-5 text-white" />
+                </div>
+                <div className="font-serif text-2xl font-bold text-foreground mb-1">
+                  {stat.value}
+                </div>
+                <div className="text-sm text-slate-400 font-medium">
+                  {stat.label}
+                </div>
               </div>
-              <div className="font-serif text-2xl font-bold text-foreground mb-1">
-                {stat.value}
-              </div>
-              <div className="text-sm text-slate-400 font-medium">
-                {stat.label}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
-          {[
-            { id: "horses", label: "Ngựa Của Tôi", icon: null },
-            { id: "jockeys", label: "Kỵ Sĩ", icon: Users },
-            { id: "schedule", label: "Lịch Đua", icon: Calendar },
-            { id: "results", label: "Thành Tích", icon: TrendingUp },
-            { id: "wallet", label: "Ví Tiền", icon: Wallet },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all whitespace-nowrap font-medium ${
-                activeTab === tab.id
-                  ? "bg-[#C9A227] text-[#23201A] shadow-lg shadow-[#C9A227]/25"
-                  : "bg-card text-slate-400 hover:bg-muted hover:text-foreground border border-border"
-              }`}
-            >
-              {tab.icon ? <tab.icon className="w-4 h-4" /> : <span className="text-base leading-none">🐎</span>}
-              {tab.label}
-            </button>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Content: Horses */}
         {activeTab === "horses" && (
