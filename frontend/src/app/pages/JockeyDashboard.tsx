@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Pagination } from '../components/Pagination';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLocation } from 'react-router';
 import {
   Medal,
   Calendar,
@@ -50,8 +50,9 @@ const GRADE_COLORS: Record<string, string> = {
 
 const JOCKEY_NAV: NavItem[] = [
   { to: '/jockey', label: 'Tổng Quan', icon: <Home /> },
-  { to: '/tournaments', label: 'Giải Đấu', icon: <Trophy /> },
-  { to: '/rankings', label: 'Xếp Hạng', icon: <Medal /> },
+  { to: '/jockey/invitations', label: 'Lời Mời Đua', icon: <Clock /> },
+  { to: '/jockey/schedule', label: 'Lịch Đua', icon: <Calendar /> },
+  { to: '/jockey/results', label: 'Kết Quả Quá Khứ', icon: <Trophy /> },
 ];
 
 export function JockeyDashboard() {
@@ -64,7 +65,11 @@ export function JockeyDashboard() {
       navigate('/');
     }
   }, [user, navigate]);
-  const [activeTab, setActiveTab] = useState('invitations');
+  const { pathname } = useLocation();
+  const activeTab = pathname === '/jockey/schedule' ? 'schedule'
+    : pathname === '/jockey/results' ? 'results'
+    : pathname === '/jockey/invitations' ? 'invitations'
+    : 'overview';
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [horseInfoOpen, setHorseInfoOpen] = useState(false);
   const [selectedHorse, setSelectedHorse] = useState<any>(null);
@@ -238,49 +243,24 @@ export function JockeyDashboard() {
   return (
     <AppShell roleLabel="JOCKEY" nav={JOCKEY_NAV}>
       <div className="max-w-7xl mx-auto">
-        {/* Quick Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-8">
-          {stats.map((stat, idx) => (
-            <div key={idx} className="bg-slate-900/60 backdrop-blur-md border border-border rounded-2xl p-6 hover:border-[#C9A227]/30 transition-all hover:shadow-[0_0_20px_rgba(255,222,66,0.1)] group">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="text-sm text-slate-400 font-medium mb-1">{stat.label}</div>
-                  <div className="font-serif text-3xl font-bold text-foreground">{stat.value}</div>
-                </div>
-                <div className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
-                  <stat.icon className="w-6 h-6 text-white" />
+        {/* Quick Stats Cards — only on overview */}
+        {activeTab === 'overview' && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-8">
+            {stats.map((stat, idx) => (
+              <div key={idx} className="bg-slate-900/60 backdrop-blur-md border border-border rounded-2xl p-6 hover:border-[#C9A227]/30 transition-all hover:shadow-[0_0_20px_rgba(255,222,66,0.1)] group">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="text-sm text-slate-400 font-medium mb-1">{stat.label}</div>
+                    <div className="font-serif text-3xl font-bold text-foreground">{stat.value}</div>
+                  </div>
+                  <div className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
+                    <stat.icon className="w-6 h-6 text-white" />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-3 mb-8 overflow-x-auto pb-2 scrollbar-hide">
-          {[
-            { id: 'invitations', label: 'Lời Mời Đua', icon: Clock, badge: invitations.length || null },
-            { id: 'schedule', label: 'Lịch Đua', icon: Calendar },
-            { id: 'results', label: 'Kết Quả Quá Khứ', icon: Trophy }
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all whitespace-nowrap font-semibold text-sm ${
-                activeTab === tab.id
-                  ? 'bg-[#C9A227] text-slate-950 shadow-[0_0_15px_rgba(255,222,66,0.4)] border border-[#C9A227]'
-                  : 'bg-slate-900/80 text-slate-400 hover:bg-slate-800 hover:text-foreground border border-border'
-              }`}
-            >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
-              {tab.badge && (
-                <span className={`ml-2 text-xs py-0.5 px-2 rounded-full font-bold ${activeTab === tab.id ? 'bg-slate-900 text-[#C9A227]' : 'bg-[#C9A227] text-slate-950'}`}>
-                  {tab.badge}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Content: Ride Offers (Invitations) */}
         {activeTab === 'invitations' && (

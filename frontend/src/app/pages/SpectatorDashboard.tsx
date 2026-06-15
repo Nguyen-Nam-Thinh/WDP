@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLocation } from 'react-router';
 import {
   Calendar,
   Trophy,
@@ -39,9 +39,12 @@ import { toast } from 'sonner';
 
 const SPECTATOR_NAV: NavItem[] = [
   { to: '/spectator', label: 'Tổng Quan', icon: <Home /> },
-  { to: '/tournaments', label: 'Giải Đấu', icon: <Trophy /> },
-  { to: '/predictions', label: 'Dự Đoán', icon: <TrendingUp /> },
-  { to: '/rankings', label: 'Xếp Hạng', icon: <Medal /> },
+  { to: '/spectator/tournaments', label: 'Giải Đấu', icon: <Sparkles /> },
+  { to: '/spectator/live', label: 'Đang Trực Tiếp', icon: <Play /> },
+  { to: '/spectator/schedule', label: 'Lịch Trình', icon: <Calendar /> },
+  { to: '/spectator/predictions', label: 'Dự Đoán Của Tôi', icon: <Target /> },
+  { to: '/spectator/rankings', label: 'Bảng Xếp Hạng', icon: <Trophy /> },
+  { to: '/spectator/leaderboard', label: 'Bảng Dẫn Đầu', icon: <Award /> },
   { to: '/spectator/bet-history', label: 'Lịch Sử Cược', icon: <History /> },
   { to: '/spectator/deposit', label: 'Nạp Xu', icon: <Wallet /> },
 ];
@@ -61,7 +64,14 @@ export function SpectatorDashboard() {
   const navigate = useNavigate();
   const { user, token } = useAuth();
   const { formatted: walletBalance } = useWallet();
-  const [activeTab, setActiveTab] = useState('tournaments');
+  const { pathname } = useLocation();
+  const activeTab = pathname === '/spectator/live' ? 'live'
+    : pathname === '/spectator/schedule' ? 'schedule'
+    : pathname === '/spectator/predictions' ? 'predictions'
+    : pathname === '/spectator/rankings' ? 'rankings'
+    : pathname === '/spectator/leaderboard' ? 'leaderboard'
+    : pathname === '/spectator/tournaments' ? 'tournaments'
+    : 'overview';
   const [predictionModalOpen, setPredictionModalOpen] = useState(false);
   const [tournamentDetailsModalOpen, setTournamentDetailsModalOpen] = useState(false);
   const [depositPortalOpen, setDepositPortalOpen] = useState(false);
@@ -330,47 +340,23 @@ export function SpectatorDashboard() {
   return (
     <AppShell roleLabel="SPECTATOR" nav={SPECTATOR_NAV}>
       <div className="max-w-7xl mx-auto">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {stats.map((stat, idx) => (
-            <div key={idx} className="relative bg-card border border-border p-5 hover:-translate-y-1 transition-all hover:border-primary flex flex-col overflow-hidden">
-              <div className="flex items-center justify-between mb-3">
-                <div className={`w-10 h-10 ${stat.iconCls} flex items-center justify-center shrink-0`}>
-                  <stat.icon className="w-5 h-5" />
+        {/* Stats Cards — only on overview */}
+        {activeTab === 'overview' && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            {stats.map((stat, idx) => (
+              <div key={idx} className="relative bg-card border border-border p-5 hover:-translate-y-1 transition-all hover:border-primary flex flex-col overflow-hidden">
+                <div className="flex items-center justify-between mb-3">
+                  <div className={`w-10 h-10 ${stat.iconCls} flex items-center justify-center shrink-0`}>
+                    <stat.icon className="w-5 h-5" />
+                  </div>
                 </div>
+                <div className="font-serif text-2xl font-bold text-foreground mb-1 tabular-nums break-all">{stat.value}</div>
+                <div className="text-xs text-muted-foreground font-medium leading-tight mt-auto uppercase tracking-wide">{stat.label}</div>
+                {idx === 0 && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />}
               </div>
-              <div className="font-serif text-2xl font-bold text-foreground mb-1 tabular-nums break-all">{stat.value}</div>
-              <div className="text-xs text-muted-foreground font-medium leading-tight mt-auto uppercase tracking-wide">{stat.label}</div>
-              {idx === 0 && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />}
-            </div>
-          ))}
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
-          {[
-            { id: 'tournaments', label: 'Giải Đấu', icon: Sparkles },
-            { id: 'live', label: 'Đang Trực Tiếp', icon: Play },
-            { id: 'schedule', label: 'Lịch Trình', icon: Calendar },
-            { id: 'predictions', label: 'Dự Đoán Của Tôi', icon: Target },
-            { id: 'rankings', label: 'Bảng Xếp Hạng', icon: Trophy },
-            { id: 'leaderboard', label: 'Bảng Dẫn Đầu', icon: Award }
-          ].map(tab => (
-            <button
-              type="button"
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-5 py-2.5 transition-all whitespace-nowrap font-medium ${
-                activeTab === tab.id
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-card text-muted-foreground hover:text-foreground border border-border'
-              }`}
-            >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
-            </button>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Tournaments Tab */}
         {activeTab === 'tournaments' && (

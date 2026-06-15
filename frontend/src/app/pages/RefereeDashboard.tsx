@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Pagination } from '../components/Pagination';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLocation } from 'react-router';
 import {
   Shield, Calendar, AlertTriangle, CheckCircle, LogOut, Menu, X,
   FileText, Clock, Flag, Activity, ClipboardCheck, Download,
@@ -66,8 +66,8 @@ const INCIDENT_TYPES = [
 
 const REFEREE_NAV: NavItem[] = [
   { to: '/referee', label: 'Tổng Quan', icon: <Home /> },
-  { to: '/tournaments', label: 'Giải Đấu', icon: <TrophyIcon /> },
-  { to: '/rankings', label: 'Xếp Hạng', icon: <MedalIcon /> },
+  { to: '/referee/pre-check', label: 'Kiểm Tra Trước Đua', icon: <ClipboardCheck /> },
+  { to: '/referee/reports', label: 'Báo Cáo Chính Thức', icon: <FileText /> },
 ];
 
 export function RefereeDashboard() {
@@ -76,7 +76,10 @@ export function RefereeDashboard() {
 
   useEffect(() => { if (!user) navigate('/'); }, [user, navigate]);
 
-  const [activeTab, setActiveTab] = useState('pre-check');
+  const { pathname } = useLocation();
+  const activeTab = pathname === '/referee/reports' ? 'reports'
+    : pathname === '/referee/pre-check' ? 'pre-check'
+    : 'overview';
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // ── Pre-check state ──
@@ -281,37 +284,20 @@ export function RefereeDashboard() {
   return (
     <AppShell roleLabel="REFEREE" nav={REFEREE_NAV}>
       <div className="max-w-7xl mx-auto">
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {stats.map((s, i) => (
-            <div key={i} className="bg-card backdrop-blur-md border border-border rounded-2xl p-5 hover:-translate-y-1 transition-transform">
-              <div className={`w-10 h-10 bg-gradient-to-br ${s.color} rounded-lg flex items-center justify-center mb-3 shadow-lg`}>
-                <s.icon className="w-5 h-5 text-white" />
+        {/* Stats — only on overview */}
+        {activeTab === 'overview' && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            {stats.map((s, i) => (
+              <div key={i} className="bg-card backdrop-blur-md border border-border rounded-2xl p-5 hover:-translate-y-1 transition-transform">
+                <div className={`w-10 h-10 bg-gradient-to-br ${s.color} rounded-lg flex items-center justify-center mb-3 shadow-lg`}>
+                  <s.icon className="w-5 h-5 text-white" />
+                </div>
+                <div className="font-serif text-2xl font-bold text-foreground mb-1">{s.value}</div>
+                <div className="text-sm text-slate-400 font-medium">{s.label}</div>
               </div>
-              <div className="font-serif text-2xl font-bold text-foreground mb-1">{s.value}</div>
-              <div className="text-sm text-slate-400 font-medium">{s.label}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
-          {[
-            { id: 'pre-check', label: 'Kiểm Tra Trước Đua', icon: ClipboardCheck },
-            { id: 'reports', label: 'Báo Cáo Chính Thức', icon: FileText },
-          ].map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all whitespace-nowrap font-medium ${
-                activeTab === tab.id
-                  ? 'bg-[#C9A227] text-[#23201A] shadow-lg shadow-[#C9A227]/25'
-                  : 'bg-card text-slate-400 hover:bg-muted hover:text-foreground border border-border'
-              }`}
-            >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
-            </button>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* ── Tab: Pre-check ── */}
         {activeTab === 'pre-check' && (

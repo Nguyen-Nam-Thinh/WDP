@@ -26,7 +26,7 @@ export function AppShell({ roleLabel, nav, children }: AppShellProps) {
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
-      <aside className="flex w-52 shrink-0 flex-col bg-sidebar px-3 py-5 text-sidebar-foreground">
+      <aside className="sticky top-0 h-screen flex w-52 shrink-0 flex-col bg-sidebar px-3 py-5 text-sidebar-foreground overflow-y-auto">
         <Link to="/" className="font-serif text-lg font-bold">The Paddock</Link>
         <div className="mb-6 mt-0.5 text-[8px] uppercase tracking-[0.25em] opacity-60">{roleLabel}</div>
         <nav className="flex flex-col gap-1">
