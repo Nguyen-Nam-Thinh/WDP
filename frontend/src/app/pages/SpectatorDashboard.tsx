@@ -350,7 +350,7 @@ export function SpectatorDashboard() {
                     <stat.icon className="w-5 h-5" />
                   </div>
                 </div>
-                <div className="font-serif text-2xl font-bold text-foreground mb-1 tabular-nums break-all">{stat.value}</div>
+                <div className="text-2xl font-normal text-foreground mb-1 tabular-nums break-all">{stat.value}</div>
                 <div className="text-xs text-muted-foreground font-medium leading-tight mt-auto uppercase tracking-wide">{stat.label}</div>
                 {idx === 0 && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />}
               </div>
@@ -918,121 +918,108 @@ export function SpectatorDashboard() {
                   <p className="text-muted-foreground">Chưa có dữ liệu xếp hạng</p>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {rankingType === 'horses' && horseRankings.map((h) => (
-                    <div key={h._id} className={`group flex items-center gap-4 p-4 bg-card border transition-all hover:-translate-y-0.5 ${
-                      h.rank <= 3 ? 'border-gold/50' : 'border-border hover:border-primary'
-                    }`}>
-                      {rankBadge(h.rank)}
+                <div className="bg-card border border-border overflow-hidden">
+                  <div className="overflow-x-auto">
+                    {rankingType === 'horses' && (
+                      <table className="w-full">
+                        <thead className="bg-muted/50">
+                          <tr>
+                            <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">Hạng</th>
+                            <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">Ngựa</th>
+                            <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">Grade</th>
+                            <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">Chủ</th>
+                            <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">Điểm</th>
+                            <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">Thắng</th>
+                            <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">Tỷ Lệ</th>
+                            <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">Coins</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {horseRankings.map((h) => (
+                            <tr key={h._id} className="border-t border-border hover:bg-muted/40 transition-colors">
+                              <td className="px-5 py-4">{rankBadge(h.rank)}</td>
+                              <td className="px-5 py-4 text-foreground font-medium">{h.name}</td>
+                              <td className="px-5 py-4">
+                                <span className={`text-xs px-2 py-0.5 border font-semibold uppercase tracking-wider ${gradeColor[h.currentGrade] || gradeColor.Maiden}`}>
+                                  {h.currentGrade}
+                                </span>
+                              </td>
+                              <td className="px-5 py-4 text-sm text-muted-foreground">{h.owner}</td>
+                              <td className="px-5 py-4 text-right font-medium tabular-nums">{h.totalPoints.toLocaleString()}</td>
+                              <td className="px-5 py-4 text-right font-medium text-[#8F7318] tabular-nums">{h.winCount}</td>
+                              <td className="px-5 py-4 text-right">
+                                <div className="font-medium text-primary tabular-nums">{h.winRate}%</div>
+                                <div className="w-16 bg-muted h-1.5 mt-1 ml-auto">{winBar(h.winRate)}</div>
+                              </td>
+                              <td className="px-5 py-4 text-right font-medium text-secondary tabular-nums">{h.totalEarnings.toLocaleString()}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
 
-                      {/* Name + owner + grade */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-foreground font-bold truncate">{h.name}</span>
-                          <span className={`text-xs px-2 py-0.5 border font-semibold shrink-0 uppercase tracking-wider ${gradeColor[h.currentGrade] || gradeColor.Maiden}`}>
-                            {h.currentGrade}
-                          </span>
-                        </div>
-                        <span className="text-xs text-muted-foreground">Chủ: {h.owner}</span>
-                      </div>
+                    {rankingType === 'jockeys' && (
+                      <table className="w-full">
+                        <thead className="bg-muted/50">
+                          <tr>
+                            <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">Hạng</th>
+                            <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">Kỵ Sĩ</th>
+                            <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">Kinh Nghiệm</th>
+                            <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">Cuộc Đua</th>
+                            <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">Thắng</th>
+                            <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">Tỷ Lệ</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {jockeyRankings.map((j) => (
+                            <tr key={j._id} className="border-t border-border hover:bg-muted/40 transition-colors">
+                              <td className="px-5 py-4">{rankBadge(j.rank)}</td>
+                              <td className="px-5 py-4 text-foreground font-medium">{j.name}</td>
+                              <td className="px-5 py-4 text-sm text-muted-foreground">{j.experienceYears} năm</td>
+                              <td className="px-5 py-4 text-right font-medium tabular-nums">{j.raceCount}</td>
+                              <td className="px-5 py-4 text-right font-medium text-[#8F7318] tabular-nums">{j.winCount}</td>
+                              <td className="px-5 py-4 text-right">
+                                <div className="font-medium text-primary tabular-nums">{j.winRate}%</div>
+                                <div className="w-16 bg-muted h-1.5 mt-1 ml-auto">{winBar(j.winRate)}</div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
 
-                      {/* Stats */}
-                      <div className="hidden md:grid grid-cols-4 gap-6 text-center">
-                        <div>
-                          <div className="text-lg font-bold text-foreground tabular-nums">{h.totalPoints.toLocaleString()}</div>
-                          <div className="text-xs text-muted-foreground">Điểm</div>
-                        </div>
-                        <div>
-                          <div className="text-lg font-bold text-[#8F7318] tabular-nums">{h.winCount}</div>
-                          <div className="text-xs text-muted-foreground">Thắng</div>
-                        </div>
-                        <div>
-                          <div className="text-lg font-bold text-primary tabular-nums">{h.winRate}%</div>
-                          {winBar(h.winRate)}
-                        </div>
-                        <div>
-                          <div className="text-lg font-bold text-secondary tabular-nums">{h.totalEarnings.toLocaleString()}</div>
-                          <div className="text-xs text-muted-foreground">Coins</div>
-                        </div>
-                      </div>
-
-                      {/* Mobile compact */}
-                      <div className="md:hidden text-right">
-                        <div className="text-[#8F7318] font-bold tabular-nums">{h.totalPoints} pts</div>
-                        <div className="text-xs text-muted-foreground">{h.winRate}% win</div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {rankingType === 'jockeys' && jockeyRankings.map((j) => (
-                    <div key={j._id} className={`group flex items-center gap-4 p-4 bg-card border transition-all hover:-translate-y-0.5 ${
-                      j.rank <= 3 ? 'border-gold/50' : 'border-border hover:border-primary'
-                    }`}>
-                      {rankBadge(j.rank)}
-
-                      <div className="flex-1 min-w-0">
-                        <div className="text-foreground font-bold truncate">{j.name}</div>
-                        <div className="text-xs text-muted-foreground">{j.experienceYears} năm kinh nghiệm</div>
-                      </div>
-
-                      <div className="hidden md:grid grid-cols-3 gap-6 text-center">
-                        <div>
-                          <div className="text-lg font-bold text-foreground tabular-nums">{j.raceCount}</div>
-                          <div className="text-xs text-muted-foreground">Cuộc Đua</div>
-                        </div>
-                        <div>
-                          <div className="text-lg font-bold text-[#8F7318] tabular-nums">{j.winCount}</div>
-                          <div className="text-xs text-muted-foreground">Thắng</div>
-                        </div>
-                        <div>
-                          <div className="text-lg font-bold text-primary tabular-nums">{j.winRate}%</div>
-                          {winBar(j.winRate)}
-                        </div>
-                      </div>
-
-                      <div className="md:hidden text-right">
-                        <div className="text-[#8F7318] font-bold tabular-nums">{j.winCount} thắng</div>
-                        <div className="text-xs text-muted-foreground">{j.winRate}% win</div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {rankingType === 'owners' && ownerRankings.map((o) => (
-                    <div key={o._id} className={`group flex items-center gap-4 p-4 bg-card border transition-all hover:-translate-y-0.5 ${
-                      o.rank <= 3 ? 'border-gold/50' : 'border-border hover:border-primary'
-                    }`}>
-                      {rankBadge(o.rank)}
-
-                      <div className="flex-1 min-w-0">
-                        <div className="text-foreground font-bold truncate">{o.name}</div>
-                        <div className="text-xs text-muted-foreground">{o.totalHorses} ngựa · {o.totalRaces} cuộc đua</div>
-                      </div>
-
-                      <div className="hidden md:grid grid-cols-4 gap-6 text-center">
-                        <div>
-                          <div className="text-lg font-bold text-foreground tabular-nums">{o.totalHorses}</div>
-                          <div className="text-xs text-muted-foreground">Ngựa</div>
-                        </div>
-                        <div>
-                          <div className="text-lg font-bold text-[#8F7318] tabular-nums">{o.totalWins}</div>
-                          <div className="text-xs text-muted-foreground">Thắng</div>
-                        </div>
-                        <div>
-                          <div className="text-lg font-bold text-primary tabular-nums">{o.winRate}%</div>
-                          {winBar(o.winRate)}
-                        </div>
-                        <div>
-                          <div className="text-lg font-bold text-secondary tabular-nums">{o.totalEarnings.toLocaleString()}</div>
-                          <div className="text-xs text-muted-foreground">Coins</div>
-                        </div>
-                      </div>
-
-                      <div className="md:hidden text-right">
-                        <div className="text-[#8F7318] font-bold tabular-nums">{o.totalWins} thắng</div>
-                        <div className="text-xs text-muted-foreground">{o.winRate}% win</div>
-                      </div>
-                    </div>
-                  ))}
+                    {rankingType === 'owners' && (
+                      <table className="w-full">
+                        <thead className="bg-muted/50">
+                          <tr>
+                            <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">Hạng</th>
+                            <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">Chủ Ngựa</th>
+                            <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">Ngựa</th>
+                            <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">Cuộc Đua</th>
+                            <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">Thắng</th>
+                            <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">Tỷ Lệ</th>
+                            <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">Coins</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {ownerRankings.map((o) => (
+                            <tr key={o._id} className="border-t border-border hover:bg-muted/40 transition-colors">
+                              <td className="px-5 py-4">{rankBadge(o.rank)}</td>
+                              <td className="px-5 py-4 text-foreground font-medium">{o.name}</td>
+                              <td className="px-5 py-4 text-right font-medium tabular-nums">{o.totalHorses}</td>
+                              <td className="px-5 py-4 text-right font-medium tabular-nums">{o.totalRaces}</td>
+                              <td className="px-5 py-4 text-right font-medium text-[#8F7318] tabular-nums">{o.totalWins}</td>
+                              <td className="px-5 py-4 text-right">
+                                <div className="font-medium text-primary tabular-nums">{o.winRate}%</div>
+                                <div className="w-16 bg-muted h-1.5 mt-1 ml-auto">{winBar(o.winRate)}</div>
+                              </td>
+                              <td className="px-5 py-4 text-right font-medium text-secondary tabular-nums">{o.totalEarnings.toLocaleString()}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
