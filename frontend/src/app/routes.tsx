@@ -11,10 +11,7 @@ import { Register } from "./pages/Register";
 import { TournamentsPage } from "./pages/TournamentsPage";
 import { RankingsPage } from "./pages/RankingsPage";
 import { PredictionsPage } from "./pages/PredictionsPage";
-import { BetHistoryPage } from "./pages/BetHistoryPage";
-import { DepositHistoryPage } from "./pages/DepositHistoryPage";
 import { ProfilePage } from "./pages/ProfilePage";
-import { DepositPortalPage } from "./pages/DepositPortalPage";
 import { ForgotPassword } from "./pages/ForgotPassword";
 import { LiveRacePage } from "./pages/LiveRacePage";
 
@@ -53,18 +50,9 @@ export const router = createBrowserRouter([
       { path: "/referee", element: <RefereeDashboard /> },
       { path: "/referee/pre-check", element: <RefereeDashboard /> },
       { path: "/referee/reports", element: <RefereeDashboard /> },
-      { path: "/spectator", element: <SpectatorDashboard /> },
-      { path: "/spectator/tournaments", element: <SpectatorDashboard /> },
-      { path: "/spectator/live", element: <SpectatorDashboard /> },
-      { path: "/spectator/schedule", element: <SpectatorDashboard /> },
-      { path: "/spectator/predictions", element: <SpectatorDashboard /> },
-      { path: "/spectator/rankings", element: <SpectatorDashboard /> },
-      { path: "/spectator/leaderboard", element: <SpectatorDashboard /> },
-      { path: "/spectator/bet-history", element: <BetHistoryPage /> },
-      { path: "/spectator/deposit-history", element: <DepositHistoryPage /> },
       { path: "/spectator/profile", element: <ProfilePage /> },
-      { path: "/spectator/deposit", element: <DepositPortalPage /> },
       { path: "/spectator/race/:raceId", element: <LiveRacePage /> },
+      { path: "/spectator/*", element: <SpectatorDashboard /> },
     ],
   },
 
