@@ -36,6 +36,27 @@ export interface OwnerRanking {
   winRate: number;
 }
 
+export interface FinishedRace {
+  _id: string;
+  name: string;
+  grade: 'Maiden' | 'G3' | 'G2' | 'G1';
+  scheduledTime: string;
+  distance: number;
+  purse: number;
+  tournamentName: string;
+}
+
+export interface RaceResultEntry {
+  _id: string;
+  position: number;
+  horseName: string;
+  horseGrade: string;
+  jockeyName: string;
+  finishTime: number | null;
+  prizeAmount: number;
+  pointsEarned: number;
+}
+
 export interface SpectatorRanking {
   rank: number;
   _id: string;
@@ -78,6 +99,30 @@ export const rankingsApi = {
 
   getOwnerRankings: async (token?: string | null, limit = 20): Promise<OwnerRanking[]> => {
     const res = await fetchWithAuth(`${API_URL}/rankings/owners?limit=${limit}`, {
+      headers: authHeader(token),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(getApiErrorMessage((err as any).message));
+    }
+    const json = await res.json();
+    return json.data;
+  },
+
+  getFinishedRaces: async (token?: string | null, limit = 50): Promise<FinishedRace[]> => {
+    const res = await fetchWithAuth(`${API_URL}/rankings/races?limit=${limit}`, {
+      headers: authHeader(token),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(getApiErrorMessage((err as any).message));
+    }
+    const json = await res.json();
+    return json.data;
+  },
+
+  getRaceResults: async (raceId: string, token?: string | null): Promise<RaceResultEntry[]> => {
+    const res = await fetchWithAuth(`${API_URL}/rankings/races/${raceId}`, {
       headers: authHeader(token),
     });
     if (!res.ok) {

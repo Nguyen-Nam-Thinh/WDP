@@ -41,4 +41,24 @@ async function getSpectatorLeaderboard(req, res, next) {
   }
 }
 
-module.exports = { getHorseRankings, getJockeyRankings, getOwnerRankings, getSpectatorLeaderboard };
+async function getFinishedRaces(req, res, next) {
+  try {
+    const limit = req.query.limit ? Number(req.query.limit) : 50;
+    const data = await rankingsService.getFinishedRaces({ limit });
+    sendSuccess(res, data);
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function getRaceResults(req, res, next) {
+  try {
+    const { raceId } = req.params;
+    const data = await rankingsService.getRaceResults(raceId);
+    sendSuccess(res, data);
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { getHorseRankings, getJockeyRankings, getOwnerRankings, getSpectatorLeaderboard, getFinishedRaces, getRaceResults };

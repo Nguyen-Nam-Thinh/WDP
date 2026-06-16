@@ -9,5 +9,7 @@ router.get('/horses', optionalAuthenticate, rankingsController.getHorseRankings)
 router.get('/jockeys', optionalAuthenticate, rankingsController.getJockeyRankings);
 router.get('/owners', optionalAuthenticate, rankingsController.getOwnerRankings);
 router.get('/spectators', optionalAuthenticate, rankingsController.getSpectatorLeaderboard);
+router.get('/races', optionalAuthenticate, rankingsController.getFinishedRaces);
+router.get('/races/:raceId', optionalAuthenticate, rankingsController.getRaceResults);
 
 module.exports = router;
