@@ -173,7 +173,7 @@ const modal = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: colors.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    maxHeight: '90%', paddingHorizontal: spacing.lg, paddingTop: spacing.md,
+    height: '80%', paddingHorizontal: spacing.lg, paddingTop: spacing.md,
     borderWidth: 1, borderColor: colors.border,
   },
   handle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: spacing.md },
