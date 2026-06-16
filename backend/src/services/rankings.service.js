@@ -1,6 +1,8 @@
 const { Horse } = require('../models/horse.model');
 const { User } = require('../models/user.model');
 const { Bet } = require('../models/bet.model');
+const { Race } = require('../models/race.model');
+const { RaceResult } = require('../models/race_result.model');
 
 async function getHorseRankings({ limit = 20 } = {}) {
   const horses = await Horse.find({ isActive: true })
@@ -120,4 +122,40 @@ async function getSpectatorLeaderboard({ limit = 20 } = {}) {
   }));
 }
 
-module.exports = { getHorseRankings, getJockeyRankings, getOwnerRankings, getSpectatorLeaderboard };
+async function getFinishedRaces({ limit = 50 } = {}) {
+  const races = await Race.find({ status: 'finished' })
+    .sort({ scheduledTime: -1 })
+    .limit(limit)
+    .populate('tournamentId', 'name')
+    .select('name grade scheduledTime distance purse tournamentId');
+
+  return races.map((r) => ({
+    _id: r._id,
+    name: r.name,
+    grade: r.grade,
+    scheduledTime: r.scheduledTime,
+    distance: r.distance,
+    purse: r.purse,
+    tournamentName: r.tournamentId?.name || 'N/A',
+  }));
+}
+
+async function getRaceResults(raceId) {
+  const results = await RaceResult.find({ raceId })
+    .sort({ position: 1 })
+    .populate('horseId', 'name currentGrade')
+    .populate('jockeyId', 'fullName');
+
+  return results.map((r) => ({
+    _id: r._id,
+    position: r.position,
+    horseName: r.horseId?.name || 'N/A',
+    horseGrade: r.horseId?.currentGrade || 'N/A',
+    jockeyName: r.jockeyId?.fullName || 'Chưa có',
+    finishTime: r.finishTime,
+    prizeAmount: r.prizeAmount,
+    pointsEarned: r.pointsEarned,
+  }));
+}
+
+module.exports = { getHorseRankings, getJockeyRankings, getOwnerRankings, getSpectatorLeaderboard, getFinishedRaces, getRaceResults };

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { ChevronDown, User as UserIcon, Wallet, Activity, History, LogOut, Shield, Home, Trophy } from 'lucide-react';
+import { ChevronDown, User as UserIcon, LogOut, Shield, Home, Trophy } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 export function ProfileDropdown() {
@@ -35,9 +35,6 @@ export function ProfileDropdown() {
     { icon: Home, label: 'Trang Chủ', sub: 'Trở về màn hình chính', color: 'text-secondary', action: () => { setProfileMenuOpen(false); navigate('/'); }, showFor: ['spectator'] },
     { icon: Trophy, label: 'Khu Vực Khán Giả', sub: 'Xem bảng điều khiển', color: 'text-primary', action: () => { setProfileMenuOpen(false); navigate('/spectator'); }, showFor: ['spectator'] },
     { icon: UserIcon, label: 'Hồ Sơ Cá Nhân', sub: 'Thông tin & cài đặt tài khoản', color: 'text-primary', action: () => { setProfileMenuOpen(false); navigate('/spectator/profile'); } },
-    { icon: Wallet, label: 'Cổng Nạp Xu', sub: '1 xu = 1.000 VND · CK & Ví điện tử', color: 'text-gold', action: () => { setProfileMenuOpen(false); navigate('/spectator/deposit'); } },
-    { icon: Activity, label: 'Lịch Sử Cược', sub: 'Xem lại các vé cược của bạn', color: 'text-secondary', action: () => { setProfileMenuOpen(false); navigate('/spectator/bet-history'); } },
-    { icon: History, label: 'Lịch Sử Nạp', sub: 'Theo dõi giao dịch nạp tiền', color: 'text-primary', action: () => { setProfileMenuOpen(false); navigate('/spectator/deposit-history'); } },
   ];
 
   const menuItems = allMenuItems.filter(item => !item.showFor || item.showFor.includes(user.role));

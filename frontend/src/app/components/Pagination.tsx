@@ -25,24 +25,24 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
       <button
         onClick={() => onPageChange(page - 1)}
         disabled={page === 1}
-        className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-white/8 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        className="w-8 h-8 flex items-center justify-center rounded text-muted-foreground border border-border hover:bg-muted hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
       >
         <ChevronLeft className="w-4 h-4" />
       </button>
 
       {pages.map((p, i) =>
         p === '...' ? (
-          <span key={`dot-${i}`} className="w-8 h-8 flex items-center justify-center text-slate-600 text-sm">
+          <span key={`dot-${i}`} className="w-8 h-8 flex items-center justify-center text-muted-foreground text-sm">
             ···
           </span>
         ) : (
           <button
             key={p}
             onClick={() => onPageChange(p as number)}
-            className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${
+            className={`w-8 h-8 flex items-center justify-center rounded text-sm font-medium transition-colors border ${
               p === page
-                ? 'bg-[#FFDE42] text-slate-900 font-bold'
-                : 'text-slate-400 hover:text-white hover:bg-white/8'
+                ? 'bg-primary text-primary-foreground border-primary font-bold'
+                : 'text-muted-foreground border-border hover:bg-muted hover:text-foreground'
             }`}
           >
             {p}
@@ -53,7 +53,7 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
       <button
         onClick={() => onPageChange(page + 1)}
         disabled={page === totalPages}
-        className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-white/8 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        className="w-8 h-8 flex items-center justify-center rounded text-muted-foreground border border-border hover:bg-muted hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
       >
         <ChevronRight className="w-4 h-4" />
       </button>

@@ -83,7 +83,7 @@ export function AppShell({ roleLabel, nav, children }: AppShellProps) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between border-b border-border px-6 py-3">
-          <div className="text-xs text-muted-foreground">{roleLabel}</div>
+          <div />
           <div className="flex items-center gap-4">
             <Bell className="h-4 w-4 text-muted-foreground" />
             <span className="bg-primary px-3 py-1 text-xs text-primary-foreground">
