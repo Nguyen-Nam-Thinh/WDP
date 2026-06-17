@@ -87,6 +87,12 @@ function PlaceBetModal({
                   const currentGrade = typeof h.horseId === 'object' ? h.horseId?.currentGrade : (h.currentGrade ?? 'Maiden');
                   const horseKey = h._id || h.registrationId || hid || String(idx);
 
+                  const winRate = typeof h.horseId === 'object' ? (h.horseId as any)?.winRate : h.winRate;
+                  const totalPoints = typeof h.horseId === 'object' ? (h.horseId as any)?.totalPoints : h.totalPoints;
+                  const jockeyExp = typeof h.jockeyId === 'object' ? (h.jockeyId as any)?.jockeyProfile?.experienceYears : h.jockeyExperience;
+                  const breed = typeof h.horseId === 'object' ? (h.horseId as any)?.breed : h.breed;
+                  const winRatePct = winRate != null ? `${Math.round(winRate)}%` : null;
+
                   return (
                     <TouchableOpacity
                       key={horseKey}
@@ -94,13 +100,30 @@ function PlaceBetModal({
                       onPress={() => { if (hid) setSelectedHorse(hid); }}
                     >
                       <View style={modal.horseLeft}>
-                        <Text style={modal.horseName}>{hname}</Text>
-                        {jname ? <Text style={modal.jockeyName}>🏇 {jname}</Text> : null}
-                      </View>
-                      <View style={[modal.gradeBadge, { borderColor: (GRADE_COLORS[currentGrade || 'Maiden'] ?? '#fff') + '60' }]}>
-                        <Text style={[modal.gradeText, { color: GRADE_COLORS[currentGrade || 'Maiden'] ?? '#fff' }]}>
-                          {currentGrade}
-                        </Text>
+                        <View style={modal.horseTopRow}>
+                          <Text style={modal.horseName}>{hname}</Text>
+                          <View style={[modal.gradeBadge, { borderColor: (GRADE_COLORS[currentGrade || 'Maiden'] ?? '#fff') + '60' }]}>
+                            <Text style={[modal.gradeText, { color: GRADE_COLORS[currentGrade || 'Maiden'] ?? '#fff' }]}>
+                              {currentGrade}
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={modal.statsRow}>
+                          {totalPoints != null && (
+                            <Text style={modal.statChip}>🏅 {totalPoints} điểm</Text>
+                          )}
+                          {winRatePct && (
+                            <Text style={modal.statChip}>🏆 {winRatePct}</Text>
+                          )}
+                          {breed ? (
+                            <Text style={modal.statChip}>{breed}</Text>
+                          ) : null}
+                        </View>
+                        {jname ? (
+                          <Text style={modal.jockeyName}>
+                            🏇 {jname}{jockeyExp != null ? ` · ${jockeyExp} năm KN` : ''}
+                          </Text>
+                        ) : null}
                       </View>
                       {selectedHorse === hid && <Ionicons name="checkmark-circle" size={20} color={colors.accent} />}
                     </TouchableOpacity>
@@ -189,8 +212,11 @@ const modal = StyleSheet.create({
   },
   horseRowSelected: { borderColor: colors.accent, backgroundColor: colors.accentDim },
   horseLeft: { flex: 1 },
-  horseName: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.text },
-  jockeyName: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
+  horseTopRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap', marginBottom: 3 },
+  horseName: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.text, flexShrink: 1 },
+  statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 3 },
+  statChip: { fontSize: fontSize.xs, color: colors.textMuted, backgroundColor: colors.surfaceHover, paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm },
+  jockeyName: { fontSize: fontSize.xs, color: colors.textMuted },
   gradeBadge: { borderWidth: 1, borderRadius: radius.sm, paddingHorizontal: 6, paddingVertical: 2 },
   gradeText: { fontSize: fontSize.xs, fontWeight: fontWeight.bold },
   betTypeRow: { flexDirection: 'row', gap: spacing.sm },
