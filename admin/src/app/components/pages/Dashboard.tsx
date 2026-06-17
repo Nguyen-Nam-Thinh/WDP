@@ -1,4 +1,19 @@
-import { TrendingUp, TrendingDown } from '@mui/icons-material';
+import { 
+  Users, 
+  Trophy, 
+  Flag, 
+  ClipboardList, 
+  TrendingUp, 
+  TrendingDown, 
+  CheckCircle,
+  Megaphone,
+  PlusCircle,
+  UserPlus,
+  ArrowRight,
+  MoreHorizontal
+} from 'lucide-react';
+import { motion } from 'motion/react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const statCards = [
   {
@@ -7,14 +22,10 @@ const statCards = [
     change: '+12%',
     up: true,
     sub: 'so với tháng trước',
-    color: '#4f6ef7',
-    bg: '#eef1ff',
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
-      </svg>
-    ),
+    color: 'text-blue-600 dark:text-blue-400',
+    bg: 'bg-blue-100/50 dark:bg-blue-900/30',
+    icon: Users,
+    gradient: 'from-blue-500/20 to-transparent'
   },
   {
     label: 'Giải đấu đang diễn ra',
@@ -22,14 +33,10 @@ const statCards = [
     change: '8 sắp tới',
     up: true,
     sub: 'giải đấu sắp tới',
-    color: '#d4a017',
-    bg: '#fffbea',
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M8 21h8" /><path d="M12 17v4" />
-        <path d="M7 4h10l1 7H6L7 4Z" /><path d="M6 11c0 3.31 2.69 6 6 6s6-2.69 6-6" />
-      </svg>
-    ),
+    color: 'text-amber-500 dark:text-amber-400',
+    bg: 'bg-amber-100/50 dark:bg-amber-900/30',
+    icon: Trophy,
+    gradient: 'from-amber-500/20 to-transparent'
   },
   {
     label: 'Ngựa đang thi đấu',
@@ -37,13 +44,10 @@ const statCards = [
     change: '+15 mới',
     up: true,
     sub: 'ngựa đăng ký mới',
-    color: '#10b981',
-    bg: '#edfaf4',
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" y1="22" x2="4" y2="15" />
-      </svg>
-    ),
+    color: 'text-emerald-500 dark:text-emerald-400',
+    bg: 'bg-emerald-100/50 dark:bg-emerald-900/30',
+    icon: Flag,
+    gradient: 'from-emerald-500/20 to-transparent'
   },
   {
     label: 'Đơn chờ duyệt',
@@ -51,144 +55,268 @@ const statCards = [
     change: 'Cần xử lý',
     up: false,
     sub: 'cần xử lý ngay',
-    color: '#ef4444',
-    bg: '#fff1f1',
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
-      </svg>
-    ),
+    color: 'text-rose-500 dark:text-rose-400',
+    bg: 'bg-rose-100/50 dark:bg-rose-900/30',
+    icon: ClipboardList,
+    gradient: 'from-rose-500/20 to-transparent'
   },
+];
+
+const chartData = [
+  { name: 'Th 1', users: 400, revenue: 240 },
+  { name: 'Th 2', users: 300, revenue: 139 },
+  { name: 'Th 3', users: 550, revenue: 380 },
+  { name: 'Th 4', users: 450, revenue: 390 },
+  { name: 'Th 5', users: 700, revenue: 480 },
+  { name: 'Th 6', users: 850, revenue: 600 },
+  { name: 'Th 7', users: 1245, revenue: 850 },
 ];
 
 const upcomingTournaments = [
   { name: 'Giải Vô Địch Quốc Gia 2026', date: '15/06/2026', location: 'Sài Gòn', status: 'upcoming', participants: 48 },
   { name: 'Cúp Mùa Hè', date: '20/07/2026', location: 'Hà Nội', status: 'preparing', participants: 32 },
   { name: 'Giải Thiếu Niên', date: '10/08/2026', location: 'Đà Nẵng', status: 'preparing', participants: 24 },
-];
-
-const tasks = [
-  { label: 'Duyệt đăng ký', done: 23, total: 30, color: '#ef4444', bg: '#fff1f1' },
-  { label: 'Phân công trọng tài', done: 8, total: 12, color: '#f59e0b', bg: '#fffbea' },
-  { label: 'Công bố kết quả', done: 12, total: 12, color: '#10b981', bg: '#edfaf4' },
+  { name: 'Cúp Mùa Thu', date: '05/09/2026', location: 'Hải Phòng', status: 'preparing', participants: 40 },
 ];
 
 const recentActivities = [
-  { icon: '✅', title: 'Đã duyệt đăng ký', desc: 'Thunder Bolt', time: '5 phút trước', color: '#10b981' },
-  { icon: '📢', title: 'Công bố kết quả', desc: 'Vòng Final — Cúp Mùa Xuân', time: '1 giờ trước', color: '#4f6ef7' },
-  { icon: '🏆', title: 'Tạo giải đấu mới', desc: 'Cúp Mùa Hè 2026', time: '2 giờ trước', color: '#d4a017' },
-  { icon: '👤', title: 'Người dùng mới đăng ký', desc: 'nguyen.van.a@email.com', time: '3 giờ trước', color: '#8b5cf6' },
+  { icon: CheckCircle, title: 'Đã duyệt đăng ký', desc: 'Ngựa: Thunder Bolt (ID: #4021)', time: '5 phút trước', iconColor: 'text-emerald-500', iconBg: 'bg-emerald-100 dark:bg-emerald-900/20' },
+  { icon: Megaphone, title: 'Công bố kết quả', desc: 'Vòng Final — Cúp Mùa Xuân', time: '1 giờ trước', iconColor: 'text-blue-500', iconBg: 'bg-blue-100 dark:bg-blue-900/20' },
+  { icon: PlusCircle, title: 'Tạo giải đấu mới', desc: 'Cúp Mùa Hè 2026', time: '2 giờ trước', iconColor: 'text-amber-500', iconBg: 'bg-amber-100 dark:bg-amber-900/20' },
+  { icon: UserPlus, title: 'Người dùng mới đăng ký', desc: 'nguyen.van.a@email.com', time: '3 giờ trước', iconColor: 'text-purple-500', iconBg: 'bg-purple-100 dark:bg-purple-900/20' },
 ];
 
-const statusMap: Record<string, { label: string; color: string; bg: string }> = {
-  upcoming: { label: 'Sắp diễn ra', color: '#4f6ef7', bg: '#eef1ff' },
-  preparing: { label: 'Chuẩn bị', color: '#f59e0b', bg: '#fffbea' },
-  active: { label: 'Đang diễn ra', color: '#10b981', bg: '#edfaf4' },
+const statusMap: Record<string, { label: string; textClass: string; bgClass: string; dotClass: string }> = {
+  upcoming: { label: 'Sắp diễn ra', textClass: 'text-blue-700 dark:text-blue-400', bgClass: 'bg-blue-50 dark:bg-blue-900/20', dotClass: 'bg-blue-500' },
+  preparing: { label: 'Chuẩn bị', textClass: 'text-amber-700 dark:text-amber-400', bgClass: 'bg-amber-50 dark:bg-amber-900/20', dotClass: 'bg-amber-500' },
+  active: { label: 'Đang diễn ra', textClass: 'text-emerald-700 dark:text-emerald-400', bgClass: 'bg-emerald-50 dark:bg-emerald-900/20', dotClass: 'bg-emerald-500' },
 };
 
 export default function Dashboard() {
-  return (
-    <div style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", color: '#111' }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        .stat-card { transition: box-shadow 0.2s, transform 0.2s; }
-        .stat-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.08) !important; transform: translateY(-2px); }
-        .table-row:hover td { background: #fafafa; }
-        .progress-bar { transition: width 0.5s ease; }
-      `}</style>
+  const today = new Date().toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
+  return (
+    <div className="mx-auto max-w-7xl pb-8">
       {/* Welcome banner */}
-      <div style={{
-        background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%)',
-        borderRadius: 16,
-        padding: '24px 28px',
-        marginBottom: 24,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 16,
-        overflow: 'hidden',
-        position: 'relative',
-      }}>
-        <div style={{ position: 'absolute', right: -20, top: -20, width: 180, height: 180, borderRadius: '50%', background: 'rgba(212,160,23,0.08)' }} />
-        <div style={{ position: 'absolute', right: 60, bottom: -40, width: 120, height: 120, borderRadius: '50%', background: 'rgba(212,160,23,0.05)' }} />
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, marginBottom: 6 }}>Chào mừng trở lại 👋</div>
-          <div style={{ color: '#fff', fontWeight: 700, fontSize: 22, marginBottom: 6 }}>Bảng điều khiển Admin</div>
-          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>
-            {new Date().toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1e293b] via-[#0f172a] to-[#020617] p-8 mb-8 shadow-xl border border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between"
+      >
+        <div className="absolute top-0 right-0 -mt-20 -mr-20 h-64 w-64 rounded-full bg-blue-500/20 blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 -mb-20 -ml-20 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl"></div>
+        
+        <div className="relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/10 backdrop-blur-md mb-4 text-xs font-medium text-blue-200">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+            </span>
+            Hệ thống đang hoạt động ổn định
+          </div>
+          <h2 className="mb-2 text-3xl font-extrabold text-white tracking-tight">
+            Chào mừng trở lại, Admin! 👋
+          </h2>
+          <p className="text-slate-300 font-medium">
+            Hôm nay là {today}. Dưới đây là tình hình hoạt động của Đua Ngựa Pro.
+          </p>
+        </div>
+        
+        <div className="relative z-10 mt-6 sm:mt-0 hidden md:block">
+          <div className="p-3 bg-white/5 rounded-2xl backdrop-blur-md border border-white/10 shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-300">
+             <img src="/images/logo.png" alt="logo" className="h-16 w-16 sm:h-20 sm:w-20 object-contain drop-shadow-lg" />
           </div>
         </div>
-        <img src="/images/logo.png" alt="logo" style={{ height: 72, opacity: 0.9, position: 'relative', zIndex: 1 }} />
-      </div>
+      </motion.div>
 
       {/* Stat cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
-        {statCards.map((s, i) => (
-          <div
-            key={i}
-            className="stat-card"
-            style={{ backgroundColor: '#fff', borderRadius: 14, padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #f0f0f0' }}
-          >
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.color }}>
-                {s.icon}
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        {statCards.map((s, i) => {
+          const Icon = s.icon;
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: i * 0.1 }}
+              key={i}
+              className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 dark:border-slate-800 dark:bg-[#151c2c]"
+            >
+              <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl ${s.gradient} rounded-full -mr-16 -mt-16 opacity-50 group-hover:opacity-100 transition-opacity duration-500`}></div>
+              
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${s.bg} shadow-inner`}>
+                    <Icon className={`h-6 w-6 ${s.color}`} />
+                  </div>
+                  <div className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${
+                    s.up ? 'text-emerald-700 bg-emerald-100 dark:text-emerald-400 dark:bg-emerald-900/30' : 'text-rose-700 bg-rose-100 dark:text-rose-400 dark:bg-rose-900/30'
+                  }`}>
+                    {s.up ? <TrendingUp size={14} strokeWidth={2.5} /> : <TrendingDown size={14} strokeWidth={2.5} />}
+                    {s.change}
+                  </div>
+                </div>
+                
+                <h4 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-1">
+                  {s.value}
+                </h4>
+                <div className="flex flex-col">
+                  <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">{s.label}</span>
+                  <span className="text-xs text-slate-400 font-medium mt-0.5">{s.sub}</span>
+                </div>
               </div>
-              <span style={{
-                fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 20,
-                color: s.up ? '#10b981' : '#ef4444',
-                background: s.up ? '#edfaf4' : '#fff1f1',
-                display: 'flex', alignItems: 'center', gap: 3,
-              }}>
-                {s.up ? <TrendingUp sx={{ fontSize: 12 }} /> : <TrendingDown sx={{ fontSize: 12 }} />}
-                {s.change}
-              </span>
-            </div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: '#111', lineHeight: 1, marginBottom: 4 }}>{s.value}</div>
-            <div style={{ fontSize: 13, color: '#666', fontWeight: 500 }}>{s.label}</div>
-            <div style={{ fontSize: 11, color: '#bbb', marginTop: 3 }}>{s.sub}</div>
-          </div>
-        ))}
+            </motion.div>
+          );
+        })}
       </div>
 
-      {/* Bottom section */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20 }}>
-        {/* Upcoming Tournaments Table */}
-        <div style={{ backgroundColor: '#fff', borderRadius: 14, border: '1px solid #f0f0f0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
-          <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid #f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 mb-8">
+        {/* Main Chart */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-[#151c2c]"
+        >
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <div style={{ fontWeight: 700, fontSize: 15, color: '#111' }}>Giải đấu sắp tới</div>
-              <div style={{ fontSize: 12, color: '#bbb', marginTop: 2 }}>Các giải đấu trong thời gian tới</div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Tăng trưởng người dùng</h3>
+              <p className="text-sm font-medium text-slate-500">Số lượng đăng ký mới trong 7 tháng qua</p>
             </div>
-            <button style={{ fontSize: 12, color: '#d4a017', border: '1px solid #f0e2a4', background: '#fffbea', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', fontWeight: 600 }}>
-              Xem tất cả
+            <button className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white transition-colors">
+              Năm nay
             </button>
           </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ background: '#fafafa' }}>
-                {['Tên giải đấu', 'Ngày bắt đầu', 'Địa điểm', 'Số tham gia', 'Trạng thái'].map(h => (
-                  <th key={h} style={{ textAlign: 'left', padding: '10px 20px', fontSize: 11.5, fontWeight: 600, color: '#999', textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: '1px solid #f0f0f0', whiteSpace: 'nowrap' }}>
-                    {h}
-                  </th>
-                ))}
+          <div className="h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="dark:stroke-slate-700/50" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                <Tooltip 
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)', backgroundColor: 'var(--tw-colors-white, #fff)', color: '#0f172a' }}
+                  itemStyle={{ color: '#0f172a', fontWeight: 600 }}
+                />
+                <Area type="monotone" dataKey="users" name="Người dùng" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorUsers)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </motion.div>
+
+        {/* Recent Activities */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+          className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-[#151c2c] flex flex-col"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Hoạt động mới</h3>
+              <p className="text-sm font-medium text-slate-500">Nhật ký hệ thống</p>
+            </div>
+            <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full dark:hover:bg-slate-800 dark:hover:text-slate-300 transition-colors">
+              <MoreHorizontal size={20} />
+            </button>
+          </div>
+          
+          <div className="flex-1 flex flex-col gap-6">
+            {recentActivities.map((a, i) => {
+              const Icon = a.icon;
+              return (
+                <div key={i} className="flex gap-4 relative group">
+                  {i !== recentActivities.length - 1 && (
+                    <div className="absolute left-5 top-10 bottom-[-24px] w-[2px] bg-slate-100 dark:bg-slate-800/80 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 transition-colors"></div>
+                  )}
+                  <div className={`relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${a.iconBg} border-[3px] border-white dark:border-[#151c2c]`}>
+                    <Icon className={`h-4 w-4 ${a.iconColor}`} strokeWidth={2.5} />
+                  </div>
+                  <div className="flex-1 pb-1">
+                    <h5 className="text-sm font-bold text-slate-800 dark:text-white mb-0.5">{a.title}</h5>
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 line-clamp-1">{a.desc}</p>
+                    <span className="inline-block mt-1 text-[11px] font-semibold text-slate-400">{a.time}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          
+          <button className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white">
+            Xem toàn bộ nhật ký
+          </button>
+        </motion.div>
+      </div>
+
+      {/* Upcoming Tournaments Table */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.6 }}
+        className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-[#151c2c] overflow-hidden"
+      >
+        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5 dark:border-slate-800/80">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100/50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
+              <Trophy size={20} />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Giải đấu sắp diễn ra</h3>
+              <p className="text-sm font-medium text-slate-500">Quản lý lịch trình các giải đấu tới</p>
+            </div>
+          </div>
+          <button className="hidden sm:flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 hover:shadow">
+            Quản lý giải đấu
+            <ArrowRight size={16} />
+          </button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full whitespace-nowrap text-left text-sm">
+            <thead className="bg-slate-50 dark:bg-[#111724]">
+              <tr>
+                <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-400">Tên giải đấu</th>
+                <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-400">Thời gian</th>
+                <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-400">Địa điểm</th>
+                <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-400">Tham gia</th>
+                <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-400">Trạng thái</th>
+                <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-400 text-right">Hành động</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
               {upcomingTournaments.map((t, i) => {
                 const st = statusMap[t.status];
                 return (
-                  <tr key={i} className="table-row">
-                    <td style={{ padding: '13px 20px', borderBottom: '1px solid #f5f5f5' }}>
-                      <div style={{ fontWeight: 600, fontSize: 13.5, color: '#111' }}>{t.name}</div>
+                  <tr key={i} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-colors group">
+                    <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">
+                      {t.name}
                     </td>
-                    <td style={{ padding: '13px 20px', borderBottom: '1px solid #f5f5f5', fontSize: 13, color: '#555' }}>{t.date}</td>
-                    <td style={{ padding: '13px 20px', borderBottom: '1px solid #f5f5f5', fontSize: 13, color: '#555' }}>{t.location}</td>
-                    <td style={{ padding: '13px 20px', borderBottom: '1px solid #f5f5f5', fontSize: 13, color: '#555', fontWeight: 500 }}>{t.participants}</td>
-                    <td style={{ padding: '13px 20px', borderBottom: '1px solid #f5f5f5' }}>
-                      <span style={{ fontSize: 11.5, fontWeight: 600, padding: '4px 10px', borderRadius: 20, color: st.color, background: st.bg }}>
+                    <td className="px-6 py-4 font-medium text-slate-600 dark:text-slate-300">
+                      {t.date}
+                    </td>
+                    <td className="px-6 py-4 font-medium text-slate-600 dark:text-slate-300">
+                      {t.location}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-200">
+                        <Users size={14} className="text-slate-400" />
+                        {t.participants} ngựa
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${st.bgClass} ${st.textClass}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${st.dotClass}`}></span>
                         {st.label}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all dark:hover:bg-blue-900/30 dark:hover:text-blue-400">
+                        <MoreHorizontal size={18} />
+                      </button>
                     </td>
                   </tr>
                 );
@@ -196,56 +324,7 @@ export default function Dashboard() {
             </tbody>
           </table>
         </div>
-
-        {/* Right column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-          {/* Tasks progress */}
-          <div style={{ backgroundColor: '#fff', borderRadius: 14, border: '1px solid #f0f0f0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', padding: '20px 20px 18px' }}>
-            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>Công việc cần làm</div>
-            <div style={{ fontSize: 12, color: '#bbb', marginBottom: 18 }}>Tiến độ xử lý hôm nay</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-              {tasks.map((t, i) => {
-                const pct = Math.round((t.done / t.total) * 100);
-                return (
-                  <div key={i}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
-                      <span style={{ fontSize: 13, fontWeight: 500, color: '#333' }}>{t.label}</span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: t.color }}>{t.done}/{t.total}</span>
-                    </div>
-                    <div style={{ height: 7, borderRadius: 99, background: '#f5f5f5', overflow: 'hidden' }}>
-                      <div
-                        className="progress-bar"
-                        style={{ height: '100%', width: `${pct}%`, borderRadius: 99, background: t.color }}
-                      />
-                    </div>
-                    <div style={{ fontSize: 11, color: '#bbb', marginTop: 4, textAlign: 'right' }}>{pct}%</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Recent activities */}
-          <div style={{ backgroundColor: '#fff', borderRadius: 14, border: '1px solid #f0f0f0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', padding: '20px 20px 16px', flex: 1 }}>
-            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>Hoạt động gần đây</div>
-            <div style={{ fontSize: 12, color: '#bbb', marginBottom: 18 }}>Nhật ký hành động mới nhất</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {recentActivities.map((a, i) => (
-                <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                  <div style={{ width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0, background: '#f9f9f9' }}>
-                    {a.icon}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#111', marginBottom: 2 }}>{a.title}</div>
-                    <div style={{ fontSize: 12, color: '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.desc}</div>
-                  </div>
-                  <div style={{ fontSize: 11, color: '#ccc', flexShrink: 0, marginTop: 2 }}>{a.time}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Box, Paper, TextField, Button, Typography, Alert, CircularProgress, InputAdornment, IconButton, Fade } from '@mui/material';
-import { Visibility, VisibilityOff, Lock, Email } from '@mui/icons-material';
+import { Mail, Lock, Loader2, Trophy, AlertCircle } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext';
 
 export default function Login() {
@@ -10,13 +9,15 @@ export default function Login() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) { setError('Vui lòng nhập email và mật khẩu'); return; }
+    if (!email || !password) { 
+      setError('Vui lòng nhập email và mật khẩu'); 
+      return; 
+    }
     setLoading(true);
     setError('');
     try {
@@ -30,181 +31,120 @@ export default function Login() {
   };
 
   return (
-    <Box sx={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      position: 'relative',
-      overflow: 'hidden',
-      backgroundColor: '#050510',
-      fontFamily: "'Inter', -apple-system, sans-serif"
-    }}>
-      {/* Background with animated gradients and premium image feel */}
-      <Box sx={{
-        position: 'absolute',
-        top: 0, left: 0, right: 0, bottom: 0,
-        backgroundColor: '#050510',
-        zIndex: 0,
-        '&::before': {
-          content: '""', position: 'absolute', inset: 0,
-          background: 'url("/images/background.jpg") center/cover no-repeat',
-          opacity: 0.5,
-          filter: 'contrast(1.1) brightness(0.7)'
-        },
-        '&::after': {
-          content: '""', position: 'absolute', inset: 0,
-          background: 'radial-gradient(circle at 50% 50%, transparent 20%, #050510 100%), linear-gradient(to right, rgba(5,5,16,0.8), transparent, rgba(5,5,16,0.8))'
-        }
-      }} />
+    <div className="flex h-screen items-center justify-center bg-slate-50 p-4 font-sans dark:bg-[#121a2f]">
+      <div className="w-full max-w-[1000px] rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-[#1c2434] overflow-hidden">
+        <div className="flex flex-wrap items-stretch h-full">
+          {/* Left Side: Graphic / Branding */}
+          <div className="hidden w-full lg:flex lg:w-1/2 bg-blue-50 dark:bg-[#243045] p-12 border-r border-slate-200 dark:border-slate-700 flex-col items-center justify-center relative overflow-hidden">
+            <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-600 via-transparent to-transparent"></div>
+            
+            <div className="relative z-10 text-center flex flex-col items-center">
+              <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-white p-2 shadow-xl dark:bg-slate-800">
+                <img src="/images/logo.png" alt="Logo" className="h-full w-full object-contain" />
+              </div>
+              <h2 className="mb-3 text-3xl font-bold text-slate-800 dark:text-white leading-tight">
+                Hệ Thống Quản Lý <br/> Đua Ngựa Pro
+              </h2>
+              <p className="text-slate-500 dark:text-slate-400 font-medium text-sm leading-relaxed max-w-[300px]">
+                Nền tảng quản lý toàn diện dành cho ban tổ chức giải đua ngựa, quản lý ngựa, jockey, trọng tài.
+              </p>
+            </div>
+            
+            {/* Some decoration */}
+            <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-blue-100 to-transparent dark:from-[#1c2434] dark:to-transparent opacity-50"></div>
+          </div>
 
-      <Fade in={true} timeout={1000}>
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 4, md: 5 }, 
-            width: '100%', 
-            maxWidth: 440, 
-            borderRadius: '24px',
-            position: 'relative',
-            zIndex: 1,
-            background: 'rgba(20, 20, 30, 0.65)', 
-            backdropFilter: 'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
-            border: '1px solid rgba(255,255,255,0.08)', 
-            boxShadow: '0 32px 64px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)',
-            transition: 'transform 0.3s ease',
-            '&:hover': {
-              transform: 'translateY(-2px)'
-            }
-          }}
-        >
-          {/* Logo Area */}
-          <Box sx={{ textAlign: 'center', mb: 5 }}>
-            <Box sx={{
-              width: 72, height: 72, borderRadius: '20px', mx: 'auto', mb: 3,
-              background: 'linear-gradient(135deg, #FFD700 0%, #D4A017 50%, #996515 100%)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 12px 24px rgba(212, 160, 23, 0.3), inset 0 2px 0 rgba(255,255,255,0.4)',
-              position: 'relative',
-              overflow: 'hidden'
-            }}>
-               <Box component="img" src="/images/logo.png" sx={{ width: 44, height: 44, objectFit: 'contain', zIndex: 1 }} alt="Logo" />
-               <Box sx={{ position: 'absolute', top: 0, left: '-100%', width: '50%', height: '100%', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)', animation: 'shimmer 3s infinite' }} />
-               <style>{`@keyframes shimmer { 100% { left: 200%; } }`}</style>
-            </Box>
-            <Typography variant="h4" sx={{ color: '#fff', fontWeight: 800, letterSpacing: '-0.5px', mb: 1, fontFamily: "'Inter', sans-serif" }}>
-              Admin Portal
-            </Typography>
-            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 500, letterSpacing: '0.5px', textTransform: 'uppercase', fontSize: '0.75rem' }}>
-              HRTMS — Hệ Thống Quản Lý Đua Ngựa
-            </Typography>
-          </Box>
+          {/* Right Side: Form */}
+          <div className="w-full lg:w-1/2 p-6 sm:p-12.5 xl:p-16 flex flex-col justify-center">
+            <div className="mb-8 lg:hidden flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white p-1 shadow-md dark:bg-slate-800">
+                <img src="/images/logo.png" alt="Logo" className="h-full w-full object-contain" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-800 dark:text-white">
+                Đua Ngựa Pro Admin
+              </h2>
+            </div>
 
-          {error && (
-            <Alert 
-              severity="error" 
-              sx={{ 
-                mb: 4, borderRadius: '12px', bgcolor: 'rgba(239, 68, 68, 0.1)', 
-                color: '#fca5a5', border: '1px solid rgba(239, 68, 68, 0.3)', 
-                '& .MuiAlert-icon': { color: '#fca5a5' },
-                alignItems: 'center'
-              }}
-            >
-              {error}
-            </Alert>
-          )}
+            <h2 className="mb-2 text-2xl font-bold text-black dark:text-white sm:text-title-xl2">
+              Đăng nhập hệ thống
+            </h2>
+            <p className="mb-8 text-sm font-medium text-slate-500 dark:text-slate-400">
+              Vui lòng đăng nhập bằng tài khoản quản trị viên của bạn.
+            </p>
 
-          <Box component="form" onSubmit={handleSubmit}>
-            <TextField
-              fullWidth label="Địa chỉ Email" type="email" value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              variant="filled"
-              sx={{ 
-                mb: 3, 
-                '& .MuiFilledInput-root': { 
-                  backgroundColor: 'rgba(0,0,0,0.3)',
-                  borderRadius: '12px',
-                  color: 'white',
-                  border: '1px solid rgba(255,255,255,0.05)',
-                  transition: 'all 0.2s',
-                  '&:hover': { backgroundColor: 'rgba(0,0,0,0.5)', borderColor: 'rgba(255,255,255,0.1)' },
-                  '&.Mui-focused': { backgroundColor: 'rgba(0,0,0,0.6)', borderColor: '#D4A017' },
-                  '&::before, &::after': { display: 'none' }
-                },
-                '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.5)', '&.Mui-focused': { color: '#D4A017' } }
-              }}
-              InputProps={{ 
-                startAdornment: <InputAdornment position="start"><Email sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 22, ml: 1, mr: 1 }} /></InputAdornment>,
-                disableUnderline: true
-              }}
-            />
-            <TextField
-              fullWidth label="Mật khẩu" type={showPassword ? 'text' : 'password'}
-              value={password} onChange={(e) => setPassword(e.target.value)}
-              variant="filled"
-              sx={{ 
-                mb: 4, 
-                '& .MuiFilledInput-root': { 
-                  backgroundColor: 'rgba(0,0,0,0.3)',
-                  borderRadius: '12px',
-                  color: 'white',
-                  border: '1px solid rgba(255,255,255,0.05)',
-                  transition: 'all 0.2s',
-                  '&:hover': { backgroundColor: 'rgba(0,0,0,0.5)', borderColor: 'rgba(255,255,255,0.1)' },
-                  '&.Mui-focused': { backgroundColor: 'rgba(0,0,0,0.6)', borderColor: '#D4A017' },
-                  '&::before, &::after': { display: 'none' }
-                },
-                '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.5)', '&.Mui-focused': { color: '#D4A017' } }
-              }}
-              InputProps={{
-                startAdornment: <InputAdornment position="start"><Lock sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 22, ml: 1, mr: 1 }} /></InputAdornment>,
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton onClick={() => setShowPassword(!showPassword)} sx={{ color: 'rgba(255,255,255,0.4)', mr: 0.5, '&:hover': { color: 'white' } }}>
-                      {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-                disableUnderline: true
-              }}
-            />
+            {error && (
+              <div className="mb-6 flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-400">
+                <AlertCircle size={20} className="shrink-0" />
+                <p className="text-sm font-medium">{error}</p>
+              </div>
+            )}
 
-            <Button
-              fullWidth type="submit" variant="contained" disabled={loading}
-              sx={{ 
-                py: 1.8, 
-                borderRadius: '12px', 
-                fontSize: '1.05rem', 
-                fontWeight: 700, 
-                textTransform: 'none', 
-                background: 'linear-gradient(135deg, #E6B93D 0%, #D4A017 50%, #B38600 100%)', 
-                color: '#050510', 
-                boxShadow: '0 8px 20px rgba(212, 160, 23, 0.3), inset 0 1px 0 rgba(255,255,255,0.3)',
-                transition: 'all 0.3s ease',
-                '&:hover': { 
-                  background: 'linear-gradient(135deg, #F5D366 0%, #E6B93D 50%, #C99600 100%)',
-                  boxShadow: '0 12px 28px rgba(212, 160, 23, 0.4), inset 0 1px 0 rgba(255,255,255,0.4)',
-                  transform: 'translateY(-2px)'
-                }, 
-                '&.Mui-disabled': { 
-                  background: 'rgba(255,255,255,0.05)', 
-                  color: 'rgba(255,255,255,0.3)',
-                  boxShadow: 'none'
-                } 
-              }}
-            >
-              {loading ? <CircularProgress size={28} sx={{ color: '#050510' }} /> : 'Đăng nhập vào hệ thống'}
-            </Button>
-          </Box>
+            <form onSubmit={handleSubmit}>
+              <div className="mb-5">
+                <label className="mb-2.5 block font-medium text-black dark:text-white">
+                  Email
+                </label>
+                <div className="relative">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Nhập email của bạn"
+                    className="w-full rounded-lg border border-slate-300 bg-transparent py-3 pl-11 pr-4 outline-none focus:border-blue-500 focus-visible:shadow-none dark:border-slate-600 dark:bg-slate-800 dark:focus:border-blue-500 transition-colors text-black dark:text-white"
+                  />
+                  <Mail className="absolute left-4 top-3.5 text-slate-400" size={20} />
+                </div>
+              </div>
 
-          <Box sx={{ mt: 5, pt: 3, borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' }}>
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)', fontWeight: 500, letterSpacing: '0.5px' }}>
-              &copy; 2026 HORSE RACING TOURNAMENT MANAGEMENT. <br/> CHỈ DÀNH CHO QUẢN TRỊ VIÊN.
-            </Typography>
-          </Box>
-        </Paper>
-      </Fade>
-    </Box>
+              <div className="mb-6">
+                <label className="mb-2.5 block font-medium text-black dark:text-white">
+                  Mật khẩu
+                </label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Nhập mật khẩu"
+                    className="w-full rounded-lg border border-slate-300 bg-transparent py-3 pl-11 pr-4 outline-none focus:border-blue-500 focus-visible:shadow-none dark:border-slate-600 dark:bg-slate-800 dark:focus:border-blue-500 transition-colors text-black dark:text-white"
+                  />
+                  <Lock className="absolute left-4 top-3.5 text-slate-400" size={20} />
+                </div>
+              </div>
+
+              <div className="mb-6 flex items-center justify-between">
+                <label htmlFor="remember" className="flex cursor-pointer items-center gap-2">
+                  <div className="relative">
+                    <input type="checkbox" id="remember" className="sr-only" />
+                    <div className="box mr-2 flex h-5 w-5 items-center justify-center rounded border border-slate-300 bg-transparent dark:border-slate-600">
+                      <span className="opacity-0">✓</span>
+                    </div>
+                  </div>
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Ghi nhớ đăng nhập</p>
+                </label>
+                <a href="#" className="text-sm font-medium text-blue-600 hover:underline dark:text-blue-500">
+                  Quên mật khẩu?
+                </a>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-blue-600 p-3.5 text-white transition hover:bg-blue-700 disabled:opacity-70 disabled:cursor-not-allowed font-medium"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="animate-spin" size={20} />
+                    Đang xử lý...
+                  </>
+                ) : (
+                  'Đăng nhập'
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

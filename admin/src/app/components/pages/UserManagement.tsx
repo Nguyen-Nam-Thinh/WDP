@@ -1,42 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import {
-  Box,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  IconButton,
-  Chip,
-  Button,
-  TextField,
-  InputAdornment,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Avatar,
-  Typography,
-  TablePagination,
-  Skeleton,
-  Tooltip,
-  Alert,
-  CircularProgress,
-} from '@mui/material';
-import {
-  Edit,
-  Search,
-  Block,
-  CheckCircle,
-  Refresh,
-  FilterList,
-} from '@mui/icons-material';
+import { Edit, Search, Ban, CheckCircle, RefreshCw, Filter, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { userApi, AdminUser } from '../../api/user';
 
@@ -48,25 +11,45 @@ const ROLE_LABELS: Record<string, string> = {
   spectator: 'Khán giả',
 };
 
-const ROLE_COLORS: Record<string, 'error' | 'warning' | 'info' | 'success' | 'default' | 'primary' | 'secondary'> = {
-  admin: 'error',
-  owner: 'warning',
-  jockey: 'primary',
-  referee: 'info',
-  spectator: 'default',
+const ROLE_COLORS: Record<string, string> = {
+  admin: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800',
+  owner: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800',
+  jockey: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800',
+  referee: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 border-purple-200 dark:border-purple-800',
+  spectator: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700',
 };
+
+// ── Shared Modal Wrapper ───────────────────────────────────────────────────────
+
+function Modal({ open, onClose, title, children, maxWidth = 'max-w-2xl' }: any) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className={`w-full ${maxWidth} rounded-xl bg-white shadow-2xl dark:bg-[#1c2434] border border-slate-200 dark:border-slate-700 flex flex-col max-h-[90vh]`}>
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-6 py-4">
+          <h3 className="text-xl font-semibold text-black dark:text-white">{title}</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-black dark:hover:text-white transition">
+            <X size={24} />
+          </button>
+        </div>
+        <div className="overflow-y-auto p-6 custom-scrollbar flex-1">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function UserManagement() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // Filters & pagination
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
-  const [page, setPage] = useState(0); // MUI is 0-indexed
+  const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(20);
 
   // Edit dialog
@@ -82,19 +65,17 @@ export default function UserManagement() {
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
-    setError(null);
     try {
       const res = await userApi.getUsers({
         role: roleFilter || undefined,
-        page: page + 1,
+        page,
         limit: rowsPerPage,
       });
       setUsers(res.users);
       setTotal(res.total);
       setTotalPages(res.totalPages);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Không thể tải danh sách người dùng';
-      setError(msg);
+      toast.error(err instanceof Error ? err.message : 'Không thể tải danh sách người dùng');
     } finally {
       setLoading(false);
     }
@@ -165,236 +146,262 @@ export default function UserManagement() {
     }
   };
 
-  const handleChangePage = (_: unknown, newPage: number) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(parseInt(e.target.value, 10));
-    setPage(0);
-  };
-
   return (
-    <Box>
-      {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h5" sx={{ fontWeight: 600 }}>
+    <>
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-title-md2 font-semibold text-black dark:text-white flex items-center gap-2">
           Quản lý người dùng
-          {!loading && (
-            <Typography component="span" variant="body2" sx={{ ml: 1, color: 'text.secondary' }}>
-              ({total} người dùng)
-            </Typography>
-          )}
-        </Typography>
-        <Tooltip title="Làm mới">
-          <IconButton onClick={fetchUsers} disabled={loading}>
-            <Refresh />
-          </IconButton>
-        </Tooltip>
-      </Box>
+          {!loading && <span className="text-sm font-medium text-slate-500">({total} người dùng)</span>}
+        </h2>
+        <button
+          onClick={fetchUsers}
+          disabled={loading}
+          className="inline-flex items-center justify-center gap-2.5 rounded-md border border-slate-300 bg-white py-2 px-4 text-center font-medium text-black hover:bg-slate-50 transition dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700 disabled:opacity-50"
+        >
+          <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+          Làm mới
+        </button>
+      </div>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
-
-      <Paper sx={{ p: 3, borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+      <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-[#1c2434] mb-6 overflow-hidden">
         {/* Filters */}
-        <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
-          <TextField
-            placeholder="Tìm kiếm theo tên hoặc email..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            sx={{ flex: 1, minWidth: 220 }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search />
-                </InputAdornment>
-              ),
-            }}
-          />
-          <FormControl sx={{ minWidth: 160 }}>
-            <InputLabel>
-              <FilterList sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'middle' }} />
-              Vai trò
-            </InputLabel>
-            <Select
-              value={roleFilter}
-              label="Vai trò"
-              onChange={(e) => {
-                setRoleFilter(e.target.value);
-                setPage(0);
-              }}
-            >
-              <MenuItem value="">Tất cả</MenuItem>
-              <MenuItem value="owner">Chủ ngựa</MenuItem>
-              <MenuItem value="jockey">Kỵ thủ</MenuItem>
-              <MenuItem value="referee">Trọng tài</MenuItem>
-              <MenuItem value="spectator">Khán giả</MenuItem>
-            </Select>
-          </FormControl>
-        </Box>
+        <div className="border-b border-slate-200 px-5 py-4 dark:border-slate-700 sm:px-7.5">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="relative z-20 bg-transparent w-full sm:w-auto min-w-[260px] flex-1">
+              <span className="absolute top-1/2 left-4 -translate-y-1/2">
+                <Search size={18} className="text-slate-400" />
+              </span>
+              <input
+                type="text"
+                placeholder="Tìm kiếm theo tên hoặc email..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded border border-slate-300 bg-transparent py-2 pl-10 pr-4 outline-none focus:border-blue-500 active:border-blue-500 dark:border-slate-600 dark:bg-slate-800/50"
+              />
+            </div>
+
+            <div className="relative z-20 bg-transparent w-full sm:w-auto min-w-[180px]">
+              <span className="absolute top-1/2 left-4 -translate-y-1/2">
+                <Filter size={18} className="text-slate-400" />
+              </span>
+              <select
+                value={roleFilter}
+                onChange={(e) => {
+                  setRoleFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="relative z-20 w-full appearance-none rounded border border-slate-300 bg-transparent py-2 pl-10 pr-4 outline-none transition focus:border-blue-500 active:border-blue-500 dark:border-slate-600 dark:bg-slate-800/50"
+              >
+                <option value="">Tất cả vai trò</option>
+                <option value="owner">Chủ ngựa</option>
+                <option value="jockey">Kỵ thủ</option>
+                <option value="referee">Trọng tài</option>
+                <option value="spectator">Khán giả</option>
+              </select>
+            </div>
+          </div>
+        </div>
 
         {/* Table */}
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 600 }}>Người dùng</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Vai trò</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Trạng thái</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Ngày tạo</TableCell>
-                <TableCell sx={{ fontWeight: 600 }} align="right">
-                  Hành động
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading
-                ? Array.from({ length: rowsPerPage }).map((_, i) => (
-                    <TableRow key={i}>
-                      {Array.from({ length: 6 }).map((__, j) => (
-                        <TableCell key={j}>
-                          <Skeleton variant="text" />
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                : filteredUsers.map((user) => (
-                    <TableRow key={user._id} hover>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <Avatar src={user.avatarUrl} sx={{ bgcolor: 'primary.main', width: 36, height: 36 }}>
-                            {user.fullName.charAt(0).toUpperCase()}
-                          </Avatar>
-                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                            {user.fullName}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>
-                        {user.email}
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={ROLE_LABELS[user.role] ?? user.role}
-                          size="small"
-                          color={ROLE_COLORS[user.role] ?? 'default'}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          icon={user.isActive ? <CheckCircle /> : <Block />}
-                          label={user.isActive ? 'Hoạt động' : 'Vô hiệu hóa'}
-                          size="small"
-                          color={user.isActive ? 'success' : 'default'}
-                        />
-                      </TableCell>
-                      <TableCell sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>
-                        {new Date(user.createdAt).toLocaleDateString('vi-VN')}
-                      </TableCell>
-                      <TableCell align="right">
-                        <Tooltip title="Chỉnh sửa">
-                          <IconButton size="small" onClick={() => handleEdit(user)}>
-                            <Edit fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title={user.isActive ? 'Vô hiệu hóa tài khoản' : 'Kích hoạt tài khoản'}>
-                          <span>
-                            <IconButton
-                              size="small"
-                              color={user.isActive ? 'error' : 'success'}
-                              onClick={() => handleToggleActive(user)}
-                              disabled={togglingIds.has(user._id)}
-                            >
-                              {togglingIds.has(user._id) ? (
-                                <CircularProgress size={16} />
-                              ) : user.isActive ? (
-                                <Block fontSize="small" />
-                              ) : (
-                                <CheckCircle fontSize="small" />
-                              )}
-                            </IconButton>
+        <div className="max-w-full overflow-x-auto">
+          <table className="w-full table-auto">
+            <thead>
+              <tr className="bg-slate-50 text-left dark:bg-slate-800">
+                <th className="py-4 px-4 font-semibold text-black dark:text-white border-b border-slate-200 dark:border-slate-700 sm:pl-7.5">Người dùng</th>
+                <th className="py-4 px-4 font-semibold text-black dark:text-white border-b border-slate-200 dark:border-slate-700">Email</th>
+                <th className="py-4 px-4 font-semibold text-black dark:text-white border-b border-slate-200 dark:border-slate-700">Vai trò</th>
+                <th className="py-4 px-4 font-semibold text-black dark:text-white border-b border-slate-200 dark:border-slate-700">Trạng thái</th>
+                <th className="py-4 px-4 font-semibold text-black dark:text-white border-b border-slate-200 dark:border-slate-700">Ngày tạo</th>
+                <th className="py-4 px-4 font-semibold text-black dark:text-white border-b border-slate-200 dark:border-slate-700 text-right sm:pr-7.5">Hành động</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="border-b border-slate-200 dark:border-slate-700">
+                    {Array.from({ length: 6 }).map((__, j) => (
+                      <td key={j} className="py-4 px-4 sm:px-7.5"><div className="h-5 w-full animate-pulse rounded bg-slate-200 dark:bg-slate-700"></div></td>
+                    ))}
+                  </tr>
+                ))
+              ) : filteredUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-8 text-slate-500">Không tìm thấy người dùng nào</td>
+                </tr>
+              ) : (
+                filteredUsers.map((user) => (
+                  <tr key={user._id} className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <td className="py-3 px-4 sm:pl-7.5">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 overflow-hidden">
+                          {user.avatarUrl ? (
+                            <img src={user.avatarUrl} alt={user.fullName} className="h-full w-full object-cover" />
+                          ) : (
+                            <span className="font-semibold text-sm">{user.fullName.charAt(0).toUpperCase()}</span>
+                          )}
+                        </div>
+                        <p className="font-medium text-black dark:text-white">{user.fullName}</p>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <p className="text-sm text-slate-500 dark:text-slate-400">{user.email}</p>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`inline-block rounded border px-2.5 py-0.5 text-xs font-medium ${ROLE_COLORS[user.role] || ROLE_COLORS.spectator}`}>
+                        {ROLE_LABELS[user.role] ?? user.role}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-1.5">
+                        {user.isActive ? (
+                          <span className="flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                            <CheckCircle size={14} /> Hoạt động
                           </span>
-                        </Tooltip>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-
-              {!loading && filteredUsers.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 6, color: 'text.secondary' }}>
-                    Không tìm thấy người dùng nào
-                  </TableCell>
-                </TableRow>
+                        ) : (
+                          <span className="flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                            <Ban size={14} /> Bị vô hiệu
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        {new Date(user.createdAt).toLocaleDateString('vi-VN')}
+                      </p>
+                    </td>
+                    <td className="py-3 px-4 text-right sm:pr-7.5">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleEdit(user)}
+                          className="p-1.5 text-slate-500 hover:text-blue-600 bg-slate-100 hover:bg-blue-100 rounded-md dark:bg-slate-800 dark:hover:bg-slate-700 transition"
+                          title="Chỉnh sửa"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleToggleActive(user)}
+                          disabled={togglingIds.has(user._id)}
+                          className={`p-1.5 rounded-md transition ${
+                            user.isActive 
+                              ? 'text-slate-500 hover:text-red-600 bg-slate-100 hover:bg-red-100 dark:bg-slate-800 dark:hover:bg-slate-700' 
+                              : 'text-slate-500 hover:text-emerald-600 bg-slate-100 hover:bg-emerald-100 dark:bg-slate-800 dark:hover:bg-slate-700'
+                          } disabled:opacity-50`}
+                          title={user.isActive ? 'Vô hiệu hóa tài khoản' : 'Kích hoạt tài khoản'}
+                        >
+                          {togglingIds.has(user._id) ? (
+                            <RefreshCw className="animate-spin" size={16} />
+                          ) : user.isActive ? (
+                            <Ban size={16} />
+                          ) : (
+                            <CheckCircle size={16} />
+                          )}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+            </tbody>
+          </table>
+        </div>
 
         {/* Pagination */}
-        <TablePagination
-          component="div"
-          count={total}
-          page={page}
-          onPageChange={handleChangePage}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          rowsPerPageOptions={[10, 20, 50]}
-          labelRowsPerPage="Số hàng mỗi trang:"
-          labelDisplayedRows={({ from, to, count }) => `${from}–${to} / ${count}`}
-        />
-      </Paper>
+        {totalPages > 0 && (
+          <div className="flex items-center justify-between border-t border-slate-200 px-5 py-4 dark:border-slate-700 sm:px-7.5">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-slate-500">Hiển thị</span>
+              <select 
+                value={rowsPerPage} 
+                onChange={e => { setRowsPerPage(Number(e.target.value)); setPage(1); }}
+                className="rounded border border-slate-300 bg-transparent py-1 px-2 text-sm outline-none transition focus:border-blue-500 dark:border-slate-600 dark:bg-slate-800"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+              </select>
+              <span className="text-sm text-slate-500">hàng</span>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => setPage(p => p - 1)} 
+                disabled={page === 1}
+                className="rounded bg-slate-100 py-1.5 px-3 text-sm font-medium text-slate-600 hover:bg-slate-200 disabled:opacity-50 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition"
+              >
+                ← Trước
+              </button>
+              <p className="text-sm text-slate-500">
+                {page} / {totalPages}
+              </p>
+              <button 
+                onClick={() => setPage(p => p + 1)} 
+                disabled={page >= totalPages}
+                className="rounded bg-slate-100 py-1.5 px-3 text-sm font-medium text-slate-600 hover:bg-slate-200 disabled:opacity-50 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition"
+              >
+                Sau →
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Edit Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>Chỉnh sửa người dùng</DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
-            <TextField
-              label="Họ và tên"
-              fullWidth
-              value={editFullName}
-              onChange={(e) => setEditFullName(e.target.value)}
+      <Modal open={openDialog} onClose={handleCloseDialog} title="Chỉnh sửa người dùng" maxWidth="max-w-md">
+        <div className="flex flex-col gap-5">
+          <div>
+            <label className="mb-2.5 block text-sm font-medium text-black dark:text-white">Họ và tên</label>
+            <input 
+              type="text" 
+              value={editFullName} 
+              onChange={(e) => setEditFullName(e.target.value)} 
+              className="w-full rounded border-[1.5px] border-slate-300 bg-transparent py-2 px-4 text-black outline-none transition focus:border-blue-500 active:border-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white" 
             />
-            <TextField
-              label="Email"
-              type="email"
-              fullWidth
-              value={selectedUser?.email ?? ''}
-              disabled
-              helperText="Email không thể thay đổi"
+          </div>
+          <div>
+            <label className="mb-2.5 block text-sm font-medium text-black dark:text-white">Email</label>
+            <input 
+              type="email" 
+              value={selectedUser?.email ?? ''} 
+              disabled 
+              className="w-full rounded border-[1.5px] border-slate-200 bg-slate-50 py-2 px-4 text-slate-500 outline-none dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400 cursor-not-allowed" 
             />
-            <TextField
-              label="Số điện thoại"
-              fullWidth
-              value={editPhone}
-              onChange={(e) => setEditPhone(e.target.value)}
+            <p className="mt-1 text-xs text-slate-500">Email không thể thay đổi</p>
+          </div>
+          <div>
+            <label className="mb-2.5 block text-sm font-medium text-black dark:text-white">Số điện thoại</label>
+            <input 
+              type="text" 
+              value={editPhone} 
+              onChange={(e) => setEditPhone(e.target.value)} 
+              className="w-full rounded border-[1.5px] border-slate-300 bg-transparent py-2 px-4 text-black outline-none transition focus:border-blue-500 active:border-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white" 
             />
-            <FormControl fullWidth>
-              <InputLabel>Vai trò</InputLabel>
-              <Select value={editRole} label="Vai trò" onChange={(e) => setEditRole(e.target.value)}>
-                <MenuItem value="owner">Chủ ngựa</MenuItem>
-                <MenuItem value="jockey">Kỵ thủ</MenuItem>
-                <MenuItem value="referee">Trọng tài</MenuItem>
-                <MenuItem value="spectator">Khán giả</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={handleCloseDialog} disabled={saving}>
+          </div>
+          <div>
+            <label className="mb-2.5 block text-sm font-medium text-black dark:text-white">Vai trò</label>
+            <div className="relative z-20 bg-transparent">
+              <select 
+                value={editRole} 
+                onChange={(e) => setEditRole(e.target.value)} 
+                className="relative z-20 w-full appearance-none rounded border-[1.5px] border-slate-300 bg-transparent py-2 px-4 outline-none transition focus:border-blue-500 active:border-blue-500 dark:border-slate-600 dark:bg-slate-800"
+              >
+                <option value="owner">Chủ ngựa</option>
+                <option value="jockey">Kỵ thủ</option>
+                <option value="referee">Trọng tài</option>
+                <option value="spectator">Khán giả</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div className="mt-8 flex justify-end gap-3 border-t border-slate-200 pt-5 dark:border-slate-700">
+          <button onClick={handleCloseDialog} disabled={saving} className="rounded border border-slate-300 py-2 px-6 font-medium text-black hover:bg-slate-50 dark:border-slate-600 dark:text-white dark:hover:bg-slate-800 disabled:opacity-50 transition">
             Hủy
-          </Button>
-          <Button variant="contained" onClick={handleSaveUser} disabled={saving}>
-            {saving ? <CircularProgress size={20} sx={{ mr: 1 }} /> : null}
+          </button>
+          <button onClick={handleSaveUser} disabled={saving} className="rounded bg-blue-600 py-2 px-6 font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition flex items-center justify-center min-w-[120px]">
+            {saving ? <RefreshCw className="animate-spin mr-2" size={18} /> : null}
             Cập nhật
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+          </button>
+        </div>
+      </Modal>
+    </>
   );
 }
