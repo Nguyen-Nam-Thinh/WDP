@@ -2754,17 +2754,62 @@ export function SpectatorDashboard() {
                     {selectedRaceRegistrations.length > 0 ? (
                       selectedRaceRegistrations.map((h: any) => (
                         <MenuItem key={h.horseId} value={h.horseId}>
-                          {h.horseName} ({h.currentGrade} · {h.totalPoints}{" "}
-                          điểm){h.jockeyName ? ` — ${h.jockeyName}` : ""}
+                          {h.horseName} — {h.currentGrade}{h.jockeyName ? ` · 🏇 ${h.jockeyName}` : ''}
                         </MenuItem>
                       ))
                     ) : (
-                      <MenuItem disabled value="">
-                        Đang tải danh sách ngựa...
-                      </MenuItem>
+                      <MenuItem disabled value="">Đang tải danh sách ngựa...</MenuItem>
                     )}
                   </Select>
                 </FormControl>
+                {selectedHorse && (() => {
+                  const h = selectedRaceRegistrations.find((x: any) => x.horseId === selectedHorse);
+                  if (!h) return null;
+                  const gradeColors: Record<string, string> = { G1: '#8F7318', G2: '#8C2F1B', G3: '#1F3D2B', Maiden: '#7A7468' };
+                  const gradeColor = gradeColors[h.currentGrade] ?? '#7A7468';
+                  const winRatePct = h.winRate != null ? `${Math.round(h.winRate)}%` : '—';
+                  return (
+                    <div className="border border-border bg-background p-4 space-y-3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-foreground">{h.horseName}</span>
+                        <span className="text-xs font-bold px-1.5 py-0.5 border" style={{ color: gradeColor, borderColor: gradeColor + '60', background: gradeColor + '15' }}>
+                          {h.currentGrade}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="bg-muted/40 p-2">
+                          <div className="text-xs text-muted-foreground mb-0.5">Điểm tích lũy</div>
+                          <div className="font-semibold text-[#8F7318]">{h.totalPoints ?? 0} điểm</div>
+                        </div>
+                        <div className="bg-muted/40 p-2">
+                          <div className="text-xs text-muted-foreground mb-0.5">Tỷ lệ thắng</div>
+                          <div className="font-semibold text-foreground">{winRatePct}</div>
+                        </div>
+                        {h.breed && (
+                          <div className="bg-muted/40 p-2">
+                            <div className="text-xs text-muted-foreground mb-0.5">Giống</div>
+                            <div className="font-medium text-foreground">{h.breed}</div>
+                          </div>
+                        )}
+                        {h.gender && (
+                          <div className="bg-muted/40 p-2">
+                            <div className="text-xs text-muted-foreground mb-0.5">Giới tính</div>
+                            <div className="font-medium text-foreground">{h.gender === 'male' ? '♂ Đực' : h.gender === 'female' ? '♀ Cái' : h.gender}</div>
+                          </div>
+                        )}
+                      </div>
+                      {h.jockeyName && (
+                        <div className="border-t border-border pt-3 text-sm">
+                          <div className="text-xs text-muted-foreground mb-1">Jockey</div>
+                          <div className="font-semibold text-foreground">🏇 {h.jockeyName}</div>
+                          {h.jockeyExperience != null && (
+                            <div className="text-xs text-muted-foreground mt-0.5">{h.jockeyExperience} năm kinh nghiệm</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 <TextField
                   fullWidth

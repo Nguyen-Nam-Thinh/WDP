@@ -6,6 +6,8 @@ const { Horse } = require('../models/horse.model');
 const { Wallet } = require('../models/wallet.model');
 const walletService = require('./wallet.service');
 const { settleBetsWithSession, refundRaceBets } = require('./bet.service');
+const { createManyNotifications } = require('./notification.service');
+const { Bet } = require('../models/bet.model');
 const { getIO } = require('../sockets');
 const {
   POINTS_BY_GRADE,
@@ -323,6 +325,70 @@ async function runRaceSimulation(raceId) {
       })),
     });
   } catch { /* socket optional */ }
+
+  // ── Send in-app notifications (fire-and-forget) ───────────────────────────
+  sendRaceFinishedNotifications(race, ordered, registrations).catch(() => {});
+}
+
+async function sendRaceFinishedNotifications(race, ordered, registrations) {
+  const notifications = [];
+
+  for (const entry of ordered) {
+    const reg = entry.registration;
+    const pos = entry.position;
+    const prizeAmount = pos <= PRIZE_RATIO.length ? Math.floor(race.purse * PRIZE_RATIO[pos - 1]) : 0;
+    const posLabel = pos === 1 ? '🥇 Hạng 1' : pos === 2 ? '🥈 Hạng 2' : pos === 3 ? '🥉 Hạng 3' : `Hạng ${pos}`;
+
+    // Notify owner
+    if (reg.ownerId) {
+      notifications.push({
+        userId: reg.ownerId,
+        type: prizeAmount > 0 ? 'prize_received' : 'race_finished',
+        title: `Race "${race.name}" đã kết thúc`,
+        message: prizeAmount > 0
+          ? `Ngựa ${entry.horseName} về ${posLabel} — nhận ${prizeAmount.toLocaleString()} coins`
+          : `Ngựa ${entry.horseName} về ${posLabel}`,
+        data: { raceId: race._id, position: pos },
+      });
+    }
+
+    // Notify jockey
+    if (reg.jockeyId) {
+      notifications.push({
+        userId: reg.jockeyId._id ?? reg.jockeyId,
+        type: 'race_finished',
+        title: `Race "${race.name}" đã kết thúc`,
+        message: `Bạn cưỡi ${entry.horseName} về ${posLabel}${prizeAmount > 0 ? ` — thưởng ${prizeAmount.toLocaleString()} coins` : ''}`,
+        data: { raceId: race._id, position: pos },
+      });
+    }
+  }
+
+  // Notify spectators who placed bets
+  const bets = await Bet.find({ raceId: race._id, status: { $in: ['won', 'lost', 'refunded'] } })
+    .select('spectatorId status payoutAmount betType');
+
+  for (const bet of bets) {
+    if (bet.status === 'won') {
+      notifications.push({
+        userId: bet.spectatorId,
+        type: 'bet_won',
+        title: '🎉 Cược thắng!',
+        message: `Bạn thắng cược race "${race.name}" — nhận ${(bet.payoutAmount || 0).toLocaleString()} coins`,
+        data: { raceId: race._id, betId: bet._id },
+      });
+    } else if (bet.status === 'lost') {
+      notifications.push({
+        userId: bet.spectatorId,
+        type: 'bet_lost',
+        title: 'Cược thua',
+        message: `Cược của bạn trong race "${race.name}" không thắng`,
+        data: { raceId: race._id, betId: bet._id },
+      });
+    }
+  }
+
+  await createManyNotifications(notifications);
 }
 
 module.exports = { runRaceSimulation };

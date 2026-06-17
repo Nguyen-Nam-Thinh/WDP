@@ -1,9 +1,11 @@
-import { useState, type ReactNode } from "react";
-import { Link, useLocation } from "react-router";
-import { Bell, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
+import { Link, useLocation, useNavigate } from "react-router";
+import { Bell, ChevronLeft, ChevronRight, CheckCheck, Trophy, Coins, Mail, X } from "lucide-react";
 import { useWallet } from "../../hooks/useWallet";
+import { useAuth } from "../../hooks/useAuth";
 import { CoinAmount } from "../shared/CoinAmount";
 import { ProfileDropdown } from "../ProfileDropdown";
+import { notificationApi, type Notification } from "../../api/notification";
 
 export interface NavItem {
   to: string;
@@ -18,8 +20,171 @@ interface AppShellProps {
   children: ReactNode;
 }
 
+const TYPE_ICON: Record<string, ReactNode> = {
+  bet_won:             <Trophy className="w-4 h-4 text-[#8F7318]" />,
+  bet_lost:            <X className="w-4 h-4 text-destructive" />,
+  bet_refunded:        <Coins className="w-4 h-4 text-primary" />,
+  prize_received:      <Coins className="w-4 h-4 text-[#8F7318]" />,
+  invitation_received: <Mail className="w-4 h-4 text-primary" />,
+  invitation_accepted: <CheckCheck className="w-4 h-4 text-primary" />,
+  invitation_rejected: <X className="w-4 h-4 text-destructive" />,
+  race_finished:       <Trophy className="w-4 h-4 text-muted-foreground" />,
+  race_cancelled:      <X className="w-4 h-4 text-muted-foreground" />,
+  horse_grade_upgrade: <Trophy className="w-4 h-4 text-[#8F7318]" />,
+};
+
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'Vừa xong';
+  if (m < 60) return `${m} phút trước`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} giờ trước`;
+  return `${Math.floor(h / 24)} ngày trước`;
+}
+
+function NotificationPanel({ token, onClose }: { token: string; onClose: () => void }) {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    notificationApi.getNotifications(token, { limit: 30 })
+      .then(d => { setNotifications(d.notifications); setUnreadCount(d.unreadCount); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [token]);
+
+  const handleMarkRead = async (id: string) => {
+    await notificationApi.markRead(token, id);
+    setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
+    setUnreadCount(c => Math.max(0, c - 1));
+  };
+
+  const handleMarkAll = async () => {
+    await notificationApi.markAllRead(token);
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    setUnreadCount(0);
+  };
+
+  return (
+    <div className="absolute right-0 top-full mt-2 w-80 bg-card border border-border shadow-lg z-50 overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-sm text-foreground">Thông Báo</span>
+          {unreadCount > 0 && (
+            <span className="bg-secondary text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+              {unreadCount}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {unreadCount > 0 && (
+            <button
+              type="button"
+              onClick={handleMarkAll}
+              className="text-xs text-primary hover:underline flex items-center gap-1"
+            >
+              <CheckCheck className="w-3 h-3" /> Đọc tất cả
+            </button>
+          )}
+          <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* List */}
+      <div className="max-h-[400px] overflow-y-auto">
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : notifications.length === 0 ? (
+          <div className="text-center py-10 text-muted-foreground text-sm">
+            <Bell className="w-8 h-8 mx-auto mb-2 opacity-30" />
+            Chưa có thông báo nào
+          </div>
+        ) : (
+          notifications.map(n => (
+            <button
+              key={n._id}
+              type="button"
+              onClick={() => { if (!n.isRead) handleMarkRead(n._id); }}
+              className={`w-full text-left flex items-start gap-3 px-4 py-3 border-b border-border last:border-0 transition-colors hover:bg-muted/40 ${
+                !n.isRead ? 'bg-primary/5' : ''
+              }`}
+            >
+              <div className="shrink-0 mt-0.5">{TYPE_ICON[n.type] ?? <Bell className="w-4 h-4 text-muted-foreground" />}</div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2">
+                  <span className={`text-sm font-medium text-foreground leading-snug ${!n.isRead ? 'font-semibold' : ''}`}>
+                    {n.title}
+                  </span>
+                  {!n.isRead && <span className="w-2 h-2 rounded-full bg-secondary shrink-0 mt-1.5" />}
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5 leading-snug line-clamp-2">{n.message}</p>
+                <p className="text-[10px] text-muted-foreground/70 mt-1">{timeAgo(n.createdAt)}</p>
+              </div>
+            </button>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function BellButton({ token }: { token: string }) {
+  const [open, setOpen] = useState(false);
+  const [unread, setUnread] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    notificationApi.getUnreadCount(token).then(setUnread).catch(() => {});
+    const interval = setInterval(() => {
+      notificationApi.getUnreadCount(token).then(setUnread).catch(() => {});
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [token]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="relative p-1 rounded hover:bg-muted transition-colors"
+        aria-label="Thông báo"
+      >
+        <Bell className="h-4 w-4 text-muted-foreground" />
+        {unread > 0 && (
+          <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-secondary text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
+            {unread > 99 ? '99+' : unread}
+          </span>
+        )}
+      </button>
+      {open && (
+        <NotificationPanel
+          token={token}
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
 export function AppShell({ roleLabel, nav, children }: AppShellProps) {
   const { balance } = useWallet();
+  const { token } = useAuth();
   const { pathname } = useLocation();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -85,7 +250,7 @@ export function AppShell({ roleLabel, nav, children }: AppShellProps) {
         <header className="flex items-center justify-between border-b border-border px-6 py-3">
           <div />
           <div className="flex items-center gap-4">
-            <Bell className="h-4 w-4 text-muted-foreground" />
+            {token && <BellButton token={token} />}
             <span className="bg-primary px-3 py-1 text-xs text-primary-foreground">
               <CoinAmount amount={balance ?? 0} className="text-xs" />
             </span>

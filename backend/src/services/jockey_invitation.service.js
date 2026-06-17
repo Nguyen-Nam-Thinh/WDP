@@ -4,6 +4,7 @@ const { Horse } = require('../models/horse.model');
 const { User } = require('../models/user.model');
 const { Race } = require('../models/race.model');
 const { AppError } = require('../middleware/error.middleware');
+const { createNotification } = require('./notification.service');
 
 async function createInvitation(ownerId, { jockeyId, horseId, raceId, message }) {
   const [horse, jockey, race] = await Promise.all([
@@ -38,6 +39,14 @@ async function createInvitation(ownerId, { jockeyId, horseId, raceId, message })
   }
 
   const invitation = await JockeyInvitation.create({ ownerId, jockeyId, horseId, raceId, message });
+
+  createNotification(jockeyId, {
+    type: 'invitation_received',
+    title: 'Lời mời cưỡi ngựa mới',
+    message: `Bạn nhận được lời mời cưỡi ngựa ${horse.name} trong race ${race.name}`,
+    data: { invitationId: invitation._id, raceId, horseId },
+  }).catch(() => {});
+
   return invitation.populate([
     { path: 'jockeyId', select: 'fullName email jockeyProfile' },
     { path: 'horseId', select: 'name breed gender birthDate weight color primaryImageUrl imageUrls currentGrade totalPoints totalEarnings raceCount winCount violations isActive' },
@@ -108,9 +117,18 @@ async function acceptInvitation(invitationId, jockeyId) {
   }
 
   // Fresh query after session ends to avoid MongoExpiredSessionError on populate
-  return JockeyInvitation.findById(invitationId)
+  const populated = await JockeyInvitation.findById(invitationId)
     .populate('jockeyId', 'fullName email jockeyProfile')
     .populate('horseId', 'name breed gender currentGrade');
+
+  createNotification(populated.ownerId, {
+    type: 'invitation_accepted',
+    title: 'Jockey đã chấp nhận lời mời',
+    message: `${populated.jockeyId.fullName} đã chấp nhận cưỡi ngựa ${populated.horseId.name}`,
+    data: { invitationId },
+  }).catch(() => {});
+
+  return populated;
 }
 
 async function rejectInvitation(invitationId, jockeyId, rejectionNote) {
@@ -121,6 +139,19 @@ async function rejectInvitation(invitationId, jockeyId, rejectionNote) {
   invitation.status = 'rejected';
   if (rejectionNote) invitation.rejectionNote = rejectionNote;
   await invitation.save();
+
+  const populated = await JockeyInvitation.findById(invitationId)
+    .populate('jockeyId', 'fullName')
+    .populate('horseId', 'name');
+  if (populated) {
+    createNotification(populated.ownerId, {
+      type: 'invitation_rejected',
+      title: 'Jockey đã từ chối lời mời',
+      message: `${populated.jockeyId.fullName} đã từ chối cưỡi ngựa ${populated.horseId.name}`,
+      data: { invitationId },
+    }).catch(() => {});
+  }
+
   return invitation;
 }
 
