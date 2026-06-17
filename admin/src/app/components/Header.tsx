@@ -7,8 +7,6 @@ import { useNavigate } from 'react-router';
 export default function Header(props: {
   sidebarOpen: string | boolean | undefined;
   setSidebarOpen: (arg0: boolean) => void;
-  sidebarCollapsed: boolean;
-  setSidebarCollapsed: (arg: boolean) => void;
 }) {
   const { user, logout } = useAdminAuth();
   const navigate = useNavigate();
@@ -81,13 +79,13 @@ export default function Header(props: {
             >
               <span className="hidden text-right lg:block">
                 <span className="block text-sm font-medium text-slate-800 dark:text-white">
-                  {user?.name || 'Admin User'}
+                  {user?.fullName || 'Admin User'}
                 </span>
                 <span className="block text-xs font-medium text-slate-500">Quản trị viên</span>
               </span>
 
               <span className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold overflow-hidden shadow-sm">
-                {user?.name ? user.name.charAt(0).toUpperCase() : 'A'}
+                {user?.fullName ? user.fullName.charAt(0).toUpperCase() : 'A'}
               </span>
             </button>
 

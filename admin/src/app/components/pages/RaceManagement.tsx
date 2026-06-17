@@ -55,7 +55,10 @@ export default function RaceManagement() {
     try {
       const res = await raceApi.list({ tournamentId: filterTournament || undefined, limit: 100 });
       setRaces(res.races);
-      if (!selectedRace && res.races.length) setSelectedRace(res.races[0]);
+      setSelectedRace(prev => {
+        if (prev && res.races.some(r => r._id === prev._id)) return prev;
+        return res.races[0] ?? null;
+      });
     } catch (err: any) {
       toast.error(err.message);
     } finally {
