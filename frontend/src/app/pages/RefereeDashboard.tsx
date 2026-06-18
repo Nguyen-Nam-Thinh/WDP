@@ -467,8 +467,8 @@ export function RefereeDashboard() {
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-900/50 p-3 rounded-xl border border-border">
                             <div><div className="text-slate-500 text-xs mb-1">Cự Ly</div><div className="text-foreground font-medium text-sm">{race.distance}m</div></div>
-                            <div><div className="text-slate-500 text-xs mb-1">Giải Thưởng</div><div className="text-[#C9A227] font-semibold text-sm">${race.purse?.toLocaleString()}</div></div>
-                            <div><div className="text-slate-500 text-xs mb-1">Phí ĐK</div><div className="text-foreground font-medium text-sm">${race.registrationFee?.toLocaleString()}</div></div>
+                            <div><div className="text-slate-500 text-xs mb-1">Giải Thưởng</div><div className="text-[#C9A227] font-semibold text-sm">{race.purse?.toLocaleString('vi-VN')} VNĐ</div></div>
+                            <div><div className="text-slate-500 text-xs mb-1">Phí ĐK</div><div className="text-foreground font-medium text-sm">{race.registrationFee?.toLocaleString('vi-VN')} VNĐ</div></div>
                             <div className="flex items-end justify-end">
                               <Button variant="contained" disabled={!isPrecheckable}
                                 onClick={() => handleOpenPreCheck(race)}

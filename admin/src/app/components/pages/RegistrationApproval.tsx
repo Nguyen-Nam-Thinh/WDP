@@ -183,7 +183,7 @@ export default function RegistrationApproval() {
                       )}
                     </td>
                     <td className="py-3 px-4 text-sm font-bold text-slate-700 dark:text-slate-300">
-                      ${reg.feePaid?.toLocaleString()}
+                      {reg.feePaid?.toLocaleString('vi-VN')} VNĐ
                     </td>
                     <td className="py-3 px-4 text-center">
                       <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-medium ${PRECHECK_COLOR[reg.preCheckResult?.status || 'pending'] || PRECHECK_COLOR.pending}`}>
@@ -196,7 +196,7 @@ export default function RegistrationApproval() {
                       </span>
                       {reg.refundAmount > 0 && (
                         <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1">
-                          Hoàn: ${reg.refundAmount.toLocaleString()}
+                          Hoàn: {reg.refundAmount.toLocaleString('vi-VN')} VNĐ
                         </p>
                       )}
                     </td>
@@ -281,12 +281,12 @@ export default function RegistrationApproval() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
                 <p className="text-xs text-slate-500 mb-1">Phí đã nộp</p>
-                <p className="text-lg font-bold text-black dark:text-white">${selected.feePaid?.toLocaleString()}</p>
+                <p className="text-lg font-bold text-black dark:text-white">{selected.feePaid?.toLocaleString('vi-VN')} VNĐ</p>
               </div>
               <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
                 <p className="text-xs text-slate-500 mb-1">Hoàn phí</p>
                 <p className={`text-lg font-bold ${selected.refundAmount > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-black dark:text-white'}`}>
-                  ${selected.refundAmount?.toLocaleString() || 0}
+                  {(selected.refundAmount || 0).toLocaleString('vi-VN')} VNĐ
                 </p>
               </div>
               <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-700">

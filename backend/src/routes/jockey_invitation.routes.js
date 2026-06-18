@@ -10,6 +10,7 @@ const createInvitationSchema = z.object({
   jockeyId: z.string().min(1),
   horseId: z.string().min(1),
   raceId: z.string().min(1),
+  agreedFee: z.number().min(0).optional().default(0),
   message: z.string().max(500).optional(),
 });
 
@@ -18,6 +19,9 @@ const rejectInvitationSchema = z.object({
 });
 
 router.use(authenticate);
+
+// Forum: lấy danh sách jockey sẵn sàng cho thuê (owner xem)
+router.get('/forum', authorize('owner'), invitationController.getForumJockeys);
 
 // Owner: tạo và hủy invitation
 router.post('/', authorize('owner'), validate(createInvitationSchema), invitationController.createInvitation);

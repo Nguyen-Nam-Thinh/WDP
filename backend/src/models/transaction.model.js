@@ -15,6 +15,8 @@ const transactionSchema = new Schema(
         'bet_placed',
         'bet_payout',
         'bet_refund',
+        'jockey_hire_fee',
+        'jockey_hire_income',
       ],
       required: true,
     },

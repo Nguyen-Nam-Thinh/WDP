@@ -7,6 +7,7 @@ const { Wallet } = require('../models/wallet.model');
 const walletService = require('./wallet.service');
 const { settleBetsWithSession, refundRaceBets } = require('./bet.service');
 const { createManyNotifications } = require('./notification.service');
+const { completeInvitationsForRace } = require('./jockey_invitation.service');
 const { Bet } = require('../models/bet.model');
 const { getIO } = require('../sockets');
 const {
@@ -163,6 +164,7 @@ async function finalizeRace(race, ordered) {
     }
 
     await settleBetsWithSession(race._id, positionMap, race.name, session);
+    await completeInvitationsForRace(race._id, session);
     await Race.findByIdAndUpdate(race._id, { $set: { status: 'finished' } }, { session });
     await session.commitTransaction();
   } catch (err) {
@@ -346,7 +348,7 @@ async function sendRaceFinishedNotifications(race, ordered, registrations) {
         type: prizeAmount > 0 ? 'prize_received' : 'race_finished',
         title: `Race "${race.name}" đã kết thúc`,
         message: prizeAmount > 0
-          ? `Ngựa ${entry.horseName} về ${posLabel} — nhận ${prizeAmount.toLocaleString()} coins`
+          ? `Ngựa ${entry.horseName} về ${posLabel} — nhận ${prizeAmount.toLocaleString('vi-VN')} VNĐ`
           : `Ngựa ${entry.horseName} về ${posLabel}`,
         data: { raceId: race._id, position: pos },
       });
@@ -358,7 +360,7 @@ async function sendRaceFinishedNotifications(race, ordered, registrations) {
         userId: reg.jockeyId._id ?? reg.jockeyId,
         type: 'race_finished',
         title: `Race "${race.name}" đã kết thúc`,
-        message: `Bạn cưỡi ${entry.horseName} về ${posLabel}${prizeAmount > 0 ? ` — thưởng ${prizeAmount.toLocaleString()} coins` : ''}`,
+        message: `Bạn cưỡi ${entry.horseName} về ${posLabel}${prizeAmount > 0 ? ` — thưởng ${prizeAmount.toLocaleString('vi-VN')} VNĐ` : ''}`,
         data: { raceId: race._id, position: pos },
       });
     }
@@ -374,7 +376,7 @@ async function sendRaceFinishedNotifications(race, ordered, registrations) {
         userId: bet.spectatorId,
         type: 'bet_won',
         title: '🎉 Cược thắng!',
-        message: `Bạn thắng cược race "${race.name}" — nhận ${(bet.payoutAmount || 0).toLocaleString()} coins`,
+        message: `Bạn thắng cược race "${race.name}" — nhận ${(bet.payoutAmount || 0).toLocaleString('vi-VN')} VNĐ`,
         data: { raceId: race._id, betId: bet._id },
       });
     } else if (bet.status === 'lost') {

@@ -166,7 +166,7 @@ function TournamentDetail({ t, token, onClose }: { t: Tournament; token: string 
                             <span className="flex items-center gap-1"><Activity className="w-3 h-3" />{race.distance}m</span>
                             <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(race.scheduledTime).toLocaleString('vi-VN')}</span>
                             <span className="flex items-center gap-1 text-gold font-semibold">
-                              <Award className="w-3 h-3" />{race.purse.toLocaleString()} coins
+                              <Award className="w-3 h-3" />{race.purse.toLocaleString('vi-VN')} VNĐ
                             </span>
                           </div>
                         </div>

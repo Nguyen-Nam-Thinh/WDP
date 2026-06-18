@@ -197,14 +197,14 @@ export default function RaceManagement() {
                     <span className="text-xl">💰</span>
                     <div>
                       <p className="text-xs text-slate-500">Tổng thưởng</p>
-                      <p className="text-sm font-semibold text-black dark:text-white">${selectedRace.purse?.toLocaleString()}</p>
+                      <p className="text-sm font-semibold text-black dark:text-white">{selectedRace.purse?.toLocaleString('vi-VN')} VNĐ</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xl">📋</span>
                     <div>
                       <p className="text-xs text-slate-500">Phí ĐK</p>
-                      <p className="text-sm font-semibold text-black dark:text-white">${selectedRace.registrationFee?.toLocaleString()}</p>
+                      <p className="text-sm font-semibold text-black dark:text-white">{selectedRace.registrationFee?.toLocaleString('vi-VN')} VNĐ</p>
                     </div>
                   </div>
                   {typeof selectedRace.refereeId === 'object' && selectedRace.refereeId && (
@@ -278,7 +278,7 @@ export default function RaceManagement() {
                             )}
                           </td>
                           <td className="py-3 px-4">
-                            <p className="text-sm font-semibold text-black dark:text-white">${reg.feePaid?.toLocaleString()}</p>
+                            <p className="text-sm font-semibold text-black dark:text-white">{reg.feePaid?.toLocaleString('vi-VN')} VNĐ</p>
                           </td>
                           <td className="py-3 px-4 text-center">
                             <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-medium ${PRECHECK_COLOR[reg.preCheckResult?.status || ''] || PRECHECK_COLOR.pending}`}>

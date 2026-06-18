@@ -27,10 +27,16 @@ const updateProfileSchema = z.object({
     .optional(),
 });
 
+const availabilitySchema = z.object({
+  isAvailable: z.boolean(),
+  askingFeePerRace: z.number().min(0).optional(),
+});
+
 router.use(authenticate);
 
 router.get('/me', userController.getMe);
 router.patch('/me', validate(updateProfileSchema), userController.updateMe);
+router.patch('/me/availability', validate(availabilitySchema), userController.updateAvailability);
 router.post('/me/upload-avatar', uploadSingle, userController.uploadAvatar);
 router.get('/me/wallet', userController.getMyWallet);
 router.get('/me/transactions', userController.getMyTransactions);

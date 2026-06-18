@@ -28,8 +28,8 @@ import {
   Coins,
 } from 'lucide-react';
 import { 
-  Button, Chip, Dialog, DialogTitle, DialogContent, DialogActions, 
-  Avatar, LinearProgress, Box, Typography 
+  Button, Chip, Dialog, DialogTitle, DialogContent, DialogActions,
+  Avatar, LinearProgress, Box, Typography, TextField,
 } from '@mui/material';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -39,7 +39,7 @@ import { AppShell, type NavItem } from '../components/layout/AppShell';
 import { Home } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useWallet } from '../hooks/useWallet';
-import { invitationApi, JockeyInvitation } from '../api/invitation';
+import { invitationApi, jockeyApi, JockeyInvitation } from '../api/invitation';
 import { toast } from 'sonner';
 import { userApi, type JockeyOverview, type MonthlyStatPoint } from '../api/user';
 
@@ -86,6 +86,15 @@ export function JockeyDashboard() {
   const [monthlyStats, setMonthlyStats] = useState<MonthlyStatPoint[]>([]);
   const [loadingOverview, setLoadingOverview] = useState(false);
 
+  // Forum availability
+  const [isAvailable, setIsAvailable] = useState<boolean>(
+    (user as any)?.jockeyProfile?.isAvailable ?? false,
+  );
+  const [askingFee, setAskingFee] = useState<string>(
+    String((user as any)?.jockeyProfile?.askingFeePerRace ?? 0),
+  );
+  const [updatingAvailability, setUpdatingAvailability] = useState(false);
+
   const loadOverviewData = async () => {
     if (!token) return;
     setLoadingOverview(true);
@@ -100,6 +109,21 @@ export function JockeyDashboard() {
       toast.error(err.message || 'Không thể tải dữ liệu tổng quan');
     } finally {
       setLoadingOverview(false);
+    }
+  };
+
+  const handleUpdateAvailability = async (newAvailable: boolean, fee?: string) => {
+    if (!token) return;
+    setUpdatingAvailability(true);
+    try {
+      const feeNum = parseFloat(fee ?? askingFee) || 0;
+      await jockeyApi.updateAvailability(token, { isAvailable: newAvailable, askingFeePerRace: feeNum });
+      setIsAvailable(newAvailable);
+      toast.success(newAvailable ? 'Bạn đã hiển thị trên diễn đàn thuê' : 'Bạn đã ẩn khỏi diễn đàn thuê');
+    } catch (err: any) {
+      toast.error(err.message || 'Không thể cập nhật trạng thái');
+    } finally {
+      setUpdatingAvailability(false);
     }
   };
 
@@ -286,7 +310,7 @@ export function JockeyDashboard() {
                     { label: 'Tổng Cuộc Đua', value: String(overview?.totalRaces ?? 0), icon: Calendar, color: 'from-[#1F3D2B] to-[#172D20]' },
                     { label: 'Chiến Thắng', value: String(overview?.totalWins ?? 0), icon: Trophy, color: 'from-[#C9A227] to-[#8F7318]' },
                     { label: 'Tỷ Lệ Thắng', value: `${overview?.totalRaces ? Math.round(((overview?.totalWins ?? 0) / overview.totalRaces) * 100) : 0}%`, icon: TrendingUp, color: 'from-[#8C2F1B] to-[#6B1F10]' },
-                    { label: 'Số Dư Ví', value: `${(overview?.walletBalance ?? 0).toLocaleString()} xu`, icon: Wallet, color: 'from-[#C9A227] to-[#B08D1E]' },
+                    { label: 'Số Dư Ví', value: `${(overview?.walletBalance ?? 0).toLocaleString('vi-VN')} VNĐ`, icon: Wallet, color: 'from-[#C9A227] to-[#B08D1E]' },
                   ].map((s, i) => (
                     <div key={i} className="bg-card border border-border p-5 hover:-translate-y-0.5 transition-transform">
                       <div className="flex items-start justify-between">
@@ -300,6 +324,62 @@ export function JockeyDashboard() {
                       </div>
                     </div>
                   ))}
+                </div>
+
+                {/* Forum availability banner */}
+                <div className={`mb-6 border p-4 flex flex-col sm:flex-row sm:items-center gap-4 transition-colors ${isAvailable ? 'bg-green-500/5 border-green-500/30' : 'bg-card border-border'}`}>
+                  <div className="flex items-center gap-3 flex-1">
+                    <div className={`w-10 h-10 flex items-center justify-center shrink-0 ${isAvailable ? 'bg-green-500/10' : 'bg-muted'}`}>
+                      <Target className={`w-5 h-5 ${isAvailable ? 'text-green-400' : 'text-muted-foreground'}`} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-semibold text-foreground text-sm">Trạng Thái Diễn Đàn Thuê</div>
+                      <div className="text-xs text-muted-foreground">
+                        {isAvailable ? 'Bạn đang hiển thị trên diễn đàn — Chủ Ngựa có thể tìm và gửi lời mời cho bạn' : 'Bạn đang ẩn — không ai thấy bạn trong diễn đàn thuê'}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <TextField
+                        size="small"
+                        label="Giá thuê / race (VNĐ)"
+                        type="number"
+                        value={askingFee}
+                        onChange={(e) => setAskingFee(e.target.value)}
+                        onBlur={() => { if (isAvailable) handleUpdateAvailability(true, askingFee); }}
+                        sx={{
+                          width: 190,
+                          '& .MuiOutlinedInput-root': { borderRadius: 0, fontSize: '0.8rem', color: '#23201A',
+                            '& fieldset': { borderColor: '#C9C2B0' },
+                            '&:hover fieldset': { borderColor: '#C9A227' },
+                            '&.Mui-focused fieldset': { borderColor: '#C9A227' },
+                          },
+                          '& .MuiInputLabel-root': { fontSize: '0.75rem', color: '#7A7468' },
+                          '& .MuiInputLabel-root.Mui-focused': { color: '#C9A227' },
+                        }}
+                        inputProps={{ min: 0, step: 10000 }}
+                      />
+                    </div>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      disabled={updatingAvailability}
+                      onClick={() => handleUpdateAvailability(!isAvailable)}
+                      sx={{
+                        background: isAvailable ? '#1F3D2B' : '#C9A227',
+                        color: isAvailable ? '#4ade80' : '#23201A',
+                        textTransform: 'none',
+                        fontWeight: 700,
+                        borderRadius: 0,
+                        px: 3,
+                        '&:hover': { background: isAvailable ? '#162D1F' : '#B08D1E' },
+                        '&.Mui-disabled': { background: '#E3DCCB', color: '#7A7468' },
+                      }}
+                    >
+                      {updatingAvailability ? 'Đang lưu...' : isAvailable ? '● Đang sẵn sàng' : '○ Bật sẵn sàng'}
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -413,7 +493,7 @@ export function JockeyDashboard() {
                         { label: 'Xem Lời Mời', icon: Clock, to: '/jockey/invitations' as string | null, badge: (invitations.length || null) as number | null },
                         { label: 'Lịch Đua', icon: Calendar, to: '/jockey/schedule' as string | null, badge: null as number | null },
                         { label: 'Kết Quả', icon: Trophy, to: '/jockey/results' as string | null, badge: null as number | null },
-                        { label: 'Nạp Xu', icon: Coins, to: null as string | null, badge: null as number | null },
+                        { label: 'Nạp Tiền', icon: Coins, to: null as string | null, badge: null as number | null },
                       ].map((action, i) => (
                         <button key={i} onClick={() => { if (action.to) navigate(action.to); }}
                           className="flex items-center gap-3 p-4 border border-border hover:border-[#C9A227]/40 hover:bg-muted/40 transition-all text-left group">
@@ -486,7 +566,7 @@ export function JockeyDashboard() {
                           </div>
 
                           {/* Info grid */}
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-5">
+                          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm mb-5">
                             <div className="bg-slate-950/50 p-3 rounded-xl border border-border">
                               <div className="text-slate-500 text-xs uppercase font-bold mb-1 flex items-center gap-1"><Trophy className="w-3 h-3"/> Giải Đấu</div>
                               <div className="text-foreground font-medium truncate">{race.tournamentId?.name ?? '—'}</div>
@@ -498,6 +578,12 @@ export function JockeyDashboard() {
                             <div className="bg-slate-950/50 p-3 rounded-xl border border-border">
                               <div className="text-slate-500 text-xs uppercase font-bold mb-1 flex items-center gap-1"><Clock className="w-3 h-3"/> Giờ Đua</div>
                               <div className="text-foreground font-medium">{scheduledDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
+                            </div>
+                            <div className={`p-3 rounded-xl border ${(invitation.agreedFee ?? 0) > 0 ? 'bg-[#C9A227]/5 border-[#C9A227]/30' : 'bg-slate-950/50 border-border'}`}>
+                              <div className="text-slate-500 text-xs uppercase font-bold mb-1 flex items-center gap-1"><Wallet className="w-3 h-3"/> Phí Thuê</div>
+                              <div className={`font-bold ${(invitation.agreedFee ?? 0) > 0 ? 'text-[#C9A227]' : 'text-slate-400'}`}>
+                                {(invitation.agreedFee ?? 0) > 0 ? `${(invitation.agreedFee).toLocaleString('vi-VN')} VNĐ` : 'Miễn phí'}
+                              </div>
                             </div>
                             <div className="flex items-center justify-center">
                               <Button
@@ -922,7 +1008,7 @@ export function JockeyDashboard() {
                     <li className="flex justify-between"><span className="text-slate-500">Số trận thắng:</span> <span className="text-[#C9A227] font-bold">{selectedHorse.winCount ?? 0} trận</span></li>
                     <li className="flex justify-between"><span className="text-slate-500">Tỷ lệ thắng:</span> <span className="text-foreground font-medium">{selectedHorse.raceCount > 0 ? Math.round((selectedHorse.winCount / selectedHorse.raceCount) * 100) : 0}%</span></li>
                     <li className="flex justify-between"><span className="text-slate-500">Tổng điểm:</span> <span className="text-emerald-400 font-bold">{selectedHorse.totalPoints ?? 0} pts</span></li>
-                    <li className="flex justify-between"><span className="text-slate-500">Tiền thưởng:</span> <span className="text-[#1F3D2B] font-bold">${(selectedHorse.totalEarnings ?? 0).toLocaleString()}</span></li>
+                    <li className="flex justify-between"><span className="text-slate-500">Tiền thưởng:</span> <span className="text-[#1F3D2B] font-bold">{(selectedHorse.totalEarnings ?? 0).toLocaleString('vi-VN')} VNĐ</span></li>
                   </ul>
                 </div>
               </div>

@@ -23,8 +23,8 @@ export interface InvitationHorse {
 
 export interface JockeyInvitation {
   _id: string;
-  ownerId: { _id: string; fullName: string; email: string };
-  jockeyId: { _id: string; fullName: string; email: string };
+  ownerId: { _id: string; fullName: string; email: string; avatarUrl?: string };
+  jockeyId: { _id: string; fullName: string; email: string; avatarUrl?: string; jockeyProfile?: JockeyProfile };
   horseId: InvitationHorse;
   raceId: {
     _id: string;
@@ -34,17 +34,40 @@ export interface JockeyInvitation {
     tournamentId: { _id: string; name: string };
     distance?: number;
     status?: string;
+    purse?: number;
+    registrationFee?: number;
   };
-  status: "pending" | "accepted" | "rejected" | "cancelled";
+  status: "pending" | "accepted" | "rejected" | "cancelled" | "completed";
+  agreedFee: number;
   message?: string;
   rejectionNote?: string;
   createdAt: string;
+}
+
+export interface JockeyProfile {
+  experienceYears?: number;
+  weight?: number;
+  height?: number;
+  winCount?: number;
+  raceCount?: number;
+  bio?: string;
+  style?: "aggressive" | "balanced" | "conservative";
+  isAvailable?: boolean;
+  askingFeePerRace?: number;
+}
+
+export interface ForumJockey {
+  _id: string;
+  fullName: string;
+  avatarUrl?: string;
+  jockeyProfile: JockeyProfile;
 }
 
 export interface CreateInvitationData {
   jockeyId: string;
   horseId: string;
   raceId: string;
+  agreedFee?: number;
   message?: string;
 }
 
@@ -126,6 +149,45 @@ export const invitationApi = {
     const response = await fetchWithAuth(`${API_URL}/invitations/${invitationId}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(getApiErrorMessage((errorData as any).message));
+    }
+  },
+
+  // Lấy danh sách jockey sẵn sàng cho thuê (diễn đàn)
+  getForumJockeys: async (
+    token: string,
+    params: { page?: number; limit?: number; style?: string } = {},
+  ): Promise<{ jockeys: ForumJockey[]; total: number; totalPages: number }> => {
+    const query = new URLSearchParams();
+    query.append("page", String(params.page ?? 1));
+    query.append("limit", String(params.limit ?? 20));
+    if (params.style) query.append("style", params.style);
+
+    const response = await fetchWithAuth(`${API_URL}/invitations/forum?${query}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(getApiErrorMessage((errorData as any).message));
+    }
+    const json = await response.json();
+    return json.data;
+  },
+};
+
+export const jockeyApi = {
+  // Jockey cập nhật trạng thái sẵn sàng + giá thuê
+  updateAvailability: async (
+    token: string,
+    data: { isAvailable: boolean; askingFeePerRace?: number },
+  ): Promise<void> => {
+    const response = await fetchWithAuth(`${API_URL}/users/me/availability`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));

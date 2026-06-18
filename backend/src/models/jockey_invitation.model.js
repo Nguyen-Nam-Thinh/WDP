@@ -9,9 +9,10 @@ const jockeyInvitationSchema = new Schema(
     raceId: { type: Schema.Types.ObjectId, ref: 'Race', required: true },
     status: {
       type: String,
-      enum: ['pending', 'accepted', 'rejected', 'cancelled'],
+      enum: ['pending', 'accepted', 'rejected', 'cancelled', 'completed'],
       default: 'pending',
     },
+    agreedFee: { type: Number, default: 0, min: 0 },
     message: { type: String, trim: true },
     rejectionNote: { type: String, trim: true },
   },

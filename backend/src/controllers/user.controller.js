@@ -314,8 +314,29 @@ async function getMonthlyStats(req, res, next) {
   }
 }
 
+async function updateAvailability(req, res, next) {
+  try {
+    const { User } = require('../models/user.model');
+    const { isAvailable, askingFeePerRace } = req.body;
+
+    const update = { 'jockeyProfile.isAvailable': isAvailable };
+    if (askingFeePerRace !== undefined) update['jockeyProfile.askingFeePerRace'] = askingFeePerRace;
+
+    const user = await User.findOneAndUpdate(
+      { _id: req.user._id, role: 'jockey' },
+      { $set: update },
+      { new: true },
+    ).select('-passwordHash -refreshToken');
+
+    if (!user) throw require('../middleware/error.middleware').AppError(403, 'Only jockeys can update availability');
+    sendSuccess(res, user, 200, isAvailable ? 'Bạn đã hiển thị trên diễn đàn thuê' : 'Bạn đã ẩn khỏi diễn đàn thuê');
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   getMe, updateMe, getMyWallet, getMyTransactions, getMyRaceResults,
   uploadAvatar, getJockeys, getReferees, getUsers, toggleActive, adminUpdateUser,
-  getOverviewStats, getMonthlyStats,
+  getOverviewStats, getMonthlyStats, updateAvailability,
 };

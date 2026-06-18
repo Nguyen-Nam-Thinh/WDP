@@ -60,6 +60,20 @@ async function cancelInvitation(req, res, next) {
   }
 }
 
+async function getForumJockeys(req, res, next) {
+  try {
+    const { page, limit, style } = req.query;
+    const result = await invitationService.getAvailableJockeys({
+      page: page ? Number(page) : 1,
+      limit: limit ? Number(limit) : 20,
+      style,
+    });
+    sendSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   createInvitation,
   getInvitations,
@@ -67,4 +81,5 @@ module.exports = {
   acceptInvitation,
   rejectInvitation,
   cancelInvitation,
+  getForumJockeys,
 };

@@ -79,7 +79,7 @@ const SPECTATOR_NAV: NavItem[] = [
   { to: "/spectator/rankings", label: "Bảng Xếp Hạng", icon: <Trophy /> },
   { to: "/spectator/leaderboard", label: "Bảng Dẫn Đầu", icon: <Award /> },
   // { to: "/spectator/bet-history", label: "Lịch Sử Cược", icon: <History /> },
-  { to: "/spectator/deposit", label: "Nạp Xu", icon: <Wallet /> },
+  { to: "/spectator/deposit", label: "Nạp Tiền", icon: <Wallet /> },
   { to: "/spectator/deposit-history", label: "Lịch Sử Nạp", icon: <Coins /> },
 ];
 
@@ -350,7 +350,7 @@ export function SpectatorDashboard() {
     },
     {
       label: "Tổng Tiền Thắng",
-      value: totalWinnings > 0 ? `+${totalWinnings.toLocaleString()}` : "0",
+      value: totalWinnings > 0 ? `+${totalWinnings.toLocaleString('vi-VN')} VNĐ` : "0 VNĐ",
       icon: Gift,
       iconCls: "bg-[#7A7468] text-white",
     },
@@ -530,11 +530,11 @@ export function SpectatorDashboard() {
                       label: "Tổng Tiền Thắng",
                       value: overview
                         ? overview.totalWinnings > 0
-                          ? `+${overview.totalWinnings.toLocaleString()}`
-                          : "0"
+                          ? `+${overview.totalWinnings.toLocaleString('vi-VN')} VNĐ`
+                          : "0 VNĐ"
                         : totalWinnings > 0
-                          ? `+${totalWinnings.toLocaleString()}`
-                          : "0",
+                          ? `+${totalWinnings.toLocaleString('vi-VN')} VNĐ`
+                          : "0 VNĐ",
                       icon: Gift,
                       cls: "bg-[#7A7468] text-white",
                       accent: "bg-[#7A7468]",
@@ -712,8 +712,8 @@ export function SpectatorDashboard() {
                                   </div>
                                   <div className="text-xs text-muted-foreground tabular-nums">
                                     {bet.status === "won"
-                                      ? `+${(bet.payoutAmount || 0).toLocaleString()}`
-                                      : `${bet.amount?.toLocaleString()}`}
+                                      ? `+${(bet.payoutAmount || 0).toLocaleString('vi-VN')} VNĐ`
+                                      : `${bet.amount?.toLocaleString('vi-VN')} VNĐ`}
                                   </div>
                                 </div>
                               </div>
@@ -1043,7 +1043,7 @@ export function SpectatorDashboard() {
                             Giải Thưởng
                           </div>
                           <div className="text-[#8F7318] font-semibold tabular-nums">
-                            {race.purse.toLocaleString()} coins
+                            {race.purse.toLocaleString('vi-VN')} VNĐ
                           </div>
                         </div>
                       </div>
@@ -1239,7 +1239,7 @@ export function SpectatorDashboard() {
                                 Giải Thưởng
                               </div>
                               <div className="text-[#8F7318] font-semibold tabular-nums">
-                                ${race.purse?.toLocaleString()}
+                                {race.purse?.toLocaleString('vi-VN')} VNĐ
                               </div>
                             </div>
                             <div>
@@ -1836,7 +1836,7 @@ export function SpectatorDashboard() {
               <div className="text-center py-16 text-muted-foreground">
                 <Coins className="w-12 h-12 mx-auto mb-4 opacity-40" />
                 <p className="font-semibold text-foreground mb-1">Chưa có giao dịch nạp tiền</p>
-                <p className="text-sm">Các lần nạp xu sẽ xuất hiện ở đây</p>
+                <p className="text-sm">Các lần nạp tiền sẽ xuất hiện ở đây</p>
               </div>
             ) : (
               <div className="bg-card border border-border overflow-hidden">
@@ -1857,8 +1857,8 @@ export function SpectatorDashboard() {
                         <tr key={tx._id} className="border-t border-border hover:bg-muted/40 transition-colors">
                           <td className="px-6 py-4 text-muted-foreground font-mono text-xs">{tx._id.slice(-8).toUpperCase()}</td>
                           <td className="px-6 py-4 text-foreground">{new Date(tx.createdAt).toLocaleString('vi-VN')}</td>
-                          <td className="px-6 py-4 text-primary font-bold tabular-nums">+{tx.amount.toLocaleString('en-US')} xu</td>
-                          <td className="px-6 py-4 text-foreground tabular-nums">{tx.balanceAfter.toLocaleString('en-US')} xu</td>
+                          <td className="px-6 py-4 text-primary font-bold tabular-nums">+{tx.amount.toLocaleString('vi-VN')} VNĐ</td>
+                          <td className="px-6 py-4 text-foreground tabular-nums">{tx.balanceAfter.toLocaleString('vi-VN')} VNĐ</td>
                           <td className="px-6 py-4 text-muted-foreground text-sm">{tx.description || 'Nạp tiền vào ví'}</td>
                         </tr>
                       ))}
@@ -1890,7 +1890,7 @@ export function SpectatorDashboard() {
                   </div>
                   <div className="text-right">
                     <div className="text-sm text-muted-foreground">Tổng Tiền Thắng</div>
-                    <div className="text-2xl font-bold text-[#8F7318] tabular-nums">+{myBets.reduce((s, b) => s + (b.payoutAmount || 0), 0).toLocaleString('en-US')} xu</div>
+                    <div className="text-2xl font-bold text-[#8F7318] tabular-nums">+{myBets.reduce((s, b) => s + (b.payoutAmount || 0), 0).toLocaleString('vi-VN')} VNĐ</div>
                   </div>
                 </div>
               )}
@@ -1938,14 +1938,14 @@ export function SpectatorDashboard() {
                             <div className="text-primary text-xs font-medium mb-1">{betTypeLabel[bet.betType] ?? bet.betType}</div>
                             <div className="text-foreground">{bet.horseId?.name ?? '—'}</div>
                           </td>
-                          <td className="px-6 py-4 text-foreground tabular-nums">${bet.amount?.toLocaleString()}</td>
+                          <td className="px-6 py-4 text-foreground tabular-nums">{bet.amount?.toLocaleString('vi-VN')} VNĐ</td>
                           <td className="px-6 py-4 text-muted-foreground">{bet.multiplier}x</td>
                           <td className="px-6 py-4">
                             <Chip label={st.label} size="small" sx={{ backgroundColor: st.bg, color: st.color, fontWeight: 600 }} />
                           </td>
                           <td className="px-6 py-4">
                             <span className={`font-bold tabular-nums ${bet.status === 'won' ? 'text-[#8F7318]' : 'text-muted-foreground'}`}>
-                              {bet.status === 'won' ? `+$${(bet.payoutAmount || 0).toLocaleString()}` : '—'}
+                              {bet.status === 'won' ? `+${(bet.payoutAmount || 0).toLocaleString('vi-VN')} VNĐ` : '—'}
                             </span>
                           </td>
                         </tr>
@@ -1995,7 +1995,7 @@ export function SpectatorDashboard() {
                     <div className="text-2xl font-bold text-[#8F7318] tabular-nums">
                       +{myBets
                         .reduce((s, b) => s + (b.payoutAmount || 0), 0)
-                        .toLocaleString('en-US')} xu
+                        .toLocaleString('vi-VN')} VNĐ
                     </div>
                   </div>
                 </div>
@@ -2108,7 +2108,7 @@ export function SpectatorDashboard() {
                               {horse?.name || "-"}
                             </td>
                             <td className="px-5 py-4 text-foreground tabular-nums">
-                              ${bet.amount.toLocaleString()}
+                              {bet.amount.toLocaleString('vi-VN')} VNĐ
                             </td>
                             <td className="px-5 py-4 text-[#8F7318] font-semibold">
                               {bet.multiplier}x
@@ -2125,7 +2125,7 @@ export function SpectatorDashboard() {
                                 className={`font-bold tabular-nums ${bet.status === "won" ? "text-[#8F7318]" : "text-muted-foreground"}`}
                               >
                                 {bet.status === "won"
-                                  ? `+$${bet.payoutAmount?.toLocaleString()}`
+                                  ? `+${bet.payoutAmount?.toLocaleString('vi-VN')} VNĐ`
                                   : "-"}
                               </span>
                             </td>
@@ -2319,7 +2319,7 @@ export function SpectatorDashboard() {
                                   </div>
                                 </td>
                                 <td className="px-5 py-4 text-right font-medium text-secondary tabular-nums">
-                                  {h.totalEarnings.toLocaleString()}
+                                  {h.totalEarnings.toLocaleString('vi-VN')} VNĐ
                                 </td>
                               </tr>
                             ))}
@@ -2443,7 +2443,7 @@ export function SpectatorDashboard() {
                                   </div>
                                 </td>
                                 <td className="px-5 py-4 text-right font-medium text-secondary tabular-nums">
-                                  {o.totalEarnings.toLocaleString()}
+                                  {o.totalEarnings.toLocaleString('vi-VN')} VNĐ
                                 </td>
                               </tr>
                             ))}
@@ -2598,7 +2598,7 @@ export function SpectatorDashboard() {
                             className={`text-sm font-bold tabular-nums ${entry.profit >= 0 ? "text-primary" : "text-destructive"}`}
                           >
                             {entry.profit >= 0 ? "+" : ""}
-                            {entry.profit.toLocaleString()}
+                            {entry.profit.toLocaleString('vi-VN')} VNĐ
                           </div>
                           <div className="text-xs text-muted-foreground">
                             Lợi nhuận
@@ -2606,7 +2606,7 @@ export function SpectatorDashboard() {
                         </div>
                         <div className="text-center min-w-[90px]">
                           <div className="text-lg font-bold text-foreground tabular-nums">
-                            {entry.totalPayout.toLocaleString()}
+                            {entry.totalPayout.toLocaleString('vi-VN')} VNĐ
                           </div>
                           <div className="text-xs text-muted-foreground">
                             Tổng nhận
@@ -2617,13 +2617,13 @@ export function SpectatorDashboard() {
                       {/* Mobile */}
                       <div className="md:hidden text-right shrink-0">
                         <div className="text-[#8F7318] font-bold text-sm tabular-nums">
-                          {entry.totalPayout.toLocaleString()}
+                          {entry.totalPayout.toLocaleString('vi-VN')} VNĐ
                         </div>
                         <div
                           className={`text-xs tabular-nums ${entry.profit >= 0 ? "text-primary" : "text-destructive"}`}
                         >
                           {entry.profit >= 0 ? "+" : ""}
-                          {entry.profit.toLocaleString()}
+                          {entry.profit.toLocaleString('vi-VN')} VNĐ
                         </div>
                       </div>
                     </div>
@@ -2716,7 +2716,7 @@ export function SpectatorDashboard() {
                   <span className="text-muted-foreground">
                     Giải Thưởng:{" "}
                     <span className="text-[#8F7318] font-medium">
-                      ${selectedRace.purse?.toLocaleString()}
+                      {selectedRace.purse?.toLocaleString('vi-VN')} VNĐ
                     </span>
                   </span>
                 </div>
@@ -2839,8 +2839,8 @@ export function SpectatorDashboard() {
                       {betAmount &&
                       !isNaN(Number(betAmount)) &&
                       Number(betAmount) > 0
-                        ? `$${Math.floor(Number(betAmount) * BET_MULTIPLIERS[betType as BetType]).toLocaleString()}`
-                        : "$0"}
+                        ? `${Math.floor(Number(betAmount) * BET_MULTIPLIERS[betType as BetType]).toLocaleString('vi-VN')} VNĐ`
+                        : "0 VNĐ"}
                     </span>
                   </div>
                   <div className="flex justify-between text-xs text-muted-foreground">

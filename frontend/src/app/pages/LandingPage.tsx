@@ -195,7 +195,7 @@ export function LandingPage() {
                   </div>
                   <h2 className="font-serif text-3xl md:text-4xl font-bold text-foreground mb-2">{featuredRace.name}</h2>
                   <p className="text-muted-foreground">
-                    Cự ly {featuredRace.distance}m · Giải thưởng {featuredRace.purse.toLocaleString()} coins
+                    Cự ly {featuredRace.distance}m · Giải thưởng {featuredRace.purse.toLocaleString('vi-VN')} VNĐ
                   </p>
                 </>
               ) : (
@@ -261,7 +261,7 @@ export function LandingPage() {
                   {featuredRace && (
                     <div className="text-right hidden sm:block">
                       <div className="text-white/70 text-sm mb-1">Giải Thưởng</div>
-                      <div className="text-gold font-bold">{featuredRace.purse.toLocaleString()} coins</div>
+                      <div className="text-gold font-bold">{featuredRace.purse.toLocaleString('vi-VN')} VNĐ</div>
                     </div>
                   )}
                 </div>

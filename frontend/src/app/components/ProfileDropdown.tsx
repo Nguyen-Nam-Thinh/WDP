@@ -87,11 +87,7 @@ export function ProfileDropdown() {
               </div>
             </div>
             {/* Quick Stats */}
-            <div className="grid grid-cols-3 gap-2">
-              <div className="bg-background border border-border p-2.5 text-center">
-                <div className="text-gold font-bold text-sm tabular-nums">{balance}</div>
-                <div className="text-muted-foreground text-xs mt-0.5">Số Dư</div>
-              </div>
+            <div className="grid grid-cols-2 gap-2">
               <div className="bg-background border border-border p-2.5 text-center">
                 <div className="text-foreground font-bold text-sm tabular-nums">18</div>
                 <div className="text-muted-foreground text-xs mt-0.5">Tổng Cược</div>

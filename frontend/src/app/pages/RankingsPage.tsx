@@ -326,7 +326,7 @@ export function RankingsPage() {
                           </div>
                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                             <Coins className="w-3.5 h-3.5 text-gold" />
-                            <span className="text-gold font-semibold">{selectedRace.purse.toLocaleString()} coins</span>
+                            <span className="text-gold font-semibold">{selectedRace.purse.toLocaleString('vi-VN')} VNĐ</span>
                           </div>
                         </div>
                       </div>
@@ -380,7 +380,7 @@ export function RankingsPage() {
                                 </td>
                                 <td className="px-4 py-4 text-center">
                                   {entry.prizeAmount > 0 ? (
-                                    <span className="text-gold font-bold tabular-nums">{entry.prizeAmount.toLocaleString()}</span>
+                                    <span className="text-gold font-bold tabular-nums">{entry.prizeAmount.toLocaleString('vi-VN')} VNĐ</span>
                                   ) : (
                                     <span className="text-muted-foreground">—</span>
                                   )}
@@ -519,7 +519,7 @@ export function RankingsPage() {
                                 {GRADE_BADGE[item.currentGrade]?.label ?? item.currentGrade}
                               </span>
                             ) : tab === 'owners' ? (
-                              <span className="text-gold font-bold text-sm tabular-nums">{item.totalEarnings.toLocaleString()}</span>
+                              <span className="text-gold font-bold text-sm tabular-nums">{item.totalEarnings.toLocaleString('vi-VN')} VNĐ</span>
                             ) : (
                               <span className="px-2.5 py-1 text-xs font-bold bg-muted text-muted-foreground uppercase tracking-wider">
                                 {item.winCount >= 30 ? 'Huyền Thoại' : item.winCount >= 20 ? 'Bạch Kim' : item.winCount >= 10 ? 'Vàng' : item.winCount >= 5 ? 'Bạc' : 'Đồng'}

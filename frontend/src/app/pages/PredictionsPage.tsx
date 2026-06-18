@@ -334,7 +334,7 @@ function ResultsBoard({ token }: { token: string | null }) {
               {new Date(selectedRace.scheduledTime).toLocaleDateString("vi-VN")}
             </span>
             <span className="ml-auto text-[#8F7318] font-bold">
-              {selectedRace.purse.toLocaleString()} coins giải thưởng
+              {selectedRace.purse.toLocaleString('vi-VN')} VNĐ giải thưởng
             </span>
           </div>
         </div>
@@ -414,7 +414,7 @@ function ResultsBoard({ token }: { token: string | null }) {
                   <div className="col-span-2 text-right">
                     {r.prizeAmount > 0 ? (
                       <span className="text-primary font-black text-sm tabular-nums">
-                        {r.prizeAmount.toLocaleString()}
+                        {r.prizeAmount.toLocaleString('vi-VN')} VNĐ
                       </span>
                     ) : (
                       <span className="text-muted-foreground text-xs">—</span>
@@ -700,7 +700,7 @@ export function PredictionsPage() {
         amount,
       });
       toast.success(
-        `Đặt cược thành công! Tiềm năng: +${potentialWin?.toLocaleString()} coins`,
+        `Đặt cược thành công! Tiềm năng: +${potentialWin?.toLocaleString('vi-VN')} VNĐ`,
       );
       setPlaced((p) => !p);
       setSelectedHorseIdx(null);
@@ -911,7 +911,7 @@ export function PredictionsPage() {
                         },
                         {
                           label: "Giải Thưởng",
-                          value: `${selectedRace.purse.toLocaleString()} coins`,
+                          value: `${selectedRace.purse.toLocaleString('vi-VN')} VNĐ`,
                           icon: Trophy,
                         },
                       ].map(({ label, value, icon: Icon }) => (
@@ -1106,7 +1106,7 @@ export function PredictionsPage() {
                       {/* Amount */}
                       <div className="mb-4">
                         <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">
-                          Số Tiền Cược (coins)
+                          Số Tiền Cược (VNĐ)
                         </label>
                         <div className="relative">
                           <input
@@ -1153,7 +1153,7 @@ export function PredictionsPage() {
                               Tiềm Năng Thắng ({multiplier}x)
                             </div>
                             <div className="font-serif text-xl font-bold text-[#8F7318] tabular-nums">
-                              {potentialWin.toLocaleString()} coins
+                              {potentialWin.toLocaleString('vi-VN')} VNĐ
                             </div>
                           </div>
                           <ArrowUpRight className="w-6 h-6 text-[#8F7318] opacity-60" />
