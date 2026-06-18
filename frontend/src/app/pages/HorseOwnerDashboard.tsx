@@ -64,7 +64,6 @@ import {
   type OwnerOverview,
   type MonthlyStatPoint,
 } from "../api/user";
-import { tournamentApi, Tournament } from "../api/tournament";
 import { raceApi, Race } from "../api/race";
 import {
   invitationApi,
@@ -150,17 +149,10 @@ export function HorseOwnerDashboard() {
   const [invitingJockey, setInvitingJockey] = useState<
     JockeyListItem | ForumJockey | null
   >(null);
-  const [inviteForm, setInviteForm] = useState({
-    tournamentId: "",
-    raceId: "",
-    horseId: "",
-    agreedFee: "",
-    message: "",
-  });
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
-  const [loadingTournaments, setLoadingTournaments] = useState(false);
-  const [racesForTournament, setRacesForTournament] = useState<Race[]>([]);
-  const [loadingRaces, setLoadingRaces] = useState(false);
+  const [inviteForm, setInviteForm] = useState({ agreedFee: "", message: "" });
+  const [inviteRegs, setInviteRegs] = useState<Registration[]>([]);
+  const [loadingInviteRegs, setLoadingInviteRegs] = useState(false);
+  const [selectedInviteReg, setSelectedInviteReg] = useState<Registration | null>(null);
   const [submittingInvite, setSubmittingInvite] = useState(false);
   const [viewJockeyOpen, setViewJockeyOpen] = useState(false);
   const [viewingJockey, setViewingJockey] = useState<JockeyListItem | null>(
@@ -263,60 +255,42 @@ export function HorseOwnerDashboard() {
     }
   }, [activeTab, token]);
 
-  // Invite dialog — load tournaments when dialog opens
+  // Invite dialog — load owner's active registrations without a jockey
   useEffect(() => {
     if (!inviteJockeyOpen || !token) return;
     const defaultFee =
       (invitingJockey as ForumJockey)?.jockeyProfile?.askingFeePerRace ?? 0;
     setInviteForm({
-      tournamentId: "",
-      raceId: "",
-      horseId: "",
       agreedFee: defaultFee > 0 ? String(defaultFee) : "",
       message: "",
     });
-    setRacesForTournament([]);
-    setLoadingTournaments(true);
-    tournamentApi
-      .getTournaments(token)
-      .then((res) => setTournaments(res.tournaments ?? []))
-      .catch((err: any) =>
-        toast.error(err.message || "Không thể tải danh sách giải đấu"),
-      )
-      .finally(() => setLoadingTournaments(false));
-  }, [inviteJockeyOpen, token]);
-
-  // Invite dialog — load races when tournament changes
-  useEffect(() => {
-    if (!inviteForm.tournamentId || !token) return;
-    setInviteForm((prev) => ({ ...prev, raceId: "", horseId: "" }));
-    setRacesForTournament([]);
-    setLoadingRaces(true);
-    raceApi
-      .getRaces(token, { tournamentId: inviteForm.tournamentId })
+    setSelectedInviteReg(null);
+    setLoadingInviteRegs(true);
+    registrationApi
+      .getMyRegistrations(token, { status: "active", limit: 100 })
       .then((res) => {
-        const active = (res.races ?? []).filter(
-          (r) => !["running", "finished", "cancelled"].includes(r.status),
+        const needsJockey = (res.registrations ?? []).filter(
+          (r) => !r.jockeyId && (r.raceId as any)?.status === "open",
         );
-        setRacesForTournament(active);
+        setInviteRegs(needsJockey);
       })
       .catch((err: any) =>
-        toast.error(err.message || "Không thể tải danh sách race"),
+        toast.error(err.message || "Không thể tải danh sách đăng ký"),
       )
-      .finally(() => setLoadingRaces(false));
-  }, [inviteForm.tournamentId, token]);
+      .finally(() => setLoadingInviteRegs(false));
+  }, [inviteJockeyOpen, token]);
 
   const handleSubmitInvite = async () => {
-    if (!invitingJockey || !inviteForm.raceId || !inviteForm.horseId) {
-      toast.error("Vui lòng chọn đầy đủ thông tin");
+    if (!invitingJockey || !selectedInviteReg) {
+      toast.error("Vui lòng chọn cuộc đua");
       return;
     }
     setSubmittingInvite(true);
     try {
       await invitationApi.createInvitation(token!, {
         jockeyId: invitingJockey._id,
-        raceId: inviteForm.raceId,
-        horseId: inviteForm.horseId,
+        raceId: (selectedInviteReg.raceId as any)._id,
+        horseId: (selectedInviteReg.horseId as any)._id,
         agreedFee: inviteForm.agreedFee ? Number(inviteForm.agreedFee) : 0,
         message: inviteForm.message || undefined,
       });
@@ -557,6 +531,7 @@ export function HorseOwnerDashboard() {
   const [myRegistrations, setMyRegistrations] = useState<Registration[]>([]);
   const [loadingSchedule, setLoadingSchedule] = useState(false);
   const [regPage, setRegPage] = useState(1);
+  const [openPage, setOpenPage] = useState(1);
   const [scheduleSubTab, setScheduleSubTab] = useState<
     "registrations" | "open"
   >("registrations");
@@ -628,9 +603,34 @@ export function HorseOwnerDashboard() {
       .finally(() => setLoadingTx(false));
   }, [activeTab, token, txPage]);
 
+  const calcHorseAge = (birthDate: string) => {
+    const now = new Date();
+    const birth = new Date(birthDate);
+    let age = now.getFullYear() - birth.getFullYear();
+    const m = now.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
+    return age;
+  };
+
+  const getHorseEligibility = (horse: Horse, race: Race): string | null => {
+    const e = race.eligibility;
+    if (!e) return null;
+    if (e.allowedGrades?.length > 0 && !e.allowedGrades.includes(horse.currentGrade))
+      return `Hạng ${horse.currentGrade} không phù hợp (cần: ${e.allowedGrades.join(", ")})`;
+    if (e.minPoints > 0 && horse.totalPoints < e.minPoints)
+      return `Chưa đủ điểm (${horse.totalPoints}/${e.minPoints})`;
+    if (horse.birthDate) {
+      const age = calcHorseAge(horse.birthDate);
+      if (e.minAge > 0 && age < e.minAge) return `Ngựa quá non (${age} tuổi, tối thiểu ${e.minAge})`;
+      if (e.maxAge > 0 && age > e.maxAge) return `Ngựa quá già (${age} tuổi, tối đa ${e.maxAge})`;
+    }
+    return null;
+  };
+
   const handleOpenRegisterDialog = (race: Race) => {
     setSelectedRaceForReg(race);
-    setRegHorseId(horses[0]?._id || "");
+    const firstEligible = horses.find((h) => !getHorseEligibility(h, race));
+    setRegHorseId(firstEligible?._id || "");
     setRegisterRaceOpen(true);
   };
 
@@ -690,6 +690,12 @@ export function HorseOwnerDashboard() {
     [activeRegs, regPage],
   );
   const regTotalPages = Math.ceil(activeRegs.length / PAGE_SIZE);
+
+  const pagedOpenRaces = useMemo(
+    () => openRaces.slice((openPage - 1) * PAGE_SIZE, openPage * PAGE_SIZE),
+    [openRaces, openPage],
+  );
+  const openTotalPages = Math.ceil(openRaces.length / PAGE_SIZE);
 
   // Check if horse is already registered in a race
   const isHorseRegistered = (raceId: string) =>
@@ -1781,7 +1787,7 @@ export function HorseOwnerDashboard() {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {openRaces.map((race) => {
+                      {pagedOpenRaces.map((race) => {
                         const alreadyRegistered = isHorseRegistered(race._id);
                         const cutoffPassed =
                           new Date() > new Date(race.cutoffTime);
@@ -1977,6 +1983,9 @@ export function HorseOwnerDashboard() {
                       })}
                     </div>
                   ))}
+                {openRaces.length > 0 && (
+                  <Pagination page={openPage} totalPages={openTotalPages} onPageChange={setOpenPage} />
+                )}
               </>
             )}
           </div>
@@ -3401,161 +3410,51 @@ export function HorseOwnerDashboard() {
               },
             };
 
-            const selectedRace = racesForTournament.find(
-              (r) => r._id === inviteForm.raceId,
-            );
-            const eligibleHorses = selectedRace
-              ? horses.filter((h) => {
-                  const allowed = selectedRace.eligibility?.allowedGrades ?? [];
-                  return (
-                    allowed.length === 0 || allowed.includes(h.currentGrade)
-                  );
-                })
-              : [];
-
             return (
               <div className="space-y-4">
-                {/* 1. Tournament */}
-                <FormControl fullWidth sx={darkSelect}>
-                  <InputLabel>Giải đấu</InputLabel>
+                {/* 1. Dropdown cuộc đua cần kỵ sĩ */}
+                <FormControl fullWidth sx={darkSelect} disabled={loadingInviteRegs}>
+                  <InputLabel>Cuộc đua cần kỵ sĩ</InputLabel>
                   <Select
-                    label="Giải đấu"
-                    value={inviteForm.tournamentId}
-                    disabled={loadingTournaments}
-                    onChange={(e) =>
-                      setInviteForm((p) => ({
-                        ...p,
-                        tournamentId: e.target.value,
-                      }))
-                    }
+                    label="Cuộc đua cần kỵ sĩ"
+                    value={selectedInviteReg?._id ?? ""}
+                    onChange={(e) => {
+                      const reg = inviteRegs.find((r) => r._id === e.target.value) ?? null;
+                      setSelectedInviteReg(reg);
+                    }}
                     MenuProps={menuProps}
+                    renderValue={(val) => {
+                      const reg = inviteRegs.find((r) => r._id === val);
+                      if (!reg) return "";
+                      const race = reg.raceId as any;
+                      const horse = reg.horseId as any;
+                      return `${race?.name} — 🐎 ${horse?.name}`;
+                    }}
                   >
-                    {loadingTournaments ? (
-                      <MenuItem disabled value="">
-                        Đang tải...
-                      </MenuItem>
-                    ) : tournaments.length === 0 ? (
-                      <MenuItem disabled value="">
-                        Chưa có giải đấu
-                      </MenuItem>
+                    {loadingInviteRegs ? (
+                      <MenuItem disabled value=""><Loader2 className="w-4 h-4 animate-spin mr-2 inline" /> Đang tải...</MenuItem>
+                    ) : inviteRegs.length === 0 ? (
+                      <MenuItem disabled value="">Không có cuộc đua nào cần kỵ sĩ</MenuItem>
                     ) : (
-                      tournaments.map((t) => (
-                        <MenuItem key={t._id} value={t._id}>
-                          {t.name}
-                        </MenuItem>
-                      ))
+                      inviteRegs.map((reg) => {
+                        const race = reg.raceId as any;
+                        const horse = reg.horseId as any;
+                        return (
+                          <MenuItem key={reg._id} value={reg._id}>
+                            <div className="flex flex-col py-0.5">
+                              <span className="font-medium">{race?.name}</span>
+                              <span className="text-xs text-slate-400">
+                                🐎 {horse?.name} · {race?.grade} · {new Date(race?.scheduledTime).toLocaleDateString("vi-VN")}
+                              </span>
+                            </div>
+                          </MenuItem>
+                        );
+                      })
                     )}
                   </Select>
                 </FormControl>
 
-                {/* 2. Race */}
-                <FormControl fullWidth sx={darkSelect}>
-                  <InputLabel>Race</InputLabel>
-                  <Select
-                    label="Race"
-                    value={inviteForm.raceId}
-                    disabled={!inviteForm.tournamentId || loadingRaces}
-                    onChange={(e) =>
-                      setInviteForm((p) => ({
-                        ...p,
-                        raceId: e.target.value,
-                        horseId: "",
-                      }))
-                    }
-                    MenuProps={menuProps}
-                  >
-                    {loadingRaces ? (
-                      <MenuItem disabled value="">
-                        Đang tải...
-                      </MenuItem>
-                    ) : !inviteForm.tournamentId ? (
-                      <MenuItem disabled value="">
-                        Chọn giải đấu trước
-                      </MenuItem>
-                    ) : racesForTournament.length === 0 ? (
-                      <MenuItem disabled value="">
-                        Không có race đang mở
-                      </MenuItem>
-                    ) : (
-                      racesForTournament.map((r) => (
-                        <MenuItem key={r._id} value={r._id}>
-                          <div>
-                            <span className="font-medium">{r.name}</span>
-                            <span className="text-slate-400 text-xs ml-2">
-                              {r.grade} ·{" "}
-                              {new Date(r.scheduledTime).toLocaleDateString(
-                                "vi-VN",
-                              )}
-                            </span>
-                          </div>
-                        </MenuItem>
-                      ))
-                    )}
-                  </Select>
-                </FormControl>
-
-                {/* Race eligibility hint */}
-                {selectedRace && (
-                  <div className="flex items-center gap-2 -mt-1">
-                    <span className="text-xs text-slate-400">
-                      Yêu cầu ngựa:
-                    </span>
-                    {(selectedRace.eligibility?.allowedGrades ?? []).length >
-                    0 ? (
-                      selectedRace.eligibility.allowedGrades.map((g) => (
-                        <span
-                          key={g}
-                          className="text-xs px-2 py-0.5 rounded-full border border-border text-slate-300"
-                        >
-                          {g}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-xs text-slate-400">Mọi hạng</span>
-                    )}
-                    <span className="text-xs text-slate-400 ml-1">
-                      · Phí:{" "}
-                      {selectedRace.registrationFee.toLocaleString("vi-VN")} VNĐ
-                    </span>
-                  </div>
-                )}
-
-                {/* 3. Horse */}
-                <FormControl fullWidth sx={darkSelect}>
-                  <InputLabel>Ngựa tham gia</InputLabel>
-                  <Select
-                    label="Ngựa tham gia"
-                    value={inviteForm.horseId}
-                    disabled={!inviteForm.raceId}
-                    onChange={(e) =>
-                      setInviteForm((p) => ({ ...p, horseId: e.target.value }))
-                    }
-                    MenuProps={menuProps}
-                  >
-                    {!inviteForm.raceId ? (
-                      <MenuItem disabled value="">
-                        Chọn race trước
-                      </MenuItem>
-                    ) : eligibleHorses.length === 0 ? (
-                      <MenuItem disabled value="">
-                        Không có ngựa đủ điều kiện
-                      </MenuItem>
-                    ) : (
-                      eligibleHorses.map((h) => (
-                        <MenuItem key={h._id} value={h._id}>
-                          <div>
-                            <span className="font-medium">{h.name}</span>
-                            <span className="text-slate-400 text-xs ml-2">
-                              {h.currentGrade} · {h.totalPoints} pts
-                            </span>
-                          </div>
-                        </MenuItem>
-                      ))
-                    )}
-                  </Select>
-                </FormControl>
-
-                {/* 4. Agreed fee */}
+                {/* 2. Phí thuê */}
                 <TextField
                   fullWidth
                   type="number"
@@ -3586,7 +3485,7 @@ export function HorseOwnerDashboard() {
                   }}
                 />
 
-                {/* 5. Optional message */}
+                {/* 3. Lời nhắn */}
                 <TextField
                   fullWidth
                   multiline
@@ -3623,9 +3522,7 @@ export function HorseOwnerDashboard() {
           </Button>
           <Button
             variant="contained"
-            disabled={
-              !inviteForm.raceId || !inviteForm.horseId || submittingInvite
-            }
+            disabled={!selectedInviteReg || submittingInvite}
             onClick={handleSubmitInvite}
             sx={{
               background: "#C9A227",
@@ -3712,32 +3609,75 @@ export function HorseOwnerDashboard() {
                 </div>
               </div>
             )}
-            <FormControl
-              fullWidth
-              sx={{
-                "& .MuiInputLabel-root": { color: "#7A7468" },
-                "& .MuiOutlinedInput-root": {
-                  color: "#23201A",
-                  "& fieldset": { borderColor: "#E3DCCB" },
-                  "&:hover fieldset": { borderColor: "#C9C2B0" },
-                  "&.Mui-focused fieldset": { borderColor: "#C9A227" },
-                  "& .MuiSelect-icon": { color: "#7A7468" },
-                },
-              }}
-            >
-              <InputLabel>Chọn Ngựa *</InputLabel>
-              <Select
-                label="Chọn Ngựa *"
-                value={regHorseId}
-                onChange={(e) => setRegHorseId(e.target.value)}
-              >
-                {horses.map((h) => (
-                  <MenuItem key={h._id} value={h._id}>
-                    {h.name} — {h.currentGrade} ({h.totalPoints} điểm)
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            {(() => {
+              const eligibleCount = selectedRaceForReg
+                ? horses.filter((h) => !getHorseEligibility(h, selectedRaceForReg)).length
+                : 0;
+              return (
+                <>
+                  {selectedRaceForReg && eligibleCount === 0 && horses.length > 0 && (
+                    <div className="flex items-start gap-2 p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+                      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <span>Không có ngựa nào đủ điều kiện tham gia race này.</span>
+                    </div>
+                  )}
+                  <FormControl
+                    fullWidth
+                    sx={{
+                      "& .MuiInputLabel-root": { color: "#7A7468" },
+                      "& .MuiOutlinedInput-root": {
+                        color: "#23201A",
+                        "& fieldset": { borderColor: "#E3DCCB" },
+                        "&:hover fieldset": { borderColor: "#C9C2B0" },
+                        "&.Mui-focused fieldset": { borderColor: "#C9A227" },
+                        "& .MuiSelect-icon": { color: "#7A7468" },
+                      },
+                    }}
+                  >
+                    <InputLabel>Chọn Ngựa *</InputLabel>
+                    <Select
+                      label="Chọn Ngựa *"
+                      value={regHorseId}
+                      onChange={(e) => setRegHorseId(e.target.value)}
+                      MenuProps={{
+                        PaperProps: {
+                          sx: {
+                            bgcolor: "#FFFFFF",
+                            border: "1px solid #E3DCCB",
+                            "& .MuiMenuItem-root": {
+                              color: "#23201A",
+                              "&:hover": { bgcolor: "rgba(35,32,26,0.05)" },
+                              "&.Mui-selected": { bgcolor: "rgba(201,162,39,0.15)", color: "#8F7318" },
+                              "&.Mui-disabled": { opacity: 1 },
+                            },
+                          },
+                        },
+                      }}
+                    >
+                      {horses.length === 0 ? (
+                        <MenuItem disabled value="">Bạn chưa có ngựa</MenuItem>
+                      ) : (
+                        horses.map((h) => {
+                          const reason = selectedRaceForReg ? getHorseEligibility(h, selectedRaceForReg) : null;
+                          return (
+                            <MenuItem key={h._id} value={h._id} disabled={!!reason}>
+                              <div className="flex flex-col">
+                                <span className={reason ? "text-slate-400" : "font-medium"}>
+                                  {h.name} — {h.currentGrade} ({h.totalPoints} điểm)
+                                </span>
+                                {reason && (
+                                  <span className="text-xs text-red-400">{reason}</span>
+                                )}
+                              </div>
+                            </MenuItem>
+                          );
+                        })
+                      )}
+                    </Select>
+                  </FormControl>
+                </>
+              );
+            })()}
           </div>
         </DialogContent>
         <DialogActions

@@ -17,17 +17,17 @@ async function createRace(adminId, body) {
   } = body;
 
   const tournament = await Tournament.findOne({ _id: tournamentId, isActive: true });
-  if (!tournament) throw new AppError(404, 'Tournament not found');
-  if (tournament.status === 'cancelled') throw new AppError(400, 'Tournament is cancelled');
+  if (!tournament) throw new AppError(404, 'Không tìm thấy giải đấu');
+  if (tournament.status === 'cancelled') throw new AppError(400, 'Giải đấu đã bị hủy');
 
   const scheduled = new Date(scheduledTime);
   const cutoff = new Date(cutoffTime);
 
-  if (cutoff >= scheduled) throw new AppError(400, 'cutoffTime must be before scheduledTime');
+  if (cutoff >= scheduled) throw new AppError(400, 'Thời hạn đăng ký phải trước thời gian đua');
 
   const minCutoffMs = CUTOFFS.registrationHoursMin * 60 * 60 * 1000;
   if (scheduled - cutoff < minCutoffMs) {
-    throw new AppError(400, `cutoffTime must be at least ${CUTOFFS.registrationHoursMin}h before scheduledTime`);
+    throw new AppError(400, `Thời hạn đăng ký phải sớm hơn giờ đua ít nhất ${CUTOFFS.registrationHoursMin} tiếng`);
   }
 
   const race = await Race.create({
@@ -70,27 +70,27 @@ async function getRaceById(raceId) {
   const race = await Race.findById(raceId)
     .populate('tournamentId', 'name status startDate endDate')
     .populate('refereeId', 'fullName email refereeProfile');
-  if (!race) throw new AppError(404, 'Race not found');
+  if (!race) throw new AppError(404, 'Không tìm thấy cuộc đua');
   return race;
 }
 
 async function updateRace(raceId, updates) {
   const race = await Race.findById(raceId);
-  if (!race) throw new AppError(404, 'Race not found');
+  if (!race) throw new AppError(404, 'Không tìm thấy cuộc đua');
 
   if (['running', 'finished', 'cancelled'].includes(race.status)) {
-    throw new AppError(400, `Cannot update race with status '${race.status}'`);
+    throw new AppError(400, `Không thể cập nhật cuộc đua đang ở trạng thái '${race.status}'`);
   }
 
   // Re-validate timing if changed
   const scheduled = updates.scheduledTime ? new Date(updates.scheduledTime) : race.scheduledTime;
   const cutoff = updates.cutoffTime ? new Date(updates.cutoffTime) : race.cutoffTime;
 
-  if (cutoff >= scheduled) throw new AppError(400, 'cutoffTime must be before scheduledTime');
+  if (cutoff >= scheduled) throw new AppError(400, 'Thời hạn đăng ký phải trước thời gian đua');
 
   const minCutoffMs = CUTOFFS.registrationHoursMin * 60 * 60 * 1000;
   if (scheduled - cutoff < minCutoffMs) {
-    throw new AppError(400, `cutoffTime must be at least ${CUTOFFS.registrationHoursMin}h before scheduledTime`);
+    throw new AppError(400, `Thời hạn đăng ký phải sớm hơn giờ đua ít nhất ${CUTOFFS.registrationHoursMin} tiếng`);
   }
 
   // Prevent direct status change via this endpoint
@@ -103,10 +103,10 @@ async function updateRace(raceId, updates) {
 
 async function cancelRace(raceId) {
   const race = await Race.findById(raceId);
-  if (!race) throw new AppError(404, 'Race not found');
-  if (race.status === 'cancelled') throw new AppError(400, 'Race is already cancelled');
+  if (!race) throw new AppError(404, 'Không tìm thấy cuộc đua');
+  if (race.status === 'cancelled') throw new AppError(400, 'Cuộc đua đã bị hủy trước đó');
   if (['running', 'finished'].includes(race.status)) {
-    throw new AppError(400, `Cannot cancel race with status '${race.status}'`);
+    throw new AppError(400, `Không thể hủy cuộc đua đang ở trạng thái '${race.status}'`);
   }
 
   const { Registration } = require('../models/registration.model');
@@ -154,11 +154,11 @@ async function cancelRace(raceId) {
 
 async function assignReferee(raceId, refereeId) {
   const race = await Race.findById(raceId);
-  if (!race) throw new AppError(404, 'Race not found');
-  if (race.status === 'cancelled') throw new AppError(400, 'Cannot assign referee to cancelled race');
+  if (!race) throw new AppError(404, 'Không tìm thấy cuộc đua');
+  if (race.status === 'cancelled') throw new AppError(400, 'Không thể phân công trọng tài cho cuộc đua đã hủy');
 
   const referee = await User.findOne({ _id: refereeId, role: 'referee', isActive: true });
-  if (!referee) throw new AppError(404, 'Referee not found');
+  if (!referee) throw new AppError(404, 'Không tìm thấy trọng tài');
 
   race.refereeId = refereeId;
   await race.save();
@@ -167,11 +167,11 @@ async function assignReferee(raceId, refereeId) {
 
 async function updateRaceStatus(raceId, newStatus) {
   const race = await Race.findById(raceId);
-  if (!race) throw new AppError(404, 'Race not found');
+  if (!race) throw new AppError(404, 'Không tìm thấy cuộc đua');
 
   const expected = ALLOWED_MANUAL_TRANSITIONS[race.status];
   if (expected !== newStatus) {
-    throw new AppError(400, `Cannot transition from '${race.status}' to '${newStatus}'`);
+    throw new AppError(400, `Không thể chuyển trạng thái từ '${race.status}' sang '${newStatus}'`);
   }
 
   if (newStatus === 'pre_check') {
@@ -198,7 +198,7 @@ async function updateRaceStatus(raceId, newStatus) {
 
 async function getRaceRegistrations(raceId, { page = 1, limit = 20 } = {}) {
   const race = await Race.findById(raceId);
-  if (!race) throw new AppError(404, 'Race not found');
+  if (!race) throw new AppError(404, 'Không tìm thấy cuộc đua');
 
   const { Registration } = require('../models/registration.model');
   const skip = (page - 1) * limit;
@@ -221,7 +221,7 @@ async function getRaceHorses(raceId) {
   const race = await Race.findById(raceId)
     .populate('tournamentId', 'name')
     .populate('refereeId', 'fullName');
-  if (!race) throw new AppError(404, 'Race not found');
+  if (!race) throw new AppError(404, 'Không tìm thấy cuộc đua');
 
   const { Registration } = require('../models/registration.model');
   const registrations = await Registration.find({ raceId, status: 'active' })
@@ -270,9 +270,9 @@ async function forceSimulateRace(raceId) {
   const { runRaceSimulation } = require('./race-simulation.service');
 
   const race = await Race.findById(raceId);
-  if (!race) throw new AppError(404, 'Race not found');
+  if (!race) throw new AppError(404, 'Không tìm thấy cuộc đua');
   if (race.status === 'finished' || race.status === 'cancelled') {
-    throw new AppError(400, `Race already ${race.status}`);
+    throw new AppError(400, `Cuộc đua đã ở trạng thái ${race.status}`);
   }
 
   // Auto-pass all active registrations still pending pre-check
@@ -294,7 +294,7 @@ async function forceSimulateRace(raceId) {
 
 async function getRaceResults(raceId) {
   const race = await Race.findById(raceId);
-  if (!race) throw new AppError(404, 'Race not found');
+  if (!race) throw new AppError(404, 'Không tìm thấy cuộc đua');
 
   const { RaceResult } = require('../models/race_result.model');
   const results = await RaceResult.find({ raceId })

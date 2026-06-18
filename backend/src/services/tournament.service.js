@@ -4,7 +4,7 @@ const { AppError } = require('../middleware/error.middleware');
 async function createTournament(adminId, { name, description, location, startDate, endDate }) {
   const start = new Date(startDate);
   const end = new Date(endDate);
-  if (end <= start) throw new AppError(400, 'endDate must be after startDate');
+  if (end <= start) throw new AppError(400, 'Ngày kết thúc phải sau ngày bắt đầu');
 
   const tournament = await Tournament.create({
     name,
@@ -38,20 +38,20 @@ async function getTournaments({ page = 1, limit = 10, status, isActive } = {}) {
 
 async function getTournamentById(tournamentId) {
   const tournament = await Tournament.findById(tournamentId).populate('createdBy', 'fullName email');
-  if (!tournament) throw new AppError(404, 'Tournament not found');
+  if (!tournament) throw new AppError(404, 'Không tìm thấy giải đấu');
   return tournament;
 }
 
 async function updateTournament(tournamentId, updates) {
   const tournament = await Tournament.findById(tournamentId);
-  if (!tournament) throw new AppError(404, 'Tournament not found');
-  if (!tournament.isActive) throw new AppError(400, 'Tournament is inactive');
-  if (tournament.status === 'cancelled') throw new AppError(400, 'Cannot update a cancelled tournament');
+  if (!tournament) throw new AppError(404, 'Không tìm thấy giải đấu');
+  if (!tournament.isActive) throw new AppError(400, 'Giải đấu đã bị vô hiệu hóa');
+  if (tournament.status === 'cancelled') throw new AppError(400, 'Không thể cập nhật giải đấu đã hủy');
 
   // Validate dates if provided
   const start = updates.startDate ? new Date(updates.startDate) : tournament.startDate;
   const end = updates.endDate ? new Date(updates.endDate) : tournament.endDate;
-  if (end <= start) throw new AppError(400, 'endDate must be after startDate');
+  if (end <= start) throw new AppError(400, 'Ngày kết thúc phải sau ngày bắt đầu');
 
   // Block if there are running/finished races
   if (updates.startDate || updates.endDate) {
@@ -60,7 +60,7 @@ async function updateTournament(tournamentId, updates) {
       tournamentId,
       status: { $in: ['running', 'finished'] },
     });
-    if (blockingRace) throw new AppError(409, 'Cannot change dates when races are running or finished');
+    if (blockingRace) throw new AppError(409, 'Không thể thay đổi ngày khi đang có cuộc đua diễn ra hoặc đã kết thúc');
   }
 
   Object.assign(tournament, {
@@ -74,15 +74,15 @@ async function updateTournament(tournamentId, updates) {
 
 async function deleteTournament(tournamentId) {
   const tournament = await Tournament.findById(tournamentId);
-  if (!tournament) throw new AppError(404, 'Tournament not found');
-  if (!tournament.isActive) throw new AppError(400, 'Tournament already inactive');
+  if (!tournament) throw new AppError(404, 'Không tìm thấy giải đấu');
+  if (!tournament.isActive) throw new AppError(400, 'Giải đấu đã bị vô hiệu hóa trước đó');
 
   const { Race } = require('../models/race.model');
   const blockingRace = await Race.findOne({
     tournamentId,
     status: { $in: ['running', 'finished'] },
   });
-  if (blockingRace) throw new AppError(409, 'Cannot delete tournament with running or finished races');
+  if (blockingRace) throw new AppError(409, 'Không thể xóa giải đấu khi đang có cuộc đua diễn ra hoặc đã kết thúc');
 
   tournament.isActive = false;
   tournament.status = 'cancelled';

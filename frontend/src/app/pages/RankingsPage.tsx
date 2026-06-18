@@ -99,9 +99,9 @@ export function RankingsPage() {
   useEffect(() => {
     setLoading(true);
     Promise.all([
-      rankingsApi.getHorseRankings(token, 15),
-      rankingsApi.getJockeyRankings(token, 15),
-      rankingsApi.getOwnerRankings(token, 15),
+      rankingsApi.getHorseRankings(token, 100),
+      rankingsApi.getJockeyRankings(token, 100),
+      rankingsApi.getOwnerRankings(token, 100),
     ])
       .then(([h, j, o]) => { setHorses(h); setJockeys(j); setOwners(o); })
       .catch(() => {})
@@ -131,6 +131,8 @@ export function RankingsPage() {
       .finally(() => setResultsLoading(false));
   }, [selectedRaceId, token]);
 
+  useEffect(() => { setPage(1); }, [tab, search]);
+
   const selectedRace = finishedRaces.find((r) => r._id === selectedRaceId);
   const filteredRaces = finishedRaces.filter((r) =>
     r.name.toLowerCase().includes(raceSearch.toLowerCase()) ||
@@ -152,6 +154,9 @@ export function RankingsPage() {
 
   const currentList = tab === 'horses' ? filteredHorses : tab === 'jockeys' ? filteredJockeys : filteredOwners;
   const top3 = currentList.slice(0, 3);
+
+  const totalPages = Math.max(1, Math.ceil(currentList.length / PAGE_SIZE));
+  const pagedList = currentList.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <PublicShell>
@@ -473,7 +478,7 @@ export function RankingsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {currentList.map((item: any) => (
+                      {pagedList.map((item: any) => (
                         <tr key={item._id} className="border-b border-border hover:bg-muted/40 transition-colors group">
                           <td className="px-6 py-4">
                             <span className={`text-lg font-bold tabular-nums ${rankColors[item.rank] || 'text-foreground'}`}>#{item.rank}</span>
@@ -533,6 +538,7 @@ export function RankingsPage() {
                 </div>
               </div>
             )}
+            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
           </>
         )}
       </div>

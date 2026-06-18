@@ -27,13 +27,13 @@ async function getAssignedRaces(refereeId, { page = 1, limit = 10, status } = {}
 
 async function createReport(refereeId, raceId) {
   const race = await Race.findById(raceId);
-  if (!race) throw new AppError(404, 'Race not found');
+  if (!race) throw new AppError(404, 'Không tìm thấy cuộc đua');
   if (!race.refereeId || race.refereeId.toString() !== refereeId) {
-    throw new AppError(403, 'You are not the assigned referee for this race');
+    throw new AppError(403, 'Bạn không phải trọng tài được phân công cho cuộc đua này');
   }
 
   const existing = await RefereeReport.findOne({ raceId });
-  if (existing) throw new AppError(409, 'A report already exists for this race');
+  if (existing) throw new AppError(409, 'Báo cáo cho cuộc đua này đã tồn tại');
 
   const report = await RefereeReport.create({ raceId, refereeId });
   return populateReport(report);
@@ -58,18 +58,18 @@ async function getMyReports(refereeId, { page = 1, limit = 10, status } = {}) {
 
 async function getReportById(reportId, userId, role) {
   const report = await populateReport(await RefereeReport.findById(reportId));
-  if (!report) throw new AppError(404, 'Report not found');
+  if (!report) throw new AppError(404, 'Không tìm thấy báo cáo');
 
   const isReferee = report.refereeId._id.toString() === userId;
-  if (!isReferee && role !== 'admin') throw new AppError(403, 'Access denied');
+  if (!isReferee && role !== 'admin') throw new AppError(403, 'Bạn không có quyền truy cập');
 
   return report;
 }
 
 async function updateReport(reportId, refereeId, { preCheckSummary, overallNotes }) {
   const report = await RefereeReport.findOne({ _id: reportId, refereeId });
-  if (!report) throw new AppError(404, 'Report not found or access denied');
-  if (report.status === 'submitted') throw new AppError(400, 'Cannot edit a submitted report');
+  if (!report) throw new AppError(404, 'Không tìm thấy báo cáo hoặc bạn không có quyền truy cập');
+  if (report.status === 'submitted') throw new AppError(400, 'Không thể chỉnh sửa báo cáo đã nộp');
 
   if (preCheckSummary !== undefined) report.preCheckSummary = preCheckSummary;
   if (overallNotes !== undefined) report.overallNotes = overallNotes;
@@ -82,13 +82,13 @@ async function updateReport(reportId, refereeId, { preCheckSummary, overallNotes
 
 async function addIncident(reportId, refereeId, incidentData) {
   const report = await RefereeReport.findOne({ _id: reportId, refereeId });
-  if (!report) throw new AppError(404, 'Report not found or access denied');
-  if (report.status === 'submitted') throw new AppError(400, 'Cannot add incidents to a submitted report');
+  if (!report) throw new AppError(404, 'Không tìm thấy báo cáo hoặc bạn không có quyền truy cập');
+  if (report.status === 'submitted') throw new AppError(400, 'Không thể thêm sự cố vào báo cáo đã nộp');
 
   // Validate registrationId belongs to this race if provided
   if (incidentData.registrationId) {
     const reg = await Registration.findOne({ _id: incidentData.registrationId, raceId: report.raceId });
-    if (!reg) throw new AppError(404, 'Registration not found in this race');
+    if (!reg) throw new AppError(404, 'Không tìm thấy đăng ký trong cuộc đua này');
     incidentData.horseId = reg.horseId;
   }
 
@@ -100,12 +100,12 @@ async function addIncident(reportId, refereeId, incidentData) {
 
 async function removeIncident(reportId, refereeId, incidentId) {
   const report = await RefereeReport.findOne({ _id: reportId, refereeId });
-  if (!report) throw new AppError(404, 'Report not found or access denied');
-  if (report.status === 'submitted') throw new AppError(400, 'Cannot remove incidents from a submitted report');
+  if (!report) throw new AppError(404, 'Không tìm thấy báo cáo hoặc bạn không có quyền truy cập');
+  if (report.status === 'submitted') throw new AppError(400, 'Không thể xóa sự cố khỏi báo cáo đã nộp');
 
   const before = report.incidents.length;
   report.incidents = report.incidents.filter((i) => i._id.toString() !== incidentId);
-  if (report.incidents.length === before) throw new AppError(404, 'Incident not found');
+  if (report.incidents.length === before) throw new AppError(404, 'Không tìm thấy sự cố');
 
   await report.save();
   return populateReport(report);
@@ -115,8 +115,8 @@ async function removeIncident(reportId, refereeId, incidentId) {
 
 async function submitReport(reportId, refereeId) {
   const report = await RefereeReport.findOne({ _id: reportId, refereeId });
-  if (!report) throw new AppError(404, 'Report not found or access denied');
-  if (report.status === 'submitted') throw new AppError(400, 'Report is already submitted');
+  if (!report) throw new AppError(404, 'Không tìm thấy báo cáo hoặc bạn không có quyền truy cập');
+  if (report.status === 'submitted') throw new AppError(400, 'Báo cáo đã được nộp trước đó');
 
   report.status = 'submitted';
   report.submittedAt = new Date();
@@ -135,10 +135,10 @@ async function generateReportPdf(reportId, userId, role) {
     .populate('incidents.registrationId', 'horseId jockeyId')
     .populate('incidents.horseId', 'name breed');
 
-  if (!report) throw new AppError(404, 'Report not found');
+  if (!report) throw new AppError(404, 'Không tìm thấy báo cáo');
 
   const isReferee = report.refereeId._id.toString() === userId;
-  if (!isReferee && role !== 'admin') throw new AppError(403, 'Access denied');
+  if (!isReferee && role !== 'admin') throw new AppError(403, 'Bạn không có quyền truy cập');
 
   // Fetch registrations for the race to list participating horses
   const registrations = await Registration.find({ raceId: report.raceId._id, status: { $in: ['active', 'disqualified'] } })

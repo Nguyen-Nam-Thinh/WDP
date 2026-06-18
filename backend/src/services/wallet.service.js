@@ -9,7 +9,7 @@ async function createWallet(userId, session) {
 
 async function getWalletByUserId(userId) {
   const wallet = await Wallet.findOne({ userId });
-  if (!wallet) throw new AppError(404, 'Wallet not found');
+  if (!wallet) throw new AppError(404, 'Không tìm thấy ví');
   return wallet;
 }
 
@@ -19,7 +19,7 @@ async function creditWallet(walletId, userId, amount, type, description, related
     { $inc: { balance: amount } },
     { new: true, session },
   );
-  if (!wallet) throw new AppError(404, 'Wallet not found');
+  if (!wallet) throw new AppError(404, 'Không tìm thấy ví');
 
   await Transaction.create(
     [{ walletId, userId, type, amount, balanceAfter: wallet.balance, relatedId, relatedModel, description }],
@@ -31,8 +31,8 @@ async function creditWallet(walletId, userId, amount, type, description, related
 
 async function debitWallet(walletId, userId, amount, type, description, relatedId, relatedModel, session) {
   const wallet = await Wallet.findById(walletId).session(session ?? null);
-  if (!wallet) throw new AppError(404, 'Wallet not found');
-  if (wallet.balance < amount) throw new AppError(400, 'Insufficient balance');
+  if (!wallet) throw new AppError(404, 'Không tìm thấy ví');
+  if (wallet.balance < amount) throw new AppError(400, 'Số dư ví không đủ');
 
   wallet.balance -= amount;
   await wallet.save({ session });

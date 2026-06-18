@@ -10,7 +10,7 @@ const SALT_ROUNDS = 12;
 
 async function register(data) {
   const existing = await User.findOne({ email: data.email });
-  if (existing) throw new AppError(409, 'Email already registered');
+  if (existing) throw new AppError(409, 'Email đã được đăng ký');
 
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -50,10 +50,10 @@ async function register(data) {
 
 async function login(email, password) {
   const user = await User.findOne({ email }).select('+passwordHash +refreshToken');
-  if (!user || !user.isActive) throw new AppError(401, 'Invalid credentials');
+  if (!user || !user.isActive) throw new AppError(401, 'Email hoặc mật khẩu không đúng');
 
   const valid = await bcrypt.compare(password, user.passwordHash);
-  if (!valid) throw new AppError(401, 'Invalid credentials');
+  if (!valid) throw new AppError(401, 'Email hoặc mật khẩu không đúng');
 
   const accessToken = signAccessToken({ userId: user._id.toString(), role: user.role, email: user.email });
   const refreshToken = signRefreshToken(user._id);
@@ -73,7 +73,7 @@ async function refreshTokens(token) {
   try {
     payload = verifyRefreshToken(token);
   } catch {
-    throw new AppError(401, 'Invalid refresh token');
+    throw new AppError(401, 'Refresh token không hợp lệ');
   }
 
   const user = await User.findById(payload.userId).select('+refreshToken');
@@ -115,15 +115,15 @@ async function forgotPassword(email) {
 async function verifyResetCode(email, code) {
   const user = await User.findOne({ email }).select('+passwordResetCode +passwordResetExpires');
   if (!user || !user.passwordResetCode || !user.passwordResetExpires) {
-    throw new AppError(400, 'Invalid or expired reset code');
+    throw new AppError(400, 'Mã xác nhận không hợp lệ hoặc đã hết hạn');
   }
 
   if (user.passwordResetExpires < new Date()) {
-    throw new AppError(400, 'Reset code has expired');
+    throw new AppError(400, 'Mã xác nhận đã hết hạn');
   }
 
   const valid = await bcrypt.compare(code, user.passwordResetCode);
-  if (!valid) throw new AppError(400, 'Invalid reset code');
+  if (!valid) throw new AppError(400, 'Mã xác nhận không đúng');
 
   // Xóa OTP sau khi verify thành công
   await User.findByIdAndUpdate(user._id, {
@@ -140,7 +140,7 @@ async function resetPassword(resetToken, newPassword) {
   try {
     payload = verifyResetToken(resetToken);
   } catch {
-    throw new AppError(400, 'Invalid or expired reset token');
+    throw new AppError(400, 'Token đặt lại mật khẩu không hợp lệ hoặc đã hết hạn');
   }
 
   const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
@@ -152,10 +152,10 @@ async function resetPassword(resetToken, newPassword) {
 
 async function changePassword(userId, currentPassword, newPassword) {
   const user = await User.findById(userId).select('+passwordHash');
-  if (!user) throw new AppError(404, 'User not found');
+  if (!user) throw new AppError(404, 'Không tìm thấy người dùng');
 
   const valid = await bcrypt.compare(currentPassword, user.passwordHash);
-  if (!valid) throw new AppError(400, 'Current password is incorrect');
+  if (!valid) throw new AppError(400, 'Mật khẩu hiện tại không đúng');
 
   const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
   await User.findByIdAndUpdate(userId, { passwordHash, refreshToken: null });
