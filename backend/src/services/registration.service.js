@@ -20,45 +20,53 @@ function calcHorseAge(birthDate) {
 
 async function registerHorse(ownerId, { raceId, horseId, jockeyId }) {
   const race = await Race.findById(raceId);
-  if (!race) throw new AppError(404, 'Race not found');
-  if (race.status !== 'open') throw new AppError(400, 'Race is not open for registration');
-  if (new Date() > race.cutoffTime) throw new AppError(400, 'Registration cutoff time has passed');
+  if (!race) throw new AppError(404, 'Không tìm thấy cuộc đua');
+  if (race.status !== 'open') throw new AppError(400, 'Cuộc đua không còn mở đăng ký');
+  if (new Date() > race.cutoffTime) throw new AppError(400, 'Đã qua thời hạn đăng ký');
 
   const horse = await Horse.findOne({ _id: horseId, ownerId, isActive: true });
-  if (!horse) throw new AppError(404, 'Horse not found or access denied');
+  if (!horse) throw new AppError(404, 'Không tìm thấy ngựa hoặc bạn không có quyền truy cập');
 
   // Eligibility checks
+  const GRADE_ORDER = { Maiden: 0, G3: 1, G2: 2, G1: 3 };
   const eligibility = race.eligibility || {};
+
   if (eligibility.allowedGrades && eligibility.allowedGrades.length > 0) {
     if (!eligibility.allowedGrades.includes(horse.currentGrade)) {
-      throw new AppError(400, `Horse grade '${horse.currentGrade}' is not eligible for this race`);
+      throw new AppError(400, `Hạng ngựa '${horse.currentGrade}' không đủ điều kiện. Chỉ chấp nhận: ${eligibility.allowedGrades.join(', ')}`);
+    }
+  } else {
+    // Default: horse grade must be >= race grade
+    if ((GRADE_ORDER[horse.currentGrade] ?? -1) < (GRADE_ORDER[race.grade] ?? 0)) {
+      throw new AppError(400, `Hạng ngựa '${horse.currentGrade}' không đủ điều kiện tham gia giải ${race.grade}`);
     }
   }
-  if (eligibility.minPoints && horse.totalPoints < eligibility.minPoints) {
-    throw new AppError(400, `Horse does not meet minimum points requirement (${eligibility.minPoints})`);
+
+  if (eligibility.minPoints > 0 && horse.totalPoints < eligibility.minPoints) {
+    throw new AppError(400, `Ngựa không đủ điểm tối thiểu (${horse.totalPoints}/${eligibility.minPoints} điểm)`);
   }
   if (horse.birthDate) {
     const age = calcHorseAge(horse.birthDate);
     if (eligibility.minAge && age < eligibility.minAge) {
-      throw new AppError(400, `Horse is too young (minimum age: ${eligibility.minAge})`);
+      throw new AppError(400, `Ngựa còn quá nhỏ (tuổi tối thiểu: ${eligibility.minAge})`);
     }
     if (eligibility.maxAge && age > eligibility.maxAge) {
-      throw new AppError(400, `Horse is too old (maximum age: ${eligibility.maxAge})`);
+      throw new AppError(400, `Ngựa đã quá tuổi (tuổi tối đa: ${eligibility.maxAge})`);
     }
   }
 
   // Capacity check
   const activeCount = await Registration.countDocuments({ raceId, status: 'active' });
-  if (activeCount >= race.maxCapacity) throw new AppError(409, 'Race has reached maximum capacity');
+  if (activeCount >= race.maxCapacity) throw new AppError(409, 'Cuộc đua đã đủ số lượng ngựa đăng ký');
 
   // Jockey validation (if provided)
   if (jockeyId) {
     const jockey = await User.findOne({ _id: jockeyId, role: 'jockey', isActive: true });
-    if (!jockey) throw new AppError(404, 'Jockey not found');
+    if (!jockey) throw new AppError(404, 'Không tìm thấy kỵ sĩ');
 
     // Jockey can only ride 1 horse per race
     const jockeyConflict = await Registration.findOne({ raceId, jockeyId, status: 'active' });
-    if (jockeyConflict) throw new AppError(409, 'Jockey is already assigned to another horse in this race');
+    if (jockeyConflict) throw new AppError(409, 'Kỵ sĩ đã được phân công cho ngựa khác trong cuộc đua này');
   }
 
   const session = await mongoose.startSession();
@@ -67,7 +75,7 @@ async function registerHorse(ownerId, { raceId, horseId, jockeyId }) {
   let registration;
   try {
     const wallet = await Wallet.findOne({ userId: ownerId }).session(session);
-    if (!wallet) throw new AppError(404, 'Owner wallet not found');
+    if (!wallet) throw new AppError(404, 'Không tìm thấy ví của chủ ngựa');
 
     await walletService.debitWallet(
       wallet._id, ownerId, race.registrationFee,
@@ -127,28 +135,28 @@ async function getRegistrationById(registrationId, userId, role) {
     .populate('ownerId', 'fullName email')
     .populate('jockeyId', 'fullName email jockeyProfile');
 
-  if (!reg) throw new AppError(404, 'Registration not found');
+  if (!reg) throw new AppError(404, 'Không tìm thấy đăng ký');
 
   const isOwner = reg.ownerId._id.toString() === userId;
   const isReferee = role === 'referee';
-  if (!isOwner && !isReferee && role !== 'admin') throw new AppError(403, 'Access denied');
+  if (!isOwner && !isReferee && role !== 'admin') throw new AppError(403, 'Bạn không có quyền truy cập');
 
   return reg;
 }
 
 async function assignJockey(registrationId, ownerId, jockeyId) {
   const reg = await Registration.findOne({ _id: registrationId, ownerId });
-  if (!reg) throw new AppError(404, 'Registration not found or access denied');
-  if (reg.status !== 'active') throw new AppError(400, `Cannot assign jockey to registration with status '${reg.status}'`);
+  if (!reg) throw new AppError(404, 'Không tìm thấy đăng ký hoặc bạn không có quyền truy cập');
+  if (reg.status !== 'active') throw new AppError(400, `Không thể phân công kỵ sĩ cho đăng ký có trạng thái '${reg.status}'`);
 
   const race = await Race.findById(reg.raceId);
-  if (!race) throw new AppError(404, 'Race not found');
+  if (!race) throw new AppError(404, 'Không tìm thấy cuộc đua');
   if (['running', 'finished', 'cancelled'].includes(race.status)) {
-    throw new AppError(400, `Cannot assign jockey when race status is '${race.status}'`);
+    throw new AppError(400, `Không thể phân công kỵ sĩ khi cuộc đua đang ở trạng thái '${race.status}'`);
   }
 
   const jockey = await User.findOne({ _id: jockeyId, role: 'jockey', isActive: true });
-  if (!jockey) throw new AppError(404, 'Jockey not found');
+  if (!jockey) throw new AppError(404, 'Không tìm thấy kỵ sĩ');
 
   // Jockey can only ride 1 horse per race (exclude current registration)
   const conflict = await Registration.findOne({
@@ -157,7 +165,7 @@ async function assignJockey(registrationId, ownerId, jockeyId) {
     status: 'active',
     _id: { $ne: registrationId },
   });
-  if (conflict) throw new AppError(409, 'Jockey is already assigned to another horse in this race');
+  if (conflict) throw new AppError(409, 'Kỵ sĩ đã được phân công cho ngựa khác trong cuộc đua này');
 
   reg.jockeyId = jockeyId;
   await reg.save();
@@ -171,12 +179,12 @@ async function assignJockey(registrationId, ownerId, jockeyId) {
 
 async function cancelRegistration(registrationId, ownerId) {
   const reg = await Registration.findOne({ _id: registrationId, ownerId });
-  if (!reg) throw new AppError(404, 'Registration not found or access denied');
-  if (reg.status !== 'active') throw new AppError(400, `Cannot cancel registration with status '${reg.status}'`);
+  if (!reg) throw new AppError(404, 'Không tìm thấy đăng ký hoặc bạn không có quyền truy cập');
+  if (reg.status !== 'active') throw new AppError(400, `Không thể hủy đăng ký có trạng thái '${reg.status}'`);
 
   const race = await Race.findById(reg.raceId);
-  if (!race) throw new AppError(404, 'Race not found');
-  if (race.status !== 'open') throw new AppError(400, 'Can only cancel registration while race is open');
+  if (!race) throw new AppError(404, 'Không tìm thấy cuộc đua');
+  if (race.status !== 'open') throw new AppError(400, 'Chỉ có thể hủy đăng ký khi cuộc đua còn đang mở');
 
   const refundAmount = Math.floor(reg.feePaid * REFUND_RATES.ownerCancel);
 
@@ -186,11 +194,11 @@ async function cancelRegistration(registrationId, ownerId) {
   try {
     if (refundAmount > 0) {
       const wallet = await Wallet.findOne({ userId: ownerId }).session(session);
-      if (!wallet) throw new AppError(404, 'Wallet not found');
+      if (!wallet) throw new AppError(404, 'Không tìm thấy ví');
       await walletService.creditWallet(
         wallet._id, ownerId, refundAmount,
         'registration_refund',
-        `Refund (40%): cancelled registration for ${race.name}`,
+        `Hoàn tiền (40%): hủy đăng ký cuộc đua ${race.name}`,
         reg._id, 'Registration', session,
       );
     }
@@ -217,14 +225,14 @@ async function cancelRegistration(registrationId, ownerId) {
 
 async function updatePreCheck(registrationId, refereeId, { status, note }) {
   const reg = await Registration.findById(registrationId).populate('raceId');
-  if (!reg) throw new AppError(404, 'Registration not found');
+  if (!reg) throw new AppError(404, 'Không tìm thấy đăng ký');
 
   const race = reg.raceId;
-  if (race.status !== 'pre_check') throw new AppError(400, 'Race must be in pre_check status for inspection');
+  if (race.status !== 'pre_check') throw new AppError(400, 'Cuộc đua phải ở trạng thái kiểm tra trước đua');
   if (!race.refereeId || race.refereeId.toString() !== refereeId) {
-    throw new AppError(403, 'Only the assigned referee can perform pre-check');
+    throw new AppError(403, 'Chỉ trọng tài được phân công mới có thể thực hiện kiểm tra');
   }
-  if (reg.status !== 'active') throw new AppError(400, `Registration is already ${reg.status}`);
+  if (reg.status !== 'active') throw new AppError(400, `Đăng ký đã ở trạng thái ${reg.status}`);
 
   reg.preCheckResult = { status, note: note || '', checkedAt: new Date() };
 
@@ -237,11 +245,11 @@ async function updatePreCheck(registrationId, refereeId, { status, note }) {
     try {
       if (refundAmount > 0) {
         const wallet = await Wallet.findOne({ userId: reg.ownerId }).session(session);
-        if (!wallet) throw new AppError(404, 'Wallet not found');
+        if (!wallet) throw new AppError(404, 'Không tìm thấy ví');
         await walletService.creditWallet(
           wallet._id, reg.ownerId, refundAmount,
           'registration_refund',
-          `Refund (70%): disqualified pre-check for ${race.name}`,
+          `Hoàn tiền (70%): ngựa bị loại kiểm tra trước đua ${race.name}`,
           reg._id, 'Registration', session,
         );
       }

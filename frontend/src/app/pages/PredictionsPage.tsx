@@ -27,6 +27,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
+import { Pagination } from "../components/Pagination";
 import {
   raceApi,
   type Race,
@@ -630,6 +631,8 @@ export function PredictionsPage() {
   // Bet history
   const [myBets, setMyBets] = useState<Bet[]>([]);
   const [loadingBets, setLoadingBets] = useState(false);
+  const [betPage, setBetPage] = useState(1);
+  const BET_PAGE_SIZE = 5;
 
   // Load open+running races on mount
   useEffect(() => {
@@ -666,8 +669,8 @@ export function PredictionsPage() {
     if (!token) return;
     setLoadingBets(true);
     betApi
-      .getMyBets(token, { limit: 10 })
-      .then((r) => setMyBets(r.bets ?? []))
+      .getMyBets(token, { limit: 50 })
+      .then((r) => { setMyBets(r.bets ?? []); setBetPage(1); })
       .catch(() => {})
       .finally(() => setLoadingBets(false));
   }, [token, placed]);
@@ -1221,48 +1224,55 @@ export function PredictionsPage() {
                           Chưa có lịch sử cược
                         </div>
                       ) : (
-                        myBets.map((bet) => {
-                          const race = bet.raceId as any;
-                          const horse = bet.horseId as any;
-                          return (
-                            <div
-                              key={bet._id}
-                              className="p-3 bg-background border border-border"
-                            >
-                              <div className="flex items-start justify-between gap-2 mb-1">
-                                <span className="text-xs text-muted-foreground leading-tight">
-                                  {race?.name ?? "Race"}
-                                </span>
-                                <span
-                                  className={`shrink-0 px-2 py-0.5 text-[10px] font-black uppercase ${bet.status === "won" ? "bg-primary/10 text-primary" : bet.status === "lost" ? "bg-destructive/10 text-destructive" : "bg-gold/15 text-[#8F7318]"}`}
-                                >
-                                  {bet.status === "won"
-                                    ? "✓ Thắng"
-                                    : bet.status === "lost"
-                                      ? "✗ Thua"
-                                      : "⏳ Chờ"}
-                                </span>
+                        <>
+                          {myBets.slice((betPage - 1) * BET_PAGE_SIZE, betPage * BET_PAGE_SIZE).map((bet) => {
+                            const race = bet.raceId as any;
+                            const horse = bet.horseId as any;
+                            return (
+                              <div
+                                key={bet._id}
+                                className="p-3 bg-background border border-border"
+                              >
+                                <div className="flex items-start justify-between gap-2 mb-1">
+                                  <span className="text-xs text-muted-foreground leading-tight">
+                                    {race?.name ?? "Race"}
+                                  </span>
+                                  <span
+                                    className={`shrink-0 px-2 py-0.5 text-[10px] font-black uppercase ${bet.status === "won" ? "bg-primary/10 text-primary" : bet.status === "lost" ? "bg-destructive/10 text-destructive" : "bg-gold/15 text-[#8F7318]"}`}
+                                  >
+                                    {bet.status === "won"
+                                      ? "✓ Thắng"
+                                      : bet.status === "lost"
+                                        ? "✗ Thua"
+                                        : "⏳ Chờ"}
+                                  </span>
+                                </div>
+                                <div className="font-bold text-foreground text-sm mb-1">
+                                  {horse?.name ?? "—"}
+                                </div>
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-muted-foreground">
+                                    {bet.betType} · {bet.amount.toLocaleString()}c
+                                  </span>
+                                  <span
+                                    className={`font-bold tabular-nums ${bet.status === "won" ? "text-primary" : bet.status === "lost" ? "text-destructive line-through" : "text-[#8F7318]"}`}
+                                  >
+                                    +
+                                    {Math.floor(
+                                      bet.amount * bet.multiplier,
+                                    ).toLocaleString()}
+                                    c
+                                  </span>
+                                </div>
                               </div>
-                              <div className="font-bold text-foreground text-sm mb-1">
-                                {horse?.name ?? "—"}
-                              </div>
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-muted-foreground">
-                                  {bet.betType} · {bet.amount.toLocaleString()}c
-                                </span>
-                                <span
-                                  className={`font-bold tabular-nums ${bet.status === "won" ? "text-primary" : bet.status === "lost" ? "text-destructive line-through" : "text-[#8F7318]"}`}
-                                >
-                                  +
-                                  {Math.floor(
-                                    bet.amount * bet.multiplier,
-                                  ).toLocaleString()}
-                                  c
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })
+                            );
+                          })}
+                          <Pagination
+                            page={betPage}
+                            totalPages={Math.ceil(myBets.length / BET_PAGE_SIZE)}
+                            onPageChange={setBetPage}
+                          />
+                        </>
                       )}
                     </div>
                   </div>

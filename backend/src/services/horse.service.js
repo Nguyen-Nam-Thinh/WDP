@@ -32,10 +32,10 @@ async function getHorseById(horseId, requesterId, requesterRole) {
     'regularJockeys',
     'fullName email jockeyProfile',
   );
-  if (!horse) throw new AppError(404, 'Horse not found');
+  if (!horse) throw new AppError(404, 'Không tìm thấy ngựa');
 
   if (requesterRole !== 'admin' && horse.ownerId.toString() !== requesterId) {
-    throw new AppError(403, 'Access denied');
+    throw new AppError(403, 'Bạn không có quyền truy cập');
   }
 
   return horse;
@@ -43,7 +43,7 @@ async function getHorseById(horseId, requesterId, requesterRole) {
 
 async function updateHorse(horseId, ownerId, data) {
   const horse = await Horse.findOne({ _id: horseId, ownerId });
-  if (!horse) throw new AppError(404, 'Horse not found or access denied');
+  if (!horse) throw new AppError(404, 'Không tìm thấy ngựa hoặc bạn không có quyền truy cập');
 
   const IMMUTABLE = [
     'ownerId',
@@ -64,8 +64,8 @@ async function updateHorse(horseId, ownerId, data) {
 
 async function deactivateHorse(horseId, ownerId) {
   const horse = await Horse.findOne({ _id: horseId, ownerId });
-  if (!horse) throw new AppError(404, 'Horse not found or access denied');
-  if (!horse.isActive) throw new AppError(409, 'Horse is already inactive');
+  if (!horse) throw new AppError(404, 'Không tìm thấy ngựa hoặc bạn không có quyền truy cập');
+  if (!horse.isActive) throw new AppError(409, 'Ngựa đã được vô hiệu hóa trước đó');
 
   horse.isActive = false;
   await horse.save();
@@ -74,13 +74,13 @@ async function deactivateHorse(horseId, ownerId) {
 
 async function addRegularJockey(horseId, ownerId, jockeyId) {
   const horse = await Horse.findOne({ _id: horseId, ownerId, isActive: true });
-  if (!horse) throw new AppError(404, 'Horse not found or access denied');
+  if (!horse) throw new AppError(404, 'Không tìm thấy ngựa hoặc bạn không có quyền truy cập');
 
   const jockey = await User.findOne({ _id: jockeyId, role: 'jockey', isActive: true });
-  if (!jockey) throw new AppError(404, 'Jockey not found');
+  if (!jockey) throw new AppError(404, 'Không tìm thấy kỵ sĩ');
 
   if (horse.regularJockeys.some((id) => id.toString() === jockeyId)) {
-    throw new AppError(409, 'Jockey is already a regular jockey of this horse');
+    throw new AppError(409, 'Kỵ sĩ đã là kỵ sĩ ruột của ngựa này');
   }
 
   horse.regularJockeys.push(new mongoose.Types.ObjectId(jockeyId));
@@ -90,12 +90,12 @@ async function addRegularJockey(horseId, ownerId, jockeyId) {
 
 async function removeRegularJockey(horseId, ownerId, jockeyId) {
   const horse = await Horse.findOne({ _id: horseId, ownerId });
-  if (!horse) throw new AppError(404, 'Horse not found or access denied');
+  if (!horse) throw new AppError(404, 'Không tìm thấy ngựa hoặc bạn không có quyền truy cập');
 
   const before = horse.regularJockeys.length;
   horse.regularJockeys = horse.regularJockeys.filter((id) => id.toString() !== jockeyId);
   if (horse.regularJockeys.length === before)
-    throw new AppError(404, 'Jockey not in regular jockeys list');
+    throw new AppError(404, 'Kỵ sĩ không có trong danh sách kỵ sĩ ruột');
 
   await horse.save();
   return horse;
@@ -103,7 +103,7 @@ async function removeRegularJockey(horseId, ownerId, jockeyId) {
 
 async function uploadImages(horseId, ownerId, fileBuffers) {
   const horse = await Horse.findOne({ _id: horseId, ownerId, isActive: true });
-  if (!horse) throw new AppError(404, 'Horse not found or access denied');
+  if (!horse) throw new AppError(404, 'Không tìm thấy ngựa hoặc bạn không có quyền truy cập');
 
   // Upload files to Cloudinary
   const uploadedImages = await cloudinaryService.uploadMultiple(fileBuffers, 'hrtms/horses/images');
@@ -123,10 +123,10 @@ async function uploadImages(horseId, ownerId, fileBuffers) {
 
 async function setPrimaryImage(horseId, ownerId, imageUrl) {
   const horse = await Horse.findOne({ _id: horseId, ownerId, isActive: true });
-  if (!horse) throw new AppError(404, 'Horse not found or access denied');
+  if (!horse) throw new AppError(404, 'Không tìm thấy ngựa hoặc bạn không có quyền truy cập');
 
   if (!horse.imageUrls.includes(imageUrl)) {
-    throw new AppError(400, 'Image not found in horse gallery');
+    throw new AppError(400, 'Không tìm thấy ảnh trong thư viện ngựa');
   }
 
   horse.primaryImageUrl = imageUrl;
@@ -136,10 +136,10 @@ async function setPrimaryImage(horseId, ownerId, imageUrl) {
 
 async function deleteImage(horseId, ownerId, imageUrl) {
   const horse = await Horse.findOne({ _id: horseId, ownerId, isActive: true });
-  if (!horse) throw new AppError(404, 'Horse not found or access denied');
+  if (!horse) throw new AppError(404, 'Không tìm thấy ngựa hoặc bạn không có quyền truy cập');
 
   const index = horse.imageUrls.indexOf(imageUrl);
-  if (index === -1) throw new AppError(404, 'Image not found in horse gallery');
+  if (index === -1) throw new AppError(404, 'Không tìm thấy ảnh trong thư viện ngựa');
 
   // Delete from Cloudinary
   const publicId = cloudinaryService.extractPublicId(imageUrl);

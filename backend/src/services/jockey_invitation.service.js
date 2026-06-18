@@ -4,6 +4,7 @@ const { Horse } = require('../models/horse.model');
 const { User } = require('../models/user.model');
 const { Race } = require('../models/race.model');
 const { Wallet } = require('../models/wallet.model');
+const { Registration } = require('../models/registration.model');
 const { AppError } = require('../middleware/error.middleware');
 const { createNotification } = require('./notification.service');
 const walletService = require('./wallet.service');
@@ -15,16 +16,16 @@ async function createInvitation(ownerId, { jockeyId, horseId, raceId, agreedFee 
     Race.findById(raceId),
   ]);
 
-  if (!horse) throw new AppError(404, 'Horse not found or access denied');
-  if (!jockey) throw new AppError(404, 'Jockey not found');
-  if (!race) throw new AppError(404, 'Race not found');
+  if (!horse) throw new AppError(404, 'Không tìm thấy ngựa hoặc bạn không có quyền truy cập');
+  if (!jockey) throw new AppError(404, 'Không tìm thấy kỵ sĩ');
+  if (!race) throw new AppError(404, 'Không tìm thấy cuộc đua');
   if (['running', 'finished', 'cancelled'].includes(race.status)) {
-    throw new AppError(409, 'Cannot invite jockey for a race that has already started or finished');
+    throw new AppError(409, 'Không thể mời kỵ sĩ cho cuộc đua đã bắt đầu hoặc kết thúc');
   }
 
   const allowedGrades = race.eligibility?.allowedGrades ?? [];
   if (allowedGrades.length > 0 && !allowedGrades.includes(horse.currentGrade)) {
-    throw new AppError(409, `Horse grade '${horse.currentGrade}' is not eligible for this race`);
+    throw new AppError(409, `Hạng ngựa '${horse.currentGrade}' không đủ điều kiện tham gia cuộc đua này`);
   }
 
   // Jockey không thể nhận 2 hire cho cùng race
@@ -34,7 +35,7 @@ async function createInvitation(ownerId, { jockeyId, horseId, raceId, agreedFee 
     status: { $in: ['pending', 'accepted'] },
   });
   if (doubleBook) {
-    throw new AppError(409, 'Jockey already has a pending or accepted invitation for this race');
+    throw new AppError(409, 'Kỵ sĩ đã có lời mời chờ xử lý hoặc đã chấp nhận cho cuộc đua này');
   }
 
   const existing = await JockeyInvitation.findOne({
@@ -44,7 +45,7 @@ async function createInvitation(ownerId, { jockeyId, horseId, raceId, agreedFee 
     status: { $in: ['pending', 'accepted'] },
   });
   if (existing) {
-    throw new AppError(409, 'A pending invitation already exists for this jockey-horse-race combination');
+    throw new AppError(409, 'Đã tồn tại lời mời cho bộ kỵ sĩ-ngựa-cuộc đua này');
   }
 
   const invitation = await JockeyInvitation.create({
@@ -93,11 +94,11 @@ async function getInvitationById(invitationId, userId, role) {
     .populate('horseId', 'name breed gender currentGrade imageUrl')
     .populate({ path: 'raceId', select: 'name grade scheduledTime tournamentId', populate: { path: 'tournamentId', select: 'name' } });
 
-  if (!invitation) throw new AppError(404, 'Invitation not found');
+  if (!invitation) throw new AppError(404, 'Không tìm thấy lời mời');
 
   const isOwner = invitation.ownerId._id.toString() === userId;
   const isJockey = invitation.jockeyId._id.toString() === userId;
-  if (!isOwner && !isJockey && role !== 'admin') throw new AppError(403, 'Access denied');
+  if (!isOwner && !isJockey && role !== 'admin') throw new AppError(403, 'Bạn không có quyền truy cập');
 
   return invitation;
 }
@@ -108,8 +109,8 @@ async function acceptInvitation(invitationId, jockeyId) {
 
   try {
     const invitation = await JockeyInvitation.findOne({ _id: invitationId, jockeyId }).session(session);
-    if (!invitation) throw new AppError(404, 'Invitation not found');
-    if (invitation.status !== 'pending') throw new AppError(409, `Cannot accept invitation with status '${invitation.status}'`);
+    if (!invitation) throw new AppError(404, 'Không tìm thấy lời mời');
+    if (invitation.status !== 'pending') throw new AppError(409, `Không thể chấp nhận lời mời đang ở trạng thái '${invitation.status}'`);
 
     // Kiểm tra jockey chưa có accepted invitation cho race này
     const conflicting = await JockeyInvitation.findOne({
@@ -118,7 +119,7 @@ async function acceptInvitation(invitationId, jockeyId) {
       jockeyId,
       status: 'accepted',
     }).session(session);
-    if (conflicting) throw new AppError(409, 'You already have an accepted invitation for this race');
+    if (conflicting) throw new AppError(409, 'Bạn đã chấp nhận một lời mời khác cho cuộc đua này');
 
     const agreedFee = invitation.agreedFee ?? 0;
 
@@ -128,8 +129,8 @@ async function acceptInvitation(invitationId, jockeyId) {
         Wallet.findOne({ userId: invitation.ownerId }).session(session),
         Wallet.findOne({ userId: jockeyId }).session(session),
       ]);
-      if (!ownerWallet) throw new AppError(404, 'Owner wallet not found');
-      if (!jockeyWallet) throw new AppError(404, 'Jockey wallet not found');
+      if (!ownerWallet) throw new AppError(404, 'Không tìm thấy ví của chủ ngựa');
+      if (!jockeyWallet) throw new AppError(404, 'Không tìm thấy ví của kỵ sĩ');
 
       await walletService.debitWallet(
         ownerWallet._id, invitation.ownerId, agreedFee,
@@ -153,6 +154,13 @@ async function acceptInvitation(invitationId, jockeyId) {
     await Horse.findByIdAndUpdate(
       invitation.horseId,
       { $addToSet: { regularJockeys: jockeyId } },
+      { session },
+    );
+
+    // Gán jockeyId vào registration tương ứng (horse + race)
+    await Registration.findOneAndUpdate(
+      { raceId: invitation.raceId, horseId: invitation.horseId, status: 'active' },
+      { $set: { jockeyId } },
       { session },
     );
 
@@ -181,8 +189,8 @@ async function acceptInvitation(invitationId, jockeyId) {
 
 async function rejectInvitation(invitationId, jockeyId, rejectionNote) {
   const invitation = await JockeyInvitation.findOne({ _id: invitationId, jockeyId });
-  if (!invitation) throw new AppError(404, 'Invitation not found');
-  if (invitation.status !== 'pending') throw new AppError(409, `Cannot reject invitation with status '${invitation.status}'`);
+  if (!invitation) throw new AppError(404, 'Không tìm thấy lời mời');
+  if (invitation.status !== 'pending') throw new AppError(409, `Không thể từ chối lời mời đang ở trạng thái '${invitation.status}'`);
 
   invitation.status = 'rejected';
   if (rejectionNote) invitation.rejectionNote = rejectionNote;
@@ -205,8 +213,8 @@ async function rejectInvitation(invitationId, jockeyId, rejectionNote) {
 
 async function cancelInvitation(invitationId, ownerId) {
   const invitation = await JockeyInvitation.findOne({ _id: invitationId, ownerId });
-  if (!invitation) throw new AppError(404, 'Invitation not found');
-  if (invitation.status !== 'pending') throw new AppError(409, `Cannot cancel invitation with status '${invitation.status}'`);
+  if (!invitation) throw new AppError(404, 'Không tìm thấy lời mời');
+  if (invitation.status !== 'pending') throw new AppError(409, `Không thể hủy lời mời đang ở trạng thái '${invitation.status}'`);
 
   invitation.status = 'cancelled';
   await invitation.save();

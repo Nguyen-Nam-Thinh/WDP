@@ -43,10 +43,40 @@ function timeAgo(iso: string) {
   return `${Math.floor(h / 24)} ngày trước`;
 }
 
-function NotificationPanel({ token, onClose }: { token: string; onClose: () => void }) {
+function getNotificationPath(n: Notification, role: string): string | null {
+  const { type, data } = n;
+  switch (type) {
+    case 'invitation_received':
+      return '/jockey/invitations';
+    case 'invitation_accepted':
+    case 'invitation_rejected':
+      return '/horse-owner/schedule';
+    case 'horse_grade_upgrade':
+      return '/horse-owner/horses';
+    case 'prize_received':
+      return '/horse-owner/results';
+    case 'race_cancelled':
+      if (role === 'owner') return '/horse-owner/schedule';
+      if (role === 'jockey') return '/jockey/schedule';
+      return '/rankings';
+    case 'race_finished':
+      if (role === 'owner') return '/horse-owner/results';
+      if (role === 'jockey') return '/jockey/results';
+      return data?.raceId ? `/predictions?raceId=${data.raceId}` : '/rankings';
+    case 'bet_won':
+    case 'bet_lost':
+    case 'bet_refunded':
+      return data?.raceId ? `/predictions?raceId=${data.raceId}` : '/predictions';
+    default:
+      return null;
+  }
+}
+
+function NotificationPanel({ token, role, onClose }: { token: string; role: string; onClose: () => void }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     notificationApi.getNotifications(token, { limit: 30 })
@@ -59,6 +89,15 @@ function NotificationPanel({ token, onClose }: { token: string; onClose: () => v
     await notificationApi.markRead(token, id);
     setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
     setUnreadCount(c => Math.max(0, c - 1));
+  };
+
+  const handleClickNotification = async (n: Notification) => {
+    if (!n.isRead) await handleMarkRead(n._id);
+    const path = getNotificationPath(n, role);
+    if (path) {
+      navigate(path);
+      onClose();
+    }
   };
 
   const handleMarkAll = async () => {
@@ -111,7 +150,7 @@ function NotificationPanel({ token, onClose }: { token: string; onClose: () => v
             <button
               key={n._id}
               type="button"
-              onClick={() => { if (!n.isRead) handleMarkRead(n._id); }}
+              onClick={() => handleClickNotification(n)}
               className={`w-full text-left flex items-start gap-3 px-4 py-3 border-b border-border last:border-0 transition-colors hover:bg-muted/40 ${
                 !n.isRead ? 'bg-primary/5' : ''
               }`}
@@ -135,7 +174,7 @@ function NotificationPanel({ token, onClose }: { token: string; onClose: () => v
   );
 }
 
-function BellButton({ token }: { token: string }) {
+function BellButton({ token, role }: { token: string; role: string }) {
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
@@ -175,6 +214,7 @@ function BellButton({ token }: { token: string }) {
       {open && (
         <NotificationPanel
           token={token}
+          role={role}
           onClose={() => setOpen(false)}
         />
       )}
@@ -184,7 +224,7 @@ function BellButton({ token }: { token: string }) {
 
 export function AppShell({ roleLabel, nav, children }: AppShellProps) {
   const { balance } = useWallet();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { pathname } = useLocation();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -250,7 +290,7 @@ export function AppShell({ roleLabel, nav, children }: AppShellProps) {
         <header className="flex items-center justify-between border-b border-border px-6 py-3">
           <div />
           <div className="flex items-center gap-4">
-            {token && <BellButton token={token} />}
+            {token && <BellButton token={token} role={user?.role ?? ''} />}
             <span className="bg-primary px-3 py-1 text-xs text-primary-foreground">
               <CoinAmount amount={balance ?? 0} className="text-xs" />
             </span>
