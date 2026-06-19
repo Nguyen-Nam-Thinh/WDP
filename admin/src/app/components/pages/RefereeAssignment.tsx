@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, UserPlus, Calendar, Clock, CheckCircle, ShieldCheck, X, Users, AlertCircle } from 'lucide-react';
+import { RefreshCw, UserPlus, Calendar, Clock, CheckCircle, ShieldCheck, X, Users, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { raceApi, type Race } from '../../api/race';
 import { refereeAdminApi, type AdminUser } from '../../api/user';
@@ -32,6 +32,10 @@ export default function RefereeAssignment() {
   const [races, setRaces] = useState<Race[]>([]);
   const [loadingRaces, setLoadingRaces] = useState(true);
   const [selectedRace, setSelectedRace] = useState<Race | null>(null);
+
+  // Race list pagination
+  const [racePage, setRacePage] = useState(1);
+  const RACES_PER_PAGE = 8;
 
   // Referees list
   const [referees, setReferees] = useState<AdminUser[]>([]);
@@ -71,7 +75,14 @@ export default function RefereeAssignment() {
   useEffect(() => { loadRaces(); loadReferees(); }, [loadRaces, loadReferees]);
 
   const handleAssign = async () => {
-    if (!selectedRace || !selectedRefId) return;
+    if (!selectedRace) {
+      toast.error('Vui lòng chọn một cuộc đua trước');
+      return;
+    }
+    if (!selectedRefId) {
+      toast.error('Vui lòng chọn trọng tài cần phân công');
+      return;
+    }
     setAssigning(true);
     try {
       const updated = await raceApi.assignReferee(selectedRace._id, selectedRefId);
@@ -81,7 +92,7 @@ export default function RefereeAssignment() {
       setSelectedRefId('');
       loadRaces();
     } catch (err: any) {
-      toast.error(err.message);
+      toast.error(err.message || 'Có lỗi xảy ra khi phân công trọng tài');
     } finally {
       setAssigning(false);
     }
@@ -92,6 +103,10 @@ export default function RefereeAssignment() {
     : null;
 
   const fmtDateTime = (d: string) => d ? new Date(d).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : '-';
+
+  // Pagination for race list
+  const raceTotalPages = Math.ceil(races.length / RACES_PER_PAGE);
+  const pagedRaces = races.slice((racePage - 1) * RACES_PER_PAGE, racePage * RACES_PER_PAGE);
 
   return (
     <>
@@ -134,7 +149,7 @@ export default function RefereeAssignment() {
               <div className="lg:col-span-5 rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-[#243045]">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Danh sách cuộc đua (Chưa chạy)</h3>
                 
-                {loadingRaces ? (
+              {loadingRaces ? (
                   <div className="flex justify-center py-10"><RefreshCw className="animate-spin text-blue-500" size={28} /></div>
                 ) : races.length === 0 ? (
                   <div className="text-center py-10">
@@ -142,43 +157,65 @@ export default function RefereeAssignment() {
                     <p className="text-slate-500 text-sm">Không có cuộc đua nào đang hoạt động</p>
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-                    {races.map(race => {
-                      const hasReferee = !!(typeof race.refereeId === 'object' && race.refereeId);
-                      const isSelected = selectedRace?._id === race._id;
-                      return (
-                        <div
-                          key={race._id}
-                          onClick={() => setSelectedRace(race)}
-                          className={`cursor-pointer rounded-lg border p-4 transition-all duration-200 ${
-                            isSelected 
-                              ? 'border-blue-500 bg-white shadow-sm dark:bg-[#1c2434]' 
-                              : 'border-transparent bg-white hover:border-slate-300 hover:shadow-sm dark:bg-[#1c2434] dark:hover:border-slate-600'
-                          }`}
+                  <>
+                    <div className="flex flex-col gap-3 pr-2 custom-scrollbar">
+                      {pagedRaces.map(race => {
+                        const hasReferee = !!(typeof race.refereeId === 'object' && race.refereeId);
+                        const isSelected = selectedRace?._id === race._id;
+                        return (
+                          <div
+                            key={race._id}
+                            onClick={() => setSelectedRace(race)}
+                            className={`cursor-pointer rounded-lg border p-4 transition-all duration-200 ${
+                              isSelected 
+                                ? 'border-blue-500 bg-white shadow-sm dark:bg-[#1c2434]' 
+                                : 'border-transparent bg-white hover:border-slate-300 hover:shadow-sm dark:bg-[#1c2434] dark:hover:border-slate-600'
+                            }`}
+                          >
+                            <h4 className="font-semibold text-black dark:text-white mb-1">{race.name}</h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 truncate">
+                              {typeof race.tournamentId === 'object' ? race.tournamentId.name : '-'}
+                            </p>
+                            <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mb-3">
+                              <Clock size={14} className="text-slate-400" /> {fmtDateTime(race.scheduledTime)}
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <span className="inline-block rounded border border-slate-300 bg-slate-50 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                {race.grade}
+                              </span>
+                              <span className={`inline-block rounded px-2 py-0.5 text-[10px] font-medium ${
+                                hasReferee 
+                                  ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' 
+                                  : 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
+                              }`}>
+                                {hasReferee ? '✓ Đã phân công' : '⚠ Chưa phân công'}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {/* Race list pagination */}
+                    {raceTotalPages > 1 && (
+                      <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-200 dark:border-slate-700">
+                        <button
+                          onClick={() => setRacePage(p => Math.max(1, p - 1))}
+                          disabled={racePage === 1}
+                          className="flex items-center gap-1 rounded bg-slate-100 py-1 px-2.5 text-xs font-medium text-slate-600 hover:bg-slate-200 disabled:opacity-40 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition"
                         >
-                          <h4 className="font-semibold text-black dark:text-white mb-1">{race.name}</h4>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 truncate">
-                            {typeof race.tournamentId === 'object' ? race.tournamentId.name : '-'}
-                          </p>
-                          <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mb-3">
-                            <Clock size={14} className="text-slate-400" /> {fmtDateTime(race.scheduledTime)}
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            <span className="inline-block rounded border border-slate-300 bg-slate-50 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                              {race.grade}
-                            </span>
-                            <span className={`inline-block rounded px-2 py-0.5 text-[10px] font-medium ${
-                              hasReferee 
-                                ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' 
-                                : 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
-                            }`}>
-                              {hasReferee ? '✓ Đã phân công' : '⚠ Chưa phân công'}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                          <ChevronLeft size={14} /> Trước
+                        </button>
+                        <span className="text-xs text-slate-500">{racePage} / {raceTotalPages}</span>
+                        <button
+                          onClick={() => setRacePage(p => Math.min(raceTotalPages, p + 1))}
+                          disabled={racePage >= raceTotalPages}
+                          className="flex items-center gap-1 rounded bg-slate-100 py-1 px-2.5 text-xs font-medium text-slate-600 hover:bg-slate-200 disabled:opacity-40 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition"
+                        >
+                          Sau <ChevronRight size={14} />
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 

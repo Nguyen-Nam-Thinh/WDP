@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Edit, Trash2, Plus, Calendar, Clock, Trophy, Eye, RefreshCw, X, AlertCircle } from 'lucide-react';
+import { Edit, Trash2, Plus, Calendar, Clock, Trophy, Eye, RefreshCw, X, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { tournamentApi, type Tournament, type CreateTournamentData } from '../../api/tournament';
 import { raceApi, type Race, type CreateRaceData } from '../../api/race';
@@ -314,6 +314,17 @@ export default function TournamentManagement() {
   const [statusRace, setStatusRace] = useState<Race | null>(null);
   const [filterTournament, setFilterTournament] = useState('');
 
+  // Pagination
+  const [tPage, setTPage] = useState(1);
+  const [rPage, setRPage] = useState(1);
+  const T_PER_PAGE = 6;
+  const R_PER_PAGE = 10;
+
+  const pagedTournaments = tournaments.slice((tPage - 1) * T_PER_PAGE, tPage * T_PER_PAGE);
+  const tTotalPages = Math.ceil(tournaments.length / T_PER_PAGE);
+  const pagedRaces = races.slice((rPage - 1) * R_PER_PAGE, rPage * R_PER_PAGE);
+  const rTotalPages = Math.ceil(races.length / R_PER_PAGE);
+
   const loadTournaments = useCallback(async () => {
     setLoadingT(true);
     try {
@@ -408,7 +419,7 @@ export default function TournamentManagement() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {tournaments.map((t) => (
+                  {pagedTournaments.map((t) => (
                     <div key={t._id} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md dark:border-slate-700 dark:bg-[#243045] relative group">
                       <div className="flex justify-between items-start mb-4">
                         <div className="pr-16">
@@ -456,6 +467,26 @@ export default function TournamentManagement() {
                   ))}
                 </div>
               )}
+              {/* Tournament list pagination */}
+              {tTotalPages > 1 && (
+                <div className="flex items-center justify-between pt-5 mt-5 border-t border-slate-200 dark:border-slate-700">
+                  <button
+                    onClick={() => setTPage(p => Math.max(1, p - 1))}
+                    disabled={tPage === 1}
+                    className="flex items-center gap-1.5 rounded bg-slate-100 py-1.5 px-3 text-sm font-medium text-slate-600 hover:bg-slate-200 disabled:opacity-40 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition"
+                  >
+                    <ChevronLeft size={15} /> Trước
+                  </button>
+                  <span className="text-sm text-slate-500">Trang {tPage} / {tTotalPages} <span className="text-xs text-slate-400">(tổng {tournaments.length})</span></span>
+                  <button
+                    onClick={() => setTPage(p => Math.min(tTotalPages, p + 1))}
+                    disabled={tPage >= tTotalPages}
+                    className="flex items-center gap-1.5 rounded bg-slate-100 py-1.5 px-3 text-sm font-medium text-slate-600 hover:bg-slate-200 disabled:opacity-40 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition"
+                  >
+                    Sau <ChevronRight size={15} />
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -499,7 +530,7 @@ export default function TournamentManagement() {
                     <tbody>
                       {races.length === 0 ? (
                         <tr><td colSpan={8} className="text-center py-8 text-slate-500">Chưa có cuộc đua nào</td></tr>
-                      ) : races.map((r) => {
+                      ) : pagedRaces.map((r) => {
                         const tName = typeof r.tournamentId === 'object' ? r.tournamentId.name : '-';
                         const canChangeStatus = ['open', 'closed'].includes(r.status);
                         const canEdit = !['running', 'finished', 'cancelled'].includes(r.status);
@@ -547,6 +578,26 @@ export default function TournamentManagement() {
                       })}
                     </tbody>
                   </table>
+                </div>
+              )}
+              {/* Race list pagination */}
+              {rTotalPages > 1 && (
+                <div className="flex items-center justify-between pt-4 mt-1 border-t border-slate-200 dark:border-slate-700">
+                  <button
+                    onClick={() => setRPage(p => Math.max(1, p - 1))}
+                    disabled={rPage === 1}
+                    className="flex items-center gap-1.5 rounded bg-slate-100 py-1.5 px-3 text-sm font-medium text-slate-600 hover:bg-slate-200 disabled:opacity-40 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition"
+                  >
+                    <ChevronLeft size={15} /> Trước
+                  </button>
+                  <span className="text-sm text-slate-500">Trang {rPage} / {rTotalPages} <span className="text-xs text-slate-400">(tổng {races.length} cuộc đua)</span></span>
+                  <button
+                    onClick={() => setRPage(p => Math.min(rTotalPages, p + 1))}
+                    disabled={rPage >= rTotalPages}
+                    className="flex items-center gap-1.5 rounded bg-slate-100 py-1.5 px-3 text-sm font-medium text-slate-600 hover:bg-slate-200 disabled:opacity-40 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition"
+                  >
+                    Sau <ChevronRight size={15} />
+                  </button>
                 </div>
               )}
             </div>

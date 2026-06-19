@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Search, RefreshCw, Dog, User } from 'lucide-react';
+import { Search, RefreshCw, Dog, User, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { raceApi, type Race, type Registration } from '../../api/race';
 import { tournamentApi, type Tournament } from '../../api/tournament';
@@ -40,6 +40,10 @@ export default function RaceManagement() {
   const [search, setSearch] = useState('');
   const [loadingRaces, setLoadingRaces] = useState(true);
   const [loadingRegs, setLoadingRegs] = useState(false);
+
+  // Pagination
+  const [racePage, setRacePage] = useState(1);
+  const RACES_PER_PAGE = 10;
 
   const loadTournaments = useCallback(async () => {
     try {
@@ -86,6 +90,9 @@ export default function RaceManagement() {
     r.name.toLowerCase().includes(search.toLowerCase()) ||
     (typeof r.tournamentId === 'object' && r.tournamentId.name.toLowerCase().includes(search.toLowerCase()))
   );
+
+  const raceTotalPages = Math.ceil(filteredRaces.length / RACES_PER_PAGE);
+  const pagedRaces = filteredRaces.slice((racePage - 1) * RACES_PER_PAGE, racePage * RACES_PER_PAGE);
 
   return (
     <>
@@ -136,10 +143,11 @@ export default function RaceManagement() {
               <RefreshCw className="animate-spin text-blue-500" size={28} />
             </div>
           ) : (
-            <div className="flex flex-col gap-2.5 max-h-[600px] overflow-y-auto pr-1 custom-scrollbar">
-              {filteredRaces.length === 0 ? (
-                <p className="text-center text-slate-500 py-6 text-sm">Không có cuộc đua</p>
-              ) : filteredRaces.map(race => {
+            <>
+              <div className="flex flex-col gap-2.5 pr-1 custom-scrollbar">
+                {pagedRaces.length === 0 ? (
+                  <p className="text-center text-slate-500 py-6 text-sm">Không có cuộc đua</p>
+                ) : pagedRaces.map(race => {
                 const isSelected = selectedRace?._id === race._id;
                 return (
                   <div
@@ -165,8 +173,29 @@ export default function RaceManagement() {
                     </div>
                   </div>
                 );
-              })}
-            </div>
+                })}
+              </div>
+              {/* Pagination */}
+              {raceTotalPages > 1 && (
+                <div className="flex items-center justify-between pt-3 mt-2 border-t border-slate-200 dark:border-slate-700">
+                  <button
+                    onClick={() => setRacePage(p => Math.max(1, p - 1))}
+                    disabled={racePage === 1}
+                    className="flex items-center gap-1 rounded bg-slate-100 py-1 px-2.5 text-xs font-medium text-slate-600 hover:bg-slate-200 disabled:opacity-40 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition"
+                  >
+                    <ChevronLeft size={13} /> Trước
+                  </button>
+                  <span className="text-xs text-slate-500">{racePage} / {raceTotalPages}</span>
+                  <button
+                    onClick={() => setRacePage(p => Math.min(raceTotalPages, p + 1))}
+                    disabled={racePage >= raceTotalPages}
+                    className="flex items-center gap-1 rounded bg-slate-100 py-1 px-2.5 text-xs font-medium text-slate-600 hover:bg-slate-200 disabled:opacity-40 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition"
+                  >
+                    Sau <ChevronRight size={13} />
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
 

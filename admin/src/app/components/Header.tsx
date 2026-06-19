@@ -1,8 +1,34 @@
-import { Menu, Search, Bell, Settings, LogOut, User } from 'lucide-react';
-import { useState } from 'react';
+import { Menu, Search, Bell, Settings, LogOut, User, X, CheckCircle, AlertCircle, Trophy, Clock } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import { useNavigate } from 'react-router';
-// import DarkModeSwitcher from './DarkModeSwitcher';
+
+interface Notification {
+  id: number;
+  icon: 'success' | 'warning' | 'info' | 'trophy';
+  title: string;
+  desc: string;
+  time: string;
+  read: boolean;
+}
+
+const MOCK_NOTIFICATIONS: Notification[] = [
+  { id: 1, icon: 'success', title: 'Đã duyệt đăng ký', desc: 'Ngựa Thunder Bolt đã được duyệt vào cuộc đua Cúp Mùa Xuân', time: '5 phút trước', read: false },
+  { id: 2, icon: 'trophy', title: 'Kết quả cuộc đua', desc: 'Cuộc đua Vòng Chung Kết đã kết thúc - Xem kết quả ngay', time: '1 giờ trước', read: false },
+  { id: 3, icon: 'info', title: 'Trọng tài mới', desc: 'Nguyễn Văn A đã được phân công làm trọng tài cho cuộc đua G1', time: '2 giờ trước', read: false },
+  { id: 4, icon: 'warning', title: 'Cuộc đua sắp diễn ra', desc: 'Cuộc đua Cúp Mùa Hè sẽ bắt đầu trong 30 phút', time: '3 giờ trước', read: true },
+  { id: 5, icon: 'success', title: 'Giải đấu mới tạo', desc: 'Giải Vô Địch Quốc Gia 2026 đã được tạo thành công', time: 'Hôm qua', read: true },
+  { id: 6, icon: 'warning', title: 'Đơn đăng ký chờ duyệt', desc: 'Có 3 đơn đăng ký mới đang chờ duyệt từ chủ ngựa', time: 'Hôm qua', read: true },
+];
+
+const NOTIF_ICONS: Record<string, { icon: ReactNode; bg: string }> = {
+  success: { icon: <CheckCircle size={16} />, bg: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400' },
+  warning: { icon: <AlertCircle size={16} />, bg: 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400' },
+  info:    { icon: <Clock size={16} />, bg: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400' },
+  trophy:  { icon: <Trophy size={16} />, bg: 'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400' },
+};
+
+const NOTIFS_PER_PAGE = 4;
 
 export default function Header(props: {
   sidebarOpen: string | boolean | undefined;
@@ -11,6 +37,17 @@ export default function Header(props: {
   const { user, logout } = useAdminAuth();
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
+  const [notifPage, setNotifPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+  const notifTotalPages = Math.ceil(notifications.length / NOTIFS_PER_PAGE);
+  const pagedNotifs = notifications.slice((notifPage - 1) * NOTIFS_PER_PAGE, notifPage * NOTIFS_PER_PAGE);
+
+  const markAllRead = () => setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  const markRead = (id: number) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
 
   const handleLogout = () => {
     logout();
@@ -37,18 +74,24 @@ export default function Header(props: {
         </div>
 
         <div className="hidden sm:block">
-          <form action="https://formbold.com/s/unique_form_id" method="POST">
-            <div className="relative">
-              <button className="absolute left-0 top-1/2 -translate-y-1/2 pl-2">
-                <Search className="h-5 w-5 text-slate-400 hover:text-blue-500" />
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Tìm kiếm..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-4 py-2 text-sm font-medium focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 xl:w-72 transition"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X size={14} />
               </button>
-              <input
-                type="text"
-                placeholder="Tìm kiếm..."
-                className="w-full bg-transparent pl-10 pr-4 py-2 font-medium focus:outline-none xl:w-125 dark:text-white dark:placeholder-slate-400"
-              />
-            </div>
-          </form>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-3 2xsm:gap-7 ml-auto">
@@ -60,13 +103,96 @@ export default function Header(props: {
             {/* Notification Menu Area */}
             <li className="relative">
               <button
-                className="relative flex h-8.5 w-8.5 items-center justify-center rounded-full border-[0.5px] border-slate-200 bg-slate-100 hover:text-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                onClick={() => { setNotifOpen(o => !o); setDropdownOpen(false); }}
+                className="relative flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-slate-100 hover:bg-slate-200 hover:text-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700 transition"
               >
-                <span className="absolute -top-0.5 right-0 z-1 h-2 w-2 rounded-full bg-red-500 inline-block">
-                  <span className="absolute -z-1 inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75"></span>
-                </span>
-                <Bell size={18} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+                <Bell size={17} />
               </button>
+
+              {/* Notification dropdown */}
+              {notifOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} />
+                  <div className="absolute right-0 mt-3 z-50 w-80 rounded-xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-[#1c2434] overflow-hidden">
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                      <div className="flex items-center gap-2">
+                        <Bell size={16} className="text-slate-500" />
+                        <span className="text-sm font-semibold text-slate-800 dark:text-white">Thông báo</span>
+                        {unreadCount > 0 && (
+                          <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                            {unreadCount}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        onClick={markAllRead}
+                        className="text-xs text-blue-500 hover:text-blue-700 font-medium transition"
+                      >
+                        Đọc tất cả
+                      </button>
+                    </div>
+
+                    {/* Notifications list */}
+                    <div className="divide-y divide-slate-100 dark:divide-slate-700/60">
+                      {pagedNotifs.length === 0 ? (
+                        <div className="py-10 text-center text-sm text-slate-500">Không có thông báo</div>
+                      ) : pagedNotifs.map(notif => {
+                        const style = NOTIF_ICONS[notif.icon] ?? NOTIF_ICONS.info;
+                        return (
+                          <div
+                            key={notif.id}
+                            onClick={() => markRead(notif.id)}
+                            className={`flex gap-3 px-4 py-3 cursor-pointer transition hover:bg-slate-50 dark:hover:bg-slate-800/50 ${
+                              !notif.read ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
+                            }`}
+                          >
+                            <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${style.bg}`}>
+                              {style.icon}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-1">
+                                <p className={`text-sm font-semibold leading-tight ${!notif.read ? 'text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'}`}>
+                                  {notif.title}
+                                </p>
+                                {!notif.read && <span className="mt-1 flex h-2 w-2 shrink-0 rounded-full bg-blue-500" />}
+                              </div>
+                              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 line-clamp-2">{notif.desc}</p>
+                              <p className="mt-1 text-[10px] font-medium text-slate-400">{notif.time}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Pagination */}
+                    {notifTotalPages > 1 && (
+                      <div className="flex items-center justify-between px-4 py-2.5 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                        <button
+                          onClick={() => setNotifPage(p => Math.max(1, p - 1))}
+                          disabled={notifPage === 1}
+                          className="text-xs font-medium text-slate-500 hover:text-slate-800 disabled:opacity-40 dark:text-slate-400 dark:hover:text-white transition"
+                        >
+                          ← Trước
+                        </button>
+                        <span className="text-xs text-slate-500">{notifPage} / {notifTotalPages}</span>
+                        <button
+                          onClick={() => setNotifPage(p => Math.min(notifTotalPages, p + 1))}
+                          disabled={notifPage >= notifTotalPages}
+                          className="text-xs font-medium text-slate-500 hover:text-slate-800 disabled:opacity-40 dark:text-slate-400 dark:hover:text-white transition"
+                        >
+                          Sau →
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </li>
             {/* Notification Menu Area */}
           </ul>
@@ -74,7 +200,7 @@ export default function Header(props: {
           {/* User Area */}
           <div className="relative">
             <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
+              onClick={() => { setDropdownOpen(!dropdownOpen); setNotifOpen(false); }}
               className="flex items-center gap-4"
             >
               <span className="hidden text-right lg:block">

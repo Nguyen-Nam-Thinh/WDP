@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Eye, DollarSign, Play, Zap, Trophy, RefreshCw, X, AlertCircle } from 'lucide-react';
+import { Eye, DollarSign, Play, Zap, Trophy, RefreshCw, X, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { raceApi, type Race, type Registration } from '../../api/race';
 
@@ -76,6 +76,12 @@ export default function ResultsPublishing() {
   const [raceRegs, setRaceRegs] = useState<Registration[]>([]);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [settling, setSettling] = useState(false);
+
+  // Pagination for sim races
+  const [simPage, setSimPage] = useState(1);
+  const SIM_PER_PAGE = 8;
+  const simTotalPages = Math.ceil(simRaces.length / SIM_PER_PAGE);
+  const pagedSimRaces = simRaces.slice((simPage - 1) * SIM_PER_PAGE, simPage * SIM_PER_PAGE);
 
   const loadFinishedRaces = useCallback(async () => {
     setLoading(true);
@@ -201,65 +207,87 @@ export default function ResultsPublishing() {
             <p className="text-slate-500 dark:text-slate-400">Không có cuộc đua nào đang chờ mô phỏng</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {simRaces.map(race => {
-              const badge = STATUS_BADGE[race.status] ?? { label: race.status, color: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400' };
-              const isRunning = simulatingId === race._id;
-              const tournamentName = typeof race.tournamentId === 'object' ? race.tournamentId.name : '';
-              
-              return (
-                <div key={race._id} className={`rounded-xl border bg-white p-5 shadow-sm transition dark:bg-[#243045] ${race.status === 'running' ? 'border-emerald-500 dark:border-emerald-500 shadow-emerald-500/10' : 'border-slate-200 dark:border-slate-700 hover:shadow-md'}`}>
-                  <div className="flex items-start justify-between mb-2">
-                    <h4 className="text-lg font-bold text-black dark:text-white line-clamp-2 leading-tight pr-2">{race.name}</h4>
-                    <span className={`shrink-0 inline-block rounded px-2 py-0.5 text-[10px] font-medium ${badge.color}`}>
-                      {badge.label}
-                    </span>
-                  </div>
-                  {tournamentName && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 truncate">{tournamentName}</p>
-                  )}
-                  
-                  <div className="flex flex-wrap gap-2 mb-5">
-                    <span className="inline-block rounded border border-slate-300 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                      {race.grade}
-                    </span>
-                    <span className="inline-block rounded border border-slate-300 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                      {race.distance}m
-                    </span>
-                    <span className="inline-block rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:border-emerald-900/30 dark:bg-emerald-900/20 dark:text-emerald-400">
-                      {race.purse.toLocaleString('vi-VN')} VNĐ
-                    </span>
-                  </div>
-
-                  <button
-                    disabled={isRunning || race.status === 'running'}
-                    onClick={() => handleForceSimulate(race)}
-                    className={`flex w-full items-center justify-center gap-2 rounded-lg py-2.5 font-medium text-white transition disabled:opacity-80 ${
-                      race.status === 'running'
-                        ? 'bg-emerald-500 cursor-not-allowed'
-                        : isRunning
-                        ? 'bg-amber-500 opacity-80 cursor-wait'
-                        : 'bg-amber-500 hover:bg-amber-600'
-                    }`}
-                  >
-                    {race.status === 'running' ? (
-                      <>
-                        <RefreshCw className="animate-spin" size={18} /> Đang chạy...
-                      </>
-                    ) : isRunning ? (
-                      <>
-                        <RefreshCw className="animate-spin" size={18} /> Đang khởi động
-                      </>
-                    ) : (
-                      <>
-                        <Play fill="currentColor" size={16} /> Chạy Mô Phỏng
-                      </>
+          <>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {pagedSimRaces.map(race => {
+                const badge = STATUS_BADGE[race.status] ?? { label: race.status, color: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400' };
+                const isRunning = simulatingId === race._id;
+                const tournamentName = typeof race.tournamentId === 'object' ? race.tournamentId.name : '';
+                
+                return (
+                  <div key={race._id} className={`rounded-xl border bg-white p-5 shadow-sm transition dark:bg-[#243045] ${race.status === 'running' ? 'border-emerald-500 dark:border-emerald-500 shadow-emerald-500/10' : 'border-slate-200 dark:border-slate-700 hover:shadow-md'}`}>
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className="text-lg font-bold text-black dark:text-white line-clamp-2 leading-tight pr-2">{race.name}</h4>
+                      <span className={`shrink-0 inline-block rounded px-2 py-0.5 text-[10px] font-medium ${badge.color}`}>
+                        {badge.label}
+                      </span>
+                    </div>
+                    {tournamentName && (
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 truncate">{tournamentName}</p>
                     )}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
+                    
+                    <div className="flex flex-wrap gap-2 mb-5">
+                      <span className="inline-block rounded border border-slate-300 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        {race.grade}
+                      </span>
+                      <span className="inline-block rounded border border-slate-300 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        {race.distance}m
+                      </span>
+                      <span className="inline-block rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:border-emerald-900/30 dark:bg-emerald-900/20 dark:text-emerald-400">
+                        {race.purse.toLocaleString('vi-VN')} VNĐ
+                      </span>
+                    </div>
+
+                    <button
+                      disabled={isRunning || race.status === 'running'}
+                      onClick={() => handleForceSimulate(race)}
+                      className={`flex w-full items-center justify-center gap-2 rounded-lg py-2.5 font-medium text-white transition disabled:opacity-80 ${
+                        race.status === 'running'
+                          ? 'bg-emerald-500 cursor-not-allowed'
+                          : isRunning
+                          ? 'bg-amber-500 opacity-80 cursor-wait'
+                          : 'bg-amber-500 hover:bg-amber-600'
+                      }`}
+                    >
+                      {race.status === 'running' ? (
+                        <>
+                          <RefreshCw className="animate-spin" size={18} /> Đang chạy...
+                        </>
+                      ) : isRunning ? (
+                        <>
+                          <RefreshCw className="animate-spin" size={18} /> Đang khởi động
+                        </>
+                      ) : (
+                        <>
+                          <Play fill="currentColor" size={16} /> Chạy Mô Phỏng
+                        </>
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            {/* Pagination for sim races */}
+            {simTotalPages > 1 && (
+              <div className="flex items-center justify-between pt-5 mt-2 border-t border-slate-200 dark:border-slate-700">
+                <button
+                  onClick={() => setSimPage(p => Math.max(1, p - 1))}
+                  disabled={simPage === 1}
+                  className="flex items-center gap-1.5 rounded bg-slate-100 py-1.5 px-3 text-sm font-medium text-slate-600 hover:bg-slate-200 disabled:opacity-40 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition"
+                >
+                  <ChevronLeft size={15} /> Trước
+                </button>
+                <span className="text-sm text-slate-500">Trang {simPage} / {simTotalPages} <span className="text-xs text-slate-400">(tổng {simRaces.length} cuộc đua)</span></span>
+                <button
+                  onClick={() => setSimPage(p => Math.min(simTotalPages, p + 1))}
+                  disabled={simPage >= simTotalPages}
+                  className="flex items-center gap-1.5 rounded bg-slate-100 py-1.5 px-3 text-sm font-medium text-slate-600 hover:bg-slate-200 disabled:opacity-40 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition"
+                >
+                  Sau <ChevronRight size={15} />
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
