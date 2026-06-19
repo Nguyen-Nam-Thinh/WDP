@@ -97,39 +97,6 @@ export default function Dashboard() {
 
   return (
     <div className="mx-auto max-w-7xl pb-8">
-      {/* Welcome banner */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1e293b] via-[#0f172a] to-[#020617] p-8 mb-8 shadow-xl border border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between"
-      >
-        <div className="absolute top-0 right-0 -mt-20 -mr-20 h-64 w-64 rounded-full bg-blue-500/20 blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 -mb-20 -ml-20 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl"></div>
-        
-        <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/10 backdrop-blur-md mb-4 text-xs font-medium text-blue-200">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-            </span>
-            Hệ thống đang hoạt động ổn định
-          </div>
-          <h2 className="mb-2 text-3xl font-extrabold text-white tracking-tight">
-            Chào mừng trở lại, Admin! 👋
-          </h2>
-          <p className="text-slate-300 font-medium">
-            Hôm nay là {today}. Dưới đây là tình hình hoạt động của Đua Ngựa Pro.
-          </p>
-        </div>
-        
-        <div className="relative z-10 mt-6 sm:mt-0 hidden md:block">
-          <div className="p-3 bg-white/5 rounded-2xl backdrop-blur-md border border-white/10 shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-300">
-             <img src="/images/logo.png" alt="logo" className="h-16 w-16 sm:h-20 sm:w-20 object-contain drop-shadow-lg" />
-          </div>
-        </div>
-      </motion.div>
-
       {/* Stat cards */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
         {statCards.map((s, i) => {

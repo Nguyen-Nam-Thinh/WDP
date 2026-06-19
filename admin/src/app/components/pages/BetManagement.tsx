@@ -35,10 +35,9 @@ export default function BetManagement() {
   const [settlingRaceId, setSettlingRaceId] = useState('');
   const [settling, setSettling] = useState(false);
 
-  // Stats
-  const pending = bets.filter(b => b.status === 'pending').length;
-  const totalAmount = bets.reduce((s, b) => s + b.amount, 0);
-  const totalPayout = bets.filter(b => b.status === 'won').reduce((s, b) => s + b.payoutAmount, 0);
+  // Stats (loaded separately to cover all pages, not just current)
+  const [stats, setStats] = useState({ totalAmount: 0, totalPayout: 0, pending: 0, total: 0 });
+  const [loadingStats, setLoadingStats] = useState(true);
 
   const loadBets = useCallback(async () => {
     setLoading(true);
@@ -59,6 +58,28 @@ export default function BetManagement() {
     }
   }, [page, filterStatus, filterRaceId]);
 
+  const loadStats = useCallback(async () => {
+    setLoadingStats(true);
+    try {
+      // Fetch all bets (high limit) with same filters but no page constraint for real aggregation
+      const res = await betAdminApi.getAllBets({
+        page: 1,
+        limit: 10000,
+        status: filterStatus as BetStatus || undefined,
+        raceId: filterRaceId || undefined,
+      });
+      const allBets = res.bets ?? [];
+      setStats({
+        total: res.total,
+        totalAmount: allBets.reduce((s, b) => s + b.amount, 0),
+        totalPayout: allBets.filter(b => b.status === 'won').reduce((s, b) => s + b.payoutAmount, 0),
+        pending: allBets.filter(b => b.status === 'pending').length,
+      });
+    } catch { /* ignore stats errors */ } finally {
+      setLoadingStats(false);
+    }
+  }, [filterStatus, filterRaceId]);
+
   const loadRaces = useCallback(async () => {
     try {
       const res = await raceApi.list({ limit: 100 });
@@ -67,6 +88,7 @@ export default function BetManagement() {
   }, []);
 
   useEffect(() => { loadBets(); }, [loadBets]);
+  useEffect(() => { loadStats(); }, [loadStats]);
   useEffect(() => { loadRaces(); }, [loadRaces]);
   useEffect(() => { setPage(1); }, [filterStatus, filterRaceId]);
 
@@ -79,6 +101,7 @@ export default function BetManagement() {
       setSettleDialog(false);
       setSettlingRaceId('');
       loadBets();
+      loadStats();
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -128,10 +151,10 @@ export default function BetManagement() {
       {/* Stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4 md:gap-6 xl:gap-7.5 mb-6">
         {[
-          { label: 'Tổng số cược (trang này)', value: total, textColor: 'text-blue-600 dark:text-blue-400' },
-          { label: 'Tổng tiền đặt', value: `${totalAmount.toLocaleString('vi-VN')} VNĐ`, textColor: 'text-amber-500 dark:text-amber-400' },
-          { label: 'Tổng tiền đã trả', value: `${totalPayout.toLocaleString('vi-VN')} VNĐ`, textColor: 'text-emerald-500 dark:text-emerald-400' },
-          { label: 'Cược đang chờ', value: pending, textColor: pending > 0 ? 'text-red-500 dark:text-red-400' : 'text-slate-500 dark:text-slate-400' },
+          { label: 'Tổng số cược', value: loadingStats ? '...' : stats.total.toLocaleString('vi-VN'), textColor: 'text-blue-600 dark:text-blue-400' },
+          { label: 'Tổng tiền đặt', value: loadingStats ? '...' : `${stats.totalAmount.toLocaleString('vi-VN')} VNĐ`, textColor: 'text-amber-500 dark:text-amber-400' },
+          { label: 'Tổng tiền đã trả', value: loadingStats ? '...' : `${stats.totalPayout.toLocaleString('vi-VN')} VNĐ`, textColor: 'text-emerald-500 dark:text-emerald-400' },
+          { label: 'Cược đang chờ', value: loadingStats ? '...' : stats.pending, textColor: stats.pending > 0 ? 'text-red-500 dark:text-red-400' : 'text-slate-500 dark:text-slate-400' },
         ].map((s, i) => (
           <div key={i} className="rounded-sm border border-slate-200 bg-white py-6 px-7.5 shadow-default dark:border-slate-700 dark:bg-[#1c2434]">
             <h4 className={`text-title-md font-bold mb-1 ${s.textColor}`}>{s.value}</h4>
