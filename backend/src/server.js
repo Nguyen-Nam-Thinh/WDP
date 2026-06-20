@@ -9,6 +9,7 @@ const apiRoutes = require('./routes');
 const { errorHandler, notFound } = require('./middleware/error.middleware');
 const { startRaceStatusJob } = require('./jobs/raceStatus.job');
 const { initSocket } = require('./sockets');
+const rewardService = require('./services/reward.service');
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use(errorHandler);
 
 async function bootstrap() {
   await connectDB();
+  await rewardService.seedRewards();
 
   const httpServer = http.createServer(app);
   initSocket(httpServer, env.CLIENT_URL);

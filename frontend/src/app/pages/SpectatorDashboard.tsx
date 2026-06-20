@@ -68,6 +68,7 @@ import {
   type SpectatorRanking,
 } from "../api/rankings";
 import { userApi, type SpectatorOverview, type Transaction } from "../api/user";
+import { rewardApi, type Reward, type Redemption } from "../api/reward";
 import { toast } from "sonner";
 
 const SPECTATOR_NAV: NavItem[] = [
@@ -81,6 +82,7 @@ const SPECTATOR_NAV: NavItem[] = [
   // { to: "/spectator/bet-history", label: "Lịch Sử Cược", icon: <History /> },
   { to: "/spectator/deposit", label: "Nạp Tiền", icon: <Wallet /> },
   { to: "/spectator/deposit-history", label: "Lịch Sử Nạp", icon: <Coins /> },
+  { to: "/spectator/rewards", label: "Đổi Thưởng", icon: <Gift /> },
 ];
 
 // MUI input style cho nền sáng
@@ -97,7 +99,7 @@ const lightSelectSx = {
 export function SpectatorDashboard() {
   const navigate = useNavigate();
   const { user, token } = useAuth();
-  const { formatted: walletBalance } = useWallet();
+  const { balance, formatted: walletBalance, refetch: refetchWallet } = useWallet();
   const { pathname } = useLocation();
   const activeTab =
     pathname === "/spectator/live"
@@ -118,7 +120,9 @@ export function SpectatorDashboard() {
                     ? "deposit"
                     : pathname === "/spectator/deposit-history"
                       ? "deposit-history"
-                      : "overview";
+                      : pathname === "/spectator/rewards"
+                        ? "rewards"
+                        : "overview";
   const [predictionModalOpen, setPredictionModalOpen] = useState(false);
   const [tournamentDetailsModalOpen, setTournamentDetailsModalOpen] =
     useState(false);
@@ -225,11 +229,16 @@ export function SpectatorDashboard() {
     if (activeTab === "rankings") loadRankings();
     if (activeTab === "leaderboard") loadLeaderboard();
     if (activeTab === "deposit-history") loadTransactions();
+    if (activeTab === "rewards") {
+      loadRewards();
+      loadRedemptions();
+    }
     setTournamentPage(1); setTournamentSearch('');
     setLivePage(1); setLiveSearch('');
     setSchedulePage(1); setScheduleSearch('');
     setRankingsPage(1); setRankingsSearch('');
     setLeaderboardPage(1); setLeaderboardSearch('');
+    setRewardsPage(1); setRedemptionsPage(1);
   }, [activeTab, token]);
 
   // Load bets on mount để stats cards dùng dữ liệu thật
@@ -252,6 +261,13 @@ export function SpectatorDashboard() {
   const [leaderboardSearch, setLeaderboardSearch] = useState('');
   const [myTransactions, setMyTransactions] = useState<Transaction[]>([]);
   const [loadingTransactions, setLoadingTransactions] = useState(false);
+  const [rewards, setRewards] = useState<Reward[]>([]);
+  const [loadingRewards, setLoadingRewards] = useState(false);
+  const [myRedemptions, setMyRedemptions] = useState<Redemption[]>([]);
+  const [loadingRedemptions, setLoadingRedemptions] = useState(false);
+  const [rewardsPage, setRewardsPage] = useState(1);
+  const [redemptionsPage, setRedemptionsPage] = useState(1);
+  const [redeemingId, setRedeemingId] = useState<string | null>(null);
   const PAGE_SIZE = 10;
   const [depositStep, setDepositStep] = useState(1);
   const [selectedTournamentForDetails, setSelectedTournamentForDetails] =
@@ -315,6 +331,55 @@ export function SpectatorDashboard() {
       toast.error(err.message || 'Không thể tải lịch sử giao dịch');
     } finally {
       setLoadingTransactions(false);
+    }
+  };
+
+  const loadRewards = async () => {
+    if (!token) return;
+    setLoadingRewards(true);
+    try {
+      const data = await rewardApi.getRewards(token);
+      setRewards(data);
+    } catch (err: any) {
+      toast.error(err.message || "Không thể tải danh sách phần thưởng");
+    } finally {
+      setLoadingRewards(false);
+    }
+  };
+
+  const loadRedemptions = async () => {
+    if (!token) return;
+    setLoadingRedemptions(true);
+    try {
+      const data = await rewardApi.getMyRedemptions(token);
+      setMyRedemptions(data);
+    } catch (err: any) {
+      toast.error(err.message || "Không thể tải lịch sử đổi thưởng");
+    } finally {
+      setLoadingRedemptions(false);
+    }
+  };
+
+  const handleRedeemReward = async (reward: Reward) => {
+    if (!token) return;
+    const costInVnd = reward.coinsRequired * 1000;
+    const currentBalance = balance ?? 0;
+    if (currentBalance < costInVnd) {
+      toast.error("Số dư ví không đủ để đổi phần quà này");
+      return;
+    }
+    if (!confirm(`Bạn có chắc chắn muốn dùng ${costInVnd.toLocaleString('vi-VN')} VNĐ để đổi "${reward.name}"?`)) return;
+    setRedeemingId(reward._id);
+    try {
+      await rewardApi.redeem(token, reward._id);
+      toast.success("Đổi phần thưởng thành công! Mã voucher đã được tạo.");
+      refetchWallet();
+      loadRewards();
+      loadRedemptions();
+    } catch (err: any) {
+      toast.error(err.message || "Đổi thưởng thất bại");
+    } finally {
+      setRedeemingId(null);
     }
   };
 
@@ -2666,6 +2731,153 @@ export function SpectatorDashboard() {
               >
                 Đặt Cược Ngay
               </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Rewards Tab */}
+        {activeTab === "rewards" && (
+          <div className="space-y-8">
+            <div>
+              <h2 className="font-serif text-3xl font-bold text-foreground mb-2">Đổi Quà &amp; Voucher</h2>
+              <p className="text-muted-foreground">Sử dụng Xu hiện có trong ví đặt cược để đổi lấy các phần quà và mã giảm giá vô cùng giá trị</p>
+            </div>
+
+            {/* Balances */}
+            <div className="bg-card border border-border p-5 flex items-center justify-between">
+              <div>
+                <span className="text-muted-foreground text-sm uppercase tracking-wide font-medium">Số dư khả dụng</span>
+                <div className="text-[#8F7318] text-3xl font-extrabold tabular-nums mt-1">{walletBalance ?? "0 VNĐ"}</div>
+              </div>
+              <div className="w-12 h-12 bg-gold/15 flex items-center justify-center rounded-none text-[#8F7318]">
+                <Coins className="w-6 h-6" />
+              </div>
+            </div>
+
+            <div className="grid lg:grid-cols-3 gap-6">
+              {/* Rewards List */}
+              <div className="lg:col-span-2 space-y-6">
+                <h3 className="font-serif text-xl font-bold text-foreground border-b border-border pb-2">Quà Tặng Hiện Có</h3>
+                {loadingRewards ? (
+                  <div className="flex justify-center py-12">
+                    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : rewards.length === 0 ? (
+                  <div className="bg-card border border-border p-8 text-center text-muted-foreground">
+                    Không tìm thấy phần quà nào khả dụng.
+                  </div>
+                ) : (
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {rewards.map((reward) => (
+                      <div key={reward._id} className="bg-card border border-border overflow-hidden flex flex-col justify-between hover:border-primary transition-all">
+                        {reward.imageUrl && (
+                          <div className="h-44 overflow-hidden bg-muted">
+                            <img src={reward.imageUrl} alt={reward.name} className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                        <div className="p-5 flex-1 flex flex-col justify-between">
+                          <div>
+                            <h4 className="font-serif text-lg font-bold text-foreground mb-2">{reward.name}</h4>
+                            <p className="text-muted-foreground text-xs leading-relaxed mb-4">{reward.description}</p>
+                          </div>
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                              <span>Số lượng còn lại: <strong className="text-foreground">{reward.stock}</strong></span>
+                              <span className="flex items-center gap-1 text-[#8F7318] font-bold text-sm">
+                                <Coins className="w-4 h-4" /> {(reward.coinsRequired * 1000).toLocaleString('vi-VN')} VNĐ
+                              </span>
+                            </div>
+                            <Button
+                              fullWidth
+                              variant="contained"
+                              disabled={redeemingId !== null}
+                              onClick={() => handleRedeemReward(reward)}
+                              sx={{
+                                background: "#1F3D2B",
+                                color: "#F7F3EA",
+                                borderRadius: 0,
+                                py: 1,
+                                fontWeight: 700,
+                                textTransform: "none",
+                                boxShadow: "none",
+                                "&:hover": {
+                                  background: "#172D20",
+                                  boxShadow: "none",
+                                },
+                              }}
+                            >
+                              {redeemingId === reward._id ? "Đang xử lý..." : "Đổi Quà"}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Redemption History */}
+              <div className="space-y-6">
+                <h3 className="font-serif text-xl font-bold text-foreground border-b border-border pb-2">Lịch Sử Đổi Quà</h3>
+                {loadingRedemptions ? (
+                  <div className="flex justify-center py-12">
+                    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : myRedemptions.length === 0 ? (
+                  <div className="bg-card border border-border p-6 text-center text-muted-foreground text-sm">
+                    Bạn chưa thực hiện giao dịch đổi quà nào.
+                  </div>
+                ) : (
+                  <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
+                    {myRedemptions.map((redemption) => {
+                      const isPhysical = redemption.rewardId?.type === 'physical';
+                      return (
+                        <div key={redemption._id} className="bg-card border border-border p-4 space-y-3">
+                          <div>
+                            <div className="font-semibold text-foreground text-sm">{redemption.rewardId?.name || "Phần thưởng đã đổi"}</div>
+                            <div className="text-[11px] text-muted-foreground mt-0.5">
+                              {new Date(redemption.createdAt).toLocaleString('vi-VN')}
+                            </div>
+                          </div>
+                          
+                          <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
+                            {isPhysical ? "Mã Nhận Quà:" : "Mã Voucher:"}
+                          </div>
+
+                          <div className="bg-background border border-border px-3 py-2 flex items-center justify-between gap-2">
+                            <span className="font-mono text-xs text-primary font-bold">{redemption.voucherCode}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(redemption.voucherCode);
+                                toast.success(isPhysical ? "Đã sao chép mã nhận quà" : "Đã sao chép mã voucher");
+                              }}
+                              className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-all"
+                              title="Sao chép"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          <div className="text-[10px] text-muted-foreground italic">
+                            {isPhysical 
+                              ? "⚡ Vui lòng trình mã này cho ban tổ chức tại quầy để nhận quà vật lý." 
+                              : "⚡ Sử dụng mã này khi mua sắm để được áp dụng giảm giá."
+                            }
+                          </div>
+
+                          <div className="flex justify-between items-center text-xs border-t border-border/60 pt-2">
+                            <span className="text-muted-foreground">Chi phí:</span>
+                            <span className="font-bold text-secondary">
+                              -{((redemption.coinsSpent < 1000 ? redemption.coinsSpent * 1000 : redemption.coinsSpent)).toLocaleString('vi-VN')} VNĐ
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

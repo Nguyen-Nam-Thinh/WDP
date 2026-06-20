@@ -11,6 +11,7 @@ const betRoutes = require('./bet.routes');
 const rankingsRoutes = require('./rankings.routes');
 const publicRoutes = require('./public.routes');
 const notificationRoutes = require('./notification.routes');
+const rewardRoutes = require('./reward.routes');
 
 const router = Router();
 
@@ -26,5 +27,6 @@ router.use('/bets', betRoutes);
 router.use('/rankings', rankingsRoutes);
 router.use('/public', publicRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/rewards', rewardRoutes);
 
 module.exports = router;

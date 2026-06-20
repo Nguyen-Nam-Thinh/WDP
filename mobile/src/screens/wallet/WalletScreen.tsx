@@ -21,6 +21,7 @@ const TX_ICONS: Record<TransactionType, { icon: string; color: string }> = {
   bet_placed:         { icon: 'arrow-up-outline',     color: '#8C2F1B' },
   bet_payout:         { icon: 'arrow-down-outline',   color: colors.success },
   bet_refund:         { icon: 'refresh-circle-outline',color: colors.warning },
+  reward_redeem:      { icon: 'gift-outline',        color: colors.purple },
 };
 
 const TX_LABEL: Record<TransactionType, string> = {
@@ -31,6 +32,7 @@ const TX_LABEL: Record<TransactionType, string> = {
   bet_placed:         'Đặt Cược',
   bet_payout:         'Nhận Cược',
   bet_refund:         'Hoàn Tiền Cược',
+  reward_redeem:      'Đổi Thưởng',
 };
 
 function TransactionItem({ tx }: { tx: Transaction }) {

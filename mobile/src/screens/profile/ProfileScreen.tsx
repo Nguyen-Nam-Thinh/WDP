@@ -185,6 +185,16 @@ export function ProfileScreen() {
 
         {/* Actions */}
         <View style={styles.actionsSection}>
+          <TouchableOpacity style={styles.actionRow} onPress={() => navigation.navigate('Rewards')}>
+            <View style={styles.actionLeft}>
+              <View style={[styles.actionIcon, { backgroundColor: colors.purpleDim }]}>
+                <Ionicons name="gift-outline" size={18} color={colors.purple} />
+              </View>
+              <Text style={styles.actionText}>Đổi Thưởng</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.actionRow} onPress={() => navigation.navigate('ChangePassword')}>
             <View style={styles.actionLeft}>
               <View style={[styles.actionIcon, { backgroundColor: colors.blueDim }]}>

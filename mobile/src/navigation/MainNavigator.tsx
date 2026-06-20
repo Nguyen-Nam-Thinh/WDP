@@ -7,6 +7,7 @@ import { LiveScreen } from '../screens/live/LiveScreen';
 import { WalletScreen } from '../screens/wallet/WalletScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { ChangePasswordScreen } from '../screens/profile/ChangePasswordScreen';
+import { RewardsScreen } from '../screens/profile/RewardsScreen';
 import { DepositScreen } from '../screens/wallet/DepositScreen';
 import { LiveDetailScreen } from '../screens/live/LiveDetailScreen';
 import { colors } from '../constants/theme';
@@ -23,6 +24,7 @@ export type MainTabParamList = {
 export type ProfileStackParamList = {
   Profile: undefined;
   ChangePassword: undefined;
+  Rewards: undefined;
 };
 
 export type LiveStackParamList = {
@@ -45,6 +47,7 @@ function ProfileStackNavigator() {
     <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
       <ProfileStack.Screen name="Profile" component={ProfileScreen} />
       <ProfileStack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+      <ProfileStack.Screen name="Rewards" component={RewardsScreen} />
     </ProfileStack.Navigator>
   );
 }
