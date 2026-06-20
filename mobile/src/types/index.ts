@@ -122,7 +122,8 @@ export type TransactionType =
   | 'prize_payout'
   | 'bet_placed'
   | 'bet_payout'
-  | 'bet_refund';
+  | 'bet_refund'
+  | 'reward_redeem';
 
 export interface Transaction {
   _id: string;
@@ -142,6 +143,29 @@ export interface TransactionListResponse {
   page: number;
   limit: number;
   totalPages: number;
+}
+
+// Reward & Redemption types
+export interface Reward {
+  _id: string;
+  name: string;
+  description: string;
+  coinsRequired: number;
+  imageUrl?: string;
+  stock: number;
+  isActive: boolean;
+  type: 'voucher' | 'physical';
+}
+
+export interface Redemption {
+  _id: string;
+  userId: string;
+  rewardId: Reward;
+  coinsSpent: number;
+  status: 'pending' | 'completed' | 'cancelled';
+  voucherCode: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Tournament types
