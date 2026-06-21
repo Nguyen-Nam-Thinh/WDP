@@ -8,15 +8,15 @@ import { useNavigation } from '@react-navigation/native';
 import { colors, spacing, radius, fontSize, fontWeight } from '../../constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-const COIN_RATE = 1000; // 1 xu = 1,000 VND
+const COIN_RATE = 1; // 1 coin = 1 VND
 
 const QUICK_AMOUNTS = [
-  { coins: 50,    vnd: 50_000 },
-  { coins: 100,   vnd: 100_000 },
-  { coins: 200,   vnd: 200_000 },
-  { coins: 500,   vnd: 500_000 },
-  { coins: 1000,  vnd: 1_000_000 },
-  { coins: 2000,  vnd: 2_000_000 },
+  { coins: 50000,    vnd: 50_000 },
+  { coins: 100000,   vnd: 100_000 },
+  { coins: 200000,   vnd: 200_000 },
+  { coins: 500000,   vnd: 500_000 },
+  { coins: 1000000,  vnd: 1_000_000 },
+  { coins: 2000000,  vnd: 2_000_000 },
 ];
 
 const BANK_ACCOUNTS = [
@@ -57,7 +57,7 @@ export function DepositScreen() {
   const handleComplete = () => {
     Alert.alert(
       'Yêu Cầu Đã Gửi',
-      'Cảm ơn bạn! Hệ thống đang kiểm tra giao dịch chuyển khoản. Xu sẽ được cộng tự động sau 1-5 phút.',
+      'Cảm ơn bạn! Hệ thống đang kiểm tra giao dịch chuyển khoản. Coins sẽ được cộng tự động sau 1-5 phút.',
       [
         {
           text: 'OK',
@@ -76,7 +76,7 @@ export function DepositScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Cổng Nạp Xu</Text>
+        <Text style={styles.headerTitle}>Cổng Nạp Coins</Text>
         <View style={styles.secureBadge}>
           <Ionicons name="shield-checkmark-outline" size={14} color={colors.primary} />
           <Text style={styles.secureText}>Bảo mật</Text>
@@ -88,7 +88,7 @@ export function DepositScreen() {
         <View style={styles.stepsRow}>
           {[
             { n: 1, label: 'Phương thức' },
-            { n: 2, label: 'Số xu' },
+            { n: 2, label: 'Số coins' },
             { n: 3, label: 'Thanh toán' },
           ].map((s, i) => (
             <React.Fragment key={i}>
@@ -168,8 +168,8 @@ export function DepositScreen() {
         {/* STEP 2: ENTER COINS */}
         {step === 2 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Nhập Số Xu Cần Nạp</Text>
-            <Text style={styles.sectionSubtitle}>Tỷ giá: 1 Xu = 1.000 VND</Text>
+            <Text style={styles.sectionTitle}>Nhập Số Coins Cần Nạp</Text>
+            <Text style={styles.sectionSubtitle}>Tỷ giá: 1 Coin = 1 VND</Text>
 
             <View style={styles.inputCard}>
               <View style={styles.inputContainer}>
@@ -178,11 +178,11 @@ export function DepositScreen() {
                   style={styles.coinInput}
                   value={coinAmount}
                   onChangeText={(val) => setCoinAmount(val.replace(/[^0-9]/g, ''))}
-                  placeholder="Nhập số xu..."
+                  placeholder="Nhập số coins..."
                   placeholderTextColor={colors.textSubtle}
                   keyboardType="numeric"
                 />
-                <Text style={styles.coinSuffix}>xu</Text>
+                <Text style={styles.coinSuffix}>coins</Text>
               </View>
 
               {coins > 0 ? (
@@ -201,10 +201,10 @@ export function DepositScreen() {
                     onPress={() => setCoinAmount(String(q.coins))}
                   >
                     <Text style={[styles.quickCoins, coins === q.coins && styles.quickBtnTextActive]}>
-                      {q.coins} xu
+                      {q.coins.toLocaleString('vi-VN')} coins
                     </Text>
                     <Text style={[styles.quickVnd, coins === q.coins && styles.quickBtnTextActiveDim]}>
-                      {(q.vnd / 1000).toLocaleString()}k VND
+                      {q.vnd.toLocaleString('vi-VN')} VND
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -356,7 +356,7 @@ export function DepositScreen() {
               <Ionicons name="warning" size={20} color={colors.secondary} style={{ marginTop: 2 }} />
               <Text style={styles.warningText}>
                 <Text style={{ fontWeight: 'bold' }}>QUAN TRỌNG: </Text>
-                Nhập chính xác nội dung chuyển khoản để hệ thống tự động đối soát và cộng xu trong 1-5 phút.
+                Nhập chính xác nội dung chuyển khoản để hệ thống tự động đối soát và cộng coins trong 1-5 phút.
               </Text>
             </View>
 

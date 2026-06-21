@@ -148,7 +148,7 @@ function Podium({
                 <div
                   className={`font-semibold mt-0.5 tabular-nums ${isWinner ? "text-[#8F7318] text-sm" : "text-muted-foreground text-[11px]"}`}
                 >
-                  +{r.prizeAmount.toLocaleString('vi-VN')} VNĐ
+                  +{r.prizeAmount.toLocaleString('vi-VN')} coins
                 </div>
               )}
             </div>
@@ -761,7 +761,7 @@ export function LiveRacePage() {
                         {r.prizeAmount > 0 && (
                           <div className="text-[#8F7318] text-xs font-semibold flex items-center gap-0.5 justify-end tabular-nums">
                             <Coins className="w-3 h-3" />
-                            {r.prizeAmount.toLocaleString('vi-VN')} VNĐ
+                            {r.prizeAmount.toLocaleString('vi-VN')} coins
                           </div>
                         )}
                         {r.pointsEarned > 0 && (
@@ -819,7 +819,7 @@ export function LiveRacePage() {
                               : bet.betType === "place"
                                 ? "Hạng 2"
                                 : "Hạng 3"}{" "}
-                            — {bet.amount.toLocaleString('vi-VN')} VNĐ × {bet.multiplier}x
+                            — {bet.amount.toLocaleString('vi-VN')} coins × {bet.multiplier}x
                           </div>
                         </div>
                         <div className="text-right shrink-0">
@@ -828,11 +828,11 @@ export function LiveRacePage() {
                               +
                               {Math.floor(
                                 bet.amount * bet.multiplier,
-                              ).toLocaleString('vi-VN')} VNĐ
+                              ).toLocaleString('vi-VN')} coins
                             </div>
                           ) : (
                             <div className="text-destructive text-sm tabular-nums">
-                              -{bet.amount.toLocaleString('vi-VN')} VNĐ
+                              -{bet.amount.toLocaleString('vi-VN')} coins
                             </div>
                           )}
                           {pos !== undefined && (
@@ -890,7 +890,7 @@ export function LiveRacePage() {
                         : bet.betType === "place"
                           ? "Hạng 2"
                           : "Hạng 3"}{" "}
-                      · {bet.amount.toLocaleString('vi-VN')} VNĐ
+                      · {bet.amount.toLocaleString('vi-VN')} coins
                     </div>
                   </div>
                   <div className="text-[#8F7318] text-sm font-bold shrink-0">

@@ -234,7 +234,7 @@ export default function ResultsPublishing() {
                         {race.distance}m
                       </span>
                       <span className="inline-block rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:border-emerald-900/30 dark:bg-emerald-900/20 dark:text-emerald-400">
-                        {race.purse.toLocaleString('vi-VN')} VNĐ
+                        {race.purse.toLocaleString('vi-VN')} coins
                       </span>
                     </div>
 
@@ -342,7 +342,7 @@ export default function ResultsPublishing() {
                     📅 {fmtDateTime(race.scheduledTime)}
                   </p>
                   <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                    💰 Giải thưởng: <span className="text-emerald-600 dark:text-emerald-400">{race.purse?.toLocaleString('vi-VN')} VNĐ</span>
+                    💰 Giải thưởng: <span className="text-emerald-600 dark:text-emerald-400">{race.purse?.toLocaleString('vi-VN')} coins</span>
                   </p>
                 </div>
                 
@@ -388,11 +388,11 @@ export default function ResultsPublishing() {
                 <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Tổng Cược</p>
               </div>
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center dark:border-slate-700 dark:bg-slate-800/50">
-                <p className="text-2xl font-bold text-amber-500 dark:text-amber-400 mb-1">{totalBetAmount.toLocaleString('vi-VN')} VNĐ</p>
+                <p className="text-2xl font-bold text-amber-500 dark:text-amber-400 mb-1">{totalBetAmount.toLocaleString('vi-VN')} coins</p>
                 <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Tổng Tiền Cược</p>
               </div>
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center dark:border-slate-700 dark:bg-slate-800/50">
-                <p className="text-2xl font-bold text-emerald-500 dark:text-emerald-400 mb-1">{totalPayout.toLocaleString('vi-VN')} VNĐ</p>
+                <p className="text-2xl font-bold text-emerald-500 dark:text-emerald-400 mb-1">{totalPayout.toLocaleString('vi-VN')} coins</p>
                 <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Tiền Đã Trả</p>
               </div>
               <div className={`rounded-lg border border-slate-200 p-4 text-center dark:border-slate-700 ${pendingBets > 0 ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-900/50' : 'bg-slate-50 dark:bg-slate-800/50'}`}>
@@ -493,7 +493,7 @@ export default function ResultsPublishing() {
                               {BET_TYPE_LABEL[bet.betType] || bet.betType}
                             </span>
                           </td>
-                          <td className="py-2.5 px-4 font-semibold text-black dark:text-white">{bet.amount.toLocaleString('vi-VN')} VNĐ</td>
+                          <td className="py-2.5 px-4 font-semibold text-black dark:text-white">{bet.amount.toLocaleString('vi-VN')} coins</td>
                           <td className="py-2.5 px-4 text-slate-600 dark:text-slate-400">{bet.multiplier}x</td>
                           <td className="py-2.5 px-4">
                             <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_COLOR[bet.status] || ''}`}>
@@ -502,7 +502,7 @@ export default function ResultsPublishing() {
                           </td>
                           <td className="py-2.5 px-4">
                             {bet.status === 'won' ? (
-                              <span className="font-bold text-emerald-600 dark:text-emerald-400">{bet.payoutAmount?.toLocaleString('vi-VN')} VNĐ</span>
+                              <span className="font-bold text-emerald-600 dark:text-emerald-400">{bet.payoutAmount?.toLocaleString('vi-VN')} coins</span>
                             ) : (
                               <span className="text-slate-400">—</span>
                             )}

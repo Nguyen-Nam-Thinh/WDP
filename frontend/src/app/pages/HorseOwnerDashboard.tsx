@@ -643,7 +643,7 @@ export function HorseOwnerDashboard() {
         horseId: regHorseId,
       });
       toast.success(
-        `Đăng ký thành công! Phí ${selectedRaceForReg.registrationFee?.toLocaleString("vi-VN")} VNĐ đã được trừ.`,
+        `Đăng ký thành công! Phí ${selectedRaceForReg.registrationFee?.toLocaleString("vi-VN")} coins đã được trừ.`,
       );
       setRegisterRaceOpen(false);
       setSelectedRaceForReg(null);
@@ -778,7 +778,7 @@ export function HorseOwnerDashboard() {
                       label: "Số Dư Ví",
                       value:
                         walletBalance != null
-                          ? `${walletBalance.toLocaleString("vi-VN")} VNĐ`
+                          ? `${walletBalance.toLocaleString("vi-VN")} coins`
                           : "—",
                       icon: Wallet,
                       accent: "bg-secondary",
@@ -866,7 +866,7 @@ export function HorseOwnerDashboard() {
                               fontSize: 12,
                             }}
                             formatter={(v: any) => [
-                              `${Number(v).toLocaleString("vi-VN")} VNĐ`,
+                              `${Number(v).toLocaleString("vi-VN")} coins`,
                               "Thu nhập",
                             ]}
                           />
@@ -937,7 +937,7 @@ export function HorseOwnerDashboard() {
                                 <div className="text-right shrink-0">
                                   <div className="text-xs font-bold text-[#8F7318] tabular-nums">
                                     {r.prizeAmount > 0
-                                      ? `+${r.prizeAmount.toLocaleString("vi-VN")} VNĐ`
+                                      ? `+${r.prizeAmount.toLocaleString("vi-VN")} coins`
                                       : "—"}
                                   </div>
                                   <div className="text-xs text-muted-foreground">
@@ -1165,7 +1165,7 @@ export function HorseOwnerDashboard() {
                               </div>
                               <div className="text-[#1F3D2B] font-semibold">
                                 {horse.totalEarnings.toLocaleString("vi-VN")}{" "}
-                                VNĐ
+                                coins
                               </div>
                             </div>
                           </div>
@@ -1365,7 +1365,7 @@ export function HorseOwnerDashboard() {
                                 </div>
                                 <div className="text-[#C9A227] font-bold tabular-nums text-sm">
                                   {(jp?.askingFeePerRace ?? 0) > 0
-                                    ? `${jp!.askingFeePerRace!.toLocaleString("vi-VN")} VNĐ`
+                                    ? `${jp!.askingFeePerRace!.toLocaleString("vi-VN")} coins`
                                     : "Thương lượng"}
                                 </div>
                               </div>
@@ -1494,7 +1494,7 @@ export function HorseOwnerDashboard() {
                             </div>
                             <div className="text-[#C9A227] font-bold tabular-nums text-sm">
                               {inv.agreedFee > 0
-                                ? `${inv.agreedFee.toLocaleString("vi-VN")} VNĐ`
+                                ? `${inv.agreedFee.toLocaleString("vi-VN")} coins`
                                 : "Miễn phí"}
                             </div>
                           </div>
@@ -1722,7 +1722,7 @@ export function HorseOwnerDashboard() {
                                       </div>
                                       <div className="text-foreground font-medium">
                                         {reg.feePaid?.toLocaleString("vi-VN")}{" "}
-                                        VNĐ
+                                        coins
                                       </div>
                                     </div>
                                     <div>
@@ -1852,7 +1852,7 @@ export function HorseOwnerDashboard() {
                                       <Trophy className="w-3 h-3" /> Giải Thưởng
                                     </div>
                                     <div className="text-[#C9A227] font-semibold">
-                                      {race.purse?.toLocaleString("vi-VN")} VNĐ
+                                      {race.purse?.toLocaleString("vi-VN")} coins
                                     </div>
                                   </div>
                                   <div>
@@ -1863,7 +1863,7 @@ export function HorseOwnerDashboard() {
                                       {race.registrationFee?.toLocaleString(
                                         "vi-VN",
                                       )}{" "}
-                                      VNĐ
+                                      coins
                                     </div>
                                   </div>
                                   <div>
@@ -2073,7 +2073,7 @@ export function HorseOwnerDashboard() {
                           <div className="text-right shrink-0">
                             <div className="text-[#C9A227] font-bold">
                               {r.prizeAmount > 0
-                                ? `+${r.prizeAmount.toLocaleString("vi-VN")} VNĐ`
+                                ? `+${r.prizeAmount.toLocaleString("vi-VN")} coins`
                                 : "—"}
                             </div>
                             <div className="text-blue-400 text-sm">
@@ -2118,7 +2118,7 @@ export function HorseOwnerDashboard() {
                       {walletBalance !== null
                         ? walletBalance.toLocaleString("vi-VN")
                         : "—"}{" "}
-                      VNĐ
+                      coins
                     </div>
 
                     <div className="flex gap-3">
@@ -2234,11 +2234,11 @@ export function HorseOwnerDashboard() {
                                 className={`font-bold ${isCredit ? "text-[#C9A227]" : "text-red-400"}`}
                               >
                                 {isCredit ? "+" : ""}
-                                {tx.amount.toLocaleString("vi-VN")} VNĐ
+                                {tx.amount.toLocaleString("vi-VN")} coins
                               </div>
                               <div className="text-xs text-slate-500">
                                 Số dư: {tx.balanceAfter.toLocaleString("vi-VN")}{" "}
-                                VNĐ
+                                coins
                               </div>
                             </div>
                           </div>
@@ -3066,7 +3066,7 @@ export function HorseOwnerDashboard() {
                     <li className="flex justify-between">
                       <span className="text-slate-500">Tiền thưởng:</span>{" "}
                       <span className="text-[#1F3D2B] font-bold">
-                        {viewingHorse.totalEarnings.toLocaleString("vi-VN")} VNĐ
+                        {viewingHorse.totalEarnings.toLocaleString("vi-VN")} coins
                       </span>
                     </li>
                   </ul>
@@ -3458,7 +3458,7 @@ export function HorseOwnerDashboard() {
                 <TextField
                   fullWidth
                   type="number"
-                  label="Phí thuê kỵ sĩ (VNĐ)"
+                  label="Phí thuê kỵ sĩ (coins)"
                   value={inviteForm.agreedFee}
                   onChange={(e) =>
                     setInviteForm((p) => ({ ...p, agreedFee: e.target.value }))
@@ -3466,7 +3466,7 @@ export function HorseOwnerDashboard() {
                   inputProps={{ min: 0, step: 10000 }}
                   helperText={
                     (invitingJockey as any)?.jockeyProfile?.askingFeePerRace > 0
-                      ? `Kỵ sĩ đề xuất: ${Number((invitingJockey as any).jockeyProfile.askingFeePerRace).toLocaleString("vi-VN")} VNĐ`
+                      ? `Kỵ sĩ đề xuất: ${Number((invitingJockey as any).jockeyProfile.askingFeePerRace).toLocaleString("vi-VN")} coins`
                       : "Nhập 0 nếu miễn phí"
                   }
                   sx={{
@@ -3590,7 +3590,7 @@ export function HorseOwnerDashboard() {
                   <div>
                     <span className="text-slate-400">Giải thưởng: </span>
                     <span className="text-[#C9A227] font-bold">
-                      {selectedRaceForReg.purse?.toLocaleString("vi-VN")} VNĐ
+                      {selectedRaceForReg.purse?.toLocaleString("vi-VN")} coins
                     </span>
                   </div>
                   <div>
@@ -3599,7 +3599,7 @@ export function HorseOwnerDashboard() {
                       {selectedRaceForReg.registrationFee?.toLocaleString(
                         "vi-VN",
                       )}{" "}
-                      VNĐ
+                      coins
                     </span>
                   </div>
                 </div>

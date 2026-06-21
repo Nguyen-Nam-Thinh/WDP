@@ -1,13 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, Platform, UIManager, LayoutAnimation } from 'react-native';
+import { View, Text, StyleSheet, Animated } from 'react-native';
 import { colors, spacing, radius, fontSize, fontWeight } from '../../constants/theme';
-
-// Enable LayoutAnimation for Android
-if (Platform.OS === 'android') {
-  if (UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-  }
-}
 
 export const HORSE_COLORS = [
   '#ef4444', '#3b82f6', '#10b981', '#f59e0b',
@@ -24,6 +17,8 @@ export interface TrackHorse {
   isMyBet?: boolean;
 }
 
+const ROW_HEIGHT = 34;
+
 function LanesTrack({
   horses,
   raceName,
@@ -33,54 +28,46 @@ function LanesTrack({
   raceName?: string;
   distance?: number;
 }) {
-  const [displayOrderIds, setDisplayOrderIds] = React.useState<string[]>([]);
+  const stableHorses = React.useMemo(() => {
+    return [...horses].sort((a, b) => a.horseId.localeCompare(b.horseId));
+  }, [horses.length]);
 
-  // Function to sort horses and extract their IDs
-  const getSortedIds = (list: TrackHorse[]) => {
-    return [...list]
-      .sort((a, b) => {
-        if (b.progressPct !== a.progressPct) {
-          return b.progressPct - a.progressPct;
-        }
-        const ra = a.currentRank ?? 99;
-        const rb = b.currentRank ?? 99;
-        return ra - rb;
-      })
-      .map(h => h.horseId);
-  };
+  const animatedTopsRef = React.useRef<Record<string, Animated.Value>>({});
+  const lastTargetsRef = React.useRef<Record<string, number>>({});
 
-  // Check if the race is currently active (racing)
-  const isRaceActive = horses.some(h => h.progressPct > 0 && h.progressPct < 100);
-  const hasFinishedHorse = horses.some(h => h.progressPct === 100);
-
-  // Initialize and throttle re-sorting of lanes
-  React.useEffect(() => {
-    if (horses.length === 0) return;
-
-    // Apply layout animation and update order immediately on state/phase change
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setDisplayOrderIds(getSortedIds(horses));
-
-    if (!isRaceActive) {
-      return;
+  // Initialize animated values for stable positions
+  stableHorses.forEach((horse, index) => {
+    if (!animatedTopsRef.current[horse.horseId]) {
+      const currentRank = horse.currentRank ?? (index + 1);
+      const initialTranslate = (currentRank - 1 - index) * ROW_HEIGHT;
+      animatedTopsRef.current[horse.horseId] = new Animated.Value(initialTranslate);
+      lastTargetsRef.current[horse.horseId] = initialTranslate;
     }
+  });
 
-    // Set interval to update positions every 1.5 seconds during the race
-    const interval = setInterval(() => {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      setDisplayOrderIds(getSortedIds(horses));
-    }, 1500);
+  // Animate translations smoothly on rank changes
+  React.useEffect(() => {
+    stableHorses.forEach((horse, index) => {
+      const latestHorse = horses.find(h => h.horseId === horse.horseId);
+      if (!latestHorse) return;
 
-    return () => clearInterval(interval);
-  }, [horses.length, isRaceActive, hasFinishedHorse]);
+      const currentRank = latestHorse.currentRank ?? (index + 1);
+      const targetTranslate = (currentRank - 1 - index) * ROW_HEIGHT;
 
-  // Map displayOrderIds to latest horse data from props
-  const renderedHorses = displayOrderIds.length > 0
-    ? displayOrderIds.map(id => horses.find(h => h.horseId === id)).filter((h): h is TrackHorse => h !== undefined)
-    : [...horses].sort((a, b) => {
-        if (b.progressPct !== a.progressPct) return b.progressPct - a.progressPct;
-        return (a.currentRank ?? 99) - (b.currentRank ?? 99);
-      });
+      if (lastTargetsRef.current[horse.horseId] !== targetTranslate) {
+        lastTargetsRef.current[horse.horseId] = targetTranslate;
+        
+        const anim = animatedTopsRef.current[horse.horseId];
+        if (anim) {
+          Animated.timing(anim, {
+            toValue: targetTranslate,
+            duration: 1200, // Slow, pleasant slide transition
+            useNativeDriver: true,
+          }).start();
+        }
+      }
+    });
+  }, [horses, stableHorses]);
 
   const rankColors: Record<number, string> = { 1: '#C9A227', 2: '#7A7468', 3: '#8C2F1B' };
 
@@ -98,20 +85,25 @@ function LanesTrack({
 
       {/* Lane rows */}
       <View style={laneStyles.list}>
-        {renderedHorses.map((horse) => {
-          const color = HORSE_COLORS[horse.colorIdx % HORSE_COLORS.length];
-          const rank = horse.currentRank;
+        {stableHorses.map((horse) => {
+          const latestHorse = horses.find(h => h.horseId === horse.horseId) || horse;
+          const color = HORSE_COLORS[latestHorse.colorIdx % HORSE_COLORS.length];
+          const rank = latestHorse.currentRank;
           const isTop3 = rank !== undefined && rank <= 3;
           const rankColor = rank ? (rankColors[rank] ?? color) : color;
-          const pct = Math.max(0, Math.min(100, horse.progressPct));
+          const pct = Math.max(0, Math.min(100, latestHorse.progressPct));
+          const animTranslateY = animatedTopsRef.current[horse.horseId];
 
           return (
-            <View
+            <Animated.View
               key={horse.horseId}
               style={[
                 laneStyles.row,
-                horse.isMyBet && laneStyles.rowMyBet,
-                isTop3 && laneStyles.rowTop3
+                latestHorse.isMyBet && laneStyles.rowMyBet,
+                isTop3 && laneStyles.rowTop3,
+                {
+                  transform: [{ translateY: animTranslateY }],
+                }
               ]}
             >
               {/* Rank badge */}
@@ -139,7 +131,7 @@ function LanesTrack({
                   ]}
                   numberOfLines={1}
                 >
-                  {horse.isMyBet ? '★ ' : ''}{horse.horseName ?? 'Ngựa'}
+                  {horse.isMyBet ? '★ ' : ''}{latestHorse.horseName ?? 'Ngựa'}
                 </Text>
               </View>
 
@@ -165,7 +157,7 @@ function LanesTrack({
               <Text style={[laneStyles.pctText, isTop3 && { color: rankColor }]}>
                 {pct.toFixed(0)}%
               </Text>
-            </View>
+            </Animated.View>
           );
         })}
       </View>

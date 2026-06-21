@@ -3,7 +3,7 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet, Modal,
   TextInput, Alert, ActivityIndicator, ScrollView, RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { raceService } from '../../services/api/race.service';
 import { betService } from '../../services/api/bet.service';
@@ -25,6 +25,7 @@ function PlaceBetModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const insets = useSafeAreaInsets();
   const [horses, setHorses] = useState<RaceHorse[]>([]);
   const [loadingHorses, setLoadingHorses] = useState(false);
   const [selectedHorse, setSelectedHorse] = useState('');
@@ -65,7 +66,7 @@ function PlaceBetModal({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={modal.overlay}>
-        <View style={modal.sheet}>
+        <View style={[modal.sheet, { paddingBottom: insets.bottom + 16 }]}>
           <View style={modal.handle} />
           <View style={modal.header}>
             <Text style={modal.title}>Đặt Cược</Text>
@@ -184,7 +185,7 @@ function PlaceBetModal({
                 : <Text style={modal.placeBtnText}>Xác Nhận Đặt Cược</Text>
               }
             </TouchableOpacity>
-            <View style={{ height: spacing.xxl }} />
+            <View style={{ height: 120 }} />
           </ScrollView>
         </View>
       </View>
@@ -325,6 +326,11 @@ const betCard = StyleSheet.create({
 type Tab = 'open' | 'history';
 
 export function BetScreen() {
+  const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
+  const bottomPadding = insets.bottom > 0 ? insets.bottom : 8;
+  const tabHeight = 60 + bottomPadding;
+
   const [tab, setTab] = useState<Tab>('open');
   const [openRaces, setOpenRaces] = useState<Race[]>([]);
   const [myBets, setMyBets] = useState<Bet[]>([]);
@@ -332,6 +338,19 @@ export function BetScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedRace, setSelectedRace] = useState<Race | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+
+  useEffect(() => {
+    navigation.setOptions({
+      tabBarStyle: {
+        display: modalVisible ? 'none' : 'flex',
+        backgroundColor: colors.surface,
+        borderTopColor: colors.border,
+        paddingBottom: bottomPadding,
+        paddingTop: 8,
+        height: tabHeight,
+      }
+    });
+  }, [modalVisible, navigation, bottomPadding, tabHeight]);
 
   const loadData = useCallback(async () => {
     try {

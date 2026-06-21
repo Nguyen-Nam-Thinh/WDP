@@ -509,7 +509,7 @@ export function ProfilePage() {
               {[
                 {
                   label: "Số Dư Ví",
-                  value: `${user.balance.toLocaleString('vi-VN')} VNĐ`,
+                  value: `${user.balance.toLocaleString('vi-VN')} coins`,
                   icon: Coins,
                   color: "from-[#C9A227] to-[#8F7318]",
                   sub: "số dư hiện tại",
@@ -523,7 +523,7 @@ export function ProfilePage() {
                 },
                 {
                   label: "Tổng Đã Thắng",
-                  value: `${user.totalWon.toLocaleString('vi-VN')} VNĐ`,
+                  value: `${user.totalWon.toLocaleString('vi-VN')} coins`,
                   icon: Trophy,
                   color: "from-[#C9A227] to-[#8F7318]",
                   sub: "tổng phần thưởng",
@@ -781,7 +781,7 @@ export function ProfilePage() {
                 {[
                   { label: 'Ngày Tham Gia',  value: user.joinDate || '—' },
                   { label: 'Hạn Hội Viên',   value: user.membershipExpiry || '—' },
-                  { label: 'Tổng Nạp',       value: user.totalDeposited ? `${user.totalDeposited.toLocaleString('vi-VN')} VNĐ` : '—' },
+                  { label: 'Tổng Nạp',       value: user.totalDeposited ? `${user.totalDeposited.toLocaleString('vi-VN')} coins` : '—' },
                   { label: 'Điểm Uy Tín',    value: '4.8 / 5.0 ⭐' },
                 ].map((item, i) => (
                   <div key={i} className="bg-card/40 rounded-xl p-3">
