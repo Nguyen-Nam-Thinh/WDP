@@ -183,7 +183,7 @@ async function generateReportPdf(reportId, userId, role) {
       ['Race Name', race.name],
       ['Grade', race.grade],
       ['Distance', `${race.distance} m`],
-      ['Purse', `${race.purse.toLocaleString('vi-VN')} VNĐ`],
+      ['Purse', `${race.purse.toLocaleString('vi-VN')} coins`],
       ['Scheduled Time', new Date(race.scheduledTime).toLocaleString('en-GB')],
       ['Race Status', race.status.toUpperCase()],
       ['Location', tournament?.location || 'N/A'],

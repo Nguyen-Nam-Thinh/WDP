@@ -42,6 +42,12 @@ export function LiveDetailScreen() {
   // Load race data & user's bets for this race
   useEffect(() => {
     if (!raceId) return;
+    
+    // Reset states for the new raceId to prevent state bleeding/caching
+    setRace(null);
+    setLineup([]);
+    setMyBets([]);
+    setDbResults([]);
     setLoading(true);
 
     Promise.all([
@@ -225,7 +231,7 @@ export function LiveDetailScreen() {
                 <Ionicons name="time" size={16} color={colors.secondary} />
                 <Text style={styles.timerTitle}>Tiến trình cuộc đua</Text>
               </View>
-              <Text style={styles.timerText}>{elapsed}s / {total}s</Text>
+              <Text style={styles.timerText}>{progressPct.toFixed(0)}%</Text>
             </View>
             <View style={styles.progressTrack}>
               <View style={[styles.progressFill, { width: `${progressPct}%` }]} />

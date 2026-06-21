@@ -18,22 +18,23 @@ async function seedRewards() {
   try {
     const count = await Reward.countDocuments();
     const hasMissingType = await Reward.findOne({ type: { $exists: false } });
-    if (count === 0 || hasMissingType) {
+    const hasOldCoinsFormat = await Reward.findOne({ coinsRequired: { $lt: 1000 } });
+    if (count === 0 || hasMissingType || hasOldCoinsFormat) {
       await Reward.deleteMany({});
       const initialRewards = [
         {
-          name: 'Voucher 50,000 VNĐ',
-          description: 'Voucher giảm giá trực tiếp 50,000 VNĐ khi mua sắm tại cửa hàng đối tác.',
-          coinsRequired: 50,
+          name: 'Voucher 50.000 coins',
+          description: 'Voucher trị giá 50.000 coins dùng để thanh toán hoặc sử dụng dịch vụ.',
+          coinsRequired: 50000,
           imageUrl: 'https://images.unsplash.com/photo-1554415707-6e8cfc93fe23?w=500',
           stock: 100,
           isActive: true,
           type: 'voucher'
         },
         {
-          name: 'Voucher 100,000 VNĐ',
-          description: 'Voucher giảm giá trực tiếp 100,000 VNĐ áp dụng cho tất cả dịch vụ.',
-          coinsRequired: 100,
+          name: 'Voucher 100.000 coins',
+          description: 'Voucher trị giá 100.000 coins áp dụng cho tất cả dịch vụ.',
+          coinsRequired: 100000,
           imageUrl: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=500',
           stock: 50,
           isActive: true,
@@ -41,8 +42,8 @@ async function seedRewards() {
         },
         {
           name: 'Áo thun Heritage Racing',
-          description: 'Áo thun phiên bản giới hạn kỷ niệm giải đua Heritage Racing League.',
-          coinsRequired: 200,
+          description: 'Áo thun phiên bản giới hạn kỷ niệm giải đua Heritage Racing League. Trị giá 200.000 coins.',
+          coinsRequired: 200000,
           imageUrl: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500',
           stock: 20,
           isActive: true,
@@ -50,8 +51,8 @@ async function seedRewards() {
         },
         {
           name: 'Mũ lưỡi trai Racing Green',
-          description: 'Mũ lưỡi trai thêu logo Racing cao cấp phong cách cổ điển.',
-          coinsRequired: 150,
+          description: 'Mũ lưỡi trai thêu logo Racing cao cấp phong cách cổ điển. Trị giá 150.000 coins.',
+          coinsRequired: 150000,
           imageUrl: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=500',
           stock: 30,
           isActive: true,
@@ -59,8 +60,8 @@ async function seedRewards() {
         },
         {
           name: 'Vé VIP Xem Trực Tiếp',
-          description: 'Vé mời VIP trải nghiệm xem đua ngựa thực tế tại khán đài A.',
-          coinsRequired: 500,
+          description: 'Vé mời VIP trải nghiệm xem đua ngựa thực tế tại khán đài A. Trị giá 500.000 coins.',
+          coinsRequired: 500000,
           imageUrl: 'https://images.unsplash.com/photo-1503023344727-83c98dc12ae9?w=500',
           stock: 5,
           isActive: true,
@@ -92,16 +93,16 @@ async function redeemReward(userId, rewardId) {
     const wallet = await Wallet.findOne({ userId }).session(session);
     if (!wallet) throw new AppError(404, 'Không tìm thấy ví của bạn');
     
-    const costInVnd = reward.coinsRequired * 1000;
-    if (wallet.balance < costInVnd) {
+    const cost = reward.coinsRequired;
+    if (wallet.balance < cost) {
       throw new AppError(400, 'Số dư ví của bạn không đủ để đổi phần thưởng này');
     }
 
-    // Debit VNĐ from wallet using the wallet service
+    // Debit coins from wallet using the wallet service
     await walletService.debitWallet(
       wallet._id,
       userId,
-      costInVnd,
+      cost,
       'reward_redeem',
       `Đổi phần thưởng: ${reward.name}`,
       reward._id,
@@ -120,7 +121,7 @@ async function redeemReward(userId, rewardId) {
       [{
         userId,
         rewardId,
-        coinsSpent: costInVnd,
+        coinsSpent: cost,
         status: 'completed',
         voucherCode
       }],

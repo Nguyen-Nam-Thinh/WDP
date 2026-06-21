@@ -149,6 +149,14 @@ export function useRaceSocket(raceId: string, token: string | null) {
   useEffect(() => {
     if (!raceId) return;
 
+    // Reset states for the new raceId to avoid state leakage from past races
+    setPhase('pre');
+    setHorses([]);
+    setPositions([]);
+    setResults([]);
+    setElapsed(0);
+    setTotal(30);
+
     const socket = io(SOCKET_URL, { auth: { token } });
     socketRef.current = socket;
 

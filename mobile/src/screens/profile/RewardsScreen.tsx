@@ -58,15 +58,15 @@ export function RewardsScreen() {
   };
 
   const handleRedeem = (reward: Reward) => {
-    const costInVnd = reward.coinsRequired * 1000;
-    if (balance < costInVnd) {
-      Alert.alert('Số Dư Không Đủ', 'Bạn không đủ tiền trong ví để đổi phần quà này.');
+    const costInCoins = reward.coinsRequired;
+    if (balance < costInCoins) {
+      Alert.alert('Số Dư Không Đủ', 'Bạn không đủ coins trong ví để đổi phần quà này.');
       return;
     }
 
     Alert.alert(
       'Xác Nhận Đổi Quà',
-      `Bạn có chắc chắn muốn dùng ${costInVnd.toLocaleString('vi-VN')} VNĐ để đổi "${reward.name}"?`,
+      `Bạn có chắc chắn muốn dùng ${costInCoins.toLocaleString('vi-VN')} coins để đổi "${reward.name}"?`,
       [
         { text: 'Hủy', style: 'cancel' },
         {
@@ -111,7 +111,7 @@ export function RewardsScreen() {
       <View style={styles.balanceCard}>
         <View>
           <Text style={styles.balanceLabel}>Số Dư Khả Dụng</Text>
-          <Text style={styles.balanceValue}>{balance.toLocaleString('vi-VN')} VNĐ</Text>
+          <Text style={styles.balanceValue}>{balance.toLocaleString('vi-VN')} coins</Text>
         </View>
         <View style={styles.coinIconContainer}>
           <Ionicons name="cash" size={26} color={colors.gold} />
@@ -163,14 +163,14 @@ export function RewardsScreen() {
                       <View style={styles.rewardStats}>
                         <Text style={styles.rewardStock}>Còn lại: {reward.stock}</Text>
                         <Text style={styles.rewardPrice}>
-                          <Ionicons name="cash" size={14} color={colors.gold} /> {(reward.coinsRequired * 1000).toLocaleString('vi-VN')} VNĐ
+                          <Ionicons name="cash" size={14} color={colors.gold} /> {reward.coinsRequired.toLocaleString('vi-VN')} coins
                         </Text>
                       </View>
                       
                       <TouchableOpacity
                         style={[
                           styles.redeemBtn,
-                          balance < reward.coinsRequired * 1000 && styles.btnDisabled,
+                          balance < reward.coinsRequired && styles.btnDisabled,
                         ]}
                         disabled={redeemingId !== null}
                         onPress={() => handleRedeem(reward)}
@@ -205,7 +205,7 @@ export function RewardsScreen() {
                         </Text>
                       </View>
                       <Text style={styles.historyPrice}>
-                        -{((redemption.coinsSpent < 1000 ? redemption.coinsSpent * 1000 : redemption.coinsSpent)).toLocaleString('vi-VN')} VNĐ
+                        -{redemption.coinsSpent.toLocaleString('vi-VN')} coins
                       </Text>
                     </View>
 

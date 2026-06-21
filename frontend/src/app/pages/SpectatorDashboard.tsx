@@ -362,13 +362,13 @@ export function SpectatorDashboard() {
 
   const handleRedeemReward = async (reward: Reward) => {
     if (!token) return;
-    const costInVnd = reward.coinsRequired * 1000;
+    const costInCoins = reward.coinsRequired;
     const currentBalance = balance ?? 0;
-    if (currentBalance < costInVnd) {
+    if (currentBalance < costInCoins) {
       toast.error("Số dư ví không đủ để đổi phần quà này");
       return;
     }
-    if (!confirm(`Bạn có chắc chắn muốn dùng ${costInVnd.toLocaleString('vi-VN')} VNĐ để đổi "${reward.name}"?`)) return;
+    if (!confirm(`Bạn có chắc chắn muốn dùng ${costInCoins.toLocaleString('vi-VN')} coins để đổi "${reward.name}"?`)) return;
     setRedeemingId(reward._id);
     try {
       await rewardApi.redeem(token, reward._id);
@@ -415,7 +415,7 @@ export function SpectatorDashboard() {
     },
     {
       label: "Tổng Tiền Thắng",
-      value: totalWinnings > 0 ? `+${totalWinnings.toLocaleString('vi-VN')} VNĐ` : "0 VNĐ",
+      value: totalWinnings > 0 ? `+${totalWinnings.toLocaleString('vi-VN')} coins` : "0 coins",
       icon: Gift,
       iconCls: "bg-[#7A7468] text-white",
     },
@@ -459,7 +459,7 @@ export function SpectatorDashboard() {
         amount,
       });
       toast.success(
-        `Đặt cược thành công! Tiềm năng thắng: $${Math.floor(amount * BET_MULTIPLIERS[betType as BetType])}`,
+        `Đặt cược thành công! Tiềm năng thắng: ${Math.floor(amount * BET_MULTIPLIERS[betType as BetType]).toLocaleString('vi-VN')} coins`,
       );
       setPredictionModalOpen(false);
       setBetType("win");
@@ -595,11 +595,11 @@ export function SpectatorDashboard() {
                       label: "Tổng Tiền Thắng",
                       value: overview
                         ? overview.totalWinnings > 0
-                          ? `+${overview.totalWinnings.toLocaleString('vi-VN')} VNĐ`
-                          : "0 VNĐ"
+                          ? `+${overview.totalWinnings.toLocaleString('vi-VN')} coins`
+                          : "0 coins"
                         : totalWinnings > 0
-                          ? `+${totalWinnings.toLocaleString('vi-VN')} VNĐ`
-                          : "0 VNĐ",
+                          ? `+${totalWinnings.toLocaleString('vi-VN')} coins`
+                          : "0 coins",
                       icon: Gift,
                       cls: "bg-[#7A7468] text-white",
                       accent: "bg-[#7A7468]",
@@ -777,8 +777,8 @@ export function SpectatorDashboard() {
                                   </div>
                                   <div className="text-xs text-muted-foreground tabular-nums">
                                     {bet.status === "won"
-                                      ? `+${(bet.payoutAmount || 0).toLocaleString('vi-VN')} VNĐ`
-                                      : `${bet.amount?.toLocaleString('vi-VN')} VNĐ`}
+                                      ? `+${(bet.payoutAmount || 0).toLocaleString('vi-VN')} coins`
+                                      : `${bet.amount?.toLocaleString('vi-VN')} coins`}
                                   </div>
                                 </div>
                               </div>
@@ -1108,7 +1108,7 @@ export function SpectatorDashboard() {
                             Giải Thưởng
                           </div>
                           <div className="text-[#8F7318] font-semibold tabular-nums">
-                            {race.purse.toLocaleString('vi-VN')} VNĐ
+                            {race.purse.toLocaleString('vi-VN')} coins
                           </div>
                         </div>
                       </div>
@@ -1304,7 +1304,7 @@ export function SpectatorDashboard() {
                                 Giải Thưởng
                               </div>
                               <div className="text-[#8F7318] font-semibold tabular-nums">
-                                {race.purse?.toLocaleString('vi-VN')} VNĐ
+                                {race.purse?.toLocaleString('vi-VN')} coins
                               </div>
                             </div>
                             <div>
@@ -1590,11 +1590,11 @@ export function SpectatorDashboard() {
                     </div>
                     <div>
                       <label className="text-sm text-muted-foreground mb-2 block">
-                        Số Tiền Muốn Nạp (USD)
+                        Số Tiền Muốn Nạp (coins)
                       </label>
                       <div className="relative">
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">
-                          $
+                          🪙
                         </span>
                         <input
                           type="number"
@@ -1602,19 +1602,19 @@ export function SpectatorDashboard() {
                           onChange={(e) =>
                             setDepositAmountInput(e.target.value)
                           }
-                          placeholder="0.00"
+                          placeholder="0"
                           className="w-full bg-background border border-border pl-8 pr-4 py-3.5 text-foreground text-xl font-bold placeholder-muted-foreground/60 focus:outline-none focus:border-primary transition-all"
                         />
                       </div>
                       <div className="flex gap-2 mt-3">
-                        {["50", "100", "200", "500", "1000"].map((amt) => (
+                        {["50000", "100000", "200000", "500000", "1000000"].map((amt) => (
                           <button
                             type="button"
                             key={amt}
                             onClick={() => setDepositAmountInput(amt)}
                             className={`flex-1 py-2 text-xs font-bold border transition-all ${depositAmountInput === amt ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-border hover:border-primary hover:text-foreground"}`}
                           >
-                            ${amt}
+                            {Number(amt).toLocaleString('vi-VN')}
                           </button>
                         ))}
                       </div>
@@ -1644,7 +1644,7 @@ export function SpectatorDashboard() {
                           { label: "Chi Nhánh", value: "TP. Hồ Chí Minh" },
                           {
                             label: "Nội Dung CK",
-                            value: `NAP ${(user?.fullName ?? "USER").replace(/ /g, "").toUpperCase()} ${depositAmountInput || "___"}USD`,
+                            value: `NAP ${(user?.fullName ?? "USER").replace(/ /g, "").toUpperCase()} ${depositAmountInput || "___"} coins`,
                             copy: true,
                           },
                         ].map((item, i) => (
@@ -1726,7 +1726,7 @@ export function SpectatorDashboard() {
                         </div>
                         <div className="bg-gold/10 border border-gold/40 p-3 text-xs text-[#8F7318]">
                           ⚠️ Chỉ gửi <strong>USDT TRC20</strong>. Gửi sai mạng
-                          sẽ mất tiền vĩnh viễn. Tối thiểu $50.
+                          sẽ mất tiền vĩnh viễn. Tối thiểu 50.000 coins.
                         </div>
                       </div>
                     )}
@@ -1791,7 +1791,7 @@ export function SpectatorDashboard() {
                       <p className="text-muted-foreground max-w-sm mx-auto">
                         Chúng tôi đã nhận được yêu cầu nạp{" "}
                         <span className="text-[#8F7318] font-bold">
-                          ${depositAmountInput}
+                          {Number(depositAmountInput).toLocaleString('vi-VN')} coins
                         </span>{" "}
                         của bạn. Hệ thống sẽ xử lý trong vài phút.
                       </p>
@@ -1808,7 +1808,7 @@ export function SpectatorDashboard() {
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Số Tiền</span>
                         <span className="text-[#8F7318] font-bold tabular-nums">
-                          ${depositAmountInput}
+                          {Number(depositAmountInput).toLocaleString('vi-VN')} coins
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">
@@ -1922,8 +1922,8 @@ export function SpectatorDashboard() {
                         <tr key={tx._id} className="border-t border-border hover:bg-muted/40 transition-colors">
                           <td className="px-6 py-4 text-muted-foreground font-mono text-xs">{tx._id.slice(-8).toUpperCase()}</td>
                           <td className="px-6 py-4 text-foreground">{new Date(tx.createdAt).toLocaleString('vi-VN')}</td>
-                          <td className="px-6 py-4 text-primary font-bold tabular-nums">+{tx.amount.toLocaleString('vi-VN')} VNĐ</td>
-                          <td className="px-6 py-4 text-foreground tabular-nums">{tx.balanceAfter.toLocaleString('vi-VN')} VNĐ</td>
+                          <td className="px-6 py-4 text-primary font-bold tabular-nums">+{tx.amount.toLocaleString('vi-VN')} coins</td>
+                          <td className="px-6 py-4 text-foreground tabular-nums">{tx.balanceAfter.toLocaleString('vi-VN')} coins</td>
                           <td className="px-6 py-4 text-muted-foreground text-sm">{tx.description || 'Nạp tiền vào ví'}</td>
                         </tr>
                       ))}
@@ -1955,7 +1955,7 @@ export function SpectatorDashboard() {
                   </div>
                   <div className="text-right">
                     <div className="text-sm text-muted-foreground">Tổng Tiền Thắng</div>
-                    <div className="text-2xl font-bold text-[#8F7318] tabular-nums">+{myBets.reduce((s, b) => s + (b.payoutAmount || 0), 0).toLocaleString('vi-VN')} VNĐ</div>
+                    <div className="text-2xl font-bold text-[#8F7318] tabular-nums">+{myBets.reduce((s, b) => s + (b.payoutAmount || 0), 0).toLocaleString('vi-VN')} coins</div>
                   </div>
                 </div>
               )}
@@ -2003,14 +2003,14 @@ export function SpectatorDashboard() {
                             <div className="text-primary text-xs font-medium mb-1">{betTypeLabel[bet.betType] ?? bet.betType}</div>
                             <div className="text-foreground">{bet.horseId?.name ?? '—'}</div>
                           </td>
-                          <td className="px-6 py-4 text-foreground tabular-nums">{bet.amount?.toLocaleString('vi-VN')} VNĐ</td>
+                          <td className="px-6 py-4 text-foreground tabular-nums">{bet.amount?.toLocaleString('vi-VN')} coins</td>
                           <td className="px-6 py-4 text-muted-foreground">{bet.multiplier}x</td>
                           <td className="px-6 py-4">
                             <Chip label={st.label} size="small" sx={{ backgroundColor: st.bg, color: st.color, fontWeight: 600 }} />
                           </td>
                           <td className="px-6 py-4">
                             <span className={`font-bold tabular-nums ${bet.status === 'won' ? 'text-[#8F7318]' : 'text-muted-foreground'}`}>
-                              {bet.status === 'won' ? `+${(bet.payoutAmount || 0).toLocaleString('vi-VN')} VNĐ` : '—'}
+                              {bet.status === 'won' ? `+${(bet.payoutAmount || 0).toLocaleString('vi-VN')} coins` : '—'}
                             </span>
                           </td>
                         </tr>
@@ -2060,7 +2060,7 @@ export function SpectatorDashboard() {
                     <div className="text-2xl font-bold text-[#8F7318] tabular-nums">
                       +{myBets
                         .reduce((s, b) => s + (b.payoutAmount || 0), 0)
-                        .toLocaleString('vi-VN')} VNĐ
+                        .toLocaleString('vi-VN')} coins
                     </div>
                   </div>
                 </div>
@@ -2173,7 +2173,7 @@ export function SpectatorDashboard() {
                               {horse?.name || "-"}
                             </td>
                             <td className="px-5 py-4 text-foreground tabular-nums">
-                              {bet.amount.toLocaleString('vi-VN')} VNĐ
+                              {bet.amount.toLocaleString('vi-VN')} coins
                             </td>
                             <td className="px-5 py-4 text-[#8F7318] font-semibold">
                               {bet.multiplier}x
@@ -2190,7 +2190,7 @@ export function SpectatorDashboard() {
                                 className={`font-bold tabular-nums ${bet.status === "won" ? "text-[#8F7318]" : "text-muted-foreground"}`}
                               >
                                 {bet.status === "won"
-                                  ? `+${bet.payoutAmount?.toLocaleString('vi-VN')} VNĐ`
+                                  ? `+${bet.payoutAmount?.toLocaleString('vi-VN')} coins`
                                   : "-"}
                               </span>
                             </td>
@@ -2384,7 +2384,7 @@ export function SpectatorDashboard() {
                                   </div>
                                 </td>
                                 <td className="px-5 py-4 text-right font-medium text-secondary tabular-nums">
-                                  {h.totalEarnings.toLocaleString('vi-VN')} VNĐ
+                                  {h.totalEarnings.toLocaleString('vi-VN')} coins
                                 </td>
                               </tr>
                             ))}
@@ -2508,7 +2508,7 @@ export function SpectatorDashboard() {
                                   </div>
                                 </td>
                                 <td className="px-5 py-4 text-right font-medium text-secondary tabular-nums">
-                                  {o.totalEarnings.toLocaleString('vi-VN')} VNĐ
+                                  {o.totalEarnings.toLocaleString('vi-VN')} coins
                                 </td>
                               </tr>
                             ))}
@@ -2663,7 +2663,7 @@ export function SpectatorDashboard() {
                             className={`text-sm font-bold tabular-nums ${entry.profit >= 0 ? "text-primary" : "text-destructive"}`}
                           >
                             {entry.profit >= 0 ? "+" : ""}
-                            {entry.profit.toLocaleString('vi-VN')} VNĐ
+                            {entry.profit.toLocaleString('vi-VN')} coins
                           </div>
                           <div className="text-xs text-muted-foreground">
                             Lợi nhuận
@@ -2671,7 +2671,7 @@ export function SpectatorDashboard() {
                         </div>
                         <div className="text-center min-w-[90px]">
                           <div className="text-lg font-bold text-foreground tabular-nums">
-                            {entry.totalPayout.toLocaleString('vi-VN')} VNĐ
+                            {entry.totalPayout.toLocaleString('vi-VN')} coins
                           </div>
                           <div className="text-xs text-muted-foreground">
                             Tổng nhận
@@ -2682,13 +2682,13 @@ export function SpectatorDashboard() {
                       {/* Mobile */}
                       <div className="md:hidden text-right shrink-0">
                         <div className="text-[#8F7318] font-bold text-sm tabular-nums">
-                          {entry.totalPayout.toLocaleString('vi-VN')} VNĐ
+                          {entry.totalPayout.toLocaleString('vi-VN')} coins
                         </div>
                         <div
                           className={`text-xs tabular-nums ${entry.profit >= 0 ? "text-primary" : "text-destructive"}`}
                         >
                           {entry.profit >= 0 ? "+" : ""}
-                          {entry.profit.toLocaleString('vi-VN')} VNĐ
+                          {entry.profit.toLocaleString('vi-VN')} coins
                         </div>
                       </div>
                     </div>
@@ -2747,7 +2747,7 @@ export function SpectatorDashboard() {
             <div className="bg-card border border-border p-5 flex items-center justify-between">
               <div>
                 <span className="text-muted-foreground text-sm uppercase tracking-wide font-medium">Số dư khả dụng</span>
-                <div className="text-[#8F7318] text-3xl font-extrabold tabular-nums mt-1">{walletBalance ?? "0 VNĐ"}</div>
+                <div className="text-[#8F7318] text-3xl font-extrabold tabular-nums mt-1">{walletBalance ?? "0 coins"}</div>
               </div>
               <div className="w-12 h-12 bg-gold/15 flex items-center justify-center rounded-none text-[#8F7318]">
                 <Coins className="w-6 h-6" />
@@ -2784,7 +2784,7 @@ export function SpectatorDashboard() {
                             <div className="flex items-center justify-between text-xs text-muted-foreground">
                               <span>Số lượng còn lại: <strong className="text-foreground">{reward.stock}</strong></span>
                               <span className="flex items-center gap-1 text-[#8F7318] font-bold text-sm">
-                                <Coins className="w-4 h-4" /> {(reward.coinsRequired * 1000).toLocaleString('vi-VN')} VNĐ
+                                <Coins className="w-4 h-4" /> {reward.coinsRequired.toLocaleString('vi-VN')} coins
                               </span>
                             </div>
                             <Button
@@ -2869,7 +2869,7 @@ export function SpectatorDashboard() {
                           <div className="flex justify-between items-center text-xs border-t border-border/60 pt-2">
                             <span className="text-muted-foreground">Chi phí:</span>
                             <span className="font-bold text-secondary">
-                              -{((redemption.coinsSpent < 1000 ? redemption.coinsSpent * 1000 : redemption.coinsSpent)).toLocaleString('vi-VN')} VNĐ
+                              -{redemption.coinsSpent.toLocaleString('vi-VN')} coins
                             </span>
                           </div>
                         </div>
@@ -2928,7 +2928,7 @@ export function SpectatorDashboard() {
                   <span className="text-muted-foreground">
                     Giải Thưởng:{" "}
                     <span className="text-[#8F7318] font-medium">
-                      {selectedRace.purse?.toLocaleString('vi-VN')} VNĐ
+                      {selectedRace.purse?.toLocaleString('vi-VN')} coins
                     </span>
                   </span>
                 </div>
@@ -3051,8 +3051,8 @@ export function SpectatorDashboard() {
                       {betAmount &&
                       !isNaN(Number(betAmount)) &&
                       Number(betAmount) > 0
-                        ? `${Math.floor(Number(betAmount) * BET_MULTIPLIERS[betType as BetType]).toLocaleString('vi-VN')} VNĐ`
-                        : "0 VNĐ"}
+                        ? `${Math.floor(Number(betAmount) * BET_MULTIPLIERS[betType as BetType]).toLocaleString('vi-VN')} coins`
+                        : "0 coins"}
                     </span>
                   </div>
                   <div className="flex justify-between text-xs text-muted-foreground">

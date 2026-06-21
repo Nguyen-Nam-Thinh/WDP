@@ -14,7 +14,7 @@ export function useWallet() {
       const data = await userApi.getMyWallet(token);
       const raw: number = data?.balance ?? 0;
       setBalance(raw);
-      updateUser({ balance: `${raw.toLocaleString('vi-VN')} VNĐ` });
+      updateUser({ balance: `${raw.toLocaleString('vi-VN')} coins` });
     } catch {
       // silently ignore — show last known value
     } finally {
@@ -26,7 +26,7 @@ export function useWallet() {
     fetchWallet();
   }, [fetchWallet]);
 
-  const formatted = balance !== null ? `${balance.toLocaleString('vi-VN')} VNĐ` : null;
+  const formatted = balance !== null ? `${balance.toLocaleString('vi-VN')} coins` : null;
 
   return { balance, formatted, loading, refetch: fetchWallet };
 }

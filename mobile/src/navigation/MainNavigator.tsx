@@ -12,6 +12,7 @@ import { DepositScreen } from '../screens/wallet/DepositScreen';
 import { LiveDetailScreen } from '../screens/live/LiveDetailScreen';
 import { colors } from '../constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export type MainTabParamList = {
   Home: undefined;
@@ -71,6 +72,10 @@ function WalletStackNavigator() {
 }
 
 export function MainNavigator() {
+  const insets = useSafeAreaInsets();
+  const bottomPadding = insets.bottom > 0 ? insets.bottom : 8;
+  const tabHeight = 60 + bottomPadding;
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -78,9 +83,9 @@ export function MainNavigator() {
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
-          paddingBottom: 8,
+          paddingBottom: bottomPadding,
           paddingTop: 8,
-          height: 65,
+          height: tabHeight,
         },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSubtle,

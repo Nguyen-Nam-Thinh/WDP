@@ -310,7 +310,7 @@ export function JockeyDashboard() {
                     { label: 'Tổng Cuộc Đua', value: String(overview?.totalRaces ?? 0), icon: Calendar, color: 'from-[#1F3D2B] to-[#172D20]' },
                     { label: 'Chiến Thắng', value: String(overview?.totalWins ?? 0), icon: Trophy, color: 'from-[#C9A227] to-[#8F7318]' },
                     { label: 'Tỷ Lệ Thắng', value: `${overview?.totalRaces ? Math.round(((overview?.totalWins ?? 0) / overview.totalRaces) * 100) : 0}%`, icon: TrendingUp, color: 'from-[#8C2F1B] to-[#6B1F10]' },
-                    { label: 'Số Dư Ví', value: `${(overview?.walletBalance ?? 0).toLocaleString('vi-VN')} VNĐ`, icon: Wallet, color: 'from-[#C9A227] to-[#B08D1E]' },
+                    { label: 'Số Dư Ví', value: `${(overview?.walletBalance ?? 0).toLocaleString('vi-VN')} coins`, icon: Wallet, color: 'from-[#C9A227] to-[#B08D1E]' },
                   ].map((s, i) => (
                     <div key={i} className="bg-card border border-border p-5 hover:-translate-y-0.5 transition-transform">
                       <div className="flex items-start justify-between">
@@ -343,7 +343,7 @@ export function JockeyDashboard() {
                     <div className="flex items-center gap-2">
                       <TextField
                         size="small"
-                        label="Giá thuê / race (VNĐ)"
+                        label="Giá thuê / race (coins)"
                         type="number"
                         value={askingFee}
                         onChange={(e) => setAskingFee(e.target.value)}
@@ -582,7 +582,7 @@ export function JockeyDashboard() {
                             <div className={`p-3 rounded-xl border ${(invitation.agreedFee ?? 0) > 0 ? 'bg-[#C9A227]/5 border-[#C9A227]/30' : 'bg-slate-950/50 border-border'}`}>
                               <div className="text-slate-500 text-xs uppercase font-bold mb-1 flex items-center gap-1"><Wallet className="w-3 h-3"/> Phí Thuê</div>
                               <div className={`font-bold ${(invitation.agreedFee ?? 0) > 0 ? 'text-[#C9A227]' : 'text-slate-400'}`}>
-                                {(invitation.agreedFee ?? 0) > 0 ? `${(invitation.agreedFee).toLocaleString('vi-VN')} VNĐ` : 'Miễn phí'}
+                                {(invitation.agreedFee ?? 0) > 0 ? `${(invitation.agreedFee).toLocaleString('vi-VN')} coins` : 'Miễn phí'}
                               </div>
                             </div>
                             <div className="flex items-center justify-center">
@@ -1008,7 +1008,7 @@ export function JockeyDashboard() {
                     <li className="flex justify-between"><span className="text-slate-500">Số trận thắng:</span> <span className="text-[#C9A227] font-bold">{selectedHorse.winCount ?? 0} trận</span></li>
                     <li className="flex justify-between"><span className="text-slate-500">Tỷ lệ thắng:</span> <span className="text-foreground font-medium">{selectedHorse.raceCount > 0 ? Math.round((selectedHorse.winCount / selectedHorse.raceCount) * 100) : 0}%</span></li>
                     <li className="flex justify-between"><span className="text-slate-500">Tổng điểm:</span> <span className="text-emerald-400 font-bold">{selectedHorse.totalPoints ?? 0} pts</span></li>
-                    <li className="flex justify-between"><span className="text-slate-500">Tiền thưởng:</span> <span className="text-[#1F3D2B] font-bold">{(selectedHorse.totalEarnings ?? 0).toLocaleString('vi-VN')} VNĐ</span></li>
+                    <li className="flex justify-between"><span className="text-slate-500">Tiền thưởng:</span> <span className="text-[#1F3D2B] font-bold">{(selectedHorse.totalEarnings ?? 0).toLocaleString('vi-VN')} coins</span></li>
                   </ul>
                 </div>
               </div>

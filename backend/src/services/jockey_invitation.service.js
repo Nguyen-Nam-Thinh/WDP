@@ -55,7 +55,7 @@ async function createInvitation(ownerId, { jockeyId, horseId, raceId, agreedFee 
   createNotification(jockeyId, {
     type: 'invitation_received',
     title: 'Lời mời thuê mới',
-    message: `Owner ${horse.name ? '' : ''}gửi lời thuê bạn cưỡi ngựa ${horse.name} trong race "${race.name}" — phí ${agreedFee.toLocaleString('vi-VN')} VNĐ`,
+    message: `Owner ${horse.name ? '' : ''}gửi lời thuê bạn cưỡi ngựa ${horse.name} trong race "${race.name}" — phí ${agreedFee.toLocaleString('vi-VN')} coins`,
     data: { invitationId: invitation._id, raceId, horseId },
   }).catch(() => {});
 

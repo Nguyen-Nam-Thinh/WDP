@@ -152,8 +152,8 @@ export default function BetManagement() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4 md:gap-6 xl:gap-7.5 mb-6">
         {[
           { label: 'Tổng số cược', value: loadingStats ? '...' : stats.total.toLocaleString('vi-VN'), textColor: 'text-blue-600 dark:text-blue-400' },
-          { label: 'Tổng tiền đặt', value: loadingStats ? '...' : `${stats.totalAmount.toLocaleString('vi-VN')} VNĐ`, textColor: 'text-amber-500 dark:text-amber-400' },
-          { label: 'Tổng tiền đã trả', value: loadingStats ? '...' : `${stats.totalPayout.toLocaleString('vi-VN')} VNĐ`, textColor: 'text-emerald-500 dark:text-emerald-400' },
+          { label: 'Tổng tiền đặt', value: loadingStats ? '...' : `${stats.totalAmount.toLocaleString('vi-VN')} coins`, textColor: 'text-amber-500 dark:text-amber-400' },
+          { label: 'Tổng tiền đã trả', value: loadingStats ? '...' : `${stats.totalPayout.toLocaleString('vi-VN')} coins`, textColor: 'text-emerald-500 dark:text-emerald-400' },
           { label: 'Cược đang chờ', value: loadingStats ? '...' : stats.pending, textColor: stats.pending > 0 ? 'text-red-500 dark:text-red-400' : 'text-slate-500 dark:text-slate-400' },
         ].map((s, i) => (
           <div key={i} className="rounded-sm border border-slate-200 bg-white py-6 px-7.5 shadow-default dark:border-slate-700 dark:bg-[#1c2434]">
@@ -261,7 +261,7 @@ export default function BetManagement() {
                           </span>
                         </td>
                         <td className="py-4 px-4 text-right">
-                          <p className="font-semibold text-black dark:text-white">{bet.amount.toLocaleString('vi-VN')} VNĐ</p>
+                          <p className="font-semibold text-black dark:text-white">{bet.amount.toLocaleString('vi-VN')} coins</p>
                         </td>
                         <td className="py-4 px-4 text-center">
                           <p className="font-semibold text-amber-500">{bet.multiplier}x</p>
@@ -273,7 +273,7 @@ export default function BetManagement() {
                         </td>
                         <td className="py-4 px-4 text-right">
                           {bet.status === 'won'
-                            ? <p className="font-bold text-emerald-500">+{bet.payoutAmount?.toLocaleString('vi-VN')} VNĐ</p>
+                            ? <p className="font-bold text-emerald-500">+{bet.payoutAmount?.toLocaleString('vi-VN')} coins</p>
                             : <p className="text-slate-400">—</p>}
                         </td>
                         <td className="py-4 px-4 text-sm text-slate-500">
