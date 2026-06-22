@@ -546,8 +546,8 @@ export function JockeyDashboard() {
                           <div className="flex items-center justify-between mb-5 border-b border-border pb-5">
                             <div className="flex items-center gap-4">
                               <div className="w-14 h-14 bg-slate-800 rounded-2xl flex items-center justify-center border border-border group-hover:border-[#C9A227]/50 transition-colors overflow-hidden">
-                                {horse.imageUrl
-                                  ? <img src={horse.imageUrl} alt={horse.name} className="w-full h-full object-cover" />
+                                {horse.primaryImageUrl
+                                  ? <img src={horse.primaryImageUrl} alt={horse.name} className="w-full h-full object-cover" />
                                   : <Star className="w-7 h-7 text-[#C9A227]" />}
                               </div>
                               <div>

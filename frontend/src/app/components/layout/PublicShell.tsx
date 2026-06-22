@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link, useLocation } from "react-router";
 import { useAuth } from "../../hooks/useAuth";
 import { ProfileDropdown } from "../ProfileDropdown";
+import { BellButton } from "./AppShell";
 
 const NAV_LINKS = [
   { to: "/tournaments", label: "Giải Đấu" },
@@ -10,7 +11,7 @@ const NAV_LINKS = [
 ];
 
 export function PublicShell({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { token, user } = useAuth();
   const { pathname } = useLocation();
 
   return (
@@ -36,7 +37,10 @@ export function PublicShell({ children }: { children: ReactNode }) {
               </Link>
             ))}
             {user ? (
-              <ProfileDropdown />
+              <div className="flex items-center gap-4">
+                {token && <BellButton token={token} role={user.role ?? ''} />}
+                <ProfileDropdown />
+              </div>
             ) : (
               <>
                 <Link to="/login" className="text-foreground transition-colors hover:text-primary">
