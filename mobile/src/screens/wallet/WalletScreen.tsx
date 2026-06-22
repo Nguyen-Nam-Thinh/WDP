@@ -3,7 +3,7 @@ import {
   View, Text, FlatList, StyleSheet, RefreshControl, ActivityIndicator, TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { userService } from '../../services/api/user.service';
 import { Wallet, Transaction, TransactionType } from '../../types';
@@ -83,6 +83,9 @@ export function WalletScreen() {
   }, []);
 
   useEffect(() => { load(); }, []);
+
+  // Reload mỗi khi màn được focus (vd: quay về sau khi nạp Stripe)
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   if (loading) {
     return (
