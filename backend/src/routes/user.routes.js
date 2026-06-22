@@ -32,6 +32,10 @@ const availabilitySchema = z.object({
   askingFeePerRace: z.number().min(0).optional(),
 });
 
+const topupSchema = z.object({
+  coins: z.number().int().positive(),
+});
+
 router.use(authenticate);
 
 router.get('/me', userController.getMe);
@@ -39,6 +43,7 @@ router.patch('/me', validate(updateProfileSchema), userController.updateMe);
 router.patch('/me/availability', validate(availabilitySchema), userController.updateAvailability);
 router.post('/me/upload-avatar', uploadSingle, userController.uploadAvatar);
 router.get('/me/wallet', userController.getMyWallet);
+router.post('/me/topup', validate(topupSchema), userController.createTopup);
 router.get('/me/transactions', userController.getMyTransactions);
 router.get('/me/race-results', userController.getMyRaceResults);
 router.get('/me/overview', userController.getOverviewStats);

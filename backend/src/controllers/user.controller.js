@@ -1,7 +1,17 @@
 const { Types } = require('mongoose');
 const userService = require('../services/user.service');
 const walletService = require('../services/wallet.service');
+const paymentService = require('../services/payment.service');
 const { sendSuccess } = require('../utils/response');
+
+async function createTopup(req, res, next) {
+  try {
+    const result = await paymentService.createTopupSession(req.user._id, req.body.coins);
+    sendSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+}
 
 async function getMe(req, res, next) {
   try {
@@ -338,5 +348,5 @@ async function updateAvailability(req, res, next) {
 module.exports = {
   getMe, updateMe, getMyWallet, getMyTransactions, getMyRaceResults,
   uploadAvatar, getJockeys, getReferees, getUsers, toggleActive, adminUpdateUser,
-  getOverviewStats, getMonthlyStats, updateAvailability,
+  getOverviewStats, getMonthlyStats, updateAvailability, createTopup,
 };
