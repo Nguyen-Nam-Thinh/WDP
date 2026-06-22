@@ -26,12 +26,14 @@ const transactionSchema = new Schema(
     relatedId: { type: Schema.Types.ObjectId },
     relatedModel: { type: String },
     description: { type: String },
+    stripeSessionId: { type: String },
   },
   { timestamps: { createdAt: true, updatedAt: false } },
 );
 
 transactionSchema.index({ walletId: 1, createdAt: -1 });
 transactionSchema.index({ userId: 1, type: 1 });
+transactionSchema.index({ stripeSessionId: 1 }, { unique: true, sparse: true });
 
 const Transaction = mongoose.model('Transaction', transactionSchema);
 

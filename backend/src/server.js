@@ -6,6 +6,7 @@ const morgan = require('morgan');
 const { env } = require('./config/env');
 const { connectDB } = require('./config/database');
 const apiRoutes = require('./routes');
+const webhookRoutes = require('./routes/webhook.routes');
 const { errorHandler, notFound } = require('./middleware/error.middleware');
 const { startRaceStatusJob } = require('./jobs/raceStatus.job');
 const { initSocket } = require('./sockets');
@@ -17,6 +18,10 @@ app.use(helmet());
 const allowedOrigins = env.CLIENT_URL ? env.CLIENT_URL.split(',') : [];
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+
+// Stripe webhook cần raw body -> phải mount TRƯỚC express.json()
+app.use('/api/v1/webhooks', webhookRoutes);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
