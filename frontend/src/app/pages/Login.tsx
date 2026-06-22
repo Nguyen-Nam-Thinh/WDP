@@ -163,11 +163,11 @@ export function Login() {
 
         <div className="relative z-10 w-full text-left">
           <div className="flex items-center gap-3 mb-6">
-             <img src="/images/logo.png" alt="The Paddock" className="w-12 h-12 object-contain" />
-             <span className="font-serif text-white font-bold tracking-wide text-lg drop-shadow-md">The Paddock</span>
+            <img src="/images/logo.png" alt="The Paddock" className="w-12 h-12 object-contain" />
+            <span className="font-serif text-white font-bold tracking-wide text-lg drop-shadow-md">The Paddock</span>
           </div>
           <h1 className="font-serif text-2xl xl:text-3xl font-bold text-white mb-2 leading-tight drop-shadow-lg">
-            Trải nghiệm đua ngựa<br/>đẳng cấp quốc tế
+            Quản Lý Giải Đua Ngựa<br />Chuyên Nghiệp & Thông Minh
           </h1>
           <p className="text-sm text-[#F7F3EA]/90 max-w-md drop-shadow-md">
             Nền tảng quản lý và theo dõi đua ngựa chuyên nghiệp. Cập nhật kết quả trực tiếp và thống kê chi tiết.

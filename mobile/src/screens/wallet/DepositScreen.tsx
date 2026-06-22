@@ -10,15 +10,15 @@ import { colors, spacing, radius, fontSize, fontWeight } from '../../constants/t
 import { userService } from '../../services/api/user.service';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-const COIN_RATE = 1; // 1 coin = 1 VND
+const COIN_RATE = 1000; // 1 coin = 1000 VND
 
 const QUICK_AMOUNTS = [
-  { coins: 50000,    vnd: 50_000 },
-  { coins: 100000,   vnd: 100_000 },
-  { coins: 200000,   vnd: 200_000 },
-  { coins: 500000,   vnd: 500_000 },
-  { coins: 1000000,  vnd: 1_000_000 },
-  { coins: 2000000,  vnd: 2_000_000 },
+  { coins: 50,    vnd: 50_000 },
+  { coins: 100,   vnd: 100_000 },
+  { coins: 200,   vnd: 200_000 },
+  { coins: 500,   vnd: 500_000 },
+  { coins: 1000,  vnd: 1_000_000 },
+  { coins: 2000,  vnd: 2_000_000 },
 ];
 
 const BANK_ACCOUNTS = [
@@ -195,7 +195,7 @@ export function DepositScreen() {
         {step === 2 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Nhập Số Coins Cần Nạp</Text>
-            <Text style={styles.sectionSubtitle}>Tỷ giá: 1 Coin = 1 VND</Text>
+            <Text style={styles.sectionSubtitle}>Tỷ giá: 1 Coin = 1.000 VND</Text>
 
             <View style={styles.inputCard}>
               <View style={styles.inputContainer}>

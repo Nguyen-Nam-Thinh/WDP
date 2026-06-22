@@ -174,7 +174,7 @@ function NotificationPanel({ token, role, onClose }: { token: string; role: stri
   );
 }
 
-function BellButton({ token, role }: { token: string; role: string }) {
+export function BellButton({ token, role }: { token: string; role: string }) {
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
