@@ -5,7 +5,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import * as WebBrowser from 'expo-web-browser';
 import { colors, spacing, radius, fontSize, fontWeight } from '../../constants/theme';
+import { userService } from '../../services/api/user.service';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 const COIN_RATE = 1; // 1 coin = 1 VND
@@ -39,6 +41,7 @@ export function DepositScreen() {
   const [coinAmount, setCoinAmount] = useState('');
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [copied, setCopied] = useState<string | null>(null);
+  const [paying, setPaying] = useState(false);
 
   const coins = Number(coinAmount) || 0;
   const vndAmount = coins * COIN_RATE;
@@ -52,6 +55,29 @@ export function DepositScreen() {
     // we show a beautiful temporary banner.
     setCopied(key);
     setTimeout(() => setCopied(null), 1500);
+  };
+
+  const handleStripePay = async () => {
+    if (coins <= 0) {
+      Alert.alert('Lỗi', 'Vui lòng nhập số coin hợp lệ');
+      return;
+    }
+    setPaying(true);
+    try {
+      const { url } = await userService.createTopup(coins);
+      // Stripe Checkout success_url là http(s) nên không tự đóng được;
+      // user thanh toán xong rồi đóng browser -> webhook đã cộng coin server-side.
+      await WebBrowser.openBrowserAsync(url);
+      Alert.alert(
+        'Đã mở thanh toán',
+        'Sau khi thanh toán thành công, coin sẽ được cộng vào ví trong giây lát.',
+        [{ text: 'OK', onPress: () => navigation.goBack() }],
+      );
+    } catch (err: any) {
+      Alert.alert('Lỗi', err?.message || 'Không thể tạo phiên thanh toán');
+    } finally {
+      setPaying(false);
+    }
   };
 
   const handleComplete = () => {
@@ -218,12 +244,18 @@ export function DepositScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.nextBtn, { flex: 1, marginTop: 0 }, coins <= 0 && styles.btnDisabled]}
-                disabled={coins <= 0}
-                onPress={() => setStep(3)}
+                style={[styles.nextBtn, { flex: 1, marginTop: 0 }, (coins <= 0 || paying) && styles.btnDisabled]}
+                disabled={coins <= 0 || paying}
+                onPress={handleStripePay}
               >
-                <Text style={styles.nextBtnText}>Tiếp Tục</Text>
-                <Ionicons name="arrow-forward" size={18} color="#FFF" />
+                {paying ? (
+                  <ActivityIndicator color="#FFF" size="small" />
+                ) : (
+                  <>
+                    <Ionicons name="card-outline" size={18} color="#FFF" />
+                    <Text style={styles.nextBtnText}>Thanh Toán Qua Stripe</Text>
+                  </>
+                )}
               </TouchableOpacity>
             </View>
           </View>

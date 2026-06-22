@@ -244,6 +244,20 @@ export const userApi = {
     return json.data;
   },
 
+  createTopup: async (token: string, coins: number): Promise<{ url: string; sessionId: string }> => {
+    const response = await fetchWithAuth(`${API_URL}/users/me/topup`, {
+      method: "POST",
+      headers: authHeader(token),
+      body: JSON.stringify({ coins }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(getApiErrorMessage((errorData as any).message));
+    }
+    const json = await response.json();
+    return json.data;
+  },
+
   uploadAvatar: async (token: string, file: File): Promise<UserProfile> => {
     const formData = new FormData();
     formData.append("file", file);

@@ -25,6 +25,11 @@ export const userService = {
     return res.data.data;
   },
 
+  createTopup: async (coins: number): Promise<{ url: string; sessionId: string }> => {
+    const res = await apiClient.post('/users/me/topup', { coins });
+    return res.data.data;
+  },
+
   uploadAvatar: async (file: { uri: string; name: string; type: string }): Promise<User> => {
     const formData = new FormData();
     formData.append('file', file as any);
