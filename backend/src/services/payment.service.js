@@ -30,8 +30,8 @@ async function createTopupSession(userId, coins) {
       },
     ],
     metadata: { userId: String(userId), coins: String(coins) },
-    success_url: `${firstClientUrl()}/wallet?topup=success`,
-    cancel_url: `${firstClientUrl()}/wallet?topup=cancel`,
+    success_url: `${firstClientUrl()}/spectator/deposit-history?topup=success`,
+    cancel_url: `${firstClientUrl()}/spectator/deposit?topup=cancel`,
   });
 
   return { url: session.url, sessionId: session.id };

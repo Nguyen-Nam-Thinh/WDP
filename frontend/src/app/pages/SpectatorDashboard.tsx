@@ -100,7 +100,7 @@ export function SpectatorDashboard() {
   const navigate = useNavigate();
   const { user, token } = useAuth();
   const { balance, formatted: walletBalance, refetch: refetchWallet } = useWallet();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const activeTab =
     pathname === "/spectator/live"
       ? "live"
@@ -153,6 +153,25 @@ export function SpectatorDashboard() {
   useEffect(() => {
     if (token && activeTab === "overview") loadOverview();
   }, [token, activeTab]);
+
+  // Quay về từ Stripe Checkout
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    const topup = params.get("topup");
+    if (topup === "success") {
+      toast.success("Nạp coin thành công! Số dư sẽ cập nhật trong giây lát.");
+      // webhook cộng coin bất đồng bộ -> refetch sau vài giây
+      refetchWallet();
+      const t = setTimeout(() => refetchWallet(), 3000);
+      navigate("/spectator/deposit-history", { replace: true });
+      return () => clearTimeout(t);
+    }
+    if (topup === "cancel") {
+      toast.info("Bạn đã hủy giao dịch nạp coin");
+      navigate("/spectator/deposit", { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
 
   // ── Real tournaments ──
   const [tournamentsData, setTournamentsData] = useState<Tournament[]>([]);
@@ -270,6 +289,7 @@ export function SpectatorDashboard() {
   const [redeemingId, setRedeemingId] = useState<string | null>(null);
   const PAGE_SIZE = 10;
   const [depositStep, setDepositStep] = useState(1);
+  const [stripeLoading, setStripeLoading] = useState(false);
   const [selectedTournamentForDetails, setSelectedTournamentForDetails] =
     useState<any>(null);
   const [selectedRace, setSelectedRace] = useState<any>(null);
@@ -380,6 +400,23 @@ export function SpectatorDashboard() {
       toast.error(err.message || "Đổi thưởng thất bại");
     } finally {
       setRedeemingId(null);
+    }
+  };
+
+  const handleStripeTopup = async () => {
+    if (!token) return;
+    const coins = Number(depositAmountInput);
+    if (!coins || coins <= 0) {
+      toast.error("Vui lòng nhập số coin hợp lệ");
+      return;
+    }
+    setStripeLoading(true);
+    try {
+      const { url } = await userApi.createTopup(token, coins);
+      window.location.href = url;
+    } catch (err: any) {
+      toast.error(err.message || "Không thể tạo phiên thanh toán");
+      setStripeLoading(false);
     }
   };
 
@@ -1864,8 +1901,14 @@ export function SpectatorDashboard() {
                 {depositStep < 3 && (
                   <Button
                     variant="contained"
-                    disabled={depositStep === 2 && !depositAmountInput}
-                    onClick={() => setDepositStep((s) => s + 1)}
+                    disabled={(depositStep === 2 && !depositAmountInput) || stripeLoading}
+                    onClick={() => {
+                      if (depositStep === 2) {
+                        handleStripeTopup();
+                      } else {
+                        setDepositStep((s) => s + 1);
+                      }
+                    }}
                     sx={{
                       background: "#1F3D2B",
                       color: "#F7F3EA",
@@ -1878,7 +1921,11 @@ export function SpectatorDashboard() {
                       "&:disabled": { background: "#EDE7D8", color: "#7A7468" },
                     }}
                   >
-                    {depositStep === 1 ? "Tiếp Theo →" : "Xác Nhận Nạp Tiền"}
+                    {depositStep === 1
+                      ? "Tiếp Theo →"
+                      : stripeLoading
+                        ? "Đang chuyển đến Stripe..."
+                        : "Thanh Toán Qua Stripe"}
                   </Button>
                 )}
               </div>
