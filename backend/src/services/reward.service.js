@@ -147,9 +147,56 @@ async function getMyRedemptions(userId) {
     .sort({ createdAt: -1 });
 }
 
+const cloudinaryService = require('./cloudinary.service');
+
+async function getAdminRewards() {
+  return Reward.find({}).sort({ createdAt: -1 });
+}
+
+async function createReward(rewardData) {
+  return Reward.create(rewardData);
+}
+
+async function updateReward(id, rewardData) {
+  const reward = await Reward.findByIdAndUpdate(id, rewardData, { new: true, runValidators: true });
+  if (!reward) throw new AppError(404, 'Không tìm thấy phần thưởng');
+  return reward;
+}
+
+async function deleteReward(id) {
+  const hasRedemptions = await Redemption.exists({ rewardId: id });
+  if (hasRedemptions) {
+    const reward = await Reward.findByIdAndUpdate(id, { isActive: false }, { new: true });
+    if (!reward) throw new AppError(404, 'Không tìm thấy phần thưởng');
+    return { success: true, message: 'Phần thưởng đã được chuyển sang ngừng hoạt động do đã có người quy đổi.', reward };
+  } else {
+    const reward = await Reward.findByIdAndDelete(id);
+    if (!reward) throw new AppError(404, 'Không tìm thấy phần thưởng');
+    return { success: true, message: 'Đã xóa phần thưởng thành công.', reward };
+  }
+}
+
+async function uploadRewardImage(fileBuffer) {
+  const { url } = await cloudinaryService.uploadSingle(fileBuffer, 'hrtms/rewards');
+  return { imageUrl: url };
+}
+
+async function getAllRedemptions() {
+  return Redemption.find({})
+    .populate('userId', 'fullName email')
+    .populate('rewardId', 'name description imageUrl coinsRequired type')
+    .sort({ createdAt: -1 });
+}
+
 module.exports = {
   seedRewards,
   getRewards,
   redeemReward,
-  getMyRedemptions
+  getMyRedemptions,
+  getAdminRewards,
+  createReward,
+  updateReward,
+  deleteReward,
+  uploadRewardImage,
+  getAllRedemptions
 };

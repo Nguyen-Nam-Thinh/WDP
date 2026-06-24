@@ -10,6 +10,7 @@ import RegistrationApproval from './components/pages/RegistrationApproval';
 import RefereeAssignment from './components/pages/RefereeAssignment';
 import ResultsPublishing from './components/pages/ResultsPublishing';
 import BetManagement from './components/pages/BetManagement';
+import RewardManagement from './components/pages/RewardManagement';
 import Login from './pages/Login';
 import NotFoundPage from './pages/NotFoundPage';
 import { AdminAuthProvider, useAdminAuth } from './context/AdminAuthContext';
@@ -64,6 +65,7 @@ export default function App() {
                 <Route path="/referees" element={<RefereeAssignment />} />
                 <Route path="/results" element={<ResultsPublishing />} />
                 <Route path="/bets" element={<BetManagement />} />
+                <Route path="/rewards" element={<RewardManagement />} />
               </Route>
               <Route path="*" element={<NotFoundPage />} />
             </Routes>

@@ -10,6 +10,7 @@ import {
   Medal,
   Wallet,
   ChevronLeft,
+  Gift,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -28,6 +29,7 @@ const menuItems = [
   { path: '/referees', label: 'Trọng tài', icon: UserCheck },
   { path: '/results', label: 'Kết quả', icon: Medal },
   { path: '/bets', label: 'Quản lý cược', icon: Wallet },
+  { path: '/rewards', label: 'Phần thưởng', icon: Gift },
 ];
 
 export default function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed, setSidebarCollapsed }: SidebarProps) {
