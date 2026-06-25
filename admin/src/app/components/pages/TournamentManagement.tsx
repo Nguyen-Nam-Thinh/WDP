@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
-import { Edit, Trash2, Plus, Calendar, Clock, Trophy, Eye, RefreshCw, X, AlertCircle, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { Edit, Trash2, Plus, Calendar, Clock, Trophy, Eye, RefreshCw, X, AlertCircle, ChevronLeft, ChevronRight, Search, TrendingUp, Flag } from 'lucide-react';
 import { toast } from 'sonner';
 import { tournamentApi, type Tournament, type CreateTournamentData } from '../../api/tournament';
 import { raceApi, type Race, type CreateRaceData } from '../../api/race';
@@ -307,6 +307,7 @@ export default function TournamentManagement() {
   const [tDialog, setTDialog] = useState(false);
   const [editingT, setEditingT] = useState<Tournament | null>(null);
   const [tSearch, setTSearch] = useState('');
+  const [tSort, setTSort] = useState<'newest' | 'oldest' | 'status'>('newest');
 
   // Races
   const [races, setRaces] = useState<Race[]>([]);
@@ -324,14 +325,27 @@ export default function TournamentManagement() {
   const T_PER_PAGE = 6;
   const R_PER_PAGE = 10;
 
+  const STATUS_SORT_ORDER: Record<string, number> = { ongoing: 0, upcoming: 1, finished: 2, cancelled: 3 };
+
   const filteredTournaments = tSearch
     ? tournaments.filter(t =>
         t.name.toLowerCase().includes(tSearch.toLowerCase()) ||
         (t.location || '').toLowerCase().includes(tSearch.toLowerCase())
       )
     : tournaments;
-  const pagedTournaments = filteredTournaments.slice((tPage - 1) * T_PER_PAGE, tPage * T_PER_PAGE);
-  const tTotalPages = Math.ceil(filteredTournaments.length / T_PER_PAGE);
+
+  const sortedTournaments = [...filteredTournaments].sort((a, b) => {
+    if (tSort === 'status') {
+      const diff = (STATUS_SORT_ORDER[a.status] ?? 99) - (STATUS_SORT_ORDER[b.status] ?? 99);
+      if (diff !== 0) return diff;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
+    if (tSort === 'oldest') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+
+  const pagedTournaments = sortedTournaments.slice((tPage - 1) * T_PER_PAGE, tPage * T_PER_PAGE);
+  const tTotalPages = Math.ceil(sortedTournaments.length / T_PER_PAGE);
 
   const filteredRaces = rSearch
     ? races.filter(r =>
@@ -394,6 +408,7 @@ export default function TournamentManagement() {
 
   const ongoingCount = tournaments.filter(t => t.status === 'ongoing').length;
   const upcomingCount = tournaments.filter(t => t.status === 'upcoming').length;
+  const raceCount = loadingR && races.length === 0 ? null : races.length;
 
   return (
     <>
@@ -505,8 +520,8 @@ export default function TournamentManagement() {
           {/* ── Tab 0: Tournaments ── */}
           {tab === 0 && (
             <div>
-              {/* Search */}
-              <div className="mb-5">
+              {/* Search & Sort */}
+              <div className="mb-5 flex flex-col sm:flex-row gap-3">
                 <div className="relative w-full max-w-sm">
                   <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
@@ -517,6 +532,15 @@ export default function TournamentManagement() {
                     className="w-full rounded border border-slate-300 bg-transparent py-2 pl-9 pr-4 text-sm outline-none focus:border-blue-500 dark:border-slate-600 dark:bg-slate-800/50 dark:text-white"
                   />
                 </div>
+                <select
+                  value={tSort}
+                  onChange={e => { setTSort(e.target.value as typeof tSort); setTPage(1); }}
+                  className="rounded border border-slate-300 bg-transparent py-2 px-3 text-sm outline-none focus:border-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                >
+                  <option value="newest">Mới nhất</option>
+                  <option value="oldest">Cũ nhất</option>
+                  <option value="status">Theo trạng thái</option>
+                </select>
               </div>
               {loadingT ? (
                 <div className="flex justify-center py-12"><RefreshCw className="animate-spin text-blue-500" size={32} /></div>
@@ -586,7 +610,7 @@ export default function TournamentManagement() {
                   >
                     <ChevronLeft size={15} /> Trước
                   </button>
-                  <span className="text-sm text-slate-500">Trang {tPage} / {tTotalPages} <span className="text-xs text-slate-400">(tổng {tournaments.length})</span></span>
+                  <span className="text-sm text-slate-500">Trang {tPage} / {tTotalPages} <span className="text-xs text-slate-400">(tổng {sortedTournaments.length})</span></span>
                   <button
                     onClick={() => setTPage(p => Math.min(tTotalPages, p + 1))}
                     disabled={tPage >= tTotalPages}

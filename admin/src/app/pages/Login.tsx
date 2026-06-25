@@ -112,7 +112,7 @@ export default function Login() {
                 </div>
               </div>
 
-              <div className="mb-6 flex items-center justify-between">
+              <div className="mb-6 flex items-center">
                 <label htmlFor="remember" className="flex cursor-pointer items-center gap-2">
                   <div className="relative">
                     <input type="checkbox" id="remember" className="sr-only" />
@@ -122,9 +122,6 @@ export default function Login() {
                   </div>
                   <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Ghi nhớ đăng nhập</p>
                 </label>
-                <a href="#" className="text-sm font-medium text-blue-600 hover:underline dark:text-blue-500">
-                  Quên mật khẩu?
-                </a>
               </div>
 
               <button
