@@ -4,7 +4,7 @@ let io = null;
 
 function initSocket(httpServer, clientUrl) {
   const origins = clientUrl
-    ? [clientUrl, 'http://localhost:5173', 'http://localhost:3000']
+    ? [...clientUrl.split(',').map(u => u.trim()), 'http://localhost:5173', 'http://localhost:3000']
     : '*';
 
   io = new Server(httpServer, {
