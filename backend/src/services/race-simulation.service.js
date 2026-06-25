@@ -9,7 +9,7 @@ const { settleBetsWithSession, refundRaceBets } = require('./bet.service');
 const { createManyNotifications } = require('./notification.service');
 const { completeInvitationsForRace } = require('./jockey_invitation.service');
 const { Bet } = require('../models/bet.model');
-const { getIO } = require('../sockets');
+const { getIO, setActiveRace, clearActiveRace } = require('../sockets');
 const {
   POINTS_BY_GRADE,
   PRIZE_RATIO,
@@ -272,24 +272,27 @@ async function runRaceSimulation(raceId) {
   const raceDurationMs = calcRaceDurationMs(race.distance ?? 1000);
 
   // ── Emit race:started with per-horse speed profiles ───────────────────────
+  const raceStartedPayload = {
+    raceId,
+    raceName: race.name,
+    raceDurationMs,
+    trackCondition,
+    horses: ordered.map(e => ({
+      horseId: e.horseId.toString(),
+      horseName: e.horseName,
+      jockeyName: e.jockeyName,
+      jockeyStyle: e.jockeyStyle,
+      speedProfile: e.speedProfile,   // [phase1Factor, phase2Factor, phase3Factor]
+      finalRank: e.position,          // actual finish rank — drives animation curve
+      noisePhase: Math.random() * Math.PI * 2,
+    })),
+  };
+
   let io;
   try {
     io = getIO();
-    io.to(`race:${raceId}`).emit('race:started', {
-      raceId,
-      raceName: race.name,
-      raceDurationMs,
-      trackCondition,
-      horses: ordered.map(e => ({
-        horseId: e.horseId.toString(),
-        horseName: e.horseName,
-        jockeyName: e.jockeyName,
-        jockeyStyle: e.jockeyStyle,
-        speedProfile: e.speedProfile,   // [phase1Factor, phase2Factor, phase3Factor]
-        finalRank: e.position,          // actual finish rank — drives animation curve
-        noisePhase: Math.random() * Math.PI * 2,
-      })),
-    });
+    io.to(`race:${raceId}`).emit('race:started', raceStartedPayload);
+    setActiveRace(raceId, raceStartedPayload);
   } catch { /* socket optional */ }
 
   // ── Wait for race animation window ────────────────────────────────────────
@@ -326,6 +329,7 @@ async function runRaceSimulation(raceId) {
             : 0,
       })),
     });
+    clearActiveRace(raceId);
   } catch { /* socket optional */ }
 
   // ── Send in-app notifications (fire-and-forget) ───────────────────────────

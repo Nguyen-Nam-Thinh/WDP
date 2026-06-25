@@ -91,8 +91,8 @@ export function useRaceSocket(raceId: string, token: string | null) {
   const animRef = useRef<{ horses: AnimHorse[]; startTime: number; duration: number } | null>(null);
 
   // ── rAF animation loop (runs at ~60fps) ──
-  const startAnimLoop = (animHorses: AnimHorse[], durationMs: number) => {
-    const startTime = performance.now();
+  const startAnimLoop = (animHorses: AnimHorse[], durationMs: number, offsetMs = 0) => {
+    const startTime = performance.now() - offsetMs;
     animRef.current = { horses: animHorses, startTime, duration: durationMs };
 
     const loop = () => {
@@ -164,6 +164,7 @@ export function useRaceSocket(raceId: string, token: string | null) {
       raceDurationMs: number;
       trackCondition?: string;
       horses: AnimHorse[];
+      elapsedMs?: number; // present when joining a race already in progress
     }) => {
       if (data.raceId !== raceId) return;
 
@@ -176,7 +177,7 @@ export function useRaceSocket(raceId: string, token: string | null) {
       setPhase('racing');
 
       stopAnimLoop();
-      startAnimLoop(data.horses, data.raceDurationMs ?? 30_000);
+      startAnimLoop(data.horses, data.raceDurationMs ?? 30_000, data.elapsedMs ?? 0);
     });
 
     // race:progress kept for backwards compat but no longer emitted by backend
