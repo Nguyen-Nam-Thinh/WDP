@@ -1,66 +1,26 @@
-import { 
-  Users, 
-  Trophy, 
-  Flag, 
-  ClipboardList, 
-  TrendingUp, 
-  TrendingDown, 
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
+import {
+  Users,
+  Trophy,
+  Flag,
+  ClipboardList,
+  TrendingUp,
+  TrendingDown,
   CheckCircle,
   Megaphone,
   PlusCircle,
   UserPlus,
   ArrowRight,
-  MoreHorizontal
+  MoreHorizontal,
+  RefreshCw,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-
-const statCards = [
-  {
-    label: 'Tổng người dùng',
-    value: '1,245',
-    change: '+12%',
-    up: true,
-    sub: 'so với tháng trước',
-    color: 'text-blue-600 dark:text-blue-400',
-    bg: 'bg-blue-100/50 dark:bg-blue-900/30',
-    icon: Users,
-    gradient: 'from-blue-500/20 to-transparent'
-  },
-  {
-    label: 'Giải đấu đang diễn ra',
-    value: '5',
-    change: '8 sắp tới',
-    up: true,
-    sub: 'giải đấu sắp tới',
-    color: 'text-amber-500 dark:text-amber-400',
-    bg: 'bg-amber-100/50 dark:bg-amber-900/30',
-    icon: Trophy,
-    gradient: 'from-amber-500/20 to-transparent'
-  },
-  {
-    label: 'Ngựa đang thi đấu',
-    value: '87',
-    change: '+15 mới',
-    up: true,
-    sub: 'ngựa đăng ký mới',
-    color: 'text-emerald-500 dark:text-emerald-400',
-    bg: 'bg-emerald-100/50 dark:bg-emerald-900/30',
-    icon: Flag,
-    gradient: 'from-emerald-500/20 to-transparent'
-  },
-  {
-    label: 'Đơn chờ duyệt',
-    value: '23',
-    change: 'Cần xử lý',
-    up: false,
-    sub: 'cần xử lý ngay',
-    color: 'text-rose-500 dark:text-rose-400',
-    bg: 'bg-rose-100/50 dark:bg-rose-900/30',
-    icon: ClipboardList,
-    gradient: 'from-rose-500/20 to-transparent'
-  },
-];
+import { userApi } from '../../api/user';
+import { tournamentApi } from '../../api/tournament';
+import { registrationApi } from '../../api/registration';
+import { raceApi } from '../../api/race';
 
 const chartData = [
   { name: 'Th 1', users: 400, revenue: 240 },
@@ -70,13 +30,6 @@ const chartData = [
   { name: 'Th 5', users: 700, revenue: 480 },
   { name: 'Th 6', users: 850, revenue: 600 },
   { name: 'Th 7', users: 1245, revenue: 850 },
-];
-
-const upcomingTournaments = [
-  { name: 'Giải Vô Địch Quốc Gia 2026', date: '15/06/2026', location: 'Sài Gòn', status: 'upcoming', participants: 48 },
-  { name: 'Cúp Mùa Hè', date: '20/07/2026', location: 'Hà Nội', status: 'preparing', participants: 32 },
-  { name: 'Giải Thiếu Niên', date: '10/08/2026', location: 'Đà Nẵng', status: 'preparing', participants: 24 },
-  { name: 'Cúp Mùa Thu', date: '05/09/2026', location: 'Hải Phòng', status: 'preparing', participants: 40 },
 ];
 
 const recentActivities = [
@@ -89,11 +42,103 @@ const recentActivities = [
 const statusMap: Record<string, { label: string; textClass: string; bgClass: string; dotClass: string }> = {
   upcoming: { label: 'Sắp diễn ra', textClass: 'text-blue-700 dark:text-blue-400', bgClass: 'bg-blue-50 dark:bg-blue-900/20', dotClass: 'bg-blue-500' },
   preparing: { label: 'Chuẩn bị', textClass: 'text-amber-700 dark:text-amber-400', bgClass: 'bg-amber-50 dark:bg-amber-900/20', dotClass: 'bg-amber-500' },
+  ongoing: { label: 'Đang diễn ra', textClass: 'text-emerald-700 dark:text-emerald-400', bgClass: 'bg-emerald-50 dark:bg-emerald-900/20', dotClass: 'bg-emerald-500' },
   active: { label: 'Đang diễn ra', textClass: 'text-emerald-700 dark:text-emerald-400', bgClass: 'bg-emerald-50 dark:bg-emerald-900/20', dotClass: 'bg-emerald-500' },
+  finished: { label: 'Đã kết thúc', textClass: 'text-slate-700 dark:text-slate-400', bgClass: 'bg-slate-50 dark:bg-slate-900/20', dotClass: 'bg-slate-400' },
 };
 
+interface DashboardStats {
+  totalUsers: number;
+  ongoingTournaments: number;
+  activeRegistrations: number;
+  pendingRaces: number;
+}
+
 export default function Dashboard() {
-  const today = new Date().toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const navigate = useNavigate();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [upcomingTournaments, setUpcomingTournaments] = useState<any[]>([]);
+  const [loadingTournaments, setLoadingTournaments] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      setLoadingStats(true);
+      try {
+        const [usersRes, ongoingRes, upcomingTRes, regsRes, racesOpenRes] = await Promise.all([
+          userApi.getUsers({ page: 1, limit: 1 }),
+          tournamentApi.list(1, 1, 'ongoing'),
+          tournamentApi.list(1, 5),
+          registrationApi.list({ page: 1, limit: 1, status: 'active' }),
+          raceApi.list({ status: 'open', page: 1, limit: 1 }),
+        ]);
+        setStats({
+          totalUsers: usersRes.total,
+          ongoingTournaments: ongoingRes.total,
+          activeRegistrations: regsRes.total,
+          pendingRaces: racesOpenRes.total,
+        });
+        setUpcomingTournaments(upcomingTRes.tournaments.slice(0, 4));
+      } catch {
+        /* ignore stats fetch errors */
+      } finally {
+        setLoadingStats(false);
+        setLoadingTournaments(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  const statCards = [
+    {
+      label: 'Tổng người dùng',
+      value: loadingStats ? '...' : (stats?.totalUsers ?? 0).toLocaleString('vi-VN'),
+      change: 'Hệ thống',
+      up: true,
+      sub: 'tài khoản đã đăng ký',
+      color: 'text-blue-600 dark:text-blue-400',
+      bg: 'bg-blue-100/50 dark:bg-blue-900/30',
+      icon: Users,
+      gradient: 'from-blue-500/20 to-transparent',
+      onClick: () => navigate('/users'),
+    },
+    {
+      label: 'Giải đấu đang diễn ra',
+      value: loadingStats ? '...' : (stats?.ongoingTournaments ?? 0).toString(),
+      change: 'Đang hoạt động',
+      up: true,
+      sub: 'giải đấu đang chạy',
+      color: 'text-amber-500 dark:text-amber-400',
+      bg: 'bg-amber-100/50 dark:bg-amber-900/30',
+      icon: Trophy,
+      gradient: 'from-amber-500/20 to-transparent',
+      onClick: () => navigate('/tournaments'),
+    },
+    {
+      label: 'Đăng ký đang hoạt động',
+      value: loadingStats ? '...' : (stats?.activeRegistrations ?? 0).toLocaleString('vi-VN'),
+      change: 'Đang tham gia',
+      up: true,
+      sub: 'đăng ký ngựa thi đấu',
+      color: 'text-emerald-500 dark:text-emerald-400',
+      bg: 'bg-emerald-100/50 dark:bg-emerald-900/30',
+      icon: Flag,
+      gradient: 'from-emerald-500/20 to-transparent',
+      onClick: () => navigate('/registrations'),
+    },
+    {
+      label: 'Cuộc đua đang mở ĐK',
+      value: loadingStats ? '...' : (stats?.pendingRaces ?? 0).toString(),
+      change: stats && stats.pendingRaces > 0 ? 'Cần theo dõi' : 'Không có',
+      up: (stats?.pendingRaces ?? 0) === 0,
+      sub: 'cuộc đua mở đăng ký',
+      color: 'text-rose-500 dark:text-rose-400',
+      bg: 'bg-rose-100/50 dark:bg-rose-900/30',
+      icon: ClipboardList,
+      gradient: 'from-rose-500/20 to-transparent',
+      onClick: () => navigate('/races'),
+    },
+  ];
 
   return (
     <div className="mx-auto max-w-7xl pb-8">
@@ -107,14 +152,19 @@ export default function Dashboard() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: i * 0.1 }}
               key={i}
-              className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 dark:border-slate-800 dark:bg-[#151c2c]"
+              onClick={s.onClick}
+              className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 dark:border-slate-800 dark:bg-[#151c2c] cursor-pointer"
             >
               <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl ${s.gradient} rounded-full -mr-16 -mt-16 opacity-50 group-hover:opacity-100 transition-opacity duration-500`}></div>
-              
+
               <div className="relative z-10">
                 <div className="flex items-center justify-between mb-4">
                   <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${s.bg} shadow-inner`}>
-                    <Icon className={`h-6 w-6 ${s.color}`} />
+                    {loadingStats ? (
+                      <RefreshCw className={`h-5 w-5 ${s.color} animate-spin`} />
+                    ) : (
+                      <Icon className={`h-6 w-6 ${s.color}`} />
+                    )}
                   </div>
                   <div className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${
                     s.up ? 'text-emerald-700 bg-emerald-100 dark:text-emerald-400 dark:bg-emerald-900/30' : 'text-rose-700 bg-rose-100 dark:text-rose-400 dark:bg-rose-900/30'
@@ -123,7 +173,7 @@ export default function Dashboard() {
                     {s.change}
                   </div>
                 </div>
-                
+
                 <h4 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-1">
                   {s.value}
                 </h4>
@@ -139,7 +189,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 mb-8">
         {/* Main Chart */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
@@ -166,7 +216,7 @@ export default function Dashboard() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="dark:stroke-slate-700/50" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)', backgroundColor: 'var(--tw-colors-white, #fff)', color: '#0f172a' }}
                   itemStyle={{ color: '#0f172a', fontWeight: 600 }}
                 />
@@ -177,7 +227,7 @@ export default function Dashboard() {
         </motion.div>
 
         {/* Recent Activities */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.5 }}
@@ -192,7 +242,7 @@ export default function Dashboard() {
               <MoreHorizontal size={20} />
             </button>
           </div>
-          
+
           <div className="flex-1 flex flex-col gap-6">
             {recentActivities.map((a, i) => {
               const Icon = a.icon;
@@ -213,15 +263,19 @@ export default function Dashboard() {
               );
             })}
           </div>
-          
-          <button className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white">
+
+          <button
+            onClick={() => navigate('/registrations')}
+            className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white"
+          >
             Xem toàn bộ nhật ký
+            <ArrowRight size={15} />
           </button>
         </motion.div>
       </div>
 
       {/* Upcoming Tournaments Table */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.6 }}
@@ -233,63 +287,71 @@ export default function Dashboard() {
               <Trophy size={20} />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Giải đấu sắp diễn ra</h3>
-              <p className="text-sm font-medium text-slate-500">Quản lý lịch trình các giải đấu tới</p>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Giải đấu gần đây</h3>
+              <p className="text-sm font-medium text-slate-500">Quản lý lịch trình các giải đấu</p>
             </div>
           </div>
-          <button className="hidden sm:flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 hover:shadow">
+          <button
+            onClick={() => navigate('/tournaments')}
+            className="hidden sm:flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 hover:shadow"
+          >
             Quản lý giải đấu
             <ArrowRight size={16} />
           </button>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full whitespace-nowrap text-left text-sm">
-            <thead className="bg-slate-50 dark:bg-[#111724]">
-              <tr>
-                <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-400">Tên giải đấu</th>
-                <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-400">Thời gian</th>
-                <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-400">Địa điểm</th>
-                <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-400">Tham gia</th>
-                <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-400">Trạng thái</th>
-                <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-400 text-right">Hành động</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-              {upcomingTournaments.map((t, i) => {
-                const st = statusMap[t.status];
-                return (
-                  <tr key={i} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-colors group">
-                    <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">
-                      {t.name}
-                    </td>
-                    <td className="px-6 py-4 font-medium text-slate-600 dark:text-slate-300">
-                      {t.date}
-                    </td>
-                    <td className="px-6 py-4 font-medium text-slate-600 dark:text-slate-300">
-                      {t.location}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-200">
-                        <Users size={14} className="text-slate-400" />
-                        {t.participants} ngựa
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${st.bgClass} ${st.textClass}`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${st.dotClass}`}></span>
-                        {st.label}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all dark:hover:bg-blue-900/30 dark:hover:text-blue-400">
-                        <MoreHorizontal size={18} />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          {loadingTournaments ? (
+            <div className="flex justify-center py-10">
+              <RefreshCw className="animate-spin text-blue-500" size={28} />
+            </div>
+          ) : upcomingTournaments.length === 0 ? (
+            <div className="py-10 text-center text-sm text-slate-500">Chưa có giải đấu nào</div>
+          ) : (
+            <table className="w-full whitespace-nowrap text-left text-sm">
+              <thead className="bg-slate-50 dark:bg-[#111724]">
+                <tr>
+                  <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-400">Tên giải đấu</th>
+                  <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-400">Thời gian</th>
+                  <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-400">Địa điểm</th>
+                  <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-400">Trạng thái</th>
+                  <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-400 text-right">Hành động</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                {upcomingTournaments.map((t, i) => {
+                  const st = statusMap[t.status] ?? statusMap.upcoming;
+                  return (
+                    <tr key={t._id ?? i} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-colors group">
+                      <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">
+                        {t.name}
+                      </td>
+                      <td className="px-6 py-4 font-medium text-slate-600 dark:text-slate-300">
+                        {t.startDate ? new Date(t.startDate).toLocaleDateString('vi-VN') : '-'}
+                        {t.endDate ? ` — ${new Date(t.endDate).toLocaleDateString('vi-VN')}` : ''}
+                      </td>
+                      <td className="px-6 py-4 font-medium text-slate-600 dark:text-slate-300">
+                        {t.location || '-'}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${st.bgClass} ${st.textClass}`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${st.dotClass}`}></span>
+                          {st.label}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button
+                          onClick={() => navigate('/tournaments')}
+                          className="opacity-0 group-hover:opacity-100 flex items-center gap-1 rounded-md border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 hover:text-blue-600 hover:border-blue-300 transition-all dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:text-blue-400 ml-auto"
+                        >
+                          Chi tiết <ArrowRight size={12} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
       </motion.div>
     </div>

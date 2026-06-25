@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Eye, DollarSign, Play, Zap, Trophy, RefreshCw, X, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useLocation } from 'react-router';
+import { Eye, DollarSign, Play, Zap, Trophy, RefreshCw, X, AlertCircle, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { raceApi, type Race, type Registration } from '../../api/race';
 
@@ -62,8 +63,10 @@ function Modal({ open, onClose, title, children, maxWidth = 'max-w-2xl', extraHe
 }
 
 export default function ResultsPublishing() {
+  const location = useLocation();
   const [finishedRaces, setFinishedRaces] = useState<Race[]>([]);
   const [loading, setLoading] = useState(true);
+  const [finishedSearch, setFinishedSearch] = useState('');
 
   // ── Simulatable races (not finished/cancelled) ──
   const [simRaces, setSimRaces] = useState<Race[]>([]);
@@ -83,11 +86,28 @@ export default function ResultsPublishing() {
   const simTotalPages = Math.ceil(simRaces.length / SIM_PER_PAGE);
   const pagedSimRaces = simRaces.slice((simPage - 1) * SIM_PER_PAGE, simPage * SIM_PER_PAGE);
 
+  // Pagination for finished races
+  const [finPage, setFinPage] = useState(1);
+  const FIN_PER_PAGE = 6;
+  const filteredFinished = finishedSearch
+    ? finishedRaces.filter(r =>
+        r.name.toLowerCase().includes(finishedSearch.toLowerCase()) ||
+        r.grade.toLowerCase().includes(finishedSearch.toLowerCase()) ||
+        (typeof r.tournamentId === 'object' && r.tournamentId.name.toLowerCase().includes(finishedSearch.toLowerCase()))
+      )
+    : finishedRaces;
+  const finTotalPages = Math.ceil(filteredFinished.length / FIN_PER_PAGE);
+  const pagedFinished = filteredFinished.slice((finPage - 1) * FIN_PER_PAGE, finPage * FIN_PER_PAGE);
+
   const loadFinishedRaces = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await raceApi.list({ status: 'finished', limit: 50 });
-      setFinishedRaces(res.races);
+      const res = await raceApi.list({ status: 'finished', limit: 100 });
+      // Sort newest first by scheduledTime
+      const sorted = [...res.races].sort(
+        (a, b) => new Date(b.scheduledTime).getTime() - new Date(a.scheduledTime).getTime()
+      );
+      setFinishedRaces(sorted);
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -135,6 +155,14 @@ export default function ResultsPublishing() {
     loadSimRaces();
   }, [loadFinishedRaces, loadSimRaces]);
 
+  // Auto-open race detail if navigated from TournamentManagement
+  useEffect(() => {
+    const openRaceId = (location.state as any)?.openRaceId;
+    if (!openRaceId || loading) return;
+    const race = finishedRaces.find(r => r._id === openRaceId);
+    if (race) handleViewDetails(race);
+  }, [finishedRaces, loading, location.state]);
+
   const handleViewDetails = async (race: Race) => {
     setSelectedRace(race);
     setDetailOpen(true);
@@ -175,6 +203,17 @@ export default function ResultsPublishing() {
   const pendingBets = raceBets.filter(b => b.status === 'pending').length;
   const totalBetAmount = raceBets.reduce((s, b) => s + b.amount, 0);
   const totalPayout = raceBets.filter(b => b.status === 'won').reduce((s, b) => s + b.payoutAmount, 0);
+
+  // Bets pagination inside detail modal
+  const [betPage, setBetPage] = useState(1);
+  const BETS_PER_PAGE = 10;
+  const betTotalPages = Math.ceil(raceBets.length / BETS_PER_PAGE);
+  const pagedBets = raceBets.slice((betPage - 1) * BETS_PER_PAGE, betPage * BETS_PER_PAGE);
+
+  const openDetail = (race: Race) => {
+    setBetPage(1);
+    handleViewDetails(race);
+  };
 
   return (
     <>
@@ -295,15 +334,32 @@ export default function ResultsPublishing() {
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-title-md2 font-semibold text-black dark:text-white flex items-center gap-2">
           Kết Quả & Quyết Toán Cược
+          {finishedRaces.length > 0 && (
+            <span className="inline-flex items-center justify-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+              {finishedRaces.length} cuộc đua
+            </span>
+          )}
         </h2>
-        <button
-          onClick={loadFinishedRaces}
-          disabled={loading}
-          className="inline-flex items-center justify-center gap-2.5 rounded-md border border-slate-300 bg-white py-2 px-4 text-center font-medium text-black hover:bg-slate-50 transition dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700 disabled:opacity-50"
-        >
-          <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
-          Làm mới
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Tìm cuộc đua..."
+              value={finishedSearch}
+              onChange={e => { setFinishedSearch(e.target.value); setFinPage(1); }}
+              className="w-48 rounded border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+            />
+          </div>
+          <button
+            onClick={loadFinishedRaces}
+            disabled={loading}
+            className="inline-flex items-center justify-center gap-2.5 rounded-md border border-slate-300 bg-white py-2 px-4 text-center font-medium text-black hover:bg-slate-50 transition dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700 disabled:opacity-50"
+          >
+            <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+            Làm mới
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -313,49 +369,79 @@ export default function ResultsPublishing() {
           <Trophy className="mx-auto h-16 w-16 text-slate-300 dark:text-slate-600 mb-4" />
           <p className="text-slate-500 dark:text-slate-400 text-lg">Chưa có cuộc đua nào kết thúc</p>
         </div>
+      ) : filteredFinished.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 py-10 text-center dark:border-slate-700 dark:bg-slate-800/50">
+          <p className="text-slate-500 dark:text-slate-400">Không tìm thấy cuộc đua phù hợp</p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {finishedRaces.map(race => {
-            const tName = typeof race.tournamentId === 'object' ? race.tournamentId.name : '-';
-            return (
-              <div key={race._id} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md dark:border-slate-700 dark:bg-[#243045]">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="text-xl font-bold text-black dark:text-white mb-1">{race.name}</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">{tName}</p>
-                    <div className="flex flex-wrap gap-2">
-                      <span className="inline-block rounded border border-slate-300 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                        {race.grade}
-                      </span>
-                      <span className="inline-block rounded bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
-                        Đã kết thúc
-                      </span>
+        <>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
+            {pagedFinished.map(race => {
+              const tName = typeof race.tournamentId === 'object' ? race.tournamentId.name : '-';
+              return (
+                <div key={race._id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md dark:border-slate-700 dark:bg-[#243045] flex flex-col">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1 min-w-0 pr-3">
+                      <h3 className="text-base font-bold text-black dark:text-white mb-1 truncate">{race.name}</h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 truncate">{tName}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        <span className="inline-block rounded border border-slate-300 bg-slate-50 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                          {race.grade}
+                        </span>
+                        <span className="inline-block rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                          ✓ Đã kết thúc
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-500 dark:bg-amber-900/20 dark:text-amber-400">
+                      <Trophy size={22} />
                     </div>
                   </div>
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-500 dark:bg-amber-900/20 dark:text-amber-400 shrink-0">
-                    <Trophy size={28} />
+
+                  <div className="flex flex-col gap-1.5 mb-4 mt-1">
+                    <p className="text-xs text-slate-600 dark:text-slate-300">
+                      📅 {fmtDateTime(race.scheduledTime)}
+                    </p>
+                    <p className="text-xs font-medium text-slate-700 dark:text-slate-200">
+                      💰 <span className="text-emerald-600 dark:text-emerald-400">{race.purse?.toLocaleString('vi-VN')} coins</span>
+                    </p>
                   </div>
+
+                  <button
+                    onClick={() => openDetail(race)}
+                    className="mt-auto flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white py-2 text-xs font-medium text-black hover:bg-slate-50 hover:text-blue-600 hover:border-blue-300 transition dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700 dark:hover:border-blue-500 dark:hover:text-blue-400"
+                  >
+                    <Eye size={15} /> Xem kết quả & cược
+                  </button>
                 </div>
-                
-                <div className="flex flex-col gap-2 mb-6">
-                  <p className="text-sm text-slate-600 dark:text-slate-300">
-                    📅 {fmtDateTime(race.scheduledTime)}
-                  </p>
-                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                    💰 Giải thưởng: <span className="text-emerald-600 dark:text-emerald-400">{race.purse?.toLocaleString('vi-VN')} coins</span>
-                  </p>
-                </div>
-                
-                <button 
-                  onClick={() => handleViewDetails(race)} 
-                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white py-2.5 text-sm font-medium text-black hover:bg-slate-50 hover:text-blue-600 hover:border-blue-300 transition dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700 dark:hover:border-blue-500 dark:hover:text-blue-400"
-                >
-                  <Eye size={18} /> Xem kết quả & cược
-                </button>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+
+          {/* Pagination for finished races */}
+          {finTotalPages > 1 && (
+            <div className="flex items-center justify-between pt-5 mt-4 border-t border-slate-200 dark:border-slate-700">
+              <button
+                onClick={() => setFinPage(p => Math.max(1, p - 1))}
+                disabled={finPage === 1}
+                className="flex items-center gap-1.5 rounded bg-slate-100 py-1.5 px-3 text-sm font-medium text-slate-600 hover:bg-slate-200 disabled:opacity-40 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition"
+              >
+                <ChevronLeft size={15} /> Trước
+              </button>
+              <span className="text-sm text-slate-500">
+                Trang {finPage} / {finTotalPages}
+                <span className="ml-1 text-xs text-slate-400">(tổng {filteredFinished.length} cuộc đua)</span>
+              </span>
+              <button
+                onClick={() => setFinPage(p => Math.min(finTotalPages, p + 1))}
+                disabled={finPage >= finTotalPages}
+                className="flex items-center gap-1.5 rounded bg-slate-100 py-1.5 px-3 text-sm font-medium text-slate-600 hover:bg-slate-200 disabled:opacity-40 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition"
+              >
+                Sau <ChevronRight size={15} />
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {/* Detail Dialog Modal */}
@@ -465,54 +551,75 @@ export default function ResultsPublishing() {
                   <p className="text-slate-500 dark:text-slate-400">Không có cược nào cho cuộc đua này</p>
                 </div>
               ) : (
-                <div className="max-w-full overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
-                  <table className="w-full table-auto text-sm">
-                    <thead>
-                      <tr className="bg-slate-50 text-left dark:bg-slate-800">
-                        <th className="py-3 px-4 font-semibold text-black dark:text-white">Người Cược</th>
-                        <th className="py-3 px-4 font-semibold text-black dark:text-white">Ngựa</th>
-                        <th className="py-3 px-4 font-semibold text-black dark:text-white">Loại</th>
-                        <th className="py-3 px-4 font-semibold text-black dark:text-white">Số Tiền</th>
-                        <th className="py-3 px-4 font-semibold text-black dark:text-white">Hệ Số</th>
-                        <th className="py-3 px-4 font-semibold text-black dark:text-white">Trạng Thái</th>
-                        <th className="py-3 px-4 font-semibold text-black dark:text-white">Tiền Nhận</th>
-                        <th className="py-3 px-4 font-semibold text-black dark:text-white">Thời Gian</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {raceBets.map(bet => (
-                        <tr key={bet._id} className="border-t border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                          <td className="py-2.5 px-4 font-medium text-black dark:text-white">
-                            {typeof bet.spectatorId === 'object' ? bet.spectatorId.fullName : '-'}
-                          </td>
-                          <td className="py-2.5 px-4 text-slate-700 dark:text-slate-300">
-                            {typeof bet.horseId === 'object' ? bet.horseId.name : '-'}
-                          </td>
-                          <td className="py-2.5 px-4">
-                            <span className="inline-block rounded border border-slate-300 bg-white px-1.5 py-0.5 text-[10px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                              {BET_TYPE_LABEL[bet.betType] || bet.betType}
-                            </span>
-                          </td>
-                          <td className="py-2.5 px-4 font-semibold text-black dark:text-white">{bet.amount.toLocaleString('vi-VN')} coins</td>
-                          <td className="py-2.5 px-4 text-slate-600 dark:text-slate-400">{bet.multiplier}x</td>
-                          <td className="py-2.5 px-4">
-                            <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_COLOR[bet.status] || ''}`}>
-                              {STATUS_LABEL[bet.status] || bet.status}
-                            </span>
-                          </td>
-                          <td className="py-2.5 px-4">
-                            {bet.status === 'won' ? (
-                              <span className="font-bold text-emerald-600 dark:text-emerald-400">{bet.payoutAmount?.toLocaleString('vi-VN')} coins</span>
-                            ) : (
-                              <span className="text-slate-400">—</span>
-                            )}
-                          </td>
-                          <td className="py-2.5 px-4 text-xs text-slate-500">{fmtDateTime(bet.createdAt)}</td>
+                <>
+                  <div className="max-w-full overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
+                    <table className="w-full table-auto text-sm">
+                      <thead>
+                        <tr className="bg-slate-50 text-left dark:bg-slate-800">
+                          <th className="py-3 px-4 font-semibold text-black dark:text-white">Người Cược</th>
+                          <th className="py-3 px-4 font-semibold text-black dark:text-white">Ngựa</th>
+                          <th className="py-3 px-4 font-semibold text-black dark:text-white">Loại</th>
+                          <th className="py-3 px-4 font-semibold text-black dark:text-white">Số Tiền</th>
+                          <th className="py-3 px-4 font-semibold text-black dark:text-white">Hệ Số</th>
+                          <th className="py-3 px-4 font-semibold text-black dark:text-white">Trạng Thái</th>
+                          <th className="py-3 px-4 font-semibold text-black dark:text-white">Tiền Nhận</th>
+                          <th className="py-3 px-4 font-semibold text-black dark:text-white">Thời Gian</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {pagedBets.map(bet => (
+                          <tr key={bet._id} className="border-t border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                            <td className="py-2.5 px-4 font-medium text-black dark:text-white">
+                              {typeof bet.spectatorId === 'object' ? bet.spectatorId.fullName : '-'}
+                            </td>
+                            <td className="py-2.5 px-4 text-slate-700 dark:text-slate-300">
+                              {typeof bet.horseId === 'object' ? bet.horseId.name : '-'}
+                            </td>
+                            <td className="py-2.5 px-4">
+                              <span className="inline-block rounded border border-slate-300 bg-white px-1.5 py-0.5 text-[10px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                {BET_TYPE_LABEL[bet.betType] || bet.betType}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-4 font-semibold text-black dark:text-white">{bet.amount.toLocaleString('vi-VN')} coins</td>
+                            <td className="py-2.5 px-4 text-slate-600 dark:text-slate-400">{bet.multiplier}x</td>
+                            <td className="py-2.5 px-4">
+                              <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_COLOR[bet.status] || ''}`}>
+                                {STATUS_LABEL[bet.status] || bet.status}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-4">
+                              {bet.status === 'won' ? (
+                                <span className="font-bold text-emerald-600 dark:text-emerald-400">{bet.payoutAmount?.toLocaleString('vi-VN')} coins</span>
+                              ) : (
+                                <span className="text-slate-400">—</span>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-4 text-xs text-slate-500">{fmtDateTime(bet.createdAt)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {betTotalPages > 1 && (
+                    <div className="flex items-center justify-between pt-3 mt-1 border-t border-slate-200 dark:border-slate-700">
+                      <button
+                        onClick={() => setBetPage(p => Math.max(1, p - 1))}
+                        disabled={betPage === 1}
+                        className="flex items-center gap-1.5 rounded bg-slate-100 py-1 px-2.5 text-xs font-medium text-slate-600 hover:bg-slate-200 disabled:opacity-40 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition"
+                      >
+                        <ChevronLeft size={13} /> Trước
+                      </button>
+                      <span className="text-xs text-slate-500">Trang {betPage} / {betTotalPages} (tổng {raceBets.length} cược)</span>
+                      <button
+                        onClick={() => setBetPage(p => Math.min(betTotalPages, p + 1))}
+                        disabled={betPage >= betTotalPages}
+                        className="flex items-center gap-1.5 rounded bg-slate-100 py-1 px-2.5 text-xs font-medium text-slate-600 hover:bg-slate-200 disabled:opacity-40 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition"
+                      >
+                        Sau <ChevronRight size={13} />
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

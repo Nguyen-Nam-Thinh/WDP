@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Eye, Activity, XCircle, AlertTriangle, RefreshCw, X, ChevronLeft, ChevronRight, FileCheck } from 'lucide-react';
+import { Eye, Activity, XCircle, AlertTriangle, RefreshCw, X, ChevronLeft, ChevronRight, FileCheck, Search, TrendingUp, TrendingDown, ClipboardList, CheckCircle, Ban } from 'lucide-react';
 import { toast } from 'sonner';
 import { registrationApi, type RegistrationListResponse } from '../../api/registration';
 import type { Registration } from '../../api/race';
@@ -50,8 +50,12 @@ export default function RegistrationApproval() {
   const [data, setData] = useState<RegistrationListResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Registration | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  const [regStats, setRegStats] = useState({ active: 0, cancelled: 0, disqualified: 0 });
+  const [loadingStats, setLoadingStats] = useState(true);
 
   const statusFilter = ['active', 'cancelled', 'disqualified'][tab] as Registration['status'];
 
@@ -67,8 +71,36 @@ export default function RegistrationApproval() {
     }
   }, [statusFilter, page]);
 
-  useEffect(() => { setPage(1); }, [tab]);
+  useEffect(() => {
+    setLoadingStats(true);
+    Promise.all([
+      registrationApi.list({ status: 'active', page: 1, limit: 1 }),
+      registrationApi.list({ status: 'cancelled', page: 1, limit: 1 }),
+      registrationApi.list({ status: 'disqualified', page: 1, limit: 1 }),
+    ]).then(([a, c, d]) => {
+      setRegStats({ active: a.total, cancelled: c.total, disqualified: d.total });
+    }).catch(() => {}).finally(() => setLoadingStats(false));
+  }, []);
+
+  useEffect(() => { setPage(1); setSearch(''); }, [tab]);
   useEffect(() => { load(); }, [load]);
+
+  const filteredRegs = search && data?.registrations
+    ? data.registrations.filter(r => {
+        const race = r.raceId as any;
+        const horse = r.horseId as any;
+        const owner = r.ownerId as any;
+        const jockey = r.jockeyId as any;
+        const q = search.toLowerCase();
+        return (
+          (race?.name || '').toLowerCase().includes(q) ||
+          (horse?.name || '').toLowerCase().includes(q) ||
+          (owner?.fullName || '').toLowerCase().includes(q) ||
+          (owner?.email || '').toLowerCase().includes(q) ||
+          (jockey?.fullName || '').toLowerCase().includes(q)
+        );
+      })
+    : data?.registrations ?? [];
 
   const handleView = async (reg: Registration) => {
     try {
@@ -96,6 +128,81 @@ export default function RegistrationApproval() {
         </button>
       </div>
 
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:gap-6 mb-6">
+        {/* Card 1 — Tổng đăng ký */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-[#1c2434]">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-900/30">
+              <ClipboardList size={24} className="text-blue-500" />
+            </div>
+            <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+              <TrendingUp size={11} />
+              Hệ thống
+            </span>
+          </div>
+          <p className="text-3xl font-bold text-black dark:text-white mb-1">
+            {loadingStats ? <span className="text-slate-400 text-xl">...</span> : (regStats.active + regStats.cancelled + regStats.disqualified).toLocaleString('vi-VN')}
+          </p>
+          <p className="text-sm font-medium text-black dark:text-white">Tổng đăng ký</p>
+          <p className="text-xs text-slate-400 mt-0.5">tất cả lượt đăng ký ngựa</p>
+        </div>
+
+        {/* Card 2 — Đang hoạt động */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-[#1c2434]">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/30">
+              <CheckCircle size={24} className="text-emerald-500" />
+            </div>
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+              <TrendingUp size={11} />
+              Đang tham gia
+            </span>
+          </div>
+          <p className="text-3xl font-bold text-black dark:text-white mb-1">
+            {loadingStats ? <span className="text-slate-400 text-xl">...</span> : regStats.active.toLocaleString('vi-VN')}
+          </p>
+          <p className="text-sm font-medium text-black dark:text-white">Đang hoạt động</p>
+          <p className="text-xs text-slate-400 mt-0.5">đăng ký còn hiệu lực</p>
+        </div>
+
+        {/* Card 3 — Đã hủy */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-[#1c2434]">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800">
+              <XCircle size={24} className="text-slate-500" />
+            </div>
+            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+              <TrendingDown size={11} />
+              Đã hủy
+            </span>
+          </div>
+          <p className="text-3xl font-bold text-black dark:text-white mb-1">
+            {loadingStats ? <span className="text-slate-400 text-xl">...</span> : regStats.cancelled.toLocaleString('vi-VN')}
+          </p>
+          <p className="text-sm font-medium text-black dark:text-white">Đã hủy đăng ký</p>
+          <p className="text-xs text-slate-400 mt-0.5">bị hủy bởi owner hoặc admin</p>
+        </div>
+
+        {/* Card 4 — Bị loại */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-[#1c2434]">
+          <div className={`flex items-start justify-between mb-4`}>
+            <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${regStats.disqualified > 0 ? 'bg-red-50 dark:bg-red-900/30' : 'bg-slate-100 dark:bg-slate-800'}`}>
+              <Ban size={24} className={regStats.disqualified > 0 ? 'text-red-500' : 'text-slate-400'} />
+            </div>
+            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${regStats.disqualified > 0 ? 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}`}>
+              {regStats.disqualified > 0 ? <TrendingDown size={11} /> : <TrendingUp size={11} />}
+              {regStats.disqualified > 0 ? 'Cần theo dõi' : 'Ổn định'}
+            </span>
+          </div>
+          <p className={`text-3xl font-bold mb-1 ${regStats.disqualified > 0 ? 'text-red-500 dark:text-red-400' : 'text-black dark:text-white'}`}>
+            {loadingStats ? <span className="text-slate-400 text-xl">...</span> : regStats.disqualified.toLocaleString('vi-VN')}
+          </p>
+          <p className="text-sm font-medium text-black dark:text-white">Bị loại (DQ)</p>
+          <p className="text-xs text-slate-400 mt-0.5">bị disqualify bởi trọng tài</p>
+        </div>
+      </div>
+
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-[#1c2434] mb-6 overflow-hidden">
         <div className="flex border-b border-slate-200 dark:border-slate-700">
           <button
@@ -121,6 +228,20 @@ export default function RegistrationApproval() {
           </button>
         </div>
 
+        {/* Search bar */}
+        <div className="px-6 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/20">
+          <div className="relative w-full max-w-sm">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Tìm ngựa, chủ, jockey, cuộc đua..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full rounded border border-slate-300 bg-white py-2 pl-9 pr-4 text-sm outline-none focus:border-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+            />
+          </div>
+        </div>
+
         <div className="max-w-full overflow-x-auto">
           <table className="w-full table-auto">
             <thead>
@@ -144,17 +265,17 @@ export default function RegistrationApproval() {
                     ))}
                   </tr>
                 ))
-              ) : !data?.registrations?.length ? (
+              ) : filteredRegs.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="text-center py-10 text-slate-500">
                     <div className="flex flex-col items-center justify-center">
                       <FileCheck size={40} className="mb-3 text-slate-300 dark:text-slate-600" />
-                      Không có dữ liệu đăng ký
+                      {!data?.registrations?.length ? 'Không có dữ liệu đăng ký' : 'Không tìm thấy kết quả phù hợp'}
                     </div>
                   </td>
                 </tr>
               ) : (
-                data.registrations.map(reg => (
+                filteredRegs.map(reg => (
                   <tr key={reg._id} className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                     <td className="py-3 px-4 xl:pl-6">
                       <p className="font-semibold text-black dark:text-white flex items-center gap-1.5">

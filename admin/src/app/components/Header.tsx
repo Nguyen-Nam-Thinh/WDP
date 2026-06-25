@@ -1,4 +1,4 @@
-import { Menu, Search, Bell, Settings, LogOut, User, X, CheckCircle, AlertCircle, Trophy, Clock } from 'lucide-react';
+import { Menu, Bell, Settings, LogOut, User, CheckCircle, AlertCircle, Trophy, Clock } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import { useNavigate } from 'react-router';
@@ -40,7 +40,6 @@ export default function Header(props: {
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
   const [notifPage, setNotifPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState('');
 
   const unreadCount = notifications.filter(n => !n.read).length;
   const notifTotalPages = Math.ceil(notifications.length / NOTIFS_PER_PAGE);
@@ -73,26 +72,7 @@ export default function Header(props: {
           {/* Hamburger Toggle BTN */}
         </div>
 
-        <div className="hidden sm:block">
-          <div className="relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Tìm kiếm..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-4 py-2 text-sm font-medium focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 xl:w-72 transition"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                <X size={14} />
-              </button>
-            )}
-          </div>
-        </div>
+        <div className="hidden sm:block" />
 
         <div className="flex items-center gap-3 2xsm:gap-7 ml-auto">
           <ul className="flex items-center gap-2 2xsm:gap-4">

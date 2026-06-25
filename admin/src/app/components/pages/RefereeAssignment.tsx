@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, UserPlus, Calendar, Clock, CheckCircle, ShieldCheck, X, Users, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { RefreshCw, UserPlus, Calendar, Clock, CheckCircle, ShieldCheck, X, Users, AlertCircle, ChevronLeft, ChevronRight, Search, TrendingUp, TrendingDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { raceApi, type Race } from '../../api/race';
 import { refereeAdminApi, type AdminUser } from '../../api/user';
@@ -33,8 +33,9 @@ export default function RefereeAssignment() {
   const [loadingRaces, setLoadingRaces] = useState(true);
   const [selectedRace, setSelectedRace] = useState<Race | null>(null);
 
-  // Race list pagination
+  // Race list search + pagination
   const [racePage, setRacePage] = useState(1);
+  const [raceSearch, setRaceSearch] = useState('');
   const RACES_PER_PAGE = 8;
 
   // Referees list
@@ -45,6 +46,7 @@ export default function RefereeAssignment() {
   const [assignDialog, setAssignDialog] = useState(false);
   const [selectedRefId, setSelectedRefId] = useState('');
   const [assigning, setAssigning] = useState(false);
+  const [refSearch, setRefSearch] = useState('');
 
   const loadRaces = useCallback(async () => {
     setLoadingRaces(true);
@@ -104,9 +106,18 @@ export default function RefereeAssignment() {
 
   const fmtDateTime = (d: string) => d ? new Date(d).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : '-';
 
-  // Pagination for race list
-  const raceTotalPages = Math.ceil(races.length / RACES_PER_PAGE);
-  const pagedRaces = races.slice((racePage - 1) * RACES_PER_PAGE, racePage * RACES_PER_PAGE);
+  const filteredRaces = raceSearch
+    ? races.filter(r =>
+        r.name.toLowerCase().includes(raceSearch.toLowerCase()) ||
+        r.grade.toLowerCase().includes(raceSearch.toLowerCase()) ||
+        (typeof r.tournamentId === 'object' && r.tournamentId.name.toLowerCase().includes(raceSearch.toLowerCase()))
+      )
+    : races;
+  const raceTotalPages = Math.ceil(filteredRaces.length / RACES_PER_PAGE);
+  const pagedRaces = filteredRaces.slice((racePage - 1) * RACES_PER_PAGE, racePage * RACES_PER_PAGE);
+
+  const assignedCount = races.filter(r => r.refereeId).length;
+  const unassignedCount = races.length - assignedCount;
 
   return (
     <>
@@ -121,6 +132,81 @@ export default function RefereeAssignment() {
           <RefreshCw size={18} />
           Làm mới
         </button>
+      </div>
+
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:gap-6 mb-6">
+        {/* Card 1 — Tổng cuộc đua */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-[#1c2434]">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-900/30">
+              <Calendar size={24} className="text-blue-500" />
+            </div>
+            <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+              <TrendingUp size={11} />
+              Hệ thống
+            </span>
+          </div>
+          <p className="text-3xl font-bold text-black dark:text-white mb-1">
+            {loadingRaces ? <span className="text-slate-400 text-xl">...</span> : races.length}
+          </p>
+          <p className="text-sm font-medium text-black dark:text-white">Tổng cuộc đua</p>
+          <p className="text-xs text-slate-400 mt-0.5">đang hoạt động (chưa kết thúc)</p>
+        </div>
+
+        {/* Card 2 — Đã phân công */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-[#1c2434]">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/30">
+              <CheckCircle size={24} className="text-emerald-500" />
+            </div>
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+              <TrendingUp size={11} />
+              Đã phân công
+            </span>
+          </div>
+          <p className="text-3xl font-bold text-black dark:text-white mb-1">
+            {loadingRaces ? <span className="text-slate-400 text-xl">...</span> : assignedCount}
+          </p>
+          <p className="text-sm font-medium text-black dark:text-white">Đã có trọng tài</p>
+          <p className="text-xs text-slate-400 mt-0.5">cuộc đua đã được phân công</p>
+        </div>
+
+        {/* Card 3 — Chưa phân công */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-[#1c2434]">
+          <div className="flex items-start justify-between mb-4">
+            <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${unassignedCount > 0 ? 'bg-amber-50 dark:bg-amber-900/30' : 'bg-slate-100 dark:bg-slate-800'}`}>
+              <AlertCircle size={24} className={unassignedCount > 0 ? 'text-amber-500' : 'text-slate-400'} />
+            </div>
+            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${unassignedCount > 0 ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}`}>
+              {unassignedCount > 0 ? <TrendingDown size={11} /> : <TrendingUp size={11} />}
+              {unassignedCount > 0 ? 'Cần xử lý' : 'Ổn định'}
+            </span>
+          </div>
+          <p className={`text-3xl font-bold mb-1 ${unassignedCount > 0 ? 'text-amber-500 dark:text-amber-400' : 'text-black dark:text-white'}`}>
+            {loadingRaces ? <span className="text-slate-400 text-xl">...</span> : unassignedCount}
+          </p>
+          <p className="text-sm font-medium text-black dark:text-white">Chưa có trọng tài</p>
+          <p className="text-xs text-slate-400 mt-0.5">cần phân công trọng tài</p>
+        </div>
+
+        {/* Card 4 — Tổng trọng tài */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-[#1c2434]">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-50 dark:bg-purple-900/30">
+              <ShieldCheck size={24} className="text-purple-500" />
+            </div>
+            <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2.5 py-1 text-xs font-medium text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
+              <TrendingUp size={11} />
+              Nhân sự
+            </span>
+          </div>
+          <p className="text-3xl font-bold text-black dark:text-white mb-1">
+            {loadingRefs ? <span className="text-slate-400 text-xl">...</span> : referees.length}
+          </p>
+          <p className="text-sm font-medium text-black dark:text-white">Tổng trọng tài</p>
+          <p className="text-xs text-slate-400 mt-0.5">trọng tài đang hoạt động</p>
+        </div>
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-[#1c2434] mb-6 overflow-hidden">
@@ -147,14 +233,28 @@ export default function RefereeAssignment() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               {/* Race list */}
               <div className="lg:col-span-5 rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-[#243045]">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Danh sách cuộc đua (Chưa chạy)</h3>
-                
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-3">Danh sách cuộc đua (Chưa chạy)</h3>
+                <div className="mb-3">
+                  <div className="relative">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Tìm tên, hạng, giải đấu..."
+                      value={raceSearch}
+                      onChange={e => { setRaceSearch(e.target.value); setRacePage(1); }}
+                      className="w-full rounded border border-slate-300 bg-white py-1.5 pl-8 pr-3 text-xs outline-none focus:border-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                    />
+                  </div>
+                </div>
+
               {loadingRaces ? (
                   <div className="flex justify-center py-10"><RefreshCw className="animate-spin text-blue-500" size={28} /></div>
-                ) : races.length === 0 ? (
+                ) : filteredRaces.length === 0 ? (
                   <div className="text-center py-10">
                     <AlertCircle className="mx-auto h-10 w-10 text-slate-400 mb-2" />
-                    <p className="text-slate-500 text-sm">Không có cuộc đua nào đang hoạt động</p>
+                    <p className="text-slate-500 text-sm">
+                      {races.length === 0 ? 'Không có cuộc đua nào đang hoạt động' : 'Không tìm thấy cuộc đua phù hợp'}
+                    </p>
                   </div>
                 ) : (
                   <>
@@ -231,7 +331,7 @@ export default function RefereeAssignment() {
                         </p>
                       </div>
                       <button
-                        onClick={() => { setSelectedRefId(''); setAssignDialog(true); }}
+                        onClick={() => { setSelectedRefId(''); setRefSearch(''); setAssignDialog(true); }}
                         className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md bg-blue-600 py-2 px-4 text-sm font-medium text-white hover:bg-blue-700 transition"
                       >
                         <UserPlus size={16} />
@@ -370,30 +470,102 @@ export default function RefereeAssignment() {
 
       {/* Assign Dialog Modal */}
       <Modal open={assignDialog} onClose={() => setAssignDialog(false)} title={`Phân công: ${selectedRace?.name}`} maxWidth="max-w-md">
-        <div className="mb-6">
-          <label className="mb-2.5 block text-sm font-medium text-black dark:text-white">Chọn trọng tài</label>
-          <div className="relative z-20 bg-transparent">
-            <select
-              value={selectedRefId}
-              onChange={e => setSelectedRefId(e.target.value)}
-              className="relative z-20 w-full appearance-none rounded border border-slate-300 bg-transparent py-3 px-4 outline-none transition focus:border-blue-500 active:border-blue-500 dark:border-slate-600 dark:bg-slate-800"
-            >
-              <option value="">-- Chọn trọng tài --</option>
-              {referees.map(r => (
-                <option key={r._id} value={r._id}>
-                  {r.fullName} ({r.refereeProfile?.yearsOfService ?? 0} năm KN)
-                </option>
-              ))}
-            </select>
+        <div className="mb-5">
+          <label className="mb-2 block text-sm font-medium text-black dark:text-white">
+            Chọn trọng tài
+            {refSearch && (
+              <span className="ml-2 text-xs font-normal text-slate-400">
+                ({referees.filter(r => r.fullName.toLowerCase().includes(refSearch.toLowerCase()) || (r.email || '').toLowerCase().includes(refSearch.toLowerCase())).length} kết quả)
+              </span>
+            )}
+          </label>
+
+          {/* Search */}
+          <div className="relative mb-3">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Tìm tên hoặc email trọng tài..."
+              value={refSearch}
+              onChange={e => setRefSearch(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-4 text-sm outline-none focus:border-blue-400 focus:bg-white transition dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            />
           </div>
+
+          {/* Referee list */}
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div className="max-h-56 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700/60">
+              {referees.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 gap-2">
+                  <ShieldCheck size={20} className="text-slate-300" />
+                  <p className="text-sm text-slate-400">Không có trọng tài nào</p>
+                </div>
+              ) : (() => {
+                const filtered = referees.filter(r =>
+                  !refSearch ||
+                  r.fullName.toLowerCase().includes(refSearch.toLowerCase()) ||
+                  (r.email || '').toLowerCase().includes(refSearch.toLowerCase())
+                );
+                return filtered.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 gap-2">
+                    <Search size={20} className="text-slate-300" />
+                    <p className="text-sm text-slate-400">Không tìm thấy trọng tài phù hợp</p>
+                  </div>
+                ) : filtered.map(r => (
+                  <button
+                    key={r._id}
+                    onClick={() => setSelectedRefId(r._id)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/60 ${
+                      selectedRefId === r._id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                    }`}
+                  >
+                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
+                      selectedRefId === r._id
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                    }`}>
+                      {r.fullName[0]}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-semibold truncate ${selectedRefId === r._id ? 'text-blue-700 dark:text-blue-400' : 'text-black dark:text-white'}`}>
+                        {r.fullName}
+                      </p>
+                      <p className="text-xs text-slate-400 truncate">{r.email} · {r.refereeProfile?.yearsOfService ?? 0} năm KN</p>
+                    </div>
+                    {selectedRefId === r._id && (
+                      <CheckCircle size={16} className="text-blue-500 shrink-0" />
+                    )}
+                  </button>
+                ));
+              })()}
+            </div>
+          </div>
+
+          {selectedRefId && (
+            <div className="mt-3 flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-2.5 dark:bg-blue-900/20">
+              <CheckCircle size={14} className="text-blue-500 shrink-0" />
+              <p className="text-xs text-blue-700 dark:text-blue-400">
+                Đã chọn: <strong>{referees.find(r => r._id === selectedRefId)?.fullName}</strong>
+              </p>
+            </div>
+          )}
         </div>
+
         <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-5 dark:border-slate-700">
-          <button onClick={() => setAssignDialog(false)} disabled={assigning} className="rounded border border-slate-300 py-2 px-5 font-medium text-black hover:bg-slate-50 dark:border-slate-600 dark:text-white dark:hover:bg-slate-800 disabled:opacity-50 transition">
+          <button
+            onClick={() => setAssignDialog(false)}
+            disabled={assigning}
+            className="rounded-xl border border-slate-300 py-2 px-5 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-white dark:hover:bg-slate-800 disabled:opacity-50 transition"
+          >
             Hủy
           </button>
-          <button onClick={handleAssign} disabled={!selectedRefId || assigning} className="flex items-center justify-center rounded bg-blue-600 py-2 px-5 font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition min-w-[150px]">
-            {assigning ? <RefreshCw className="animate-spin mr-2" size={18} /> : null}
-            Xác nhận
+          <button
+            onClick={handleAssign}
+            disabled={!selectedRefId || assigning}
+            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 py-2 px-5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-sm"
+          >
+            {assigning && <RefreshCw className="animate-spin" size={15} />}
+            {assigning ? 'Đang phân công...' : 'Xác nhận'}
           </button>
         </div>
       </Modal>

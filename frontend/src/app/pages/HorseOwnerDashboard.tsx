@@ -541,6 +541,9 @@ export function HorseOwnerDashboard() {
   const [regHorseId, setRegHorseId] = useState("");
   const [submittingReg, setSubmittingReg] = useState(false);
   const [cancellingRegId, setCancellingRegId] = useState<string | null>(null);
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+  const [pendingCancelRegId, setPendingCancelRegId] = useState<string | null>(null);
+  const [pendingCancelRaceName, setPendingCancelRaceName] = useState('');
 
   // Race results state
   const [raceResults, setRaceResults] = useState<OwnerRaceResult[]>([]);
@@ -655,17 +658,26 @@ export function HorseOwnerDashboard() {
     }
   };
 
-  const handleCancelRegistration = async (regId: string) => {
-    if (!token || !confirm("Hủy đăng ký? Bạn sẽ được hoàn 40% phí.")) return;
-    setCancellingRegId(regId);
+  const openCancelConfirm = (regId: string, raceName: string) => {
+    setPendingCancelRegId(regId);
+    setPendingCancelRaceName(raceName);
+    setCancelConfirmOpen(true);
+  };
+
+  const handleCancelRegistration = async () => {
+    if (!token || !pendingCancelRegId) return;
+    setCancelConfirmOpen(false);
+    setCancellingRegId(pendingCancelRegId);
     try {
-      await registrationApi.cancel(token, regId);
+      await registrationApi.cancel(token, pendingCancelRegId);
       toast.success("Đã hủy đăng ký, 40% phí đã được hoàn trả");
       await loadScheduleData();
     } catch (err: any) {
       toast.error(err.message || "Hủy đăng ký thất bại");
     } finally {
       setCancellingRegId(null);
+      setPendingCancelRegId(null);
+      setPendingCancelRaceName('');
     }
   };
 
@@ -1743,7 +1755,7 @@ export function HorseOwnerDashboard() {
                                     size="small"
                                     disabled={cancellingRegId === reg._id}
                                     onClick={() =>
-                                      handleCancelRegistration(reg._id)
+                                      openCancelConfirm(reg._id, race?.name || 'cuộc đua này')
                                     }
                                     sx={{
                                       borderColor: "rgba(180,35,24,0.4)",
@@ -3708,6 +3720,77 @@ export function HorseOwnerDashboard() {
             ) : (
               "Xác Nhận Đăng Ký"
             )}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Cancel Registration Confirmation Dialog */}
+      <Dialog
+        open={cancelConfirmOpen}
+        onClose={() => setCancelConfirmOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            background: "#1A1612",
+            border: "1px solid #2D2920",
+            borderRadius: "16px",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            color: "#EDE8DC",
+            fontFamily: "serif",
+            fontSize: "1.25rem",
+            fontWeight: 700,
+            borderBottom: "1px solid #2D2920",
+            pb: 2,
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-red-900/30 rounded-lg flex items-center justify-center">
+              <AlertTriangle className="w-5 h-5 text-red-400" />
+            </div>
+            Xác nhận hủy đăng ký
+          </div>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3, pb: 2 }}>
+          <p className="text-slate-300 text-sm leading-relaxed">
+            Bạn có chắc muốn hủy đăng ký cho cuộc đua{" "}
+            <strong className="text-[#C9A227]">{pendingCancelRaceName}</strong>?
+          </p>
+          <div className="mt-4 rounded-xl border border-amber-900/40 bg-amber-900/10 p-4">
+            <div className="flex items-start gap-3">
+              <Coins className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-amber-300 text-xs font-semibold mb-1">Chính sách hoàn phí</p>
+                <p className="text-amber-200/70 text-xs">
+                  Bạn sẽ được hoàn lại <strong>40%</strong> phí đăng ký đã nộp vào ví của bạn.
+                </p>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+        <DialogActions sx={{ borderTop: "1px solid #2D2920", padding: "16px 24px", gap: 1 }}>
+          <Button
+            onClick={() => setCancelConfirmOpen(false)}
+            sx={{ color: "#7A7468", textTransform: "none" }}
+          >
+            Giữ nguyên
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleCancelRegistration}
+            sx={{
+              background: "#7F1D1D",
+              color: "#FCA5A5",
+              textTransform: "none",
+              fontWeight: 700,
+              "&:hover": { background: "#991B1B" },
+            }}
+          >
+            Hủy đăng ký
           </Button>
         </DialogActions>
       </Dialog>

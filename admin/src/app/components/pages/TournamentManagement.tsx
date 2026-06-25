@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Edit, Trash2, Plus, Calendar, Clock, Trophy, Eye, RefreshCw, X, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router';
+import { Edit, Trash2, Plus, Calendar, Clock, Trophy, Eye, RefreshCw, X, AlertCircle, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { tournamentApi, type Tournament, type CreateTournamentData } from '../../api/tournament';
 import { raceApi, type Race, type CreateRaceData } from '../../api/race';
@@ -297,6 +298,7 @@ function StatusDialog({ open, race, onClose, onSaved }: any) {
 // ── Main Component ─────────────────────────────────────────────────────────────
 
 export default function TournamentManagement() {
+  const navigate = useNavigate();
   const [tab, setTab] = useState(0);
 
   // Tournaments
@@ -304,6 +306,7 @@ export default function TournamentManagement() {
   const [loadingT, setLoadingT] = useState(true);
   const [tDialog, setTDialog] = useState(false);
   const [editingT, setEditingT] = useState<Tournament | null>(null);
+  const [tSearch, setTSearch] = useState('');
 
   // Races
   const [races, setRaces] = useState<Race[]>([]);
@@ -313,6 +316,7 @@ export default function TournamentManagement() {
   const [statusDialog, setStatusDialog] = useState(false);
   const [statusRace, setStatusRace] = useState<Race | null>(null);
   const [filterTournament, setFilterTournament] = useState('');
+  const [rSearch, setRSearch] = useState('');
 
   // Pagination
   const [tPage, setTPage] = useState(1);
@@ -320,10 +324,24 @@ export default function TournamentManagement() {
   const T_PER_PAGE = 6;
   const R_PER_PAGE = 10;
 
-  const pagedTournaments = tournaments.slice((tPage - 1) * T_PER_PAGE, tPage * T_PER_PAGE);
-  const tTotalPages = Math.ceil(tournaments.length / T_PER_PAGE);
-  const pagedRaces = races.slice((rPage - 1) * R_PER_PAGE, rPage * R_PER_PAGE);
-  const rTotalPages = Math.ceil(races.length / R_PER_PAGE);
+  const filteredTournaments = tSearch
+    ? tournaments.filter(t =>
+        t.name.toLowerCase().includes(tSearch.toLowerCase()) ||
+        (t.location || '').toLowerCase().includes(tSearch.toLowerCase())
+      )
+    : tournaments;
+  const pagedTournaments = filteredTournaments.slice((tPage - 1) * T_PER_PAGE, tPage * T_PER_PAGE);
+  const tTotalPages = Math.ceil(filteredTournaments.length / T_PER_PAGE);
+
+  const filteredRaces = rSearch
+    ? races.filter(r =>
+        r.name.toLowerCase().includes(rSearch.toLowerCase()) ||
+        r.grade.toLowerCase().includes(rSearch.toLowerCase()) ||
+        (typeof r.tournamentId === 'object' && r.tournamentId.name.toLowerCase().includes(rSearch.toLowerCase()))
+      )
+    : races;
+  const pagedRaces = filteredRaces.slice((rPage - 1) * R_PER_PAGE, rPage * R_PER_PAGE);
+  const rTotalPages = Math.ceil(filteredRaces.length / R_PER_PAGE);
 
   const loadTournaments = useCallback(async () => {
     setLoadingT(true);
@@ -374,6 +392,9 @@ export default function TournamentManagement() {
     }
   };
 
+  const ongoingCount = tournaments.filter(t => t.status === 'ongoing').length;
+  const upcomingCount = tournaments.filter(t => t.status === 'upcoming').length;
+
   return (
     <>
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -385,6 +406,81 @@ export default function TournamentManagement() {
           <Plus size={20} />
           Tạo giải đấu mới
         </button>
+      </div>
+
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:gap-6 mb-6">
+        {/* Card 1 — Tổng giải đấu */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-[#1c2434]">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-900/30">
+              <Trophy size={24} className="text-amber-500" />
+            </div>
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+              <TrendingUp size={11} />
+              Hệ thống
+            </span>
+          </div>
+          <p className="text-3xl font-bold text-black dark:text-white mb-1">
+            {loadingT ? <span className="text-slate-400 text-xl">...</span> : tournaments.length}
+          </p>
+          <p className="text-sm font-medium text-black dark:text-white">Tổng giải đấu</p>
+          <p className="text-xs text-slate-400 mt-0.5">tất cả giải đấu trong hệ thống</p>
+        </div>
+
+        {/* Card 2 — Đang diễn ra */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-[#1c2434]">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/30">
+              <Flag size={24} className="text-emerald-500" />
+            </div>
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+              <TrendingUp size={11} />
+              Đang hoạt động
+            </span>
+          </div>
+          <p className="text-3xl font-bold text-black dark:text-white mb-1">
+            {loadingT ? <span className="text-slate-400 text-xl">...</span> : ongoingCount}
+          </p>
+          <p className="text-sm font-medium text-black dark:text-white">Giải đang diễn ra</p>
+          <p className="text-xs text-slate-400 mt-0.5">đang trong giai đoạn thi đấu</p>
+        </div>
+
+        {/* Card 3 — Sắp diễn ra */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-[#1c2434]">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-900/30">
+              <Calendar size={24} className="text-blue-500" />
+            </div>
+            <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+              <TrendingUp size={11} />
+              Sắp diễn ra
+            </span>
+          </div>
+          <p className="text-3xl font-bold text-black dark:text-white mb-1">
+            {loadingT ? <span className="text-slate-400 text-xl">...</span> : upcomingCount}
+          </p>
+          <p className="text-sm font-medium text-black dark:text-white">Giải sắp diễn ra</p>
+          <p className="text-xs text-slate-400 mt-0.5">chưa bắt đầu thi đấu</p>
+        </div>
+
+        {/* Card 4 — Tổng cuộc đua */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-[#1c2434]">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-50 dark:bg-purple-900/30">
+              <Clock size={24} className="text-purple-500" />
+            </div>
+            <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2.5 py-1 text-xs font-medium text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
+              <TrendingUp size={11} />
+              Lịch thi đấu
+            </span>
+          </div>
+          <p className="text-3xl font-bold text-black dark:text-white mb-1">
+            {raceCount === null ? <span className="text-slate-400 text-xl">...</span> : raceCount}
+          </p>
+          <p className="text-sm font-medium text-black dark:text-white">Tổng cuộc đua</p>
+          <p className="text-xs text-slate-400 mt-0.5">tổng số race trong hệ thống</p>
+        </div>
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-[#1c2434] mb-6 overflow-hidden">
@@ -409,6 +505,19 @@ export default function TournamentManagement() {
           {/* ── Tab 0: Tournaments ── */}
           {tab === 0 && (
             <div>
+              {/* Search */}
+              <div className="mb-5">
+                <div className="relative w-full max-w-sm">
+                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Tìm giải đấu, địa điểm..."
+                    value={tSearch}
+                    onChange={e => { setTSearch(e.target.value); setTPage(1); }}
+                    className="w-full rounded border border-slate-300 bg-transparent py-2 pl-9 pr-4 text-sm outline-none focus:border-blue-500 dark:border-slate-600 dark:bg-slate-800/50 dark:text-white"
+                  />
+                </div>
+              </div>
               {loadingT ? (
                 <div className="flex justify-center py-12"><RefreshCw className="animate-spin text-blue-500" size={32} /></div>
               ) : tournaments.length === 0 ? (
@@ -493,20 +602,34 @@ export default function TournamentManagement() {
           {/* ── Tab 1: Races ── */}
           {tab === 1 && (
             <div>
-              <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="relative z-20 bg-transparent min-w-[240px]">
-                  <select value={filterTournament} onChange={e => setFilterTournament(e.target.value)} className="relative z-20 w-full appearance-none rounded border border-slate-300 bg-transparent py-2 px-4 outline-none transition focus:border-blue-500 active:border-blue-500 dark:border-slate-600 dark:bg-slate-800">
-                    <option value="">-- Lọc theo giải đấu --</option>
-                    {tournaments.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
-                  </select>
-                </div>
-                <div className="flex gap-3">
-                  <button onClick={loadRaces} disabled={loadingR} className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white py-2 px-4 text-center font-medium text-black hover:bg-slate-50 transition dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700">
-                    <RefreshCw size={18} className={loadingR ? 'animate-spin' : ''} /> <span className="hidden sm:inline">Làm mới</span>
-                  </button>
-                  <button onClick={() => { setEditingR(null); setRDialog(true); }} className="inline-flex items-center justify-center gap-2 rounded-md bg-blue-600 py-2 px-4 text-center font-medium text-white hover:bg-blue-700 transition">
-                    <Plus size={18} /> Thêm cuộc đua
-                  </button>
+              <div className="mb-6 flex flex-col gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-1">
+                    <div className="relative min-w-[240px]">
+                      <select value={filterTournament} onChange={e => { setFilterTournament(e.target.value); setRPage(1); }} className="w-full appearance-none rounded border border-slate-300 bg-transparent py-2 px-4 outline-none transition focus:border-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white">
+                        <option value="">-- Lọc theo giải đấu --</option>
+                        {tournaments.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
+                      </select>
+                    </div>
+                    <div className="relative w-full sm:w-auto sm:min-w-[220px]">
+                      <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Tìm tên cuộc đua, hạng..."
+                        value={rSearch}
+                        onChange={e => { setRSearch(e.target.value); setRPage(1); }}
+                        className="w-full rounded border border-slate-300 bg-transparent py-2 pl-9 pr-4 text-sm outline-none focus:border-blue-500 dark:border-slate-600 dark:bg-slate-800/50 dark:text-white"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <button onClick={loadRaces} disabled={loadingR} className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white py-2 px-4 text-center font-medium text-black hover:bg-slate-50 transition dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700">
+                      <RefreshCw size={18} className={loadingR ? 'animate-spin' : ''} /> <span className="hidden sm:inline">Làm mới</span>
+                    </button>
+                    <button onClick={() => { setEditingR(null); setRDialog(true); }} className="inline-flex items-center justify-center gap-2 rounded-md bg-blue-600 py-2 px-4 text-center font-medium text-white hover:bg-blue-700 transition">
+                      <Plus size={18} /> Thêm cuộc đua
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -524,12 +647,13 @@ export default function TournamentManagement() {
                         <th className="py-4 px-4 font-semibold text-black dark:text-white border-b border-slate-200 dark:border-slate-700">Cự ly</th>
                         <th className="py-4 px-4 font-semibold text-black dark:text-white border-b border-slate-200 dark:border-slate-700">Trọng tài</th>
                         <th className="py-4 px-4 font-semibold text-black dark:text-white border-b border-slate-200 dark:border-slate-700 text-center">Trạng thái</th>
+                        <th className="py-4 px-4 font-semibold text-black dark:text-white border-b border-slate-200 dark:border-slate-700">Chi tiết</th>
                         <th className="py-4 px-4 font-semibold text-black dark:text-white border-b border-slate-200 dark:border-slate-700 text-right xl:pr-6">Hành động</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {races.length === 0 ? (
-                        <tr><td colSpan={8} className="text-center py-8 text-slate-500">Chưa có cuộc đua nào</td></tr>
+                      {filteredRaces.length === 0 ? (
+                        <tr><td colSpan={9} className="text-center py-8 text-slate-500">{races.length === 0 ? 'Chưa có cuộc đua nào' : 'Không tìm thấy cuộc đua phù hợp'}</td></tr>
                       ) : pagedRaces.map((r) => {
                         const tName = typeof r.tournamentId === 'object' ? r.tournamentId.name : '-';
                         const canChangeStatus = ['open', 'closed'].includes(r.status);
@@ -553,6 +677,14 @@ export default function TournamentManagement() {
                             </td>
                             <td className="py-3 px-4 text-center">
                               <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_COLOR[r.status] || STATUS_COLOR.default}`}>{STATUS_LABEL[r.status] || r.status}</span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <button
+                                onClick={() => navigate('/results', { state: { openRaceId: r._id } })}
+                                className="flex items-center gap-1.5 rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-blue-900/30 dark:hover:text-blue-400 transition"
+                              >
+                                <Eye size={14} /> Xem
+                              </button>
                             </td>
                             <td className="py-3 px-4 text-right xl:pr-6">
                               <div className="flex items-center justify-end gap-2">
