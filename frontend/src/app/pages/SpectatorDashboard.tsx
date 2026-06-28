@@ -99,7 +99,7 @@ const lightSelectSx = {
 export function SpectatorDashboard() {
   const navigate = useNavigate();
   const { user, token } = useAuth();
-  const { balance, formatted: walletBalance, refetch: refetchWallet } = useWallet();
+  const { balance, formatted: walletBalance, refetch: refetchWallet, adjustBalance } = useWallet();
   const { pathname, search } = useLocation();
   const activeTab =
     pathname === "/spectator/live"
@@ -287,6 +287,15 @@ export function SpectatorDashboard() {
   const [rewardsPage, setRewardsPage] = useState(1);
   const [redemptionsPage, setRedemptionsPage] = useState(1);
   const [redeemingId, setRedeemingId] = useState<string | null>(null);
+  const [redeemConfirmOpen, setRedeemConfirmOpen] = useState(false);
+  const [pendingReward, setPendingReward] = useState<Reward | null>(null);
+  const [redeemResultOpen, setRedeemResultOpen] = useState(false);
+  const [redeemResult, setRedeemResult] = useState<{
+    type: "success" | "error";
+    message: string;
+    redemption?: Redemption;
+  } | null>(null);
+  const [copiedVoucherId, setCopiedVoucherId] = useState<string | null>(null);
   const PAGE_SIZE = 10;
   const [depositStep, setDepositStep] = useState(1);
   const [stripeLoading, setStripeLoading] = useState(false);
@@ -380,26 +389,60 @@ export function SpectatorDashboard() {
     }
   };
 
-  const handleRedeemReward = async (reward: Reward) => {
-    if (!token) return;
-    const costInCoins = reward.coinsRequired;
+  const openRedeemConfirm = (reward: Reward) => {
     const currentBalance = balance ?? 0;
-    if (currentBalance < costInCoins) {
-      toast.error("Số dư ví không đủ để đổi phần quà này");
+    if (currentBalance < reward.coinsRequired) {
+      setRedeemResult({
+        type: "error",
+        message: "Số dư ví không đủ để đổi phần quà này",
+      });
+      setRedeemResultOpen(true);
       return;
     }
-    if (!confirm(`Bạn có chắc chắn muốn dùng ${costInCoins.toLocaleString('vi-VN')} coins để đổi "${reward.name}"?`)) return;
+    setPendingReward(reward);
+    setRedeemConfirmOpen(true);
+  };
+
+  const confirmRedeem = async () => {
+    if (!token || !pendingReward) return;
+    const reward = pendingReward;
+    const costInCoins = reward.coinsRequired;
+
+    setRedeemConfirmOpen(false);
     setRedeemingId(reward._id);
+
+    adjustBalance(-costInCoins);
+    setRewards((prev) =>
+      prev.map((r) =>
+        r._id === reward._id ? { ...r, stock: Math.max(0, r.stock - 1) } : r,
+      ),
+    );
+
     try {
-      await rewardApi.redeem(token, reward._id);
-      toast.success("Đổi phần thưởng thành công! Mã voucher đã được tạo.");
+      const redemption = await rewardApi.redeem(token, reward._id);
+      setMyRedemptions((prev) => [redemption, ...prev]);
+      setRedeemResult({
+        type: "success",
+        message: "Đổi phần thưởng thành công! Mã voucher đã được tạo.",
+        redemption,
+      });
+      setRedeemResultOpen(true);
       refetchWallet();
-      loadRewards();
-      loadRedemptions();
     } catch (err: any) {
-      toast.error(err.message || "Đổi thưởng thất bại");
+      adjustBalance(costInCoins);
+      setRewards((prev) =>
+        prev.map((r) =>
+          r._id === reward._id ? { ...r, stock: r.stock + 1 } : r,
+        ),
+      );
+      setRedeemResult({
+        type: "error",
+        message: err.message || "Đổi thưởng thất bại",
+      });
+      setRedeemResultOpen(true);
     } finally {
       setRedeemingId(null);
+      setPendingReward(null);
     }
   };
 
@@ -2838,7 +2881,7 @@ export function SpectatorDashboard() {
                               fullWidth
                               variant="contained"
                               disabled={redeemingId !== null}
-                              onClick={() => handleRedeemReward(reward)}
+                              onClick={() => openRedeemConfirm(reward)}
                               sx={{
                                 background: "#1F3D2B",
                                 color: "#F7F3EA",
@@ -2897,12 +2940,17 @@ export function SpectatorDashboard() {
                               type="button"
                               onClick={() => {
                                 navigator.clipboard.writeText(redemption.voucherCode);
-                                toast.success(isPhysical ? "Đã sao chép mã nhận quà" : "Đã sao chép mã voucher");
+                                setCopiedVoucherId(redemption._id);
+                                setTimeout(() => setCopiedVoucherId(null), 1500);
                               }}
                               className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-all"
                               title="Sao chép"
                             >
-                              <Copy className="w-3.5 h-3.5" />
+                              {copiedVoucherId === redemption._id ? (
+                                <span className="text-[10px] text-primary font-semibold">Đã chép</span>
+                              ) : (
+                                <Copy className="w-3.5 h-3.5" />
+                              )}
                             </button>
                           </div>
 
@@ -3256,6 +3304,141 @@ export function SpectatorDashboard() {
             </DialogActions>
           </>
         )}
+      </Dialog>
+
+      {/* Redeem Confirm Dialog */}
+      <Dialog
+        open={redeemConfirmOpen}
+        onClose={() => !redeemingId && setRedeemConfirmOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            background: "#FFFFFF",
+            border: "1px solid #E3DCCB",
+            borderRadius: 0,
+          },
+        }}
+      >
+        <DialogTitle sx={{ color: "#23201A", borderBottom: "1px solid #E3DCCB" }}>
+          <div className="flex items-center gap-3">
+            <Gift className="w-5 h-5 text-secondary" />
+            <span className="font-serif font-bold">Xác Nhận Đổi Quà</span>
+          </div>
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          {pendingReward && (
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Bạn có chắc chắn muốn dùng{" "}
+              <strong className="text-[#8F7318]">
+                {pendingReward.coinsRequired.toLocaleString("vi-VN")} coins
+              </strong>{" "}
+              để đổi <strong className="text-foreground">"{pendingReward.name}"</strong>?
+            </p>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 3, borderTop: "1px solid #E3DCCB", gap: 1 }}>
+          <Button
+            onClick={() => {
+              setRedeemConfirmOpen(false);
+              setPendingReward(null);
+            }}
+            disabled={redeemingId !== null}
+            sx={{ color: "#7A7468", textTransform: "none", fontWeight: 600 }}
+          >
+            Hủy
+          </Button>
+          <Button
+            variant="contained"
+            onClick={confirmRedeem}
+            disabled={redeemingId !== null}
+            sx={{
+              background: "#1F3D2B",
+              color: "#F7F3EA",
+              borderRadius: 0,
+              textTransform: "none",
+              fontWeight: 700,
+              boxShadow: "none",
+              "&:hover": { background: "#172D20", boxShadow: "none" },
+            }}
+          >
+            {redeemingId ? "Đang xử lý..." : "Đồng Ý Đổi"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Redeem Result Dialog */}
+      <Dialog
+        open={redeemResultOpen}
+        onClose={() => setRedeemResultOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            background: "#FFFFFF",
+            border: "1px solid #E3DCCB",
+            borderRadius: 0,
+          },
+        }}
+      >
+        <DialogTitle sx={{ color: "#23201A", borderBottom: "1px solid #E3DCCB" }}>
+          <div className="flex items-center gap-3">
+            {redeemResult?.type === "success" ? (
+              <CheckCircle className="w-5 h-5 text-[#1F3D2B]" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-destructive" />
+            )}
+            <span className="font-serif font-bold">
+              {redeemResult?.type === "success" ? "Đổi Quà Thành Công" : "Đổi Quà Thất Bại"}
+            </span>
+          </div>
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <p className="text-sm text-muted-foreground">{redeemResult?.message}</p>
+          {redeemResult?.type === "success" && redeemResult.redemption && (
+            <div className="mt-4 space-y-2">
+              <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
+                {redeemResult.redemption.rewardId?.type === "physical"
+                  ? "Mã Nhận Quà"
+                  : "Mã Voucher"}
+              </div>
+              <div className="bg-background border border-border px-3 py-2 flex items-center justify-between gap-2">
+                <span className="font-mono text-sm text-primary font-bold">
+                  {redeemResult.redemption.voucherCode}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(redeemResult.redemption!.voucherCode);
+                    setCopiedVoucherId(redeemResult.redemption!._id);
+                    setTimeout(() => setCopiedVoucherId(null), 1500);
+                  }}
+                  className="text-xs text-primary font-semibold hover:underline"
+                >
+                  {copiedVoucherId === redeemResult.redemption._id ? "Đã chép" : "Sao chép"}
+                </button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 3, borderTop: "1px solid #E3DCCB" }}>
+          <Button
+            variant="contained"
+            onClick={() => setRedeemResultOpen(false)}
+            fullWidth
+            sx={{
+              background: "#1F3D2B",
+              color: "#F7F3EA",
+              borderRadius: 0,
+              textTransform: "none",
+              fontWeight: 700,
+              boxShadow: "none",
+              "&:hover": { background: "#172D20", boxShadow: "none" },
+            }}
+          >
+            Đóng
+          </Button>
+        </DialogActions>
       </Dialog>
     </AppShell>
   );

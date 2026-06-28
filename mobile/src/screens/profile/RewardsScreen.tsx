@@ -73,18 +73,47 @@ export function RewardsScreen() {
           text: 'Đồng Ý',
           onPress: async () => {
             setRedeemingId(reward._id);
+
+            if (user?.walletId) {
+              setUser({
+                ...user,
+                walletId: { ...user.walletId, balance: user.walletId.balance - costInCoins },
+              });
+            }
+            setRewards((prev) =>
+              prev.map((r) =>
+                r._id === reward._id ? { ...r, stock: Math.max(0, r.stock - 1) } : r,
+              ),
+            );
+
             try {
-              await rewardService.redeemReward(reward._id);
-              Alert.alert('Thành Công', 'Đổi quà thành công! Mã voucher đã được lưu lại trong Lịch Sử.');
-              fetchData(true);
+              const redemption = await rewardService.redeemReward(reward._id);
+              setRedemptions((prev) => [redemption, ...prev]);
+              Alert.alert(
+                'Thành Công',
+                `Đổi quà thành công!\nMã voucher: ${redemption.voucherCode}`,
+              );
+              const freshUser = await userService.getMe();
+              setUser(freshUser);
             } catch (err: any) {
+              if (user?.walletId) {
+                setUser({
+                  ...user,
+                  walletId: { ...user.walletId, balance: user.walletId.balance + costInCoins },
+                });
+              }
+              setRewards((prev) =>
+                prev.map((r) =>
+                  r._id === reward._id ? { ...r, stock: r.stock + 1 } : r,
+                ),
+              );
               Alert.alert('Lỗi', err?.message || 'Đổi quà thất bại');
             } finally {
               setRedeemingId(null);
             }
           },
         },
-      ]
+      ],
     );
   };
 

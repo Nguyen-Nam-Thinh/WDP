@@ -28,5 +28,14 @@ export function useWallet() {
 
   const formatted = balance !== null ? `${balance.toLocaleString('vi-VN')} coins` : null;
 
-  return { balance, formatted, loading, refetch: fetchWallet };
+  const adjustBalance = useCallback((delta: number) => {
+    setBalance((prev) => {
+      if (prev === null) return prev;
+      const next = Math.max(0, prev + delta);
+      updateUser({ balance: `${next.toLocaleString('vi-VN')} coins` });
+      return next;
+    });
+  }, [updateUser]);
+
+  return { balance, formatted, loading, refetch: fetchWallet, adjustBalance };
 }
