@@ -4,8 +4,6 @@ import { API_URL } from '../api/auth';
 
 const SOCKET_URL = API_URL.replace('/api/v1', '');
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 export interface SocketHorse {
   horseId: string;
   horseName: string;
@@ -30,6 +28,20 @@ export interface SocketResult {
   pointsEarned: number;
 }
 
+export interface SegmentHorseEvent {
+  horseId: string;
+  horseName: string;
+  rank: number;
+  event: 'burst' | 'fatigue' | 'overtake' | 'steady';
+  speedBoost: number;
+}
+
+export interface RaceSegmentEvent {
+  segment: number;
+  progressPct: number;
+  horses: SegmentHorseEvent[];
+}
+
 export type RacePhase = 'pre' | 'started' | 'racing' | 'finished';
 
 interface AnimHorse {
@@ -37,46 +49,50 @@ interface AnimHorse {
   horseName: string;
   jockeyName: string | null;
   jockeyStyle?: string;
-  speedProfile?: [number, number, number];
-  speedFactor?: number;  // legacy fallback
-  finalRank: number;     // 1 = winner — drives animation curve
-  noisePhase: number;    // kept for potential future visual wobble
+  speedProfile?: number[];
+  segmentBoosts?: number[];
+  speedFactor?: number;
+  finalRank: number;
+  noisePhase: number;
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-// Winner crosses the finish line at 88% of total animation duration.
-// Remaining 12% lets trailing horses also reach 100% in sequence.
 const WINNER_FINISH_T = 0.88;
 const TIME_SPREAD = 0.12;
 const SPRINT_MULTIPLIER = 1.15;
 
-// ─── Position curve ───────────────────────────────────────────────────────────
-// All horses reach 100% (the finish line). Each horse's finish time is staggered:
-// rank 1 → WINNER_FINISH_T, rank N → 1.0. Ranking is by time, not stopping point.
 function computeHorseProgress(
   t: number,
   rank: number,
   totalHorses: number,
-  speedProfile: [number, number, number],
+  speedProfile: number[],
 ): number {
   if (t <= 0) return 0;
+
+  const phases = speedProfile.length >= 4
+    ? speedProfile.slice(0, 4)
+    : [...speedProfile, speedProfile[speedProfile.length - 1] ?? 1];
+
   const myFinishT = WINNER_FINISH_T + (rank - 1) * TIME_SPREAD / Math.max(totalHorses - 1, 1);
   const scaledT = Math.min(t / myFinishT, 1.0);
-  const p: [number, number, number] = [
-    speedProfile[0],
-    speedProfile[1],
-    speedProfile[2] * SPRINT_MULTIPLIER,
+
+  const p: number[] = [
+    phases[0],
+    phases[1],
+    phases[2],
+    phases[3] * SPRINT_MULTIPLIER,
   ];
-  const t1 = 0.33, t2 = 0.66;
+  const t1 = 0.25;
+  const t2 = 0.5;
+  const t3 = 0.75;
   let raw: number;
-  if (scaledT <= t1)      raw = p[0] * scaledT;
+  if (scaledT <= t1) raw = p[0] * scaledT;
   else if (scaledT <= t2) raw = p[0] * t1 + p[1] * (scaledT - t1);
-  else                    raw = p[0] * t1 + p[1] * (t2 - t1) + p[2] * (scaledT - t2);
-  const maxRaw = p[0] * t1 + p[1] * (t2 - t1) + p[2] * (1 - t2);
+  else if (scaledT <= t3) raw = p[0] * t1 + p[1] * (t2 - t1) + p[2] * (scaledT - t2);
+  else raw = p[0] * t1 + p[1] * (t2 - t1) + p[2] * (t3 - t2) + p[3] * (scaledT - t3);
+
+  const maxRaw = p[0] * t1 + p[1] * (t2 - t1) + p[2] * (t3 - t2) + p[3] * (1 - t3);
   return Math.max(0, Math.min(100, (raw / Math.max(maxRaw, 0.01)) * 100));
 }
-
-// ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useRaceSocket(raceId: string, token: string | null) {
   const [phase, setPhase] = useState<RacePhase>('pre');
@@ -85,12 +101,13 @@ export function useRaceSocket(raceId: string, token: string | null) {
   const [results, setResults] = useState<SocketResult[]>([]);
   const [elapsed, setElapsed] = useState(0);
   const [total, setTotal] = useState(30);
+  const [lastSegment, setLastSegment] = useState<RaceSegmentEvent | null>(null);
+  const [segmentHighlights, setSegmentHighlights] = useState<Record<string, SegmentHorseEvent>>({});
 
   const socketRef = useRef<Socket | null>(null);
   const rafRef = useRef<number | null>(null);
   const animRef = useRef<{ horses: AnimHorse[]; startTime: number; duration: number } | null>(null);
 
-  // ── rAF animation loop (runs at ~60fps) ──
   const startAnimLoop = (animHorses: AnimHorse[], durationMs: number, offsetMs = 0) => {
     const startTime = performance.now() - offsetMs;
     animRef.current = { horses: animHorses, startTime, duration: durationMs };
@@ -99,9 +116,9 @@ export function useRaceSocket(raceId: string, token: string | null) {
       const anim = animRef.current;
       if (!anim) return;
 
-      const elapsed = performance.now() - anim.startTime;
-      const t = Math.min(elapsed, anim.duration);
-      const progress = t / anim.duration; // 0→1
+      const elapsedMs = performance.now() - anim.startTime;
+      const t = Math.min(elapsedMs, anim.duration);
+      const progress = t / anim.duration;
 
       const totalHorses = anim.horses.length;
       const computed = anim.horses.map(h => {
@@ -109,7 +126,6 @@ export function useRaceSocket(raceId: string, token: string | null) {
         if (h.speedProfile) {
           progressPct = computeHorseProgress(progress, h.finalRank, totalHorses, h.speedProfile);
         } else {
-          // Legacy fallback: scale progress by this horse's finish time
           const myFinishT = WINNER_FINISH_T + (h.finalRank - 1) * TIME_SPREAD / Math.max(totalHorses - 1, 1);
           progressPct = (h.speedFactor ?? 1.0) * Math.min(progress / myFinishT, 1.0) * 100;
         }
@@ -120,7 +136,6 @@ export function useRaceSocket(raceId: string, token: string | null) {
         };
       });
 
-      // Sort by progressPct descending → current rank
       const sorted = [...computed].sort((a, b) => b.progressPct - a.progressPct);
       setPositions(sorted.map((h, i) => ({
         rank: i + 1,
@@ -147,7 +162,6 @@ export function useRaceSocket(raceId: string, token: string | null) {
     animRef.current = null;
   };
 
-  // ── Socket setup ──
   useEffect(() => {
     if (!raceId) return;
 
@@ -164,7 +178,7 @@ export function useRaceSocket(raceId: string, token: string | null) {
       raceDurationMs: number;
       trackCondition?: string;
       horses: AnimHorse[];
-      elapsedMs?: number; // present when joining a race already in progress
+      elapsedMs?: number;
     }) => {
       if (data.raceId !== raceId) return;
 
@@ -172,15 +186,25 @@ export function useRaceSocket(raceId: string, token: string | null) {
         horseId: h.horseId,
         horseName: h.horseName,
         jockeyName: h.jockeyName,
-        jockeyStyle: h.jockeyStyle,
+        jockeyStyle: h.jockeyStyle as SocketHorse['jockeyStyle'],
       })));
       setPhase('racing');
+      setLastSegment(null);
+      setSegmentHighlights({});
 
       stopAnimLoop();
       startAnimLoop(data.horses, data.raceDurationMs ?? 30_000, data.elapsedMs ?? 0);
     });
 
-    // race:progress kept for backwards compat but no longer emitted by backend
+    socket.on('race:segment', (data: RaceSegmentEvent & { raceId: string }) => {
+      if (data.raceId !== raceId) return;
+      setLastSegment(data);
+      const map: Record<string, SegmentHorseEvent> = {};
+      data.horses.forEach(h => { map[h.horseId] = h; });
+      setSegmentHighlights(map);
+      setTimeout(() => setSegmentHighlights({}), 2500);
+    });
+
     socket.on('race:progress', (data: { raceId: string; elapsed: number; total: number; positions: SocketPosition[] }) => {
       if (data.raceId !== raceId) return;
       if (!animRef.current) {
@@ -196,6 +220,8 @@ export function useRaceSocket(raceId: string, token: string | null) {
       stopAnimLoop();
       setResults(data.results);
       setPhase('finished');
+      setLastSegment(null);
+      setSegmentHighlights({});
     });
 
     return () => {
@@ -206,5 +232,5 @@ export function useRaceSocket(raceId: string, token: string | null) {
     };
   }, [raceId, token]);
 
-  return { phase, horses, positions, results, elapsed, total };
+  return { phase, horses, positions, results, elapsed, total, lastSegment, segmentHighlights };
 }

@@ -5,10 +5,12 @@ const { Registration } = require('../models/registration.model');
 const { RaceResult } = require('../models/race_result.model');
 const { Wallet } = require('../models/wallet.model');
 const walletService = require('./wallet.service');
+const bettingOddsService = require('./betting-odds.service');
 const { AppError } = require('../middleware/error.middleware');
-const { BET_MULTIPLIERS, CUTOFFS } = require('../config/constants');
+const { BET_ODDS_CONFIG, CUTOFFS } = require('../config/constants');
 
 const BETTABLE_STATUSES = ['open', 'closed', 'pre_check'];
+const BET_TYPES = Object.keys(BET_ODDS_CONFIG.baseOdds);
 
 async function placeBet(spectatorId, { raceId, horseId, betType, amount }) {
   const race = await Race.findById(raceId);
@@ -22,7 +24,7 @@ async function placeBet(spectatorId, { raceId, horseId, betType, amount }) {
     throw new AppError(400, 'Đã qua thời hạn đặt cược cho cuộc đua này');
   }
 
-  if (!Object.keys(BET_MULTIPLIERS).includes(betType)) {
+  if (!BET_TYPES.includes(betType)) {
     throw new AppError(400, `Loại cược không hợp lệ: ${betType}`);
   }
 
@@ -32,7 +34,7 @@ async function placeBet(spectatorId, { raceId, horseId, betType, amount }) {
 
   if (amount < 1) throw new AppError(400, 'Số tiền cược tối thiểu là 1');
 
-  const multiplier = BET_MULTIPLIERS[betType];
+  const multiplier = await bettingOddsService.calcLockedMultiplier(raceId, horseId, betType);
 
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -64,7 +66,11 @@ async function placeBet(spectatorId, { raceId, horseId, betType, amount }) {
 
   return Bet.findById(bet._id)
     .populate('raceId', 'name grade scheduledTime status')
-    .populate('horseId', 'name breed currentGrade');
+    .populate('horseId', 'name breed currentGrade')
+    .then(async (placedBet) => {
+      bettingOddsService.emitPoolUpdated(raceId).catch(() => {});
+      return placedBet;
+    });
 }
 
 async function getMyBets(userId, role, { page = 1, limit = 20, status, raceId } = {}) {
@@ -138,7 +144,10 @@ async function cancelBet(betId, spectatorId) {
     session.endSession();
   }
 
-  return bet.populate('raceId', 'name grade scheduledTime');
+  return bet.populate('raceId', 'name grade scheduledTime').then(async (cancelled) => {
+    bettingOddsService.emitPoolUpdated(bet.raceId.toString()).catch(() => {});
+    return cancelled;
+  });
 }
 
 async function getRaceBets(raceId, { page = 1, limit = 50 } = {}) {
@@ -278,4 +287,4 @@ async function refundRaceBets(raceId, session) {
   return pendingBets.length;
 }
 
-module.exports = { placeBet, getMyBets, getBetById, cancelBet, getRaceBets, settleBets, settleBetsWithSession, refundRaceBets };
+module.exports = { placeBet, getMyBets, getBetById, cancelBet, getRaceBets, settleBets, settleBetsWithSession, refundRaceBets, getRaceBettingOdds: bettingOddsService.getRaceBettingOdds };

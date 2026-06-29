@@ -31,6 +31,14 @@ function initSocket(httpServer, clientUrl) {
     socket.on('leave:race', (raceId) => {
       socket.leave(`race:${raceId}`);
     });
+
+    socket.on('join:betting', (raceId) => {
+      socket.join(`betting:${raceId}`);
+    });
+
+    socket.on('leave:betting', (raceId) => {
+      socket.leave(`betting:${raceId}`);
+    });
   });
 
   return io;

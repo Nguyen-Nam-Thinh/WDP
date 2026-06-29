@@ -17,6 +17,7 @@ const {
   AI_CONFIG,
   TRACK_CONDITIONS,
   JOCKEY_STYLE_SPEED_PROFILES,
+  BET_ODDS_CONFIG,
 } = require('../config/constants');
 
 // Duration scales with race distance (60ms per meter), clamped 30s–90s
@@ -88,6 +89,94 @@ function getUpgradedGrade(currentGrade, totalPoints) {
   if (totalPoints >= GRADE_THRESHOLDS.G2 && currentIdx < 2) return 'G2';
   if (totalPoints >= GRADE_THRESHOLDS.G3 && currentIdx < 1) return 'G3';
   return currentGrade;
+}
+
+// ─── 4-segment race drama plan ────────────────────────────────────────────────
+function buildFourPhaseProfile(baseFactor, jockeyStyle, segmentBoosts) {
+  const style = JOCKEY_STYLE_SPEED_PROFILES[jockeyStyle] ?? JOCKEY_STYLE_SPEED_PROFILES.balanced;
+  const [p1, p2, p3] = style.phases;
+  const boosts = segmentBoosts ?? [0, 0, 0, 0];
+  return [
+    baseFactor * (p1 * 1.08 + boosts[0]),
+    baseFactor * (p1 * 0.45 + p2 * 0.55 + boosts[1]),
+    baseFactor * (p2 * 0.45 + p3 * 0.55 + boosts[2]),
+    baseFactor * (p3 * 1.12 + boosts[3]),
+  ];
+}
+
+function buildSegmentBoosts(entry, idx, n) {
+  const style = entry.jockeyStyle ?? 'balanced';
+  const isUnderdog = idx >= Math.floor(n * 0.55);
+  const boosts = [0, 0, 0, 0];
+
+  for (let s = 0; s < 4; s++) {
+    let burstChance = 0.25;
+    if (style === 'aggressive' && s <= 1) burstChance = 0.55;
+    if (style === 'conservative' && s >= 2) burstChance = 0.5;
+    if (isUnderdog && Math.random() < BET_ODDS_CONFIG.upsetChance) burstChance += 0.2;
+
+    if (Math.random() < burstChance) {
+      boosts[s] = 0.1 + Math.random() * 0.2;
+    } else if (idx < n / 3 && Math.random() < 0.22) {
+      boosts[s] = -(0.06 + Math.random() * 0.1);
+    }
+  }
+  return boosts;
+}
+
+function buildSegmentEvents(ordered, raceDurationMs) {
+  const n = ordered.length;
+  return [1, 2, 3].map((segment) => {
+    const progressPct = segment * 25;
+    const horses = ordered.map((e, idx) => {
+      const boost = e.segmentBoosts?.[segment] ?? 0;
+      let event = 'steady';
+      if (boost > 0.12) event = 'burst';
+      else if (boost > 0.05) event = 'overtake';
+      else if (boost < -0.04) event = 'fatigue';
+
+      const interimScore = e.position - boost * 12 + gaussianNoise(0.4);
+      return {
+        horseId: e.horseId.toString(),
+        horseName: e.horseName,
+        finalRank: e.position,
+        interimScore,
+        event,
+        speedBoost: Math.round(boost * 1000) / 1000,
+      };
+    });
+
+    horses.sort((a, b) => a.interimScore - b.interimScore);
+    const ranked = horses.map((h, i) => ({
+      horseId: h.horseId,
+      horseName: h.horseName,
+      rank: i + 1,
+      finalRank: h.finalRank,
+      event: h.event,
+      speedBoost: h.speedBoost,
+    }));
+
+    return {
+      segment,
+      progressPct,
+      delayMs: Math.floor(raceDurationMs * (progressPct / 100)),
+      horses: ranked,
+    };
+  });
+}
+
+function scheduleSegmentEmits(io, raceId, segments) {
+  const timers = segments.map((seg) => setTimeout(() => {
+    try {
+      io.to(`race:${raceId}`).emit('race:segment', {
+        raceId,
+        segment: seg.segment,
+        progressPct: seg.progressPct,
+        horses: seg.horses,
+      });
+    } catch { /* optional */ }
+  }, seg.delayMs));
+  return () => timers.forEach(clearTimeout);
 }
 
 // ─── Atomic DB write: results + prizes + points + grade upgrades + bets ───────
@@ -245,20 +334,23 @@ async function runRaceSimulation(raceId) {
   // ── Add Gaussian noise and determine finish order ─────────────────────────
   const n = scored.length;
   const ordered = scored
-    .map(e => ({ ...e, noisyScore: e.score + gaussianNoise(e.riskFactor) }))
+    .map((e, idx) => {
+      const isUnderdog = idx >= Math.floor(n * 0.5);
+      const upsetNoise = isUnderdog && Math.random() < BET_ODDS_CONFIG.upsetChance
+        ? Math.abs(gaussianNoise(0.18))
+        : 0;
+      return {
+        ...e,
+        noisyScore: e.score + gaussianNoise(e.riskFactor) + upsetNoise,
+      };
+    })
     .sort((a, b) => b.noisyScore - a.noisyScore)
     .map((e, idx) => {
-      // Finish time: base pace ~60ms per meter + 500ms gap per position + small noise
-      // (1000m race → winner finishes in ~60s, realistic horse racing pace)
       const basePaceMs = race.distance * 60;
       const finishTime = basePaceMs + idx * 500 + Math.floor(Math.abs(gaussianNoise(200)));
-
-      // Base speed factor: winner = 1.0, last ≈ 0.75
       const baseFactor = 1.0 - (idx / Math.max(n - 1, 1)) * 0.25;
-
-      // Phase-based speed profile adjusted for jockey style
-      const styleProfile = JOCKEY_STYLE_SPEED_PROFILES[e.jockeyStyle] ?? JOCKEY_STYLE_SPEED_PROFILES.balanced;
-      const speedProfile = styleProfile.phases.map(p => baseFactor * p);
+      const segmentBoosts = buildSegmentBoosts(e, idx, n);
+      const speedProfile = buildFourPhaseProfile(baseFactor, e.jockeyStyle, segmentBoosts);
 
       return {
         ...e,
@@ -266,10 +358,12 @@ async function runRaceSimulation(raceId) {
         finishTime,
         baseFactor,
         speedProfile,
+        segmentBoosts,
       };
     });
 
   const raceDurationMs = calcRaceDurationMs(race.distance ?? 1000);
+  const segmentEvents = buildSegmentEvents(ordered, raceDurationMs);
 
   // ── Emit race:started with per-horse speed profiles ───────────────────────
   const raceStartedPayload = {
@@ -277,26 +371,31 @@ async function runRaceSimulation(raceId) {
     raceName: race.name,
     raceDurationMs,
     trackCondition,
+    segmentCount: BET_ODDS_CONFIG.raceSegments,
     horses: ordered.map(e => ({
       horseId: e.horseId.toString(),
       horseName: e.horseName,
       jockeyName: e.jockeyName,
       jockeyStyle: e.jockeyStyle,
-      speedProfile: e.speedProfile,   // [phase1Factor, phase2Factor, phase3Factor]
-      finalRank: e.position,          // actual finish rank — drives animation curve
+      speedProfile: e.speedProfile,
+      segmentBoosts: e.segmentBoosts,
+      finalRank: e.position,
       noisePhase: Math.random() * Math.PI * 2,
     })),
   };
 
   let io;
+  let clearSegmentTimers = () => {};
   try {
     io = getIO();
     io.to(`race:${raceId}`).emit('race:started', raceStartedPayload);
     setActiveRace(raceId, raceStartedPayload);
+    clearSegmentTimers = scheduleSegmentEmits(io, raceId, segmentEvents);
   } catch { /* socket optional */ }
 
   // ── Wait for race animation window ────────────────────────────────────────
   await new Promise(res => setTimeout(res, raceDurationMs));
+  clearSegmentTimers();
 
   // ── Commit results atomically ─────────────────────────────────────────────
   await finalizeRace(race, ordered);

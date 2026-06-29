@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router";
 import {
   Calendar,
@@ -53,12 +53,20 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
+import { io, Socket } from "socket.io-client";
 import { AppShell, type NavItem } from "../components/layout/AppShell";
 import { Pagination } from "../components/Pagination";
 import { useAuth } from "../hooks/useAuth";
 import { useWallet } from "../hooks/useWallet";
 import { raceApi, type Race } from "../api/race";
-import { betApi, type Bet, type BetType, BET_MULTIPLIERS } from "../api/bet";
+import { API_URL } from "../api/auth";
+import {
+  betApi,
+  type Bet,
+  type BetType,
+  type RaceBettingOdds,
+  BET_BASE_ODDS,
+} from "../api/bet";
 import { tournamentApi, type Tournament } from "../api/tournament";
 import {
   rankingsApi,
@@ -95,6 +103,17 @@ const lightSelectSx = {
   background: "#FFFFFF",
   borderRadius: 0,
 };
+
+const SOCKET_URL = API_URL.replace("/api/v1", "");
+
+function getHorseOdds(
+  odds: RaceBettingOdds | null,
+  horseId: string,
+  betType: BetType,
+) {
+  const horse = odds?.horses.find((h) => h.horseId === horseId);
+  return horse?.odds[betType]?.multiplier ?? BET_BASE_ODDS[betType];
+}
 
 export function SpectatorDashboard() {
   const navigate = useNavigate();
@@ -197,6 +216,8 @@ export function SpectatorDashboard() {
   const [selectedRaceRegistrations, setSelectedRaceRegistrations] = useState<
     any[]
   >([]);
+  const [raceBettingOdds, setRaceBettingOdds] = useState<RaceBettingOdds | null>(null);
+  const bettingSocketRef = useRef<Socket | null>(null);
 
   // ── Real bets ──
   const [myBets, setMyBets] = useState<Bet[]>([]);
@@ -507,16 +528,55 @@ export function SpectatorDashboard() {
     setBetAmount("");
     setBetType("win");
     setSelectedRaceRegistrations([]);
+    setRaceBettingOdds(null);
     setPredictionModalOpen(true);
     if (token) {
       try {
-        const res = await raceApi.getRaceHorses(token, race._id);
+        const [res, odds] = await Promise.all([
+          raceApi.getRaceHorses(token, race._id),
+          betApi.getRaceOdds(token, race._id),
+        ]);
         setSelectedRaceRegistrations(res.horses ?? []);
+        setRaceBettingOdds(odds);
       } catch {
-        // silently ignore
+        try {
+          const res = await raceApi.getRaceHorses(token, race._id);
+          setSelectedRaceRegistrations(res.horses ?? []);
+        } catch {
+          /* ignore */
+        }
       }
     }
   };
+
+  useEffect(() => {
+    if (!predictionModalOpen || !selectedRace?._id || !token) {
+      if (bettingSocketRef.current) {
+        bettingSocketRef.current.emit("leave:betting", selectedRace?._id);
+        bettingSocketRef.current.disconnect();
+        bettingSocketRef.current = null;
+      }
+      return;
+    }
+
+    const raceId = selectedRace._id;
+    const socket = io(SOCKET_URL, { auth: { token } });
+    bettingSocketRef.current = socket;
+
+    socket.on("connect", () => {
+      socket.emit("join:betting", raceId);
+    });
+
+    socket.on("bet:pool_updated", (data: RaceBettingOdds) => {
+      if (data.raceId === raceId) setRaceBettingOdds(data);
+    });
+
+    return () => {
+      socket.emit("leave:betting", raceId);
+      socket.disconnect();
+      bettingSocketRef.current = null;
+    };
+  }, [predictionModalOpen, selectedRace?._id, token]);
 
   const handleOpenTournamentDetails = (tournament: any) => {
     setSelectedTournamentForDetails(tournament);
@@ -531,15 +591,21 @@ export function SpectatorDashboard() {
       return;
     }
     setPlacingBet(true);
+    const lockedMultiplier = getHorseOdds(
+      raceBettingOdds,
+      selectedHorse,
+      betType as BetType,
+    );
     try {
-      await betApi.place(token, {
+      const placed = await betApi.place(token, {
         raceId: selectedRace._id,
         horseId: selectedHorse,
         betType: betType as BetType,
         amount,
       });
+      const payoutMultiplier = placed.multiplier ?? lockedMultiplier;
       toast.success(
-        `Đặt cược thành công! Tiềm năng thắng: ${Math.floor(amount * BET_MULTIPLIERS[betType as BetType]).toLocaleString('vi-VN')} coins`,
+        `Đặt cược thành công! Hệ số khóa: ${payoutMultiplier}x — Tiềm năng thắng: ${Math.floor(amount * payoutMultiplier).toLocaleString("vi-VN")} coins`,
       );
       setPredictionModalOpen(false);
       setBetType("win");
@@ -3030,6 +3096,42 @@ export function SpectatorDashboard() {
               </div>
 
               <div className="space-y-4">
+                {raceBettingOdds && raceBettingOdds.horses.length > 0 && (
+                  <div className="border border-border overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="bg-muted/50 text-muted-foreground">
+                          <th className="text-left px-3 py-2 font-medium">Ngựa</th>
+                          <th className="text-right px-2 py-2 font-medium">Win</th>
+                          <th className="text-right px-2 py-2 font-medium">Place</th>
+                          <th className="text-right px-2 py-2 font-medium">Show</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {raceBettingOdds.horses.map((horse) => (
+                          <tr
+                            key={horse.horseId}
+                            className={`border-t border-border ${selectedHorse === horse.horseId ? "bg-gold/10" : ""}`}
+                          >
+                            <td className="px-3 py-2 font-medium text-foreground">{horse.horseName}</td>
+                            {(["win", "place", "show"] as BetType[]).map((t) => (
+                              <td key={t} className="px-2 py-2 text-right tabular-nums">
+                                <div className="text-[#8F7318] font-bold">{horse.odds[t].multiplier}x</div>
+                                <div className="text-muted-foreground">
+                                  {horse.odds[t].poolAmount.toLocaleString("vi-VN")} ({horse.odds[t].poolShare}%)
+                                </div>
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <p className="text-[10px] text-muted-foreground px-3 py-1.5 border-t border-border">
+                      Hệ số cập nhật realtime — nhiều cược → hệ số thấp hơn
+                    </p>
+                  </div>
+                )}
+
                 <FormControl fullWidth>
                   <InputLabel sx={{ color: "#7A7468" }}>Loại Cược</InputLabel>
                   <Select
@@ -3038,15 +3140,21 @@ export function SpectatorDashboard() {
                     label="Loại Cược"
                     sx={lightSelectSx}
                   >
-                    <MenuItem value="win">
-                      Thắng — ngựa về hạng 1 (hệ số 3.0x)
-                    </MenuItem>
-                    <MenuItem value="place">
-                      Về Nhì — ngựa về hạng 2 (hệ số 2.0x)
-                    </MenuItem>
-                    <MenuItem value="show">
-                      Về Ba — ngựa về hạng 3 (hệ số 1.5x)
-                    </MenuItem>
+                    {(["win", "place", "show"] as BetType[]).map((t) => {
+                      const mult = selectedHorse
+                        ? getHorseOdds(raceBettingOdds, selectedHorse, t)
+                        : BET_BASE_ODDS[t];
+                      const labels: Record<BetType, string> = {
+                        win: "Thắng — ngựa về hạng 1",
+                        place: "Về Nhì — ngựa về hạng 2",
+                        show: "Về Ba — ngựa về hạng 3",
+                      };
+                      return (
+                        <MenuItem key={t} value={t}>
+                          {labels[t]} ({mult}x)
+                        </MenuItem>
+                      );
+                    })}
                   </Select>
                 </FormControl>
 
@@ -3059,11 +3167,17 @@ export function SpectatorDashboard() {
                     sx={lightSelectSx}
                   >
                     {selectedRaceRegistrations.length > 0 ? (
-                      selectedRaceRegistrations.map((h: any) => (
-                        <MenuItem key={h.horseId} value={h.horseId}>
-                          {h.horseName} — {h.currentGrade}{h.jockeyName ? ` · 🏇 ${h.jockeyName}` : ''}
-                        </MenuItem>
-                      ))
+                      selectedRaceRegistrations.map((h: any) => {
+                        const winOdds = getHorseOdds(raceBettingOdds, h.horseId, "win");
+                        return (
+                          <MenuItem key={h.horseId} value={h.horseId}>
+                            {h.horseName} — {h.currentGrade}
+                            {h.jockeyName ? ` · 🏇 ${h.jockeyName}` : ""}
+                            {" · "}
+                            <span className="text-[#8F7318]">{winOdds}x</span>
+                          </MenuItem>
+                        );
+                      })
                     ) : (
                       <MenuItem disabled value="">Đang tải danh sách ngựa...</MenuItem>
                     )}
@@ -3138,22 +3252,27 @@ export function SpectatorDashboard() {
                 />
 
                 <div className="bg-gold/10 border border-gold/40 p-4">
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="text-muted-foreground">
-                      Tiềm năng thắng:
-                    </span>
-                    <span className="text-[#8F7318] font-bold text-lg tabular-nums">
-                      {betAmount &&
-                      !isNaN(Number(betAmount)) &&
-                      Number(betAmount) > 0
-                        ? `${Math.floor(Number(betAmount) * BET_MULTIPLIERS[betType as BetType]).toLocaleString('vi-VN')} coins`
-                        : "0 coins"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Hệ số: {BET_MULTIPLIERS[betType as BetType]}x</span>
-                    <span>Phí sẽ trừ ngay từ ví</span>
-                  </div>
+                  {(() => {
+                    const currentMultiplier = selectedHorse
+                      ? getHorseOdds(raceBettingOdds, selectedHorse, betType as BetType)
+                      : BET_BASE_ODDS[betType as BetType];
+                    return (
+                      <>
+                        <div className="flex justify-between text-sm mb-2">
+                          <span className="text-muted-foreground">Tiềm năng thắng:</span>
+                          <span className="text-[#8F7318] font-bold text-lg tabular-nums">
+                            {betAmount && !isNaN(Number(betAmount)) && Number(betAmount) > 0
+                              ? `${Math.floor(Number(betAmount) * currentMultiplier).toLocaleString("vi-VN")} coins`
+                              : "0 coins"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>Hệ số khóa: {currentMultiplier}x</span>
+                          <span>Phí sẽ trừ ngay từ ví</span>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             </div>

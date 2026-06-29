@@ -228,6 +228,8 @@ export function LiveRacePage() {
     results: socketResults,
     elapsed,
     total,
+    lastSegment,
+    segmentHighlights,
   } = useRaceSocket(raceId ?? "", token);
 
   // ── Assign stable colors when we first know the full lineup ──
@@ -382,6 +384,7 @@ export function LiveRacePage() {
         colorIdx: assignColor(p.horseId, i),
         currentRank: p.rank,
         isMyBet: myBetHorseIds.has(p.horseId),
+        segmentEvent: segmentHighlights[p.horseId]?.event,
       }));
     }
 
@@ -493,6 +496,15 @@ export function LiveRacePage() {
             raceName={race?.name}
             distance={race?.distance}
           />
+        )}
+
+        {phase === "racing" && lastSegment && (
+          <div className="bg-[#8F7318]/10 border border-[#8F7318]/40 px-4 py-2 text-sm text-[#8F7318] font-medium text-center">
+            Chặng {lastSegment.segment} ({lastSegment.progressPct}%) —{" "}
+            {lastSegment.horses.filter((h) => h.event === "burst" || h.event === "overtake").length > 0
+              ? "Có ngựa bứt tốc / vượt mặt!"
+              : "Đang tranh chấp quyết liệt"}
+          </div>
         )}
 
         {/* ════════════════════════════════════════════════════════════

@@ -25,6 +25,7 @@ export interface TrackHorse {
   colorIdx: number;
   currentRank?: number;
   isMyBet?: boolean;
+  segmentEvent?: 'burst' | 'fatigue' | 'overtake' | 'steady';
 }
 
 // ─── Oval math ─────────────────────────────────────────────────────────────
@@ -34,6 +35,16 @@ function getXY(progressPct: number, laneShift = 0) {
     x: CX + (LANE_RX + laneShift) * Math.cos(angle),
     y: CY + (LANE_RY + laneShift * 0.48) * Math.sin(angle),
   };
+}
+
+/** Tangent angle (deg) for counter-clockwise travel — emoji faces direction of motion */
+function getHorseRotationDeg(progressPct: number, laneShift = 0) {
+  const angle = -(progressPct / 100) * 2 * Math.PI;
+  const rx = LANE_RX + laneShift;
+  const ry = LANE_RY + laneShift * 0.48;
+  const dx = -rx * Math.sin(angle);
+  const dy = ry * Math.cos(angle);
+  return (Math.atan2(dy, dx) * 180) / Math.PI;
 }
 
 // ─── Legend chips (shared) ─────────────────────────────────────────────────
@@ -151,22 +162,39 @@ function OvalTrack({
         const laneStep = n > 1 ? Math.min(4.5, 85 / (n - 1)) : 0;
         const laneShift = n > 1 ? (horseIdx - (n - 1) / 2) * laneStep : 0;
         const { x, y } = getXY(horse.progressPct, laneShift);
+        const rotation = getHorseRotationDeg(horse.progressPct, laneShift);
         const color = HORSE_COLORS[horse.colorIdx % HORSE_COLORS.length];
         const r = horse.isMyBet ? (n <= 8 ? 15 : 13) : (n <= 8 ? 13 : 11);
         const emojiSize = horse.isMyBet ? (n <= 8 ? 16 : 14) : (n <= 8 ? 14 : 12);
         const badgeR = n <= 8 ? 5.5 : 4.5;
         const rank = horse.currentRank ?? horseIdx + 1;
+        const isBurst = horse.segmentEvent === 'burst' || horse.segmentEvent === 'overtake';
+        const isFatigue = horse.segmentEvent === 'fatigue';
 
         return (
           <g key={horse.horseId} transform={`translate(${x}, ${y})`}>
+            {isBurst && (
+              <motion.circle r={r + 10} fill="none" stroke="#FBBF24" strokeWidth={2}
+                animate={{ r: [r + 6, r + 14, r + 6], opacity: [0.9, 0.2, 0.9] }}
+                transition={{ duration: 0.8, repeat: 2, ease: 'easeInOut' }}
+              />
+            )}
             {horse.isMyBet && (
               <motion.circle r={r + 7} fill={color} opacity={0.22}
                 animate={{ r: [r + 5, r + 10, r + 5], opacity: [0.22, 0.08, 0.22] }}
                 transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
               />
             )}
-            <circle r={r} fill="#0f172a" stroke={horse.isMyBet ? '#FFDE42' : color} strokeWidth={horse.isMyBet ? 2.5 : 2} />
-            <text textAnchor="middle" y={emojiSize * 0.38} fontSize={emojiSize} style={{ pointerEvents: 'none', userSelect: 'none' }}>🐎</text>
+            <circle r={r} fill="#0f172a" stroke={horse.isMyBet ? '#FFDE42' : isBurst ? '#FBBF24' : isFatigue ? '#94A3B8' : color} strokeWidth={horse.isMyBet ? 2.5 : isBurst ? 2.5 : 2} />
+            <text
+              textAnchor="middle"
+              y={emojiSize * 0.38}
+              fontSize={emojiSize}
+              transform={`rotate(${rotation})`}
+              style={{ pointerEvents: 'none', userSelect: 'none' }}
+            >
+              🐎
+            </text>
             <circle cx={r - badgeR + 1} cy={-(r - badgeR + 1)} r={badgeR} fill={color} />
             <text x={r - badgeR + 1} y={-(r - badgeR + 1) + badgeR * 0.42} textAnchor="middle" fill="white"
               fontSize={badgeR * 1.3} fontWeight="900" style={{ pointerEvents: 'none', userSelect: 'none' }}>{rank}</text>

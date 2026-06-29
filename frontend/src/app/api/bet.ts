@@ -4,12 +4,36 @@ import { getApiErrorMessage } from '../utils/errorMessages';
 export type BetType = 'win' | 'place' | 'show';
 export type BetStatus = 'pending' | 'won' | 'lost' | 'cancelled' | 'refunded';
 
-export const BET_MULTIPLIERS: Record<BetType, number> = { win: 3, place: 2, show: 1.5 };
+export const BET_BASE_ODDS: Record<BetType, number> = { win: 3, place: 2, show: 1.5 };
+/** @deprecated Use dynamic odds from getRaceOdds — kept as fallback display */
+export const BET_MULTIPLIERS = BET_BASE_ODDS;
+
 export const BET_TYPE_LABEL: Record<BetType, string> = {
-  win: 'Thắng (Hạng 1) — 3.0x',
-  place: 'Về Nhì (Hạng 2) — 2.0x',
-  show: 'Về Ba (Hạng 3) — 1.5x',
+  win: 'Thắng (Hạng 1)',
+  place: 'Về Nhì (Hạng 2)',
+  show: 'Về Ba (Hạng 3)',
 };
+
+export interface HorseBetOdds {
+  multiplier: number;
+  poolAmount: number;
+  poolShare: number;
+  betCount: number;
+  impliedProb: number;
+}
+
+export interface RaceHorseOdds {
+  horseId: string;
+  horseName: string;
+  odds: Record<BetType, HorseBetOdds>;
+}
+
+export interface RaceBettingOdds {
+  raceId: string;
+  totalsByType: Partial<Record<BetType, number>>;
+  horses: RaceHorseOdds[];
+  updatedAt: string;
+}
 
 export interface Bet {
   _id: string;
@@ -93,5 +117,12 @@ export const betApi = {
     const json = await res.json();
     if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data as { settled: number; won: number; lost: number };
+  },
+
+  getRaceOdds: async (token: string, raceId: string): Promise<RaceBettingOdds> => {
+    const res = await fetch(`${API_URL}/bets/race/${raceId}/odds`, { headers: authHeader(token) });
+    const json = await res.json();
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
+    return json.data;
   },
 };

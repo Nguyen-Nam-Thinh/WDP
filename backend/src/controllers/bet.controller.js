@@ -65,4 +65,13 @@ async function settleBets(req, res, next) {
   }
 }
 
-module.exports = { placeBet, getMyBets, getBetById, cancelBet, getRaceBets, settleBets };
+async function getRaceBettingOdds(req, res, next) {
+  try {
+    const odds = await betService.getRaceBettingOdds(req.params.raceId);
+    sendSuccess(res, odds);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { placeBet, getMyBets, getBetById, cancelBet, getRaceBets, settleBets, getRaceBettingOdds };

@@ -181,13 +181,35 @@ Admin nhập `maxCapacity` khi tạo race (không hardcode).
 
 ### 4.7. Betting System
 
-**Multiplier cố định** (KHÔNG dùng pari-mutuel, KHÔNG phụ thuộc số người bet):
+**Dynamic pool-based odds** (KHÔNG dùng pari-mutuel thuần; multiplier khóa tại thời điểm đặt cược):
 
-| Bet Type | Điều kiện thắng | Multiplier |
-|---|---|---|
-| Win | Ngựa về top 1 | x3 |
-| Place | Ngựa về top 1 hoặc 2 | x2 |
-| Show | Ngựa về top 1, 2, hoặc 3 | x1.5 |
+| Bet Type | Điều kiện thắng | Base odds (anchor) | Min–Max |
+|---|---|---|---|
+| Win | Ngựa về top 1 | x3 | 1.2x – 15x |
+| Place | Ngựa về top 1 hoặc 2 | x2 | 1.1x – 8x |
+| Show | Ngựa về top 1, 2, hoặc 3 | x1.5 | 1.05x – 5x |
+
+**Công thức multiplier (tại thời điểm đặt):**
+```js
+poolShare = tổng_cược_ngựa_X_loại_Y / tổng_cược_race_loại_Y
+aiProb = win/top3 probability từ AI prediction (theo bet type)
+multiplier = clamp(baseOdds × (1 - poolShare×0.85) - aiProb×base×0.35×0.6 + formBonus, min, max)
+impliedProb = 0.6 × aiProb + 0.4 × poolShare  // hiển thị tham khảo
+```
+
+**Quy tắc:**
+- Multiplier **lock** vào `bet.multiplier` khi đặt — không đổi sau đó.
+- Pool cược hiển thị **theo từng ngựa × từng loại cược** (Win / Place / Show).
+- Cập nhật odds realtime qua Socket.IO event `bet:pool_updated` (room `betting:{raceId}`).
+- API: `GET /bets/race/:raceId/odds`
+- Ngựa nhiều cược → `poolShare` cao → multiplier thấp; ít cược → multiplier cao hơn.
+
+**Thêm loại cược mới (extensible):**
+1. Thêm key vào `BET_ODDS_CONFIG.baseOdds` + `bounds` trong `backend/src/config/constants.js`
+2. Thêm `enum` vào `bet.model.js`, `bet.routes.js` validation
+3. Thêm win condition trong `settleBets` / `settleBetsWithSession`
+4. Thêm cột hiển thị pool/odds trên frontend betting modal
+5. Cập nhật bảng điều kiện thắng ở section này
 
 ### 4.8. Jockey Rules
 - 1 jockey chỉ cưỡi 1 ngựa trong cùng 1 Race (không cưỡi nhiều ngựa cùng race).
@@ -630,7 +652,7 @@ horse-racing-system/
 ### 12.2. Critical decisions
 - **MongoDB** thay vì SQL: cho phép embed (profile, violations, eligibility) → giảm join
 - **Wallet thống nhất** cho mọi role (không tách coin/tiền)
-- **Multiplier cố định** cho betting (không pari-mutuel) → tránh phức tạp real-time odds
+- **Dynamic pool-based odds** cho betting — multiplier khóa khi đặt, cập nhật realtime qua socket
 - **Race simulation tự động** qua cron (không manual trigger)
 - **Pre-race inspection thủ công** bởi referee (manual step duy nhất)
 - **Points tích lũy vĩnh viễn** theo career, không reset theo season
@@ -706,6 +728,15 @@ export const BET_MULTIPLIERS = {
   win: 3,
   place: 2,
   show: 1.5
+} as const; // base anchor — actual odds are dynamic (see BET_ODDS_CONFIG)
+
+export const BET_ODDS_CONFIG = {
+  baseOdds: BET_MULTIPLIERS,
+  bounds: { win: [1.2, 15], place: [1.1, 8], show: [1.05, 5] },
+  historyWeight: 0.6,
+  poolWeight: 0.4,
+  upsetChance: 0.25,
+  raceSegments: 4,
 } as const;
 
 export const REFUND_RATES = {

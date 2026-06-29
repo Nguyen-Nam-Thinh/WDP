@@ -16,6 +16,7 @@ const placeBetSchema = z.object({
 router.use(authenticate);
 
 // Admin race-scoped routes MUST come before /:id wildcard
+router.get('/race/:raceId/odds', authorize('spectator', 'admin'), betController.getRaceBettingOdds);
 router.get('/race/:raceId', authorize('admin'), betController.getRaceBets);
 router.post('/race/:raceId/settle', authorize('admin'), betController.settleBets);
 
