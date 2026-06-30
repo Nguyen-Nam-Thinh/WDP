@@ -39,6 +39,7 @@ export interface SegmentHorseEvent {
 export interface RaceSegmentEvent {
   segment: number;
   progressPct: number;
+  commentary?: string;
   horses: SegmentHorseEvent[];
 }
 

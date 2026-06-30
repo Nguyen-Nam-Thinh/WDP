@@ -499,11 +499,13 @@ export function LiveRacePage() {
         )}
 
         {phase === "racing" && lastSegment && (
-          <div className="bg-[#8F7318]/10 border border-[#8F7318]/40 px-4 py-2 text-sm text-[#8F7318] font-medium text-center">
-            Chặng {lastSegment.segment} ({lastSegment.progressPct}%) —{" "}
-            {lastSegment.horses.filter((h) => h.event === "burst" || h.event === "overtake").length > 0
-              ? "Có ngựa bứt tốc / vượt mặt!"
-              : "Đang tranh chấp quyết liệt"}
+          <div className="bg-[#8F7318]/10 border-y border-[#8F7318]/40 px-4 py-3 text-sm text-[#FCD34D] font-medium text-center shadow-inner overflow-hidden relative">
+            <div className="animate-pulse flex items-center justify-center gap-2">
+              <span className="text-base">🎙️</span>
+              <span className="tracking-wide">
+                {lastSegment.commentary || `Đang tường thuật trực tiếp cuộc đua... (${lastSegment.progressPct}%)`}
+              </span>
+            </div>
           </div>
         )}
 

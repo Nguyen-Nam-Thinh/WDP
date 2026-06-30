@@ -125,11 +125,19 @@ function buildSegmentBoosts(entry, idx, n) {
 }
 
 function buildSegmentEvents(ordered, raceDurationMs) {
-  const n = ordered.length;
-  return [1, 2, 3].map((segment) => {
-    const progressPct = segment * 25;
+  const updateIntervalMs = 3000;
+  const segmentCount = Math.floor(raceDurationMs / updateIntervalMs);
+  const segments = [];
+
+  for (let i = 1; i <= segmentCount; i++) {
+    const delayMs = i * updateIntervalMs;
+    if (delayMs >= raceDurationMs - 1000) break;
+    
+    const progressPct = Math.min(99, Math.round((delayMs / raceDurationMs) * 100));
+    const phaseIndex = Math.min(3, Math.floor((progressPct / 100) * 4));
+
     const horses = ordered.map((e, idx) => {
-      const boost = e.segmentBoosts?.[segment] ?? 0;
+      const boost = e.segmentBoosts?.[phaseIndex] ?? 0;
       let event = 'steady';
       if (boost > 0.12) event = 'burst';
       else if (boost > 0.05) event = 'overtake';
@@ -147,6 +155,22 @@ function buildSegmentEvents(ordered, raceDurationMs) {
     });
 
     horses.sort((a, b) => a.interimScore - b.interimScore);
+    
+    const topHorse = horses[0];
+    let commentary = `Đang tranh chấp quyết liệt ở mốc ${progressPct}%`;
+    const burstingHorses = horses.filter(h => h.event === 'burst');
+    const tiredHorses = horses.filter(h => h.event === 'fatigue');
+    
+    if (burstingHorses.length > 0) {
+      commentary = `🔥 ${burstingHorses[0].horseName} đang bứt tốc ngoạn mục!`;
+    } else if (tiredHorses.length > 0 && Math.random() > 0.5) {
+      commentary = `💦 ${tiredHorses[0].horseName} có dấu hiệu đuối sức.`;
+    } else if (progressPct > 85) {
+      commentary = `🏁 Giai đoạn nước rút! ${topHorse.horseName} đang dẫn đầu!`;
+    } else if (progressPct < 15) {
+      commentary = `🐎 Các chiến mã đang bám đuổi sát nút!`;
+    }
+
     const ranked = horses.map((h, i) => ({
       horseId: h.horseId,
       horseName: h.horseName,
@@ -156,13 +180,15 @@ function buildSegmentEvents(ordered, raceDurationMs) {
       speedBoost: h.speedBoost,
     }));
 
-    return {
-      segment,
+    segments.push({
+      segment: i,
       progressPct,
-      delayMs: Math.floor(raceDurationMs * (progressPct / 100)),
+      delayMs,
+      commentary,
       horses: ranked,
-    };
-  });
+    });
+  }
+  return segments;
 }
 
 function scheduleSegmentEmits(io, raceId, segments) {
@@ -172,6 +198,7 @@ function scheduleSegmentEmits(io, raceId, segments) {
         raceId,
         segment: seg.segment,
         progressPct: seg.progressPct,
+        commentary: seg.commentary,
         horses: seg.horses,
       });
     } catch { /* optional */ }
