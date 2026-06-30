@@ -478,16 +478,16 @@ async function sendRaceFinishedNotifications(race, ordered, registrations) {
       notifications.push({
         userId: bet.spectatorId,
         type: 'bet_won',
-        title: '🎉 Cược thắng!',
-        message: `Bạn thắng cược race "${race.name}" — nhận ${(bet.payoutAmount || 0).toLocaleString('vi-VN')} coins`,
+        title: '🎉 Dự Đoán thắng!',
+        message: `Bạn thắng dự đoán race "${race.name}" — nhận ${(bet.payoutAmount || 0).toLocaleString('vi-VN')} coins`,
         data: { raceId: race._id, betId: bet._id },
       });
     } else if (bet.status === 'lost') {
       notifications.push({
         userId: bet.spectatorId,
         type: 'bet_lost',
-        title: 'Cược thua',
-        message: `Cược của bạn trong race "${race.name}" không thắng`,
+        title: 'Dự Đoán thua',
+        message: `Dự Đoán của bạn trong race "${race.name}" không thắng`,
         data: { raceId: race._id, betId: bet._id },
       });
     }

@@ -66,7 +66,7 @@ function formatJoinDate(iso: string): string {
 const recentActivity = [
   {
     type: "won",
-    title: "Thắng cược – Thunder Strike",
+    title: "Thắng dự đoán – Thunder Strike",
     amount: "+$300",
     time: "5 phút trước",
     color: "text-[#C9A227]",
@@ -74,7 +74,7 @@ const recentActivity = [
   },
   {
     type: "bet",
-    title: "Đặt cược – Golden Arrow",
+    title: "Dự đoán – Golden Arrow",
     amount: "-$50",
     time: "2 giờ trước",
     color: "text-primary",
@@ -90,7 +90,7 @@ const recentActivity = [
   },
   {
     type: "lost",
-    title: "Thua cược – Storm Chaser",
+    title: "Thua dự đoán – Storm Chaser",
     amount: "-$200",
     time: "2 ngày trước",
     color: "text-[#B42318]",
@@ -519,7 +519,7 @@ export function ProfilePage() {
                   value: `${winRate}%`,
                   icon: TrendingUp,
                   color: "from-[#1F3D2B] to-[#172D20]",
-                  sub: `${user.wonBets}/${user.totalBets} cược`,
+                  sub: `${user.wonBets}/${user.totalBets} dự đoán`,
                 },
                 {
                   label: "Tổng Đã Thắng",
@@ -559,7 +559,7 @@ export function ProfilePage() {
             {/* Win Rate Bar */}
             <div className="bg-card border border-border rounded-2xl p-6">
               <h3 className="text-foreground font-bold mb-4 flex items-center gap-2">
-                <Target className="w-5 h-5 text-[#C9A227]" /> Thống Kê Cược
+                <Target className="w-5 h-5 text-[#C9A227]" /> Thống Kê Dự Đoán
               </h3>
               <div className="grid md:grid-cols-3 gap-6">
                 <div>
@@ -581,12 +581,12 @@ export function ProfilePage() {
                 <div className="space-y-3">
                   {[
                     {
-                      label: "Cược Thắng",
+                      label: "Dự Đoán Thắng",
                       value: user.wonBets,
                       color: "bg-[#C9A227]",
                     },
                     {
-                      label: "Cược Thua",
+                      label: "Dự Đoán Thua",
                       value: user.totalBets - user.wonBets - 1,
                       color: "bg-[#B42318]",
                     },
@@ -812,8 +812,8 @@ export function ProfilePage() {
             </h3>
             {[
               {
-                label: "Kết Quả Cược",
-                sub: "Nhận thông báo khi cược thắng hoặc thua",
+                label: "Kết Quả Dự Đoán",
+                sub: "Nhận thông báo khi dự đoán thắng hoặc thua",
                 val: notifBet,
                 set: setNotifBet,
               },

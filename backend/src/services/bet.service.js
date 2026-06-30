@@ -16,23 +16,23 @@ async function placeBet(spectatorId, { raceId, horseId, betType, amount }) {
   const race = await Race.findById(raceId);
   if (!race) throw new AppError(404, 'Không tìm thấy cuộc đua');
   if (!BETTABLE_STATUSES.includes(race.status)) {
-    throw new AppError(400, `Không thể đặt cược cho cuộc đua đang ở trạng thái '${race.status}'`);
+    throw new AppError(400, `Không thể dự đoán cho cuộc đua đang ở trạng thái '${race.status}'`);
   }
 
   const bettingCutoff = new Date(race.scheduledTime.getTime() - CUTOFFS.bettingHours * 60 * 60 * 1000);
   if (new Date() > bettingCutoff) {
-    throw new AppError(400, 'Đã qua thời hạn đặt cược cho cuộc đua này');
+    throw new AppError(400, 'Đã qua thời hạn dự đoán cho cuộc đua này');
   }
 
   if (!BET_TYPES.includes(betType)) {
-    throw new AppError(400, `Loại cược không hợp lệ: ${betType}`);
+    throw new AppError(400, `Loại dự đoán không hợp lệ: ${betType}`);
   }
 
   // Horse must be actively registered in this race
   const registration = await Registration.findOne({ raceId, horseId, status: 'active' });
   if (!registration) throw new AppError(400, 'Ngựa chưa đăng ký tham gia cuộc đua này');
 
-  if (amount < 1) throw new AppError(400, 'Số tiền cược tối thiểu là 1');
+  if (amount < 1) throw new AppError(400, 'Số tiền dự đoán tối thiểu là 1');
 
   const multiplier = await bettingOddsService.calcLockedMultiplier(raceId, horseId, betType);
 
@@ -47,7 +47,7 @@ async function placeBet(spectatorId, { raceId, horseId, betType, amount }) {
     await walletService.debitWallet(
       wallet._id, spectatorId, amount,
       'bet_placed',
-      `Đặt cược: ${betType} vào ngựa trong cuộc đua ${race.name}`,
+      `Dự đoán: ${betType} vào ngựa trong cuộc đua ${race.name}`,
       null, 'Race', session,
     );
 
@@ -98,7 +98,7 @@ async function getBetById(betId, spectatorId, role) {
   const bet = await Bet.findById(betId)
     .populate('raceId', 'name grade scheduledTime status')
     .populate('horseId', 'name breed currentGrade');
-  if (!bet) throw new AppError(404, 'Không tìm thấy cược');
+  if (!bet) throw new AppError(404, 'Không tìm thấy dự đoán');
 
   if (role !== 'admin' && bet.spectatorId.toString() !== spectatorId) {
     throw new AppError(403, 'Bạn không có quyền truy cập');
@@ -108,15 +108,15 @@ async function getBetById(betId, spectatorId, role) {
 
 async function cancelBet(betId, spectatorId) {
   const bet = await Bet.findOne({ _id: betId, spectatorId });
-  if (!bet) throw new AppError(404, 'Không tìm thấy cược hoặc bạn không có quyền truy cập');
-  if (bet.status !== 'pending') throw new AppError(400, `Không thể hủy cược đang ở trạng thái ${bet.status}`);
+  if (!bet) throw new AppError(404, 'Không tìm thấy dự đoán hoặc bạn không có quyền truy cập');
+  if (bet.status !== 'pending') throw new AppError(400, `Không thể hủy dự đoán đang ở trạng thái ${bet.status}`);
 
   const race = await Race.findById(bet.raceId);
   if (!race) throw new AppError(404, 'Không tìm thấy cuộc đua');
 
   const bettingCutoff = new Date(race.scheduledTime.getTime() - CUTOFFS.bettingHours * 60 * 60 * 1000);
   if (new Date() > bettingCutoff) {
-    throw new AppError(400, 'Không thể hủy cược sau khi đã qua thời hạn đặt cược');
+    throw new AppError(400, 'Không thể hủy dự đoán sau khi đã qua thời hạn dự đoán');
   }
 
   const session = await mongoose.startSession();
@@ -129,7 +129,7 @@ async function cancelBet(betId, spectatorId) {
     await walletService.creditWallet(
       wallet._id, spectatorId, bet.amount,
       'bet_refund',
-      `Hoàn tiền: hủy cược cuộc đua ${race.name}`,
+      `Hoàn tiền: hủy dự đoán cuộc đua ${race.name}`,
       bet._id, 'Bet', session,
     );
 
@@ -167,17 +167,17 @@ async function getRaceBets(raceId, { page = 1, limit = 50 } = {}) {
 async function settleBets(raceId) {
   const race = await Race.findById(raceId);
   if (!race) throw new AppError(404, 'Không tìm thấy cuộc đua');
-  if (race.status !== 'finished') throw new AppError(400, 'Cuộc đua phải kết thúc trước khi thanh toán cược');
+  if (race.status !== 'finished') throw new AppError(400, 'Cuộc đua phải kết thúc trước khi thanh toán dự đoán');
 
   const results = await RaceResult.find({ raceId }).sort({ position: 1 });
-  if (results.length === 0) throw new AppError(400, 'Chưa có kết quả cuộc đua. Không thể thanh toán cược.');
+  if (results.length === 0) throw new AppError(400, 'Chưa có kết quả cuộc đua. Không thể thanh toán dự đoán.');
 
   // Build a map: horseId → position
   const positionMap = {};
   results.forEach(r => { positionMap[r.horseId.toString()] = r.position; });
 
   const pendingBets = await Bet.find({ raceId, status: 'pending' });
-  if (pendingBets.length === 0) return { settled: 0, message: 'Không có cược chờ thanh toán' };
+  if (pendingBets.length === 0) return { settled: 0, message: 'Không có dự đoán chờ thanh toán' };
 
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -203,7 +203,7 @@ async function settleBets(raceId) {
           await walletService.creditWallet(
             wallet._id, bet.spectatorId, payout,
             'bet_payout',
-            `Thắng cược: ${bet.betType} cuộc đua ${race.name}`,
+            `Thắng dự đoán: ${bet.betType} cuộc đua ${race.name}`,
             bet._id, 'Bet', session,
           );
         }

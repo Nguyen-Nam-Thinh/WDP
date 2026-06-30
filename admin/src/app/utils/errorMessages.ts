@@ -9,10 +9,10 @@ const ERROR_MAP: Record<string, string> = {
   'Invalid or expired reset token': 'Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn',
   // Wallet & betting
   'Insufficient balance': 'Số dư không đủ, vui lòng nạp thêm coin',
-  'Betting cutoff has passed for this race': 'Đã hết thời gian đặt cược cho cuộc đua này',
-  'Cannot place bets on a race with status': 'Không thể đặt cược cho cuộc đua ở trạng thái này',
-  'Invalid bet type': 'Loại cược không hợp lệ',
-  'Cannot cancel a': 'Không thể hủy cược ở trạng thái hiện tại',
+  'Betting cutoff has passed for this race': 'Đã hết thời gian dự đoán cho cuộc đua này',
+  'Cannot place bets on a race with status': 'Không thể dự đoán cho cuộc đua ở trạng thái này',
+  'Invalid bet type': 'Loại dự đoán không hợp lệ',
+  'Cannot cancel a': 'Không thể hủy dự đoán ở trạng thái hiện tại',
   // Resources
   'User not found': 'Không tìm thấy thông tin người dùng',
   'Horse not found': 'Không tìm thấy thông tin ngựa',

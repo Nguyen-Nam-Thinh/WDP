@@ -2210,9 +2210,9 @@ export function HorseOwnerDashboard() {
                           registration_fee: "Phí Đăng Ký",
                           registration_refund: "Hoàn Phí ĐK",
                           prize_payout: "Tiền Thưởng",
-                          bet_placed: "Đặt Cược",
-                          bet_payout: "Thắng Cược",
-                          bet_refund: "Hoàn Cược",
+                          bet_placed: "Dự Đoán",
+                          bet_payout: "Thắng Dự Đoán",
+                          bet_refund: "Hoàn Dự Đoán",
                         };
                         return (
                           <div

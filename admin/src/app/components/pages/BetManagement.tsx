@@ -93,7 +93,7 @@ export default function BetManagement() {
     setSettling(true);
     try {
       const result = await betAdminApi.settleBets(settlingRaceId);
-      toast.success(`Quyết toán ${result.settled} cược: ${result.won} thắng, ${result.lost} thua`);
+      toast.success(`Quyết toán ${result.settled} dự đoán: ${result.won} thắng, ${result.lost} thua`);
       setSettleDialog(false);
       setSettlingRaceId('');
       loadBets();
@@ -129,9 +129,9 @@ export default function BetManagement() {
       {/* ── Header ── */}
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-black dark:text-white">Quản lý cược</h2>
+          <h2 className="text-2xl font-bold text-black dark:text-white">Quản lý dự đoán</h2>
           <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-            Theo dõi và quyết toán toàn bộ lịch sử đặt cược
+            Theo dõi và quyết toán toàn bộ lịch sử dự đoán
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -140,7 +140,7 @@ export default function BetManagement() {
             className="inline-flex items-center gap-2 rounded-xl bg-blue-600 py-2.5 px-5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition"
           >
             <DollarSign size={16} />
-            Quyết toán cược
+            Quyết toán dự đoán
           </button>
           <button
             onClick={() => { loadBets(); loadStats(); }}
@@ -168,8 +168,8 @@ export default function BetManagement() {
           <p className="text-3xl font-bold text-black dark:text-white mb-1">
             {loadingStats ? <span className="text-slate-400 text-xl animate-pulse">...</span> : stats.total.toLocaleString('vi-VN')}
           </p>
-          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Tổng số cược</p>
-          <p className="text-xs text-slate-400 mt-0.5">tất cả cược trong hệ thống</p>
+          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Tổng số dự đoán</p>
+          <p className="text-xs text-slate-400 mt-0.5">tất cả dự đoán trong hệ thống</p>
         </div>
 
         {/* Card 2 */}
@@ -185,7 +185,7 @@ export default function BetManagement() {
           <p className="text-3xl font-bold text-black dark:text-white mb-1">
             {loadingStats ? <span className="text-slate-400 text-xl animate-pulse">...</span> : stats.totalAmount.toLocaleString('vi-VN')}
           </p>
-          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Tổng tiền đặt cược</p>
+          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Tổng tiền dự đoán</p>
           <p className="text-xs text-slate-400 mt-0.5">tổng coins đã đặt</p>
         </div>
 
@@ -224,7 +224,7 @@ export default function BetManagement() {
           <p className={`text-3xl font-bold mb-1 ${stats.pending > 0 ? 'text-red-500 dark:text-red-400' : 'text-black dark:text-white'}`}>
             {loadingStats ? <span className="text-slate-400 text-xl animate-pulse">...</span> : stats.pending.toLocaleString('vi-VN')}
           </p>
-          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Cược đang chờ</p>
+          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Dự Đoán đang chờ</p>
           <p className="text-xs text-slate-400 mt-0.5">chưa được quyết toán</p>
         </div>
       </div>
@@ -291,11 +291,11 @@ export default function BetManagement() {
             <table className="w-full table-auto text-sm">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40">
-                  <th className="py-3.5 px-5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Người cược</th>
+                  <th className="py-3.5 px-5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Người dự đoán</th>
                   <th className="py-3.5 px-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Cuộc đua</th>
                   <th className="py-3.5 px-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Ngựa</th>
                   <th className="py-3.5 px-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Loại</th>
-                  <th className="py-3.5 px-4 text-right text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Tiền cược</th>
+                  <th className="py-3.5 px-4 text-right text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Tiền dự đoán</th>
                   <th className="py-3.5 px-4 text-center text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Hệ số</th>
                   <th className="py-3.5 px-4 text-center text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Trạng thái</th>
                   <th className="py-3.5 px-4 text-right text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Tiền thắng</th>
@@ -370,7 +370,7 @@ export default function BetManagement() {
           <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-700 px-6 py-4">
             <p className="text-sm text-slate-500">
               Trang <span className="font-semibold text-black dark:text-white">{page}</span> / {totalPages}
-              <span className="hidden sm:inline text-slate-400"> · {total.toLocaleString('vi-VN')} cược</span>
+              <span className="hidden sm:inline text-slate-400"> · {total.toLocaleString('vi-VN')} dự đoán</span>
             </p>
             <div className="flex items-center gap-1">
               <button
@@ -424,7 +424,7 @@ export default function BetManagement() {
                   <DollarSign size={18} className="text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-black dark:text-white">Quyết Toán Cược</h3>
+                  <h3 className="text-base font-bold text-black dark:text-white">Quyết Toán Dự Đoán</h3>
                   <p className="text-xs text-slate-400">Theo cuộc đua đã kết thúc</p>
                 </div>
               </div>

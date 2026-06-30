@@ -28,7 +28,7 @@ const menuItems = [
   { path: '/registrations', label: 'Duyệt đăng ký', icon: FileCheck },
   { path: '/referees', label: 'Trọng tài', icon: UserCheck },
   { path: '/results', label: 'Kết quả', icon: Medal },
-  { path: '/bets', label: 'Quản lý cược', icon: Wallet },
+  { path: '/bets', label: 'Quản lý dự đoán', icon: Wallet },
   { path: '/rewards', label: 'Phần thưởng', icon: Gift },
 ];
 

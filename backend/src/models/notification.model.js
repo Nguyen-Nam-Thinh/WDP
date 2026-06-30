@@ -7,9 +7,9 @@ const notificationSchema = new Schema(
       type: String,
       enum: [
         'race_finished',      // race kết thúc
-        'bet_won',            // cược thắng
-        'bet_lost',           // cược thua
-        'bet_refunded',       // cược hoàn tiền
+        'bet_won',            // dự đoán thắng
+        'bet_lost',           // dự đoán thua
+        'bet_refunded',       // dự đoán hoàn tiền
         'invitation_received',// jockey nhận invitation
         'invitation_accepted',// owner biết jockey accept
         'invitation_rejected',// owner biết jockey reject

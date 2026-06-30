@@ -58,7 +58,7 @@ export function LandingPage() {
   }, []);
 
   const features = [
-    { icon: BarChart3, title: 'Phân Tích Thời Gian Thực', description: 'Theo dõi mọi cuộc đua với thống kê nâng cao, tỷ lệ cược trực tiếp và dữ liệu hiệu suất toàn diện.' },
+    { icon: BarChart3, title: 'Phân Tích Thời Gian Thực', description: 'Theo dõi mọi cuộc đua với thống kê nâng cao, tỷ lệ dự đoán trực tiếp và dữ liệu hiệu suất toàn diện.' },
     { icon: Lock, title: 'An Toàn & Minh Bạch', description: 'Kết quả được xác minh, giao dịch mã hóa và nhật ký kiểm toán đầy đủ.' },
     { icon: Globe, title: 'Phạm Vi Toàn Cầu', description: 'Truy cập giải đấu trên toàn thế giới với hỗ trợ đa ngôn ngữ và thanh toán đa dạng.' },
     { icon: Headphones, title: 'Hỗ Trợ 24/7', description: 'Hỗ trợ chuyên nghiệp mọi lúc, mọi nơi với đội ngũ chuyên trách cho tất cả người dùng.' },

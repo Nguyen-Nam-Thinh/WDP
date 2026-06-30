@@ -189,7 +189,7 @@ export default function ResultsPublishing() {
         `/bets/race/${selectedRace._id}/settle`,
         { method: 'POST' },
       );
-      toast.success(`Đã quyết toán ${result.settled} cược: ${result.won} thắng, ${result.lost} thua`);
+      toast.success(`Đã quyết toán ${result.settled} dự đoán: ${result.won} thắng, ${result.lost} thua`);
       // Reload bets
       const betsRes = await apiRequest<{ bets: BetSummary[]; total: number }>(`/bets/race/${selectedRace._id}?limit=100`);
       setRaceBets(betsRes.bets ?? []);
@@ -333,7 +333,7 @@ export default function ResultsPublishing() {
       {/* ── Results Section ── */}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-title-md2 font-semibold text-black dark:text-white flex items-center gap-2">
-          Kết Quả & Quyết Toán Cược
+          Kết Quả & Quyết Toán Dự Đoán
           {finishedRaces.length > 0 && (
             <span className="inline-flex items-center justify-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
               {finishedRaces.length} cuộc đua
@@ -411,7 +411,7 @@ export default function ResultsPublishing() {
                     onClick={() => openDetail(race)}
                     className="mt-auto flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white py-2 text-xs font-medium text-black hover:bg-slate-50 hover:text-blue-600 hover:border-blue-300 transition dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700 dark:hover:border-blue-500 dark:hover:text-blue-400"
                   >
-                    <Eye size={15} /> Xem kết quả & cược
+                    <Eye size={15} /> Xem kết quả & dự đoán
                   </button>
                 </div>
               );
@@ -458,7 +458,7 @@ export default function ResultsPublishing() {
               className="inline-flex items-center justify-center gap-2 rounded-md bg-emerald-500 py-2 px-4 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-50 transition shadow-sm"
             >
               {settling ? <RefreshCw className="animate-spin" size={16} /> : <DollarSign size={16} />}
-              Quyết Toán {pendingBets} Cược Chờ
+              Quyết Toán {pendingBets} Dự Đoán Chờ
             </button>
           )
         }
@@ -471,11 +471,11 @@ export default function ResultsPublishing() {
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center dark:border-slate-700 dark:bg-slate-800/50">
                 <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-1">{raceBets.length}</p>
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Tổng Cược</p>
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Tổng Dự Đoán</p>
               </div>
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center dark:border-slate-700 dark:bg-slate-800/50">
                 <p className="text-2xl font-bold text-amber-500 dark:text-amber-400 mb-1">{totalBetAmount.toLocaleString('vi-VN')} coins</p>
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Tổng Tiền Cược</p>
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Tổng Tiền Dự Đoán</p>
               </div>
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center dark:border-slate-700 dark:bg-slate-800/50">
                 <p className="text-2xl font-bold text-emerald-500 dark:text-emerald-400 mb-1">{totalPayout.toLocaleString('vi-VN')} coins</p>
@@ -483,14 +483,14 @@ export default function ResultsPublishing() {
               </div>
               <div className={`rounded-lg border border-slate-200 p-4 text-center dark:border-slate-700 ${pendingBets > 0 ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-900/50' : 'bg-slate-50 dark:bg-slate-800/50'}`}>
                 <p className={`text-2xl font-bold mb-1 ${pendingBets > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-500 dark:text-emerald-400'}`}>{pendingBets}</p>
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Cược Chờ QT</p>
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Dự Đoán Chờ QT</p>
               </div>
             </div>
 
             {pendingBets > 0 && (
               <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
                 <AlertCircle size={20} className="shrink-0 mt-0.5 text-amber-500" />
-                <p className="text-sm">Có <strong>{pendingBets}</strong> cược chưa được quyết toán. Bạn có thể tự động quyết toán bằng nút ở góc trên.</p>
+                <p className="text-sm">Có <strong>{pendingBets}</strong> dự đoán chưa được quyết toán. Bạn có thể tự động quyết toán bằng nút ở góc trên.</p>
               </div>
             )}
 
@@ -544,11 +544,11 @@ export default function ResultsPublishing() {
             {/* Bets */}
             <div>
               <div className="flex items-center justify-between mb-3">
-                <h4 className="text-lg font-semibold text-black dark:text-white">Danh Sách Cược ({raceBets.length})</h4>
+                <h4 className="text-lg font-semibold text-black dark:text-white">Danh Sách Dự Đoán ({raceBets.length})</h4>
               </div>
               {raceBets.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 py-8 text-center dark:border-slate-700 dark:bg-slate-800/50">
-                  <p className="text-slate-500 dark:text-slate-400">Không có cược nào cho cuộc đua này</p>
+                  <p className="text-slate-500 dark:text-slate-400">Không có dự đoán nào cho cuộc đua này</p>
                 </div>
               ) : (
                 <>
@@ -556,7 +556,7 @@ export default function ResultsPublishing() {
                     <table className="w-full table-auto text-sm">
                       <thead>
                         <tr className="bg-slate-50 text-left dark:bg-slate-800">
-                          <th className="py-3 px-4 font-semibold text-black dark:text-white">Người Cược</th>
+                          <th className="py-3 px-4 font-semibold text-black dark:text-white">Người Dự Đoán</th>
                           <th className="py-3 px-4 font-semibold text-black dark:text-white">Ngựa</th>
                           <th className="py-3 px-4 font-semibold text-black dark:text-white">Loại</th>
                           <th className="py-3 px-4 font-semibold text-black dark:text-white">Số Tiền</th>
@@ -609,7 +609,7 @@ export default function ResultsPublishing() {
                       >
                         <ChevronLeft size={13} /> Trước
                       </button>
-                      <span className="text-xs text-slate-500">Trang {betPage} / {betTotalPages} (tổng {raceBets.length} cược)</span>
+                      <span className="text-xs text-slate-500">Trang {betPage} / {betTotalPages} (tổng {raceBets.length} dự đoán)</span>
                       <button
                         onClick={() => setBetPage(p => Math.min(betTotalPages, p + 1))}
                         disabled={betPage >= betTotalPages}

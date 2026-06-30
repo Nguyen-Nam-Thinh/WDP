@@ -74,7 +74,7 @@ function LoginGateModal({
           </h2>
           <p className="text-muted-foreground leading-relaxed mb-8">
             Bạn cần <strong className="text-foreground">đăng nhập</strong> để đặt
-            cược và xem lịch sử dự đoán.
+            dự đoán và xem lịch sử dự đoán.
           </p>
           <div className="space-y-3">
             <button
@@ -89,7 +89,7 @@ function LoginGateModal({
               onClick={onClose}
               className="w-full py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
-              Tiếp tục xem (không đặt cược)
+              Tiếp tục xem (không dự đoán)
             </button>
           </div>
         </div>
@@ -110,13 +110,13 @@ const AUTH_FEATURES = [
   {
     icon: Zap,
     color: "#C9A227",
-    label: "Đặt cược",
+    label: "Dự đoán",
     desc: "Win / Place / Show với hệ số nhân cố định x1.5 – x3",
   },
   {
     icon: BarChart3,
     color: "#8C2F1B",
-    label: "Lịch sử cá cược",
+    label: "Lịch sử cá dự đoán",
     desc: "Theo dõi tỷ lệ đúng và tổng coin thắng của bạn",
   },
   {
@@ -170,7 +170,7 @@ function AuthGate({
                   <span className="italic text-secondary">toàn bộ tính năng</span>
                 </h2>
                 <p className="text-muted-foreground leading-relaxed max-w-md mx-auto lg:mx-0 mb-8">
-                  Trang dự đoán yêu cầu tài khoản để bảo vệ dữ liệu cá cược và
+                  Trang dự đoán yêu cầu tài khoản để bảo vệ dữ liệu cá dự đoán và
                   cung cấp phân tích AI cá nhân hóa cho bạn.
                 </p>
 
@@ -703,13 +703,13 @@ export function PredictionsPage() {
         amount,
       });
       toast.success(
-        `Đặt cược thành công! Tiềm năng: +${potentialWin?.toLocaleString('vi-VN')} coins`,
+        `Dự đoán thành công! Tiềm năng: +${potentialWin?.toLocaleString('vi-VN')} coins`,
       );
       setPlaced((p) => !p);
       setSelectedHorseIdx(null);
       setBetAmount("");
     } catch (err: any) {
-      toast.error(err.message || "Đặt cược thất bại");
+      toast.error(err.message || "Dự đoán thất bại");
     } finally {
       setPlacing(false);
     }
@@ -738,7 +738,7 @@ export function PredictionsPage() {
           <div className="flex flex-col lg:flex-row items-start lg:items-end justify-between gap-10">
             <div>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 text-sm font-bold uppercase tracking-widest border border-primary/30 text-primary">
-                <Zap className="w-4 h-4" /> Dự Đoán &amp; Cược
+                <Zap className="w-4 h-4" /> Dự Đoán &amp; Dự Đoán
               </div>
               <h1 className="font-serif text-5xl md:text-6xl font-bold text-foreground mb-4 leading-none tracking-tight">
                 Dự Đoán
@@ -759,7 +759,7 @@ export function PredictionsPage() {
                   icon: Target,
                 },
                 {
-                  label: "Đã Cược",
+                  label: "Đã Dự Đoán",
                   value: isLoggedIn ? String(myBets.length) : "—",
                   color: "#8F7318",
                   icon: BarChart3,
@@ -845,7 +845,7 @@ export function PredictionsPage() {
                       </div>
                     ) : races.length === 0 ? (
                       <div className="p-6 text-center text-muted-foreground text-sm bg-card border border-border">
-                        Không có cuộc đua nào đang mở đặt cược
+                        Không có cuộc đua nào đang mở dự đoán
                       </div>
                     ) : (
                       <div className="grid sm:grid-cols-2 gap-3">
@@ -873,7 +873,7 @@ export function PredictionsPage() {
                               >
                                 {race.status === "running"
                                   ? "● TRỰC TIẾP"
-                                  : "Mở Cược"}
+                                  : "Mở Dự Đoán"}
                               </span>
                             </div>
                             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
@@ -1038,7 +1038,7 @@ export function PredictionsPage() {
                         <Zap className="w-4 h-4 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-serif font-bold text-foreground">Đặt Cược</h3>
+                        <h3 className="font-serif font-bold text-foreground">Dự Đoán</h3>
                         {!isLoggedIn && (
                           <p className="text-[10px] text-destructive">
                             Yêu cầu đăng nhập
@@ -1060,7 +1060,7 @@ export function PredictionsPage() {
                       {isLoggedIn && (
                         <div className="mb-4">
                           <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">
-                            Loại Cược
+                            Loại Dự Đoán
                           </label>
                           <div className="grid grid-cols-3 gap-2">
                             {(["win", "place", "show"] as const).map((bt) => (
@@ -1109,7 +1109,7 @@ export function PredictionsPage() {
                       {/* Amount */}
                       <div className="mb-4">
                         <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">
-                          Số Tiền Cược (coins)
+                          Số Tiền Dự Đoán (coins)
                         </label>
                         <div className="relative">
                           <input
@@ -1170,7 +1170,7 @@ export function PredictionsPage() {
                           onClick={() => setShowLoginModal(true)}
                           className="w-full flex items-center justify-center gap-2 py-3.5 text-sm font-black bg-primary text-primary-foreground transition-colors hover:bg-primary/90"
                         >
-                          <LogIn className="w-4 h-4" /> Đăng Nhập Để Cược
+                          <LogIn className="w-4 h-4" /> Đăng Nhập Để Dự Đoán
                         </button>
                       ) : (
                         <button
@@ -1184,7 +1184,7 @@ export function PredictionsPage() {
                           ) : (
                             <Zap className="w-4 h-4" />
                           )}
-                          {placing ? "Đang xử lý..." : "Xác Nhận Đặt Cược"}
+                          {placing ? "Đang xử lý..." : "Xác Nhận Dự Đoán"}
                         </button>
                       )}
                     </div>
@@ -1194,7 +1194,7 @@ export function PredictionsPage() {
                   <div className="overflow-hidden bg-card border border-border">
                     <div className="px-5 py-4 flex items-center justify-between border-b border-border">
                       <h3 className="font-serif text-sm font-bold text-foreground flex items-center gap-2">
-                        <Eye className="w-4 h-4 text-muted-foreground" /> Lịch Sử Cược
+                        <Eye className="w-4 h-4 text-muted-foreground" /> Lịch Sử Dự Đoán
                       </h3>
                       {!isLoggedIn && (
                         <Lock className="w-3.5 h-3.5 text-muted-foreground" />
@@ -1221,7 +1221,7 @@ export function PredictionsPage() {
                         </div>
                       ) : myBets.length === 0 ? (
                         <div className="py-6 text-center text-sm text-muted-foreground">
-                          Chưa có lịch sử cược
+                          Chưa có lịch sử dự đoán
                         </div>
                       ) : (
                         <>

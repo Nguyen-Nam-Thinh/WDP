@@ -305,7 +305,7 @@ export function LiveRacePage() {
     if (userWon && !confettiFired.current) {
       confettiFired.current = true;
       confetti({ particleCount: 200, spread: 100, origin: { y: 0.5 } });
-      toast.success("🎉 Chúc mừng! Bạn đã thắng cược!");
+      toast.success("🎉 Chúc mừng! Bạn đã thắng dự đoán!");
     }
   }, [phase, raceId, token, socketResults, myBets]);
 
@@ -747,7 +747,7 @@ export function LiveRacePage() {
                           </span>
                           {isMyHorse && (
                             <Chip
-                              label="Cược của bạn"
+                              label="Dự Đoán của bạn"
                               size="small"
                               sx={{
                                 bgcolor: "rgba(201,162,39,0.15)",
@@ -798,7 +798,7 @@ export function LiveRacePage() {
             {myBets.length > 0 && (
               <div className="bg-card border border-border p-5">
                 <h3 className="font-serif text-foreground font-bold mb-3 flex items-center gap-2 text-sm">
-                  <Star className="w-4 h-4 text-gold" /> Cược của bạn
+                  <Star className="w-4 h-4 text-gold" /> Dự Đoán của bạn
                 </h3>
                 <div className="space-y-2">
                   {myBets.map((bet) => {
@@ -874,7 +874,7 @@ export function LiveRacePage() {
         {phase !== "finished" && myBets.length > 0 && (
           <div className="bg-card border border-border p-4">
             <h3 className="font-serif text-foreground font-bold mb-3 flex items-center gap-2 text-sm">
-              <Star className="w-4 h-4 text-gold" /> Cược của bạn trong
+              <Star className="w-4 h-4 text-gold" /> Dự Đoán của bạn trong
               race này
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
