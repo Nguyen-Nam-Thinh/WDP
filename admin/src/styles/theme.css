@@ -179,3 +179,92 @@
     line-height: 1.5;
   }
 }
+
+@layer base {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  button {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  button:active:not(:disabled) {
+    transform: scale(0.96);
+  }
+}
+
+@layer base {
+  button:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+  
+  input, select, textarea {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  tr {
+    transition: background-color 0.2s ease;
+  }
+}
+
+@layer components {
+  /* Premium Primary Buttons */
+  button.bg-blue-600 {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 100%);
+  }
+  button.bg-blue-600:hover:not(:disabled) {
+    background-color: #2563eb;
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 100%);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+  }
+  button.bg-blue-600:active:not(:disabled) {
+    background-image: none;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Premium Secondary Buttons */
+  button.bg-white.border-slate-200 {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  }
+  button.bg-white.border-slate-200:hover:not(:disabled) {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    transform: translateY(-1px);
+  }
+  button.bg-white.border-slate-200:active:not(:disabled) {
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  /* Premium Danger Buttons */
+  button.bg-red-500, button.bg-red-600 {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 100%);
+  }
+  button.bg-red-500:hover:not(:disabled), button.bg-red-600:hover:not(:disabled) {
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 100%);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+  }
+  button.bg-red-500:active:not(:disabled), button.bg-red-600:active:not(:disabled) {
+    background-image: none;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+}
