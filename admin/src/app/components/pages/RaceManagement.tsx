@@ -1,35 +1,95 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Search, RefreshCw, Dog, User, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Search, RefreshCw, Dog, ChevronLeft, ChevronRight, Filter, Eye, MoreHorizontal, FileText, CheckCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { raceApi, type Race, type Registration } from '../../api/race';
 import { tournamentApi, type Tournament } from '../../api/tournament';
 
 const STATUS_COLOR: Record<string, string> = {
-  open: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
-  closed: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
-  pre_check: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
-  running: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
-  finished: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
-  cancelled: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',
+  open: 'bg-blue-50 text-blue-700 border border-blue-200',
+  closed: 'bg-amber-50 text-amber-700 border border-amber-200',
+  pre_check: 'bg-amber-50 text-amber-700 border border-amber-200',
+  running: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+  finished: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+  cancelled: 'bg-red-50 text-red-700 border border-red-200',
 };
+
 const STATUS_LABEL: Record<string, string> = {
   open: 'Mở ĐK', closed: 'Đóng ĐK', pre_check: 'Kiểm tra',
   running: 'Đang đua', finished: 'Kết thúc', cancelled: 'Đã hủy',
 };
 
 const REG_STATUS_COLOR: Record<string, string> = { 
-  active: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400', 
-  cancelled: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400', 
-  disqualified: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' 
+  active: 'bg-emerald-50 text-emerald-700 border border-emerald-200', 
+  cancelled: 'bg-slate-50 text-slate-700 border border-slate-200', 
+  disqualified: 'bg-red-50 text-red-700 border border-red-200' 
 };
-const REG_STATUS_LABEL: Record<string, string> = { active: 'Đang hoạt động', cancelled: 'Đã hủy', disqualified: 'Bị loại' };
+const REG_STATUS_LABEL: Record<string, string> = { active: 'Hợp lệ', cancelled: 'Đã hủy', disqualified: 'Bị loại' };
 
 const PRECHECK_COLOR: Record<string, string> = { 
-  pending: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400', 
-  passed: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400', 
-  failed: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' 
+  pending: 'bg-slate-50 text-slate-600 border border-slate-200', 
+  passed: 'bg-emerald-50 text-emerald-700 border border-emerald-200', 
+  failed: 'bg-red-50 text-red-700 border border-red-200' 
 };
 const PRECHECK_LABEL: Record<string, string> = { pending: 'Chờ', passed: 'Đạt', failed: 'Không đạt' };
+
+// ── Shared Modal Wrapper ───────────────────────────────────────────────────────
+function Modal({ open, onClose, title, children, maxWidth = 'max-w-md' }: any) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm">
+      <div className={`w-full ${maxWidth} rounded-xl bg-white shadow-2xl flex flex-col max-h-[90vh] overflow-hidden`}>
+        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 bg-slate-50">
+          <h3 className="text-lg font-bold text-slate-900">{title}</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 transition rounded-md hover:bg-slate-200 p-1 shrink-0">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+        <div className="overflow-y-auto custom-scrollbar flex-1 p-6 pb-2">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Shared Action Menu ───────────────────────────────────────────────────────
+function ActionMenu({ race, onOpenDetails }: { race: Race; onOpenDetails: (r: Race) => void }) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button 
+        onClick={() => setOpen(!open)}
+        className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition"
+      >
+        <MoreHorizontal size={18} />
+      </button>
+      
+      {open && (
+        <div className="absolute right-0 mt-1 w-48 rounded-lg bg-white shadow-lg border border-slate-200 py-1 z-20">
+          <button
+            onClick={() => { setOpen(false); onOpenDetails(race); }}
+            className="flex w-full items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition"
+          >
+            <Eye size={15} className="text-blue-500" />
+            Xem Chi tiết & Đăng ký
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function RaceManagement() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -40,6 +100,7 @@ export default function RaceManagement() {
   const [search, setSearch] = useState('');
   const [loadingRaces, setLoadingRaces] = useState(true);
   const [loadingRegs, setLoadingRegs] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   // Pagination
   const [racePage, setRacePage] = useState(1);
@@ -59,10 +120,6 @@ export default function RaceManagement() {
     try {
       const res = await raceApi.list({ tournamentId: filterTournament || undefined, limit: 100 });
       setRaces(res.races);
-      setSelectedRace(prev => {
-        if (prev && res.races.some(r => r._id === prev._id)) return prev;
-        return res.races[0] ?? null;
-      });
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -84,7 +141,12 @@ export default function RaceManagement() {
 
   useEffect(() => { loadTournaments(); }, [loadTournaments]);
   useEffect(() => { loadRaces(); }, [loadRaces]);
-  useEffect(() => { if (selectedRace) loadRegistrations(selectedRace._id); }, [selectedRace, loadRegistrations]);
+
+  const handleOpenDetails = (race: Race) => {
+    setSelectedRace(race);
+    setDetailsOpen(true);
+    loadRegistrations(race._id);
+  };
 
   const filteredRaces = races.filter(r =>
     r.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -96,226 +158,280 @@ export default function RaceManagement() {
 
   return (
     <>
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-title-md2 font-semibold text-black dark:text-white">
-          Chi tiết cuộc đua & Đăng ký
-        </h2>
-        <button
-          onClick={loadRaces}
-          className="inline-flex items-center justify-center gap-2.5 rounded-md border border-slate-300 bg-white py-2 px-4 text-center font-medium text-black hover:bg-slate-50 transition dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700 disabled:opacity-50"
-        >
-          <RefreshCw size={18} className={loadingRaces ? 'animate-spin' : ''} />
-          Làm mới
-        </button>
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Quản lý Chặng đua</h2>
+          <p className="text-sm text-slate-500 mt-1">Quản lý danh sách ngựa tham gia từng chặng đua trong hệ thống.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={loadRaces}
+            className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white py-2 px-3 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition shadow-sm"
+          >
+            <RefreshCw size={16} className={loadingRaces ? 'animate-spin' : ''} />
+            Làm mới
+          </button>
+        </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 md:mt-6 md:gap-6 2xl:mt-7.5 2xl:gap-7.5 lg:grid-cols-12">
-        {/* ── Left: Race list ── */}
-        <div className="col-span-12 lg:col-span-4 rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-[#1c2434] p-5">
-          <div className="mb-5 flex flex-col gap-3">
-            <div className="relative z-20 bg-transparent w-full">
-              <span className="absolute top-1/2 left-3 -translate-y-1/2">
-                <Search size={16} className="text-slate-400" />
-              </span>
-              <input
-                type="text"
-                placeholder="Tìm cuộc đua..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="w-full rounded border border-slate-300 bg-transparent py-2 pl-9 pr-3 outline-none focus:border-blue-500 active:border-blue-500 dark:border-slate-600 dark:bg-slate-800/50 text-sm"
-              />
-            </div>
-            
-            <div className="relative z-20 bg-transparent w-full">
-              <select
-                value={filterTournament}
-                onChange={e => setFilterTournament(e.target.value)}
-                className="relative z-20 w-full appearance-none rounded border border-slate-300 bg-transparent py-2 px-3 outline-none transition focus:border-blue-500 active:border-blue-500 dark:border-slate-600 dark:bg-slate-800/50 text-sm"
-              >
-                <option value="">Tất cả giải đấu</option>
-                {tournaments.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
-              </select>
-            </div>
+      <div className="rounded-xl border border-slate-200 bg-white shadow-sm flex flex-col min-h-[500px]">
+        {/* Filter bar */}
+        <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 bg-slate-50/50 px-5 py-4">
+          <div className="relative flex-1 min-w-[250px] max-w-sm">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Tìm chặng đua..."
+              value={search}
+              onChange={e => { setSearch(e.target.value); setRacePage(1); }}
+              className="w-full rounded-md border border-slate-200 bg-white py-2 pl-9 pr-4 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm"
+            />
           </div>
 
+          <div className="flex items-center gap-2">
+            <Filter size={16} className="text-slate-400 shrink-0 ml-2" />
+            <select
+              value={filterTournament}
+              onChange={e => { setFilterTournament(e.target.value); setRacePage(1); }}
+              className="rounded-md border border-slate-200 bg-white py-2 px-3 text-sm outline-none focus:border-blue-500 shadow-sm max-w-[250px] text-slate-700 font-medium"
+            >
+              <option value="">Tất cả giải đấu</option>
+              {tournaments.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
+            </select>
+          </div>
+
+          <span className="ml-auto text-xs font-bold text-slate-400 uppercase tracking-wider">
+            {filteredRaces.length} Kết quả
+          </span>
+        </div>
+
+        {/* Table */}
+        <div className="flex-1 overflow-auto custom-scrollbar bg-slate-50/20">
           {loadingRaces ? (
-            <div className="flex justify-center py-8">
-              <RefreshCw className="animate-spin text-blue-500" size={28} />
+            <div className="flex flex-col items-center justify-center py-20 gap-3">
+              <RefreshCw className="animate-spin text-slate-300" size={32} />
+            </div>
+          ) : pagedRaces.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-4">
+              <div className="h-16 w-16 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center">
+                <FileText size={32} className="text-slate-300" />
+              </div>
+              <div className="text-center">
+                <p className="text-slate-600 font-semibold mb-1">Không có dữ liệu chặng đua</p>
+                <p className="text-sm text-slate-400 font-medium">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
+              </div>
             </div>
           ) : (
-            <>
-              <div className="flex flex-col gap-2.5 pr-1 custom-scrollbar">
-                {pagedRaces.length === 0 ? (
-                  <p className="text-center text-slate-500 py-6 text-sm">Không có cuộc đua</p>
-                ) : pagedRaces.map(race => {
-                const isSelected = selectedRace?._id === race._id;
-                return (
-                  <div
-                    key={race._id}
-                    onClick={() => setSelectedRace(race)}
-                    className={`cursor-pointer rounded-lg border p-4 transition-all duration-200 ${
-                      isSelected 
-                        ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20' 
-                        : 'border-slate-200 bg-white hover:border-blue-300 hover:shadow-sm dark:border-slate-700 dark:bg-[#1c2434] dark:hover:border-slate-600'
-                    }`}
-                  >
-                    <h5 className="font-semibold text-black dark:text-white mb-1 leading-tight">{race.name}</h5>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 truncate">
-                      {typeof race.tournamentId === 'object' ? race.tournamentId.name : '-'}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      <span className="inline-block rounded border border-slate-300 bg-slate-50 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                        {race.grade}
-                      </span>
-                      <span className={`inline-block rounded px-2 py-0.5 text-[10px] font-medium ${STATUS_COLOR[race.status] || ''}`}>
-                        {STATUS_LABEL[race.status]}
-                      </span>
-                    </div>
-                  </div>
-                );
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead className="sticky top-0 bg-slate-50 shadow-sm z-10 border-b border-slate-200">
+                <tr>
+                  <th className="py-3 px-5 text-xs font-bold uppercase tracking-wider text-slate-400">Tên Chặng Đua</th>
+                  <th className="py-3 px-5 text-xs font-bold uppercase tracking-wider text-slate-400">Giải Đấu</th>
+                  <th className="py-3 px-5 text-xs font-bold uppercase tracking-wider text-slate-400">Hạng / Cự ly</th>
+                  <th className="py-3 px-5 text-xs font-bold uppercase tracking-wider text-slate-400">Thưởng</th>
+                  <th className="py-3 px-5 text-xs font-bold uppercase tracking-wider text-slate-400 text-center">Trạng Thái</th>
+                  <th className="py-3 px-5 text-xs font-bold uppercase tracking-wider text-slate-400 text-right">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {pagedRaces.map((race) => {
+                  return (
+                    <tr key={race._id} className="hover:bg-slate-50/50 bg-white transition-colors group">
+                      <td className="py-3 px-5">
+                        <p className="font-semibold text-slate-900 text-[13px]">{race.name}</p>
+                        <p className="text-[11px] font-medium text-slate-500 mt-0.5">Thời gian: {race.scheduledTime ? new Date(race.scheduledTime).toLocaleString('vi-VN') : '-'}</p>
+                      </td>
+                      <td className="py-3 px-5">
+                        <p className="font-semibold text-slate-700 text-[13px]">{typeof race.tournamentId === 'object' ? race.tournamentId.name : '-'}</p>
+                      </td>
+                      <td className="py-3 px-5">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-block rounded bg-slate-100 border border-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 shadow-sm">
+                            {race.grade}
+                          </span>
+                          <span className="text-[12px] font-medium text-slate-600">{race.distance}m</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-5">
+                        <p className="font-bold text-emerald-600 text-[13px]">{race.purse?.toLocaleString('vi-VN')}</p>
+                      </td>
+                      <td className="py-3 px-5 text-center">
+                        <span className={`inline-block rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-sm ${STATUS_COLOR[race.status] || 'bg-slate-50 border border-slate-200 text-slate-600'}`}>
+                          {STATUS_LABEL[race.status]}
+                        </span>
+                      </td>
+                      <td className="py-3 px-5">
+                        <div className="flex items-center justify-end">
+                          <button onClick={() => handleOpenDetails(race)} className="flex items-center gap-1 px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-600 hover:text-blue-700 hover:bg-blue-50 border border-slate-200 rounded transition shadow-sm bg-white">
+                            <Eye size={12} /> Chi tiết
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
                 })}
-              </div>
-              {/* Pagination */}
-              {raceTotalPages > 1 && (
-                <div className="flex items-center justify-between pt-3 mt-2 border-t border-slate-200 dark:border-slate-700">
-                  <button
-                    onClick={() => setRacePage(p => Math.max(1, p - 1))}
-                    disabled={racePage === 1}
-                    className="flex items-center gap-1 rounded bg-slate-100 py-1 px-2.5 text-xs font-medium text-slate-600 hover:bg-slate-200 disabled:opacity-40 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition"
-                  >
-                    <ChevronLeft size={13} /> Trước
-                  </button>
-                  <span className="text-xs text-slate-500">{racePage} / {raceTotalPages}</span>
-                  <button
-                    onClick={() => setRacePage(p => Math.min(raceTotalPages, p + 1))}
-                    disabled={racePage >= raceTotalPages}
-                    className="flex items-center gap-1 rounded bg-slate-100 py-1 px-2.5 text-xs font-medium text-slate-600 hover:bg-slate-200 disabled:opacity-40 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition"
-                  >
-                    Sau <ChevronRight size={13} />
-                  </button>
-                </div>
-              )}
-            </>
+              </tbody>
+            </table>
           )}
         </div>
 
-        {/* ── Right: Registrations ── */}
-        <div className="col-span-12 lg:col-span-8">
-          {selectedRace ? (
-            <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-[#1c2434] p-5 sm:p-7">
-              <div className="mb-6">
-                <div className="flex flex-wrap items-center gap-3 mb-3">
-                  <h3 className="text-xl font-bold text-black dark:text-white">{selectedRace.name}</h3>
-                  <span className="inline-block rounded border border-slate-300 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                    {selectedRace.grade}
-                  </span>
-                  <span className={`inline-block rounded px-2.5 py-0.5 text-xs font-medium ${STATUS_COLOR[selectedRace.status] || ''}`}>
-                    {STATUS_LABEL[selectedRace.status]}
-                  </span>
-                </div>
-                
-                <div className="flex flex-wrap gap-4 sm:gap-6 rounded-lg bg-slate-50 p-4 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">🏁</span>
-                    <div>
-                      <p className="text-xs text-slate-500">Cự ly</p>
-                      <p className="text-sm font-semibold text-black dark:text-white">{selectedRace.distance}m</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">💰</span>
-                    <div>
-                      <p className="text-xs text-slate-500">Tổng thưởng</p>
-                      <p className="text-sm font-semibold text-black dark:text-white">{selectedRace.purse?.toLocaleString('vi-VN')} coins</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">📋</span>
-                    <div>
-                      <p className="text-xs text-slate-500">Phí ĐK</p>
-                      <p className="text-sm font-semibold text-black dark:text-white">{selectedRace.registrationFee?.toLocaleString('vi-VN')} coins</p>
-                    </div>
-                  </div>
-                  {typeof selectedRace.refereeId === 'object' && selectedRace.refereeId && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl">👤</span>
-                      <div>
-                        <p className="text-xs text-slate-500">Trọng tài</p>
-                        <p className="text-sm font-semibold text-black dark:text-white">{selectedRace.refereeId.fullName}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
+        {/* Pagination */}
+        {raceTotalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-slate-200 bg-white px-5 py-3">
+            <p className="text-xs font-medium text-slate-500">
+              Trang <span className="font-bold text-slate-900">{racePage}</span> / {raceTotalPages}
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setRacePage(p => p - 1)}
+                disabled={racePage === 1}
+                className="flex h-7 w-7 items-center justify-center rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition shadow-sm"
+              >
+                <ChevronLeft size={14} />
+              </button>
+              {Array.from({ length: Math.min(5, raceTotalPages) }, (_, i) => {
+                let p = i + 1;
+                if (raceTotalPages > 5) {
+                  if (racePage <= 3) p = i + 1;
+                  else if (racePage >= raceTotalPages - 2) p = raceTotalPages - 4 + i;
+                  else p = racePage - 2 + i;
+                }
+                return (
+                  <button
+                    key={p}
+                    onClick={() => setRacePage(p)}
+                    className={`flex h-7 w-7 items-center justify-center rounded text-xs font-bold transition shadow-sm ${
+                      racePage === p
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => setRacePage(p => p + 1)}
+                disabled={racePage >= raceTotalPages}
+                className="flex h-7 w-7 items-center justify-center rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition shadow-sm"
+              >
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Race Details & Registrations Modal ── */}
+      <Modal 
+        open={detailsOpen} 
+        onClose={() => setDetailsOpen(false)} 
+        title={selectedRace?.name}
+        maxWidth="max-w-5xl"
+      >
+        {selectedRace && (
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="inline-flex items-center rounded border border-slate-200 bg-white px-2.5 py-0.5 text-[11px] font-bold text-slate-600 shadow-sm">
+                {selectedRace.grade}
+              </span>
+              <span className={`inline-flex items-center rounded px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider ${STATUS_COLOR[selectedRace.status] || ''}`}>
+                {STATUS_LABEL[selectedRace.status]}
+              </span>
+              <p className="text-sm text-slate-500 font-medium ml-2 border-l border-slate-200 pl-4">Thuộc giải: {typeof selectedRace.tournamentId === 'object' ? selectedRace.tournamentId.name : '-'}</p>
+            </div>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-50 rounded-lg p-4 border border-slate-200 shadow-inner">
+              <div>
+                <p className="text-[10px] text-slate-400 font-bold mb-1 uppercase tracking-wider">Cự ly</p>
+                <p className="text-sm font-bold text-slate-800">{selectedRace.distance}m</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-400 font-bold mb-1 uppercase tracking-wider">Tổng thưởng</p>
+                <p className="text-sm font-bold text-amber-600">{selectedRace.purse?.toLocaleString('vi-VN')}</p>
               </div>
 
-              <h4 className="text-lg font-semibold text-black dark:text-white mb-4">
-                Danh sách đăng ký <span className="text-sm font-normal text-slate-500 ml-2">({registrations.length} / {selectedRace.maxCapacity} ngựa)</span>
-              </h4>
+              <div>
+                <p className="text-[10px] text-slate-400 font-bold mb-1 uppercase tracking-wider">Trọng tài</p>
+                <p className="text-sm font-bold text-slate-800">{typeof selectedRace.refereeId === 'object' && selectedRace.refereeId ? selectedRace.refereeId.fullName : 'Chưa chỉ định'}</p>
+              </div>
+            </div>
 
-              {loadingRegs ? (
-                <div className="flex justify-center py-10">
-                  <RefreshCw className="animate-spin text-blue-500" size={32} />
-                </div>
-              ) : (
-                <div className="max-w-full overflow-x-auto">
-                  <table className="w-full table-auto">
-                    <thead>
-                      <tr className="bg-slate-50 text-left dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                        <th className="min-w-[180px] py-4 px-4 font-semibold text-sm text-black dark:text-white xl:pl-5">Ngựa</th>
-                        <th className="min-w-[150px] py-4 px-4 font-semibold text-sm text-black dark:text-white">Chủ sở hữu</th>
-                        <th className="min-w-[150px] py-4 px-4 font-semibold text-sm text-black dark:text-white">Jockey</th>
-                        <th className="min-w-[100px] py-4 px-4 font-semibold text-sm text-black dark:text-white">Phí</th>
-                        <th className="min-w-[100px] py-4 px-4 font-semibold text-sm text-black dark:text-white text-center">KT ngựa</th>
-                        <th className="min-w-[120px] py-4 px-4 font-semibold text-sm text-black dark:text-white text-center">Trạng thái</th>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="px-5 py-4 flex items-center justify-between border-b border-slate-200 bg-slate-50">
+                <h4 className="text-sm font-bold text-slate-800">
+                  Danh sách Đăng ký tham gia
+                </h4>
+                <span className="text-xs font-semibold bg-white border border-slate-200 text-slate-600 py-1 px-2.5 rounded-full shadow-sm">
+                  {registrations.length} / {selectedRace.maxCapacity} ngựa
+                </span>
+              </div>
+              
+              <div className="overflow-x-auto">
+                {loadingRegs ? (
+                  <div className="flex justify-center py-12"><RefreshCw className="animate-spin text-slate-400" size={28} /></div>
+                ) : (
+                  <table className="w-full text-left text-sm whitespace-nowrap">
+                    <thead className="bg-white border-b border-slate-200">
+                      <tr>
+                        <th className="px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">Ngựa</th>
+                        <th className="px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">Chủ sở hữu</th>
+                        <th className="px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">Kỵ thủ (Jockey)</th>
+                        <th className="px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 text-center">Kiểm tra Y Tế</th>
+                        <th className="px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 text-center">Trạng thái</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-slate-100">
                       {registrations.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="text-center py-8 text-slate-500">Chưa có đăng ký</td>
+                          <td colSpan={5} className="text-center py-12 text-slate-500 bg-slate-50/20">
+                            <div className="flex flex-col items-center justify-center">
+                              <Dog className="text-slate-300 mb-2" size={32} />
+                              Chưa có lượt đăng ký nào
+                            </div>
+                          </td>
                         </tr>
                       ) : registrations.map(reg => (
-                        <tr key={reg._id} className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                          <td className="py-3 px-4 xl:pl-5">
+                        <tr key={reg._id} className="hover:bg-slate-50/50 transition-colors bg-white">
+                          <td className="px-5 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-500">
-                                <Dog size={20} />
+                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-50 text-slate-500 border border-slate-200">
+                                <Dog size={16} />
                               </div>
                               <div>
-                                <p className="font-medium text-black dark:text-white text-sm">
+                                <p className="font-semibold text-slate-900 text-[13px]">
                                   {typeof reg.horseId === 'object' ? reg.horseId.name : '-'}
                                 </p>
-                                <p className="text-xs text-slate-500">
-                                  {typeof reg.horseId === 'object' ? reg.horseId.currentGrade : ''}
+                                <p className="text-[11px] font-medium text-slate-500 mt-0.5">
+                                  Hạng: {typeof reg.horseId === 'object' ? reg.horseId.currentGrade : ''}
                                 </p>
                               </div>
                             </div>
                           </td>
-                          <td className="py-3 px-4">
-                            <p className="text-sm text-black dark:text-white">
+                          <td className="px-5 py-4">
+                            <p className="font-medium text-slate-700 text-[13px]">
                               {typeof reg.ownerId === 'object' ? reg.ownerId.fullName : '-'}
                             </p>
                           </td>
-                          <td className="py-3 px-4">
+                          <td className="px-5 py-4">
                             {typeof reg.jockeyId === 'object' && reg.jockeyId ? (
-                              <div className="flex items-center gap-1.5">
-                                <User size={14} className="text-slate-400" />
-                                <span className="text-sm text-black dark:text-white">{reg.jockeyId.fullName}</span>
+                              <div className="flex items-center gap-2">
+                                <div className="h-6 w-6 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-600">
+                                  {reg.jockeyId.fullName.charAt(0)}
+                                </div>
+                                <span className="font-medium text-slate-700 text-[13px]">{reg.jockeyId.fullName}</span>
                               </div>
                             ) : (
-                              <span className="text-xs font-medium text-amber-500">Chưa gán</span>
+                              <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded uppercase tracking-wider">Chưa gán</span>
                             )}
                           </td>
-                          <td className="py-3 px-4">
-                            <p className="text-sm font-semibold text-black dark:text-white">{reg.feePaid?.toLocaleString('vi-VN')} coins</p>
-                          </td>
-                          <td className="py-3 px-4 text-center">
-                            <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-medium ${PRECHECK_COLOR[reg.preCheckResult?.status || ''] || PRECHECK_COLOR.pending}`}>
+                          <td className="px-5 py-4 text-center">
+                            <span className={`inline-flex items-center rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border shadow-sm ${PRECHECK_COLOR[reg.preCheckResult?.status || ''] || PRECHECK_COLOR.pending}`}>
                               {PRECHECK_LABEL[reg.preCheckResult?.status || 'pending']}
                             </span>
                           </td>
-                          <td className="py-3 px-4 text-center">
-                            <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-medium ${REG_STATUS_COLOR[reg.status] || ''}`}>
+                          <td className="px-5 py-4 text-center">
+                            <span className={`inline-flex items-center rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border shadow-sm ${REG_STATUS_COLOR[reg.status] || ''}`}>
                               {REG_STATUS_LABEL[reg.status]}
                             </span>
                           </td>
@@ -323,19 +439,12 @@ export default function RaceManagement() {
                       ))}
                     </tbody>
                   </table>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="rounded-xl border border-slate-200 bg-white p-10 text-center shadow-sm dark:border-slate-700 dark:bg-[#1c2434] h-full flex flex-col items-center justify-center min-h-[400px]">
-              <div className="h-16 w-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
-                <Dog className="text-slate-400" size={32} />
+                )}
               </div>
-              <p className="text-slate-500 dark:text-slate-400 text-lg">Chọn một cuộc đua từ danh sách bên trái để xem đăng ký</p>
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+        )}
+      </Modal>
     </>
   );
 }
