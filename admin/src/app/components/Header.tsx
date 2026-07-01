@@ -219,7 +219,7 @@ export default function Header(props: {
                   {user?.fullName ? user.fullName.charAt(0).toUpperCase() : 'A'}
                 </div>
                 <div className="hidden md:flex flex-col text-left">
-                  <span className="text-sm font-extrabold text-black leading-none mb-1">
+                  <span className="text-sm font-medium text-slate-700 leading-none mb-1">
                     {user?.fullName || 'Admin User'}
                   </span>
                   <span className="text-[10px] text-slate-500 leading-none">Quản trị viên</span>
@@ -231,7 +231,7 @@ export default function Header(props: {
                   <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)}></div>
                   <div className="absolute right-0 mt-2 w-48 rounded-lg border border-slate-200 bg-white shadow-lg z-50">
                     <div className="px-4 py-3 border-b border-slate-100 md:hidden">
-                       <span className="block text-sm font-extrabold text-black">{user?.fullName || 'Admin User'}</span>
+                       <span className="block text-sm font-medium text-black">{user?.fullName || 'Admin User'}</span>
                        <span className="block text-xs text-slate-500 mt-0.5">Quản trị viên</span>
                     </div>
                     <ul className="py-1">
