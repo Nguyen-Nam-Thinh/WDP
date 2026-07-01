@@ -43,7 +43,7 @@ export default function Login() {
                 <img src="/images/logo.png" alt="Logo" className="h-full w-full object-contain" />
               </div>
               <h2 className="mb-3 text-3xl font-bold text-slate-800 dark:text-white leading-tight">
-                Hệ Thống Quản Lý <br/> Đua Ngựa Pro
+                Hệ Thống Quản Lý <br/> Paddock Admin
               </h2>
               <p className="text-slate-500 dark:text-slate-400 font-medium text-sm leading-relaxed max-w-[300px]">
                 Nền tảng quản lý toàn diện dành cho ban tổ chức giải đua ngựa, quản lý ngựa, jockey, trọng tài.
@@ -61,7 +61,7 @@ export default function Login() {
                 <img src="/images/logo.png" alt="Logo" className="h-full w-full object-contain" />
               </div>
               <h2 className="text-xl font-bold text-slate-800 dark:text-white">
-                Đua Ngựa Pro Admin
+                Paddock Admin
               </h2>
             </div>
 

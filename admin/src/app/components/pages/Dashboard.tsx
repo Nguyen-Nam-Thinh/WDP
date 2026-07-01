@@ -137,7 +137,7 @@ export default function Dashboard() {
               transition={{ duration: 0.3, delay: i * 0.05 }}
               key={i}
               onClick={s.onClick}
-              className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-blue-300 hover:shadow-md cursor-pointer transition-all"
+              className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-blue-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer transition-all duration-300"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-50 border border-slate-100 text-slate-600 group-hover:bg-blue-50 group-hover:text-blue-600 group-hover:border-blue-100 transition-colors">
@@ -287,7 +287,7 @@ export default function Dashboard() {
                 {upcomingTournaments.map((t, i) => {
                   const st = statusMap[t.status] ?? statusMap.upcoming;
                   return (
-                    <tr key={t._id ?? i} className="hover:bg-slate-50/50 transition-colors group">
+                    <tr key={t._id ?? i} className="hover:bg-slate-50/50 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-300 group cursor-pointer bg-white">
                       <td className="px-5 py-3 font-medium text-slate-800 text-[13px]">
                         {t.name}
                       </td>

@@ -87,7 +87,7 @@ export default function Header(props: {
             <Menu className="h-5 w-5 text-slate-600" />
           </button>
           
-          <div className="hidden sm:flex items-center text-sm font-medium text-slate-500">
+          <div className="hidden sm:flex items-center text-sm font-bold text-black">
             <Link to="/" className="hover:text-blue-600 transition">Trang chủ</Link>
             {pathnames.map((value, index) => {
               const to = `/${pathnames.slice(0, index + 1).join('/')}`;
@@ -97,7 +97,7 @@ export default function Header(props: {
                 <div key={to} className="flex items-center">
                   <ChevronRight size={16} className="mx-1 text-slate-400" />
                   {isLast ? (
-                    <span className="text-slate-800">{name}</span>
+                    <span className="text-black font-normal">{name}</span>
                   ) : (
                     <Link to={to} className="hover:text-blue-600 transition">{name}</Link>
                   )}
@@ -144,7 +144,7 @@ export default function Header(props: {
                   <div className="absolute right-0 mt-3 z-50 w-80 rounded-lg border border-slate-200 bg-white shadow-lg overflow-hidden">
                     <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/50">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-slate-800">Thông báo</span>
+                        <span className="text-sm font-extrabold text-black">Thông báo</span>
                         {unreadCount > 0 && (
                           <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-100 px-1.5 text-[10px] font-bold text-blue-600">
                             {unreadCount} mới
@@ -172,7 +172,7 @@ export default function Header(props: {
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-1">
-                                <p className={`text-sm font-semibold leading-tight ${!notif.read ? 'text-slate-900' : 'text-slate-600'}`}>
+                                <p className={`text-sm font-extrabold leading-tight ${!notif.read ? 'text-black' : 'text-slate-600'}`}>
                                   {notif.title}
                                 </p>
                                 {!notif.read && <span className="mt-1 flex h-2 w-2 shrink-0 rounded-full bg-blue-500" />}
@@ -219,7 +219,7 @@ export default function Header(props: {
                   {user?.fullName ? user.fullName.charAt(0).toUpperCase() : 'A'}
                 </div>
                 <div className="hidden md:flex flex-col text-left">
-                  <span className="text-sm font-medium text-slate-800 leading-none mb-1">
+                  <span className="text-sm font-extrabold text-black leading-none mb-1">
                     {user?.fullName || 'Admin User'}
                   </span>
                   <span className="text-[10px] text-slate-500 leading-none">Quản trị viên</span>
@@ -231,7 +231,7 @@ export default function Header(props: {
                   <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)}></div>
                   <div className="absolute right-0 mt-2 w-48 rounded-lg border border-slate-200 bg-white shadow-lg z-50">
                     <div className="px-4 py-3 border-b border-slate-100 md:hidden">
-                       <span className="block text-sm font-medium text-slate-800">{user?.fullName || 'Admin User'}</span>
+                       <span className="block text-sm font-extrabold text-black">{user?.fullName || 'Admin User'}</span>
                        <span className="block text-xs text-slate-500 mt-0.5">Quản trị viên</span>
                     </div>
                     <ul className="py-1">

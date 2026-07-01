@@ -178,22 +178,22 @@ export default function RaceManagement() {
         {/* Filter bar */}
         <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 bg-slate-50/50 px-5 py-4">
           <div className="relative flex-1 min-w-[250px] max-w-sm">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
             <input
               type="text"
               placeholder="Tìm chặng đua..."
               value={search}
               onChange={e => { setSearch(e.target.value); setRacePage(1); }}
-              className="w-full rounded-md border border-slate-200 bg-white py-2 pl-9 pr-4 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm"
+              className="w-full rounded-lg border-2 border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm font-semibold text-slate-800 outline-none focus:border-blue-500 focus:ring-0 shadow-sm transition-all hover:border-slate-300"
             />
           </div>
 
           <div className="flex items-center gap-2">
-            <Filter size={16} className="text-slate-400 shrink-0 ml-2" />
+            <Filter size={18} className="text-slate-500 shrink-0 ml-2" />
             <select
               value={filterTournament}
               onChange={e => { setFilterTournament(e.target.value); setRacePage(1); }}
-              className="rounded-md border border-slate-200 bg-white py-2 px-3 text-sm outline-none focus:border-blue-500 shadow-sm max-w-[250px] text-slate-700 font-medium"
+              className="rounded-lg border-2 border-slate-200 bg-white py-2.5 px-3 text-sm font-semibold text-slate-800 outline-none focus:border-blue-500 shadow-sm min-w-[200px] transition-all hover:border-slate-300 cursor-pointer"
             >
               <option value="">Tất cả giải đấu</option>
               {tournaments.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
@@ -223,20 +223,20 @@ export default function RaceManagement() {
             </div>
           ) : (
             <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="sticky top-0 bg-slate-50 shadow-sm z-10 border-b border-slate-200">
+              <thead className="sticky top-0 bg-slate-100 shadow-sm z-10 border-b-2 border-slate-200">
                 <tr>
-                  <th className="py-3 px-5 text-xs font-bold uppercase tracking-wider text-slate-400">Tên Chặng Đua</th>
-                  <th className="py-3 px-5 text-xs font-bold uppercase tracking-wider text-slate-400">Giải Đấu</th>
-                  <th className="py-3 px-5 text-xs font-bold uppercase tracking-wider text-slate-400">Hạng / Cự ly</th>
-                  <th className="py-3 px-5 text-xs font-bold uppercase tracking-wider text-slate-400">Thưởng</th>
-                  <th className="py-3 px-5 text-xs font-bold uppercase tracking-wider text-slate-400 text-center">Trạng Thái</th>
-                  <th className="py-3 px-5 text-xs font-bold uppercase tracking-wider text-slate-400 text-right">Thao tác</th>
+                  <th className="py-4 px-5 text-[13px] font-extrabold uppercase tracking-wider text-slate-700">Tên Chặng Đua</th>
+                  <th className="py-4 px-5 text-[13px] font-extrabold uppercase tracking-wider text-slate-700">Giải Đấu</th>
+                  <th className="py-4 px-5 text-[13px] font-extrabold uppercase tracking-wider text-slate-700">Hạng / Cự ly</th>
+                  <th className="py-4 px-5 text-[13px] font-extrabold uppercase tracking-wider text-slate-700">Thưởng</th>
+                  <th className="py-4 px-5 text-[13px] font-extrabold uppercase tracking-wider text-slate-700 text-center">Trạng Thái</th>
+                  <th className="py-4 px-5 text-[13px] font-extrabold uppercase tracking-wider text-slate-700 text-right">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {pagedRaces.map((race) => {
                   return (
-                    <tr key={race._id} className="hover:bg-slate-50/50 bg-white transition-colors group">
+                    <tr key={race._id} className="hover:bg-slate-50/50 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-300 group bg-white cursor-pointer">
                       <td className="py-3 px-5">
                         <p className="font-semibold text-slate-900 text-[13px]">{race.name}</p>
                         <p className="text-[11px] font-medium text-slate-500 mt-0.5">Thời gian: {race.scheduledTime ? new Date(race.scheduledTime).toLocaleString('vi-VN') : '-'}</p>

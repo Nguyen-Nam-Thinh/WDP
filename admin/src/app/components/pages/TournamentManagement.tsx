@@ -556,7 +556,7 @@ export default function TournamentManagement() {
                     ) : pagedTournaments.length === 0 ? (
                        <tr><td colSpan={5} className="text-center py-12 text-slate-500">Không tìm thấy giải đấu phù hợp.</td></tr>
                     ) : pagedTournaments.map(t => (
-                      <tr key={t._id} className="hover:bg-slate-50/50 bg-white transition-colors group">
+                      <tr key={t._id} className="hover:bg-slate-50/50 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-300 group bg-white cursor-pointer">
                         <td className="px-5 py-4">
                           <p className="font-semibold text-slate-900 text-[13px]">{t.name}</p>
                           {t.description && <p className="text-[11px] text-slate-500 mt-1 truncate max-w-[200px]">{t.description}</p>}
@@ -669,7 +669,7 @@ export default function TournamentManagement() {
                       const canCancel = !['running', 'finished', 'cancelled'].includes(r.status);
                       
                       return (
-                        <tr key={r._id} className="hover:bg-slate-50/50 bg-white transition-colors group">
+                        <tr key={r._id} className="hover:bg-slate-50/50 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-300 group bg-white cursor-pointer">
                           <td className="px-5 py-4 font-semibold text-slate-900 text-[13px]">{r.name}</td>
                           <td className="px-5 py-4 text-slate-600 text-[13px]">{tName}</td>
                           <td className="px-5 py-4 text-slate-600 text-[13px]">

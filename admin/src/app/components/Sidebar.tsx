@@ -70,7 +70,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed,
           </div>
           {!sidebarCollapsed && (
             <div>
-              <h1 className="text-lg font-bold text-slate-800 leading-none tracking-tight whitespace-nowrap">Đua Ngựa Pro</h1>
+              <h1 className="text-lg font-bold text-slate-800 leading-none tracking-tight whitespace-nowrap">Paddock Admin</h1>
             </div>
           )}
         </NavLink>
@@ -113,14 +113,14 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed,
                   <li key={index}>
                     <NavLink
                       to={item.path}
-                      className={`group relative flex items-center gap-3 rounded-md py-2 font-medium text-sm transition-colors ${
+                      className={`group relative flex items-center gap-3 rounded-md py-2 font-semibold text-sm transition-all duration-300 transform hover:translate-x-1 ${
                         isActive
-                          ? 'bg-blue-50 text-blue-700'
-                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                          ? 'bg-blue-50 text-blue-700 shadow-sm'
+                          : 'text-black hover:bg-slate-50 hover:text-black hover:shadow-sm'
                       } ${sidebarCollapsed ? 'justify-center px-0 py-2.5' : 'px-3'}`}
                       title={sidebarCollapsed ? item.label : undefined}
                     >
-                      <Icon size={18} className={`shrink-0 ${isActive ? 'text-blue-700' : 'text-slate-400 group-hover:text-slate-600'}`} />
+                      <Icon size={18} className={`shrink-0 ${isActive ? 'text-blue-700' : 'text-slate-700 group-hover:text-black'}`} />
                       {!sidebarCollapsed && <span className="whitespace-nowrap">{item.label}</span>}
                     </NavLink>
                   </li>
