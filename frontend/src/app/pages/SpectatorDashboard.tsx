@@ -81,6 +81,21 @@ import { userApi, type SpectatorOverview, type Transaction } from "../api/user";
 import { rewardApi, type Reward, type Redemption } from "../api/reward";
 import { toast } from "sonner";
 
+const getRemainingTimeText = (scheduledTime: string | Date): string => {
+  const diffMs = new Date(scheduledTime).getTime() - new Date().getTime();
+  if (diffMs <= 0) return 'Đã bắt đầu';
+  const diffMins = Math.floor(diffMs / (60 * 1000));
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays > 0) {
+    return `Còn ${diffDays} ngày ${diffHours % 24} giờ`;
+  }
+  if (diffHours > 0) {
+    return `Còn ${diffHours} giờ ${diffMins % 60} phút`;
+  }
+  return `Còn ${diffMins} phút`;
+};
+
 const SPECTATOR_NAV: NavItem[] = [
   { to: "/spectator", label: "Tổng Quan", icon: <Home /> },
   { to: "/spectator/tournaments", label: "Giải Đấu", icon: <Sparkles /> },
@@ -297,6 +312,7 @@ export function SpectatorDashboard() {
   const [liveSearch, setLiveSearch] = useState('');
   const [schedulePage, setSchedulePage] = useState(1);
   const [scheduleSearch, setScheduleSearch] = useState('');
+  const [selectedRaceForPredictions, setSelectedRaceForPredictions] = useState<any>(null);
   const [rankingsPage, setRankingsPage] = useState(1);
   const [rankingsSearch, setRankingsSearch] = useState('');
   const [leaderboardPage, setLeaderboardPage] = useState(1);
@@ -1382,10 +1398,11 @@ export function SpectatorDashboard() {
                     new Date(race.scheduledTime).getTime() - 60 * 60 * 1000,
                   );
                   const cutoffPassed = new Date() > bettingCutoff;
-                  const myBetOnRace = myBets.some(
-                    (b) =>
-                      (b.raceId as any)?._id === race._id &&
-                      b.status === "pending",
+                  const myBetsOnThisRace = myBets.filter(
+                    (b) => (b.raceId as any)?._id === race._id
+                  );
+                  const myBetOnRace = myBetsOnThisRace.some(
+                    (b) => b.status === "pending",
                   );
                   const canBet =
                     (race.status === "open" || race.status === "closed") &&
@@ -1414,17 +1431,42 @@ export function SpectatorDashboard() {
                                 fontSize: "0.7rem",
                               }}
                             />
-                            {myBetOnRace && (
-                              <Chip
-                                label="✓ Đã Dự Đoán"
-                                size="small"
-                                sx={{
-                                  bgcolor: "#C9A227",
-                                  color: "#23201A",
-                                  fontWeight: "bold",
-                                  fontSize: "0.7rem",
-                                }}
-                              />
+                            {myBetsOnThisRace.length > 0 && (
+                              <div className="flex items-center gap-2">
+                                <Chip
+                                  label="✓ Đã Dự Đoán"
+                                  size="small"
+                                  sx={{
+                                    bgcolor: "#C9A227",
+                                    color: "#23201A",
+                                    fontWeight: "bold",
+                                    fontSize: "0.7rem",
+                                  }}
+                                />
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  onClick={() => setSelectedRaceForPredictions(race)}
+                                  sx={{
+                                    borderColor: "#C9A227",
+                                    color: "#8F7318",
+                                    borderRadius: 0,
+                                    px: 1.2,
+                                    py: 0.2,
+                                    minWidth: "auto",
+                                    height: "24px",
+                                    fontSize: "0.65rem",
+                                    fontWeight: "bold",
+                                    textTransform: "none",
+                                    "&:hover": {
+                                      borderColor: "#8F7318",
+                                      backgroundColor: "rgba(201,162,39,0.08)",
+                                    },
+                                  }}
+                                >
+                                  Xem Chi Tiết
+                                </Button>
+                              </div>
                             )}
                           </div>
 
@@ -1462,7 +1504,7 @@ export function SpectatorDashboard() {
                               <div
                                 className={`font-medium text-sm ${cutoffPassed ? "text-destructive" : "text-primary"}`}
                               >
-                                {bettingCutoff.toLocaleString("vi-VN")}
+                                {cutoffPassed ? "Đã hết hạn" : getRemainingTimeText(bettingCutoff)}
                               </div>
                             </div>
                           </div>
@@ -1499,6 +1541,7 @@ export function SpectatorDashboard() {
                               </div>
                             </div>
                           )}
+
                           <Button
                             fullWidth
                             variant="outlined"
@@ -2080,7 +2123,12 @@ export function SpectatorDashboard() {
                         <tr key={tx._id} className="border-t border-border hover:bg-muted/40 transition-colors">
                           <td className="px-6 py-4 text-muted-foreground font-mono text-xs">{tx._id.slice(-8).toUpperCase()}</td>
                           <td className="px-6 py-4 text-foreground">{new Date(tx.createdAt).toLocaleString('vi-VN')}</td>
-                          <td className="px-6 py-4 text-primary font-bold tabular-nums">+{tx.amount.toLocaleString('vi-VN')} coins</td>
+                          <td className="px-6 py-4 text-primary font-bold tabular-nums">
+                            +{tx.amount.toLocaleString('vi-VN')} coins
+                            <span className="text-xs text-muted-foreground block font-normal mt-0.5">
+                              ({(tx.amount * 1000).toLocaleString('vi-VN')} VND)
+                            </span>
+                          </td>
                           <td className="px-6 py-4 text-foreground tabular-nums">{tx.balanceAfter.toLocaleString('vi-VN')} coins</td>
                           <td className="px-6 py-4 text-muted-foreground text-sm">{tx.description || 'Nạp tiền vào ví'}</td>
                         </tr>
@@ -3099,9 +3147,11 @@ export function SpectatorDashboard() {
 
               <div className="space-y-4">
                 {(() => {
-                  // horseIndexMap: selectedRaceRegistrations (sort registeredAt asc từ BE) là source of truth cho số ngựa
                   const horseIndexMap = new Map<string, number>(
-                    selectedRaceRegistrations.map((h: any, i: number) => [h.horseId as string, i])
+                    selectedRaceRegistrations.map((h: any, i: number) => [
+                      h.horseId as string,
+                      h.gateNumber !== undefined ? h.gateNumber - 1 : i
+                    ])
                   );
                   return (
                     <>
@@ -3138,7 +3188,7 @@ export function SpectatorDashboard() {
                                 .sort((a, b) => (horseIndexMap.get(a.horseId) ?? 999) - (horseIndexMap.get(b.horseId) ?? 999))
                                 .map((horse) => {
                                 const hIdx = horseIndexMap.get(horse.horseId);
-                                const label = hIdx !== undefined ? `Ngựa ${hIdx + 1}` : horse.horseName;
+                                const label = hIdx !== undefined ? `Ngựa số ${hIdx + 1}` : horse.horseName;
                                 return (
                                   <tr
                                     key={horse.horseId}
@@ -3161,7 +3211,7 @@ export function SpectatorDashboard() {
                         </div>
                       )}
 
-                      <FormControl fullWidth>
+                      <FormControl fullWidth sx={{ mb: 3 }}>
                         <InputLabel sx={{ color: "#7A7468" }}>Loại Dự Đoán</InputLabel>
                         <Select
                           value={betType}
@@ -3187,7 +3237,7 @@ export function SpectatorDashboard() {
                         </Select>
                       </FormControl>
 
-                      <FormControl fullWidth>
+                      <FormControl fullWidth sx={{ mb: 3 }}>
                         <InputLabel sx={{ color: "#7A7468" }}>Chọn Ngựa *</InputLabel>
                         <Select
                           value={selectedHorse}
@@ -3200,7 +3250,7 @@ export function SpectatorDashboard() {
                             if (idx === undefined) return "";
                             return (
                               <span style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
-                                <span>Ngựa {idx + 1}</span>
+                                <span>Ngựa số {idx + 1}</span>
                                 <span style={{ color: "#8F7318", fontWeight: 600, marginRight: "8px" }}>{odds}x</span>
                               </span>
                             );
@@ -3212,7 +3262,7 @@ export function SpectatorDashboard() {
                               const winOdds = getHorseOdds(raceBettingOdds, h.horseId, "win");
                               return (
                                 <MenuItem key={h.horseId} value={h.horseId} sx={{ display: "flex", justifyContent: "space-between", gap: "16px" }}>
-                                  <span>Ngựa {hNum}</span>
+                                  <span>Ngựa số {hNum}</span>
                                   <span style={{ color: "#8F7318", fontWeight: 600 }}>{winOdds}x</span>
                                 </MenuItem>
                               );
@@ -3233,7 +3283,7 @@ export function SpectatorDashboard() {
                         return (
                           <div className="border border-border bg-background p-4 space-y-3">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-semibold text-foreground">Ngựa {horseNum}</span>
+                              <span className="font-semibold text-foreground">Ngựa số {horseNum}</span>
                               <span className="text-muted-foreground text-sm">— {h.horseName}</span>
                               <span className="text-xs font-bold px-1.5 py-0.5 border" style={{ color: gradeColor, borderColor: gradeColor + '60', background: gradeColor + '15' }}>
                                 {h.currentGrade}
@@ -3279,7 +3329,7 @@ export function SpectatorDashboard() {
 
                 <TextField
                   fullWidth
-                  label="Số Tiền Dự Đoán ($) *"
+                  label="Số Tiền Dự Đoán (coins) *"
                   type="number"
                   value={betAmount}
                   onChange={(e) => setBetAmount(e.target.value)}
@@ -3599,6 +3649,86 @@ export function SpectatorDashboard() {
               boxShadow: "none",
               "&:hover": { background: "#172D20", boxShadow: "none" },
             }}
+          >
+            Đóng
+          </Button>
+        </DialogActions>
+      </Dialog>
+      {/* Selected Race Predictions Dialog */}
+      <Dialog
+        open={!!selectedRaceForPredictions}
+        onClose={() => setSelectedRaceForPredictions(null)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ color: "#23201A", borderBottom: "1px solid #E3DCCB", fontFamily: "serif", fontWeight: "bold" }}>
+          🎯 Chi Tiết Dự Đoán - {selectedRaceForPredictions?.name}
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          {selectedRaceForPredictions && (() => {
+            const bets = myBets.filter(
+              (b) => (b.raceId as any)?._id === selectedRaceForPredictions._id
+            );
+            if (bets.length === 0) {
+              return <div className="text-center text-muted-foreground py-6">Bạn chưa dự đoán cuộc đua này.</div>;
+            }
+            return (
+              <div className="space-y-3 py-2">
+                {bets.map((bet) => {
+                  const horseName = typeof bet.horseId === "object" ? bet.horseId?.name : "Ngựa";
+                  const typeLabel: Record<string, string> = { win: "Thắng (Hạng 1)", place: "Về Nhì (Hạng 2)", show: "Về Ba (Hạng 3)" };
+                  return (
+                    <div key={bet._id} className="border border-border p-4 rounded bg-background flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div>
+                        <div className="font-semibold text-foreground flex items-center gap-1.5 text-base">
+                          <span>🐎 {horseName}</span>
+                        </div>
+                        <div className="mt-1 flex items-center gap-2">
+                          <span className="text-xs text-[#8F7318] bg-gold/10 px-2 py-0.5 rounded font-bold border border-gold/30">
+                            {typeLabel[bet.betType] || bet.betType} ({bet.multiplier}x)
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 justify-between sm:justify-end">
+                        <div>
+                          <div className="text-xs text-muted-foreground text-right">Số coin dự đoán</div>
+                          <div className="font-bold text-[#8F7318] text-base">{bet.amount?.toLocaleString()} coins</div>
+                        </div>
+                        <span className={`text-xs font-black px-2.5 py-1 uppercase rounded ${
+                          bet.status === "won" ? "bg-primary/10 text-primary" :
+                          bet.status === "lost" ? "bg-destructive/10 text-[#8C2F1B]" :
+                          bet.status === "cancelled" ? "bg-muted text-muted-foreground" : "bg-warning/10 text-[#8F7318]"
+                        }`}>
+                          {bet.status === "won" ? "Thắng" :
+                           bet.status === "lost" ? "Thua" :
+                           bet.status === "cancelled" ? "Đã Hủy" :
+                           bet.status === "refunded" ? "Hoàn Tiền" : "Đang Chờ"}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </DialogContent>
+        <DialogActions sx={{ p: 3, borderTop: "1px solid #E3DCCB" }}>
+          <Button
+            onClick={() => setSelectedRaceForPredictions(null)}
+            sx={{
+              borderColor: "#E3DCCB",
+              color: "#7A7468",
+              borderRadius: 0,
+              px: 4,
+              py: 1,
+              fontWeight: 600,
+              textTransform: "none",
+              "&:hover": {
+                borderColor: "#1F3D2B",
+                color: "#1F3D2B",
+              },
+            }}
+            variant="outlined"
           >
             Đóng
           </Button>

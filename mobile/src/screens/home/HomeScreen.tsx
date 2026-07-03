@@ -15,6 +15,21 @@ const GRADE_COLORS: Record<string, string> = {
   G1: '#8F7318', G2: '#8C2F1B', G3: '#1F3D2B', Maiden: '#7A7468',
 };
 
+const getRemainingTimeText = (scheduledTime: string | Date): string => {
+  const diffMs = new Date(scheduledTime).getTime() - new Date().getTime();
+  if (diffMs <= 0) return 'Đã bắt đầu';
+  const diffMins = Math.floor(diffMs / (60 * 1000));
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays > 0) {
+    return `Còn ${diffDays} ngày ${diffHours % 24}g`;
+  }
+  if (diffHours > 0) {
+    return `Còn ${diffHours}g ${diffMins % 60}p`;
+  }
+  return `Còn ${diffMins}p`;
+};
+
 function RaceCard({ race }: { race: Race }) {
   const navigation = useNavigation<any>();
   const bettingCutoff = new Date(new Date(race.scheduledTime).getTime() - 60 * 60 * 1000);
@@ -43,7 +58,7 @@ function RaceCard({ race }: { race: Race }) {
         <View style={styles.infoGrid}>
           <View style={styles.infoItem}>
             <Ionicons name="time-outline" size={13} color={colors.textSubtle} />
-            <Text style={styles.infoLabel}>{new Date(race.scheduledTime).toLocaleDateString('vi-VN')}</Text>
+            <Text style={styles.infoLabel}>{new Date(race.scheduledTime).toLocaleDateString('vi-VN')} ({getRemainingTimeText(race.scheduledTime)})</Text>
           </View>
           <View style={styles.infoItem}>
             <Ionicons name="flag-outline" size={13} color={colors.textSubtle} />
@@ -56,7 +71,7 @@ function RaceCard({ race }: { race: Race }) {
           <View style={styles.infoItem}>
             <Ionicons name="calendar-outline" size={13} color={cutoffPassed ? colors.danger : colors.success} />
             <Text style={[styles.infoLabel, { color: cutoffPassed ? colors.danger : colors.success }]}>
-              {cutoffPassed ? 'Hết hạn cược' : 'Còn cược'}
+              {cutoffPassed ? 'Hết hạn dự đoán' : 'Còn dự đoán'}
             </Text>
           </View>
         </View>

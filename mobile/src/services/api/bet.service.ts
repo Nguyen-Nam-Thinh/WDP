@@ -16,12 +16,14 @@ export const betService = {
     page?: number;
     limit?: number;
     status?: string;
+    raceId?: string;
   } = {}): Promise<BetListResponse> => {
     const q = new URLSearchParams({
       page: String(params.page ?? 1),
       limit: String(params.limit ?? 30),
     });
     if (params.status) q.append('status', params.status);
+    if (params.raceId) q.append('raceId', params.raceId);
     const res = await apiClient.get(`/bets?${q}`);
     return res.data.data;
   },
@@ -33,6 +35,11 @@ export const betService = {
 
   cancel: async (betId: string): Promise<Bet> => {
     const res = await apiClient.delete(`/bets/${betId}`);
+    return res.data.data;
+  },
+
+  getRaceOdds: async (raceId: string): Promise<any> => {
+    const res = await apiClient.get(`/bets/race/${raceId}/odds`);
     return res.data.data;
   },
 };

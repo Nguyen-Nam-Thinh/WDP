@@ -229,7 +229,8 @@ async function getRaceHorses(raceId) {
     .populate('jockeyId', 'fullName jockeyProfile')
     .sort({ registeredAt: 1 });
 
-  const horses = registrations.map(reg => ({
+  const horses = registrations.map((reg, index) => ({
+    gateNumber: index + 1,
     registrationId: reg._id,
     horseId: reg.horseId?._id,
     horseName: reg.horseId?.name,

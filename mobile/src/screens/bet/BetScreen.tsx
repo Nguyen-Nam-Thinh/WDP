@@ -32,6 +32,23 @@ function PlaceBetModal({
   const [betType, setBetType] = useState<BetType>('win');
   const [amount, setAmount] = useState('');
   const [placing, setPlacing] = useState(false);
+  const [myPredictions, setMyPredictions] = useState<Bet[]>([]);
+  const [raceOdds, setRaceOdds] = useState<any>(null);
+
+  const getHorseOdds = (horseId: string, type: BetType) => {
+    const horse = raceOdds?.horses?.find((h: any) => h.horseId === horseId);
+    return horse?.odds?.[type]?.multiplier ?? BET_MULTIPLIERS[type];
+  };
+
+  const loadPredictions = async () => {
+    if (!race) return;
+    try {
+      const res = await betService.getMyBets({ raceId: race._id, limit: 50 });
+      setMyPredictions(res.bets ?? []);
+    } catch {
+      // silent
+    }
+  };
 
   useEffect(() => {
     if (!visible || !race) return;
@@ -39,10 +56,19 @@ function PlaceBetModal({
     setBetType('win');
     setAmount('');
     setLoadingHorses(true);
+    setMyPredictions([]);
+    setRaceOdds(null);
+
     raceService.getRaceHorses(race._id)
       .then((res) => setHorses(res.horses ?? []))
       .catch(() => {})
       .finally(() => setLoadingHorses(false));
+
+    betService.getRaceOdds(race._id)
+      .then((res) => setRaceOdds(res))
+      .catch(() => setRaceOdds(null));
+
+    loadPredictions();
   }, [visible, race]);
 
   const handlePlace = async () => {
@@ -52,12 +78,15 @@ function PlaceBetModal({
     setPlacing(true);
     try {
       await betService.place({ raceId: race._id, horseId: selectedHorse, betType, amount: amt });
-      const potential = Math.floor(amt * BET_MULTIPLIERS[betType]);
-      Alert.alert('✅ Đặt Cược Thành Công', `Tiềm năng nhận: ${potential} coins`);
+      const mult = getHorseOdds(selectedHorse, betType);
+      const potential = Math.floor(amt * mult);
+      Alert.alert('✅ Dự Đoán Thành Công', `Tiềm năng nhận: ${potential} coins`);
       onSuccess();
-      onClose();
+      loadPredictions();
+      setSelectedHorse('');
+      setAmount('');
     } catch (err: any) {
-      Alert.alert('Lỗi', err?.message || 'Đặt cược thất bại');
+      Alert.alert('Lỗi', err?.message || 'Dự đoán thất bại');
     } finally {
       setPlacing(false);
     }
@@ -69,126 +98,155 @@ function PlaceBetModal({
         <View style={[modal.sheet, { paddingBottom: insets.bottom + 16 }]}>
           <View style={modal.handle} />
           <View style={modal.header}>
-            <Text style={modal.title}>Đặt Cược</Text>
+            <Text style={modal.title}>Dự Đoán</Text>
             <TouchableOpacity onPress={onClose}><Ionicons name="close" size={24} color={colors.text} /></TouchableOpacity>
           </View>
           {race && <Text style={modal.raceName} numberOfLines={1}>{race.name}</Text>}
 
-          <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
-            {/* Horse list */}
-            <Text style={modal.label}>Chọn Ngựa</Text>
-            {loadingHorses
-              ? <ActivityIndicator color={colors.accent} style={{ marginVertical: spacing.md }} />
-              : horses.length === 0
-                ? <Text style={modal.empty}>Chưa có ngựa đăng ký</Text>
-                : horses.map((h, idx) => {
-                  const hid = typeof h.horseId === 'object' ? h.horseId?._id : h.horseId;
-                  const hname = typeof h.horseId === 'object' ? h.horseId?.name : h.horseName;
-                  const jname = typeof h.jockeyId === 'object' ? h.jockeyId?.fullName : h.jockeyName;
-                  const currentGrade = typeof h.horseId === 'object' ? h.horseId?.currentGrade : (h.currentGrade ?? 'Maiden');
-                  const horseKey = h._id || h.registrationId || hid || String(idx);
+          <View style={{ flex: 1, overflow: 'hidden' }}>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
+              {/* My Predictions for this race */}
+              {myPredictions.length > 0 && (
+                <View style={modal.myBetsContainer}>
+                  <Text style={modal.myBetsTitle}>🌟 Dự đoán của bạn trong cuộc đua này:</Text>
+                  {myPredictions.map((b) => {
+                    const hid = typeof b.horseId === 'object' ? b.horseId?._id : b.horseId;
+                    const hname = typeof b.horseId === 'object' ? b.horseId?.name : '';
+                    const hr = horses.find(h => (typeof h.horseId === 'object' ? h.horseId?._id : h.horseId) === hid);
+                    const gateNo = hr ? (hr.gateNumber || (horses.indexOf(hr) + 1)) : '?';
+                    return (
+                      <View key={b._id} style={modal.myBetItem}>
+                        <Text style={modal.myBetText}>
+                          Ngựa số {gateNo} ({hname}) · <Text style={{ textTransform: 'uppercase', fontWeight: 'bold' }}>{b.betType}</Text>
+                        </Text>
+                        <Text style={modal.myBetAmount}>{b.amount} coins</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
 
-                  const winRate = typeof h.horseId === 'object' ? (h.horseId as any)?.winRate : h.winRate;
-                  const totalPoints = typeof h.horseId === 'object' ? (h.horseId as any)?.totalPoints : h.totalPoints;
-                  const jockeyExp = typeof h.jockeyId === 'object' ? (h.jockeyId as any)?.jockeyProfile?.experienceYears : h.jockeyExperience;
-                  const breed = typeof h.horseId === 'object' ? (h.horseId as any)?.breed : h.breed;
-                  const winRatePct = winRate != null ? `${Math.round(winRate)}%` : null;
+              {/* Horse list */}
+              <Text style={modal.label}>Chọn Ngựa</Text>
+              {loadingHorses
+                ? <ActivityIndicator color={colors.accent} style={{ marginVertical: spacing.md }} />
+                : horses.length === 0
+                  ? <Text style={modal.empty}>Chưa có ngựa đăng ký</Text>
+                  : horses.map((h, idx) => {
+                    const hid = typeof h.horseId === 'object' ? h.horseId?._id : h.horseId;
+                    const hname = typeof h.horseId === 'object' ? h.horseId?.name : h.horseName;
+                    const jname = typeof h.jockeyId === 'object' ? h.jockeyId?.fullName : h.jockeyName;
+                    const currentGrade = typeof h.horseId === 'object' ? h.horseId?.currentGrade : (h.currentGrade ?? 'Maiden');
+                    const horseKey = h._id || h.registrationId || hid || String(idx);
 
-                  return (
-                    <TouchableOpacity
-                      key={horseKey}
-                      style={[modal.horseRow, selectedHorse === hid && modal.horseRowSelected]}
-                      onPress={() => { if (hid) setSelectedHorse(hid); }}
-                    >
-                      <View style={modal.horseLeft}>
-                        <View style={modal.horseTopRow}>
-                          <Text style={modal.horseName}>{hname}</Text>
-                          <View style={[modal.gradeBadge, { borderColor: (GRADE_COLORS[currentGrade || 'Maiden'] ?? '#fff') + '60' }]}>
-                            <Text style={[modal.gradeText, { color: GRADE_COLORS[currentGrade || 'Maiden'] ?? '#fff' }]}>
-                              {currentGrade}
+                    const winRate = typeof h.horseId === 'object' ? (h.horseId as any)?.winRate : h.winRate;
+                    const totalPoints = typeof h.horseId === 'object' ? (h.horseId as any)?.totalPoints : h.totalPoints;
+                    const jockeyExp = typeof h.jockeyId === 'object' ? (h.jockeyId as any)?.jockeyProfile?.experienceYears : h.jockeyExperience;
+                    const breed = typeof h.horseId === 'object' ? (h.horseId as any)?.breed : h.breed;
+                    const winRatePct = winRate != null ? `${Math.round(winRate)}%` : null;
+
+                    return (
+                      <TouchableOpacity
+                        key={horseKey}
+                        style={[modal.horseRow, selectedHorse === hid && modal.horseRowSelected]}
+                        onPress={() => { if (hid) setSelectedHorse(hid); }}
+                      >
+                        <View style={modal.horseLeft}>
+                          <View style={modal.horseTopRow}>
+                            <Text style={modal.horseName}>
+                              Ngựa số {h.gateNumber || (idx + 1)} — {hname}{' '}
+                              <Text style={{ color: colors.accent, fontWeight: 'bold' }}>
+                                [{getHorseOdds(hid, 'win')}x]
+                              </Text>
                             </Text>
+                            <View style={[modal.gradeBadge, { borderColor: (GRADE_COLORS[currentGrade || 'Maiden'] ?? '#fff') + '60' }]}>
+                              <Text style={[modal.gradeText, { color: GRADE_COLORS[currentGrade || 'Maiden'] ?? '#fff' }]}>
+                                {currentGrade}
+                              </Text>
+                            </View>
                           </View>
-                        </View>
-                        <View style={modal.statsRow}>
-                          {totalPoints != null && (
-                            <Text style={modal.statChip}>🏅 {totalPoints} điểm</Text>
-                          )}
-                          {winRatePct && (
-                            <Text style={modal.statChip}>🏆 {winRatePct}</Text>
-                          )}
-                          {breed ? (
-                            <Text style={modal.statChip}>{breed}</Text>
+                          <View style={modal.statsRow}>
+                            {totalPoints != null && (
+                              <Text style={modal.statChip}>🏅 {totalPoints} điểm</Text>
+                            )}
+                            {winRatePct && (
+                              <Text style={modal.statChip}>🏆 {winRatePct}</Text>
+                            )}
+                            {breed ? (
+                              <Text style={modal.statChip}>{breed}</Text>
+                            ) : null}
+                          </View>
+                          {jname ? (
+                            <Text style={modal.jockeyName}>
+                              🏇 {jname}{jockeyExp != null ? ` · ${jockeyExp} năm KN` : ''}
+                            </Text>
                           ) : null}
                         </View>
-                        {jname ? (
-                          <Text style={modal.jockeyName}>
-                            🏇 {jname}{jockeyExp != null ? ` · ${jockeyExp} năm KN` : ''}
-                          </Text>
-                        ) : null}
-                      </View>
-                      {selectedHorse === hid && <Ionicons name="checkmark-circle" size={20} color={colors.accent} />}
-                    </TouchableOpacity>
-                  );
-                })
-            }
-
-            {/* Bet type */}
-            <Text style={[modal.label, { marginTop: spacing.md }]}>Loại Cược</Text>
-            <View style={modal.betTypeRow}>
-              {(['win', 'place', 'show'] as BetType[]).map((t) => (
-                <TouchableOpacity
-                  key={t}
-                  style={[modal.betTypeBtn, betType === t && modal.betTypeBtnActive]}
-                  onPress={() => setBetType(t)}
-                >
-                  <Text style={[modal.betTypeBtnText, betType === t && modal.betTypeBtnTextActive]}>
-                    {t === 'win' ? 'Thắng 3x' : t === 'place' ? 'Top2 2x' : 'Top3 1.5x'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Amount */}
-            <Text style={[modal.label, { marginTop: spacing.md }]}>Số Tiền (coins)</Text>
-            <View style={modal.amountRow}>
-              <Ionicons name="cash-outline" size={18} color={colors.textSubtle} />
-              <TextInput
-                style={modal.amountInput}
-                value={amount}
-                onChangeText={(v) => setAmount(v.replace(/[^0-9]/g, ''))}
-                placeholder="Nhập số tiền..."
-                placeholderTextColor={colors.textSubtle}
-                keyboardType="number-pad"
-              />
-            </View>
-
-            {/* Quick amounts */}
-            <View style={modal.quickRow}>
-              {[10, 50, 100, 500].map((v) => (
-                <TouchableOpacity key={v} style={modal.quickBtn} onPress={() => setAmount(String(v))}>
-                  <Text style={modal.quickBtnText}>+{v}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Potential payout */}
-            {!!amount && Number(amount) > 0 && (
-              <View style={modal.payoutBox}>
-                <Text style={modal.payoutLabel}>Tiềm năng nhận:</Text>
-                <Text style={modal.payoutValue}>{Math.floor(Number(amount) * BET_MULTIPLIERS[betType])} coins</Text>
-              </View>
-            )}
-
-            <TouchableOpacity style={modal.placeBtn} onPress={handlePlace} disabled={placing}>
-              {placing
-                ? <ActivityIndicator color="#000" />
-                : <Text style={modal.placeBtnText}>Xác Nhận Đặt Cược</Text>
+                        {selectedHorse === hid && <Ionicons name="checkmark-circle" size={20} color={colors.accent} />}
+                      </TouchableOpacity>
+                    );
+                  })
               }
-            </TouchableOpacity>
-            <View style={{ height: 120 }} />
-          </ScrollView>
+
+              {/* Bet type */}
+              <Text style={[modal.label, { marginTop: spacing.md }]}>Loại Dự Đoán</Text>
+              <View style={modal.betTypeRow}>
+                {(['win', 'place', 'show'] as BetType[]).map((t) => (
+                  <TouchableOpacity
+                    key={t}
+                    style={[modal.betTypeBtn, betType === t && modal.betTypeBtnActive]}
+                    onPress={() => setBetType(t)}
+                  >
+                    <Text style={[modal.betTypeBtnText, betType === t && modal.betTypeBtnTextActive]}>
+                      {t === 'win' ? 'Thắng' : t === 'place' ? 'Top 2' : 'Top 3'} {selectedHorse ? `${getHorseOdds(selectedHorse, t)}x` : `${BET_MULTIPLIERS[t]}x`}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Amount */}
+              <Text style={[modal.label, { marginTop: spacing.md }]}>Số Tiền (coins)</Text>
+              <View style={modal.amountRow}>
+                <Ionicons name="cash-outline" size={18} color={colors.textSubtle} />
+                <TextInput
+                  style={modal.amountInput}
+                  value={amount}
+                  onChangeText={(v) => setAmount(v.replace(/[^0-9]/g, ''))}
+                  placeholder="Nhập số tiền..."
+                  placeholderTextColor={colors.textSubtle}
+                  keyboardType="number-pad"
+                />
+              </View>
+
+              {/* Quick amounts */}
+              <View style={modal.quickRow}>
+                {[10, 50, 100, 500].map((v) => (
+                  <TouchableOpacity key={v} style={modal.quickBtn} onPress={() => setAmount(String(v))}>
+                    <Text style={modal.quickBtnText}>+{v}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Potential payout */}
+              {!!amount && Number(amount) > 0 && selectedHorse && (
+                <View style={modal.payoutBox}>
+                  <Text style={modal.payoutLabel}>Tiềm năng nhận:</Text>
+                  <Text style={modal.payoutValue}>{Math.floor(Number(amount) * getHorseOdds(selectedHorse, betType))} coins</Text>
+                </View>
+              )}
+
+              <TouchableOpacity style={modal.placeBtn} onPress={handlePlace} disabled={placing}>
+                {placing
+                  ? <ActivityIndicator color="#000" />
+                  : <Text style={modal.placeBtnText}>Xác Nhận Dự Đoán</Text>
+                }
+              </TouchableOpacity>
+              <View style={{ height: 120 }} />
+            </ScrollView>
+          </View>
         </View>
       </View>
+
     </Modal>
   );
 }
@@ -215,7 +273,7 @@ const modal = StyleSheet.create({
   horseLeft: { flex: 1 },
   horseTopRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap', marginBottom: 3 },
   horseName: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.text, flexShrink: 1 },
-  statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 3 },
+  statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, alignItems: 'center', marginBottom: 3 },
   statChip: { fontSize: fontSize.xs, color: colors.textMuted, backgroundColor: colors.surfaceHover, paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm },
   jockeyName: { fontSize: fontSize.xs, color: colors.textMuted },
   gradeBadge: { borderWidth: 1, borderRadius: radius.sm, paddingHorizontal: 6, paddingVertical: 2 },
@@ -251,7 +309,30 @@ const modal = StyleSheet.create({
     height: 52, alignItems: 'center', justifyContent: 'center', marginTop: spacing.lg,
   },
   placeBtnText: { fontSize: fontSize.md, fontWeight: fontWeight.bold, color: '#FFFFFF' },
+  myBetsContainer: {
+    backgroundColor: '#FFFFFF', padding: spacing.md, borderRadius: radius.md,
+    borderWidth: 1, borderColor: colors.border, marginBottom: spacing.md,
+  },
+  myBetsTitle: { fontSize: fontSize.sm, fontWeight: fontWeight.bold, color: colors.primary, marginBottom: spacing.xs },
+  myBetItem: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4, borderBottomWidth: 0.5, borderBottomColor: colors.border },
+  myBetText: { fontSize: fontSize.xs, color: colors.text },
+  myBetAmount: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, color: colors.gold },
 });
+
+const getRemainingTimeText = (scheduledTime: string | Date): string => {
+  const diffMs = new Date(scheduledTime).getTime() - new Date().getTime();
+  if (diffMs <= 0) return 'Đã bắt đầu';
+  const diffMins = Math.floor(diffMs / (60 * 1000));
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays > 0) {
+    return `Còn ${diffDays} ngày ${diffHours % 24}g`;
+  }
+  if (diffHours > 0) {
+    return `Còn ${diffHours}g ${diffMins % 60}p`;
+  }
+  return `Còn ${diffMins}p`;
+};
 
 // ── Bet Card ─────────────────────────────────────────────────────────────────
 function BetCard({ bet, onCancel }: { bet: Bet; onCancel: (id: string) => void }) {
@@ -293,7 +374,7 @@ function BetCard({ bet, onCancel }: { bet: Bet; onCancel: (id: string) => void }
         )}
         {bet.status === 'pending' && (
           <TouchableOpacity style={betCard.cancelBtn} onPress={() => onCancel(bet._id)}>
-            <Text style={betCard.cancelText}>Hủy Cược</Text>
+            <Text style={betCard.cancelText}>Hủy Dự Đoán</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -371,15 +452,15 @@ export function BetScreen() {
   useEffect(() => { loadData(); }, []);
 
   const handleCancelBet = (id: string) => {
-    Alert.alert('Hủy Cược', 'Bạn sẽ được hoàn 100% tiền. Tiếp tục?', [
+    Alert.alert('Hủy Dự Đoán', 'Bạn sẽ được hoàn 100% tiền. Tiếp tục?', [
       { text: 'Không', style: 'cancel' },
       {
-        text: 'Hủy Cược', style: 'destructive', onPress: async () => {
+        text: 'Hủy Dự Đoán', style: 'destructive', onPress: async () => {
           try {
             await betService.cancel(id);
             loadData();
           } catch (err: any) {
-            Alert.alert('Lỗi', err?.message || 'Hủy cược thất bại');
+            Alert.alert('Lỗi', err?.message || 'Hủy dự đoán thất bại');
           }
         },
       },
@@ -401,7 +482,7 @@ export function BetScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.pageTitle}>🎯 Đặt Cược</Text>
+      <Text style={styles.pageTitle}>🎯 Dự Đoán</Text>
 
       {/* Tabs */}
       <View style={styles.tabRow}>
@@ -433,7 +514,7 @@ export function BetScreen() {
                   <View style={[styles.gradeBadge, { borderColor: (GRADE_COLORS[item.grade] ?? '#fff') + '60', backgroundColor: (GRADE_COLORS[item.grade] ?? '#fff') + '20' }]}>
                     <Text style={[styles.gradeText, { color: GRADE_COLORS[item.grade] ?? '#fff' }]}>{item.grade}</Text>
                   </View>
-                  <Text style={styles.raceTime}>{new Date(item.scheduledTime).toLocaleString('vi-VN')}</Text>
+                  <Text style={styles.raceTime}>{new Date(item.scheduledTime).toLocaleString('vi-VN')} ({getRemainingTimeText(item.scheduledTime)})</Text>
                 </View>
                 <Text style={styles.raceName} numberOfLines={1}>{item.name}</Text>
                 <Text style={styles.raceMeta}>{item.distance}m · Giải: ${item.purse?.toLocaleString()}</Text>
@@ -444,7 +525,7 @@ export function BetScreen() {
                 >
                   <Ionicons name="trophy-outline" size={16} color={canBet ? '#FFF' : colors.textSubtle} />
                   <Text style={[styles.betBtnText, !canBet && { color: colors.textSubtle }]}>
-                    {canBet ? 'Đặt Cược Ngay' : 'Đã Hết Hạn Cược'}
+                    {canBet ? 'Dự Đoán Ngay' : 'Đã Hết Hạn Dự Đoán'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -467,7 +548,7 @@ export function BetScreen() {
           ListEmptyComponent={
             <View style={styles.center}>
               <Ionicons name="receipt-outline" size={48} color={colors.textSubtle} />
-              <Text style={styles.emptyText}>Chưa có lịch sử cược</Text>
+              <Text style={styles.emptyText}>Chưa có lịch sử dự đoán</Text>
             </View>
           }
         />

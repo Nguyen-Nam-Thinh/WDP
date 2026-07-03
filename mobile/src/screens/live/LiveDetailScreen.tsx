@@ -115,7 +115,7 @@ export function LiveDetailScreen() {
       });
 
       if (wonBet) {
-        Alert.alert('🎉 CHÚC MỪNG!', `Bạn đã đặt cược thắng cho chú ngựa! Hãy kiểm tra ví để xem tiền thưởng.`);
+        Alert.alert('🎉 CHÚC MỪNG!', `Bạn đã dự đoán chính xác cho chú ngựa! Hãy kiểm tra ví để xem tiền thưởng.`);
       }
     }
   }, [isFinished, dbResults, socketResults]);
@@ -402,7 +402,7 @@ export function LiveDetailScreen() {
         {/* User's Bets list */}
         {hasBets && (
           <View style={styles.listCard}>
-            <Text style={styles.sectionTitle}>⭐ Cược của bạn</Text>
+            <Text style={styles.sectionTitle}>⭐ Dự đoán của bạn</Text>
             {myBets.map((bet) => {
               const rHorseId = bet.horseId?._id || bet.horseId;
               const result = displayResults.find((r) => (r.horseId?._id || r.horseId) === rHorseId);
@@ -437,7 +437,7 @@ export function LiveDetailScreen() {
                     <Text style={styles.betMeta}>
                       Loại: {bet.betType === 'win' ? 'Thắng' : bet.betType === 'place' ? 'Top 2' : 'Top 3'}
                     </Text>
-                    <Text style={styles.betAmount}>Cược: {bet.amount} coins</Text>
+                    <Text style={styles.betAmount}>Dự đoán: {bet.amount} coins</Text>
                   </View>
                 </View>
               );

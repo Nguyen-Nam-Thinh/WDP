@@ -29,9 +29,9 @@ const TX_LABEL: Record<TransactionType, string> = {
   registration_fee:   'Phí Đăng Ký',
   registration_refund:'Hoàn Phí Đăng Ký',
   prize_payout:       'Tiền Thưởng',
-  bet_placed:         'Đặt Cược',
-  bet_payout:         'Nhận Cược',
-  bet_refund:         'Hoàn Tiền Cược',
+  bet_placed:         'Dự Đoán',
+  bet_payout:         'Nhận Thắng Dự Đoán',
+  bet_refund:         'Hoàn Tiền Dự Đoán',
   reward_redeem:      'Đổi Thưởng',
 };
 
@@ -53,6 +53,11 @@ function TransactionItem({ tx }: { tx: Transaction }) {
         <Text style={[styles.txAmount, { color: isPositive ? colors.success : '#8C2F1B' }]}>
           {isPositive ? '+' : ''}{tx.amount}
         </Text>
+        {tx.type === 'topup' && (
+          <Text style={{ fontSize: 11, color: colors.success, fontWeight: 'bold', marginTop: 2 }}>
+            {(tx.amount * 1000).toLocaleString('vi-VN')} VND
+          </Text>
+        )}
         <Text style={styles.txBalance}>Còn: {tx.balanceAfter}</Text>
       </View>
     </View>

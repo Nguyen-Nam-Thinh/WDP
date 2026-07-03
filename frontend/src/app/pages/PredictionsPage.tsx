@@ -25,6 +25,7 @@ import {
   Bot,
   RefreshCw,
   TrendingUp,
+  Star,
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { Pagination } from "../components/Pagination";
@@ -37,9 +38,25 @@ import {
 import { betApi, type Bet, type BetType, BET_MULTIPLIERS } from "../api/bet";
 import { toast } from "sonner";
 
+const getRemainingTimeText = (scheduledTime: string | Date): string => {
+  const diffMs = new Date(scheduledTime).getTime() - new Date().getTime();
+  if (diffMs <= 0) return 'Đã bắt đầu';
+  const diffMins = Math.floor(diffMs / (60 * 1000));
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays > 0) {
+    return `Còn ${diffDays} ngày ${diffHours % 24} giờ`;
+  }
+  if (diffHours > 0) {
+    return `Còn ${diffHours} giờ ${diffMins % 60} phút`;
+  }
+  return `Còn ${diffMins} phút`;
+};
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface HorseEntry {
+  gateNumber?: number;
   registrationId: string;
   horseId: string;
   horseName: string;
@@ -332,7 +349,7 @@ function ResultsBoard({ token }: { token: string | null }) {
             </span>
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              {new Date(selectedRace.scheduledTime).toLocaleDateString("vi-VN")}
+              {new Date(selectedRace.scheduledTime).toLocaleString("vi-VN")} ({getRemainingTimeText(selectedRace.scheduledTime)})
             </span>
             <span className="ml-auto text-[#8F7318] font-bold">
               {selectedRace.purse.toLocaleString('vi-VN')} coins giải thưởng
@@ -633,6 +650,21 @@ export function PredictionsPage() {
   const [loadingBets, setLoadingBets] = useState(false);
   const [betPage, setBetPage] = useState(1);
   const BET_PAGE_SIZE = 5;
+  const [showMyBetsSection, setShowMyBetsSection] = useState(true);
+
+  const getHorseGateNumber = (horseId: string) => {
+    const h = horses.find((x) => x.horseId === horseId);
+    if (h && h.gateNumber) return h.gateNumber;
+    const idx = horses.findIndex((x) => x.horseId === horseId);
+    return idx !== -1 ? idx + 1 : "?";
+  };
+
+  const currentRaceBets = selectedRace
+    ? myBets.filter((b) => {
+        const rId = typeof b.raceId === "object" ? b.raceId._id : b.raceId;
+        return rId === selectedRace._id;
+      })
+    : [];
 
   // Load open+running races on mount
   useEffect(() => {
@@ -881,7 +913,7 @@ export function PredictionsPage() {
                                 <Clock className="w-3 h-3" />
                                 {new Date(race.scheduledTime).toLocaleString(
                                   "vi-VN",
-                                )}
+                                )} ({getRemainingTimeText(race.scheduledTime)})
                               </span>
                               <span className="flex items-center gap-1">
                                 <Flag className="w-3 h-3" />
@@ -977,8 +1009,9 @@ export function PredictionsPage() {
                               <div className="pl-5 pr-5 py-4">
                                 <div className="flex items-center justify-between mb-3">
                                   <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 flex items-center justify-center text-sm font-black shrink-0 bg-muted text-foreground">
-                                      {idx + 1}
+                                    <div className="w-16 h-10 flex flex-col items-center justify-center text-[10px] font-bold shrink-0 bg-muted text-foreground">
+                                      <span className="opacity-65 uppercase tracking-wide">Số</span>
+                                      <span className="text-base font-black leading-none mt-0.5">{h.gateNumber || (idx + 1)}</span>
                                     </div>
                                     <div>
                                       <div className="flex items-center gap-2 flex-wrap">
@@ -1088,7 +1121,7 @@ export function PredictionsPage() {
                             Đã Chọn
                           </div>
                           <div className="font-black text-foreground">
-                            {selectedHorse.horseName}
+                            Ngựa số {selectedHorse.gateNumber || (selectedHorseIdx !== null ? selectedHorseIdx + 1 : "")} — {selectedHorse.horseName}
                           </div>
                           <div className="text-xs text-muted-foreground mt-0.5">
                             {selectedHorse.jockeyName ?? "Chưa có kỵ sĩ"}
@@ -1160,6 +1193,43 @@ export function PredictionsPage() {
                             </div>
                           </div>
                           <ArrowUpRight className="w-6 h-6 text-[#8F7318] opacity-60" />
+                        </div>
+                      )}
+
+                      {/* My predictions for this race */}
+                      {isLoggedIn && currentRaceBets.length > 0 && (
+                        <div className="mb-4">
+                          <button
+                            type="button"
+                            onClick={() => setShowMyBetsSection(!showMyBetsSection)}
+                            className="w-full flex items-center justify-between py-2 px-3 text-xs font-bold text-primary bg-primary/5 hover:bg-primary/10 border border-primary/20 transition-all"
+                          >
+                            <span className="flex items-center gap-1.5">
+                              <Star className="w-3.5 h-3.5 text-gold fill-gold" /> Dự đoán của bạn ({currentRaceBets.length})
+                            </span>
+                            <span>{showMyBetsSection ? "Ẩn ▲" : "Xem ▼"}</span>
+                          </button>
+                          {showMyBetsSection && (
+                            <div className="mt-2 p-2 bg-muted/30 border border-border space-y-1.5 max-h-48 overflow-y-auto">
+                              {currentRaceBets.map((bet) => {
+                                const hNum = getHorseGateNumber(bet.horseId?._id);
+                                return (
+                                  <div key={bet._id} className="text-xs flex items-center justify-between p-1.5 border-b border-border/40 last:border-0">
+                                    <div>
+                                      <span className="font-bold text-foreground">Ngựa #{hNum}</span>
+                                      <span className="text-muted-foreground ml-1">({bet.horseId?.name})</span>
+                                      <span className="text-[9px] uppercase font-extrabold px-1 py-0.2 ml-2 rounded bg-muted text-muted-foreground capitalize">
+                                        {bet.betType}
+                                      </span>
+                                    </div>
+                                    <div className="font-bold text-[#8F7318]">
+                                      {bet.amount} coins
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                       )}
 

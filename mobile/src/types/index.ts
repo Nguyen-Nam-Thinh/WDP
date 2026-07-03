@@ -45,6 +45,7 @@ export interface Race {
 export interface RaceHorse {
   _id?: string;
   registrationId?: string;
+  gateNumber?: number;
   horseId: string | {
     _id: string;
     name: string;

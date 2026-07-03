@@ -104,14 +104,15 @@ export function MainNavigator() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Giải Đấu' }} />
-      <Tab.Screen name="Bet" component={BetScreen} options={{ title: 'Đặt Cược' }} />
+      <Tab.Screen name="Bet" component={BetScreen} options={{ title: 'Dự Đoán' }} />
       <Tab.Screen
         name="LiveTab"
         component={LiveStackNavigator}
         options={{
           title: 'Live 🔴',
           tabBarActiveTintColor: colors.danger,
-        }}
+          unmountOnBlur: true,
+        } as any}
       />
       <Tab.Screen name="WalletTab" component={WalletStackNavigator} options={{ title: 'Ví' }} />
       <Tab.Screen name="ProfileTab" component={ProfileStackNavigator} options={{ title: 'Cá Nhân' }} />

@@ -56,7 +56,7 @@ export function RegisterScreen({ navigation }: Props) {
 
         <View style={styles.header}>
           <Text style={styles.title}>Tạo Tài Khoản</Text>
-          <Text style={styles.subtitle}>Đăng ký để theo dõi và đặt cược vào các cuộc đua</Text>
+          <Text style={styles.subtitle}>Đăng ký để theo dõi và dự đoán các cuộc đua</Text>
         </View>
 
         <View style={styles.form}>
