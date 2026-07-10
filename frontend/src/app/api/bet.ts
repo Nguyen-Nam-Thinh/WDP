@@ -1,48 +1,42 @@
 import { API_URL } from './auth';
 import { getApiErrorMessage } from '../utils/errorMessages';
 
-export type BetType = 'win' | 'place' | 'show';
 export type BetStatus = 'pending' | 'won' | 'lost' | 'cancelled' | 'refunded';
 
-export const BET_BASE_ODDS: Record<BetType, number> = { win: 3, place: 2, show: 1.5 };
-/** @deprecated Use dynamic odds from getRaceOdds — kept as fallback display */
-export const BET_MULTIPLIERS = BET_BASE_ODDS;
+// ── Parimutuel Odds Types ────────────────────────────────────────────────────
 
-export const BET_TYPE_LABEL: Record<BetType, string> = {
-  win: 'Thắng (Hạng 1)',
-  place: 'Về Nhì (Hạng 2)',
-  show: 'Về Ba (Hạng 3)',
-};
-
-export interface HorseBetOdds {
-  multiplier: number;
-  poolAmount: number;
-  poolShare: number;
-  betCount: number;
-  impliedProb: number;
-}
-
-export interface RaceHorseOdds {
+export interface HorseOdds {
   horseId: string;
   horseName: string;
-  odds: Record<BetType, HorseBetOdds>;
+  winProb: number;             // % win probability (chỉ tham khảo)
+  estimatedMultiplier: number; // odds ước tính từ pool hiện tại
+  poolAmount: number;
+  betCount: number;
+  poolShare: number;           // % pool vào ngựa này
 }
 
 export interface RaceBettingOdds {
   raceId: string;
-  totalsByType: Partial<Record<BetType, number>>;
-  horses: RaceHorseOdds[];
+  totalPool: number;
+  payoutPool: number;          // totalPool × 0.9 (sau rake 10%)
+  rake: number;                // 10
+  horses: HorseOdds[];
   updatedAt: string;
 }
+
+// ── Bet ──────────────────────────────────────────────────────────────────────
 
 export interface Bet {
   _id: string;
   spectatorId: string;
   raceId: { _id: string; name: string; grade: string; scheduledTime: string; status: string; tournamentId?: string };
   horseId: { _id: string; name: string; breed?: string; currentGrade?: string; imageUrl?: string };
-  betType: BetType;
+  // betType removed — parimutuel: chỉ cược vào ngựa về nhất
   amount: number;
+  /** 0 khi pending, cập nhật thực khi race kết thúc */
   multiplier: number;
+  /** odds ước tính lúc đặt (không lưu DB, đính kèm từ API response) */
+  estimatedMultiplier?: number;
   status: BetStatus;
   payoutAmount: number;
   settledAt?: string;
@@ -57,10 +51,31 @@ export interface BetListResponse {
   totalPages: number;
 }
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Lấy estimated multiplier của ngựa từ odds data.
+ * Fallback về 3x nếu không tìm thấy.
+ */
+export function getHorseEstimatedMultiplier(
+  odds: RaceBettingOdds | null | undefined,
+  horseId: string,
+): number {
+  if (!odds) return 3;
+  const horse = odds.horses.find((h) => h.horseId === horseId);
+  return horse?.estimatedMultiplier ?? 3;
+}
+
 const authHeader = (token: string) => ({ Authorization: `Bearer ${token}` });
 
+// ── API ───────────────────────────────────────────────────────────────────────
+
 export const betApi = {
-  place: async (token: string, data: { raceId: string; horseId: string; betType: BetType; amount: number }): Promise<Bet> => {
+  /**
+   * Đặt cược vào ngựa (parimutuel — không cần betType).
+   * Multiplier thực tế tính khi race kết thúc.
+   */
+  place: async (token: string, data: { raceId: string; horseId: string; amount: number }): Promise<Bet> => {
     const res = await fetch(`${API_URL}/bets`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeader(token) },
@@ -116,13 +131,15 @@ export const betApi = {
     });
     const json = await res.json();
     if (!res.ok) throw new Error(getApiErrorMessage(json.message));
-    return json.data as { settled: number; won: number; lost: number };
+    return json.data as { settled: number; won: number; lost: number; totalPool: number; payoutPool: number };
   },
 
   getRaceOdds: async (token: string, raceId: string): Promise<RaceBettingOdds> => {
-    const res = await fetch(`${API_URL}/bets/race/${raceId}/odds`, { headers: authHeader(token) });
-    const json = await res.json();
-    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
-    return json.data;
+    const headers = authHeader(token);
+    // Thử endpoint bets trực tiếp
+    const betRes = await fetch(`${API_URL}/bets/race/${raceId}/odds`, { headers });
+    const betJson = await betRes.json();
+    if (!betRes.ok) throw new Error(getApiErrorMessage(betJson.message));
+    return betJson.data;
   },
 };

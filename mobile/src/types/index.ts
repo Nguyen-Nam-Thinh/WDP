@@ -83,7 +83,6 @@ export interface RaceListResponse {
 }
 
 // Bet types
-export type BetType = 'win' | 'place' | 'show';
 export type BetStatus = 'pending' | 'won' | 'lost' | 'cancelled' | 'refunded';
 
 export interface Bet {
@@ -91,9 +90,12 @@ export interface Bet {
   spectatorId: string;
   raceId: { _id: string; name: string; grade: string; scheduledTime: string; status: string };
   horseId: { _id: string; name: string; breed?: string; currentGrade?: string };
-  betType: BetType;
+  // betType removed — parimutuel: chỉ cược vào ngựa về nhất
   amount: number;
+  /** 0 khi pending, cập nhật khi race kết thúc (parimutuel thực) */
   multiplier: number;
+  /** odds ước tính lúc đặt (không lưu DB, đính kèm từ API response) */
+  estimatedMultiplier?: number;
   status: BetStatus;
   payoutAmount: number;
   settledAt?: string;

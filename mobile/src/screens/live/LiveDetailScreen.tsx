@@ -106,12 +106,8 @@ export function LiveDetailScreen() {
       const wonBet = pendingBets.find((b) => {
         const result = displayResults.find((r) => (r.horseId?._id || r.horseId) === (b.horseId?._id || b.horseId));
         if (!result) return false;
-        const pos = result.position;
-        return (
-          (b.betType === 'win' && pos === 1) ||
-          (b.betType === 'place' && pos <= 2) ||
-          (b.betType === 'show' && pos <= 3)
-        );
+        // Parimutuel: chỉ ngựa về nhất mới thắng
+        return result.position === 1;
       });
 
       if (wonBet) {
@@ -408,12 +404,8 @@ export function LiveDetailScreen() {
               const result = displayResults.find((r) => (r.horseId?._id || r.horseId) === rHorseId);
               const pos = result?.position;
               
-              // Determine status
-              const betWon = pos !== undefined && (
-                (bet.betType === 'win' && pos === 1) ||
-                (bet.betType === 'place' && pos <= 2) ||
-                (bet.betType === 'show' && pos <= 3)
-              );
+              // Parimutuel: chỉ ngựa về nhất mới thắng
+              const betWon = pos !== undefined && pos === 1;
 
               const betStatus = bet.status === 'refunded' ? 'REFUND' : bet.status === 'cancelled' ? 'CANCELLED' : isFinished ? (betWon ? 'THẮNG' : 'THUA') : 'ĐANG CHỜ';
               const betStatusColor = bet.status === 'refunded' ? colors.warning : bet.status === 'cancelled' ? colors.textMuted : betWon ? colors.success : colors.danger;
@@ -435,7 +427,7 @@ export function LiveDetailScreen() {
                   </View>
                   <View style={styles.betBottom}>
                     <Text style={styles.betMeta}>
-                      Loại: {bet.betType === 'win' ? 'Thắng' : bet.betType === 'place' ? 'Top 2' : 'Top 3'}
+                      {bet.multiplier > 0 ? `x${bet.multiplier} (parimutuel)` : 'Odds tính sau race'}
                     </Text>
                     <Text style={styles.betAmount}>Dự đoán: {bet.amount} coins</Text>
                   </View>

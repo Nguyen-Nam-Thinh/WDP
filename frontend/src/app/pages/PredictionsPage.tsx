@@ -35,7 +35,7 @@ import {
   type RaceResultEntry,
   type HorsePrediction,
 } from "../api/race";
-import { betApi, type Bet, type BetType, BET_MULTIPLIERS } from "../api/bet";
+import { betApi, type Bet } from "../api/bet";
 import { toast } from "sonner";
 
 const getRemainingTimeText = (scheduledTime: string | Date): string => {
@@ -640,7 +640,6 @@ export function PredictionsPage() {
 
   // Bet
   const [selectedHorseIdx, setSelectedHorseIdx] = useState<number | null>(null);
-  const [betType, setBetType] = useState<BetType>("win");
   const [betAmount, setBetAmount] = useState("");
   const [placing, setPlacing] = useState(false);
   const [placed, setPlaced] = useState(false);
@@ -709,10 +708,9 @@ export function PredictionsPage() {
 
   const selectedHorse =
     selectedHorseIdx !== null ? horses[selectedHorseIdx] : null;
-  const multiplier = BET_MULTIPLIERS[betType];
   const potentialWin =
     selectedHorse && betAmount && !isNaN(Number(betAmount))
-      ? Math.floor(Number(betAmount) * multiplier)
+      ? Math.floor(Number(betAmount) * 3) // fallback 3x — sẽ tính chính xác sau race
       : null;
 
   const handleBetClick = async () => {
@@ -731,11 +729,10 @@ export function PredictionsPage() {
       await betApi.place(token!, {
         raceId: selectedRace._id,
         horseId: selectedHorse.horseId,
-        betType,
         amount,
       });
       toast.success(
-        `Dự đoán thành công! Tiềm năng: +${potentialWin?.toLocaleString('vi-VN')} coins`,
+        `Dự đoán thành công! Odds thực sẽ tính khi race kết thúc`,
       );
       setPlaced((p) => !p);
       setSelectedHorseIdx(null);
@@ -1089,28 +1086,10 @@ export function PredictionsPage() {
                     </div>
 
                     <div className="p-6">
-                      {/* Bet type */}
+                      {/* Parimutuel info */}
                       {isLoggedIn && (
-                        <div className="mb-4">
-                          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">
-                            Loại Dự Đoán
-                          </label>
-                          <div className="grid grid-cols-3 gap-2">
-                            {(["win", "place", "show"] as const).map((bt) => (
-                              <button
-                                type="button"
-                                key={bt}
-                                onClick={() => setBetType(bt)}
-                                className={`py-2 text-xs font-bold transition-all border ${betType === bt ? "text-primary bg-primary/10 border-primary/50" : "text-muted-foreground hover:text-foreground bg-background border-border"}`}
-                              >
-                                {bt === "win"
-                                  ? `Win ${BET_MULTIPLIERS.win}x`
-                                  : bt === "place"
-                                    ? `Place ${BET_MULTIPLIERS.place}x`
-                                    : `Show ${BET_MULTIPLIERS.show}x`}
-                              </button>
-                            ))}
-                          </div>
+                        <div className="mb-4 p-3 bg-primary/5 border border-primary/20 text-[11px] text-muted-foreground">
+                          ℹ️ <strong className="text-foreground">Parimutuel:</strong> Odds thực tế tính sau khi race kết thúc dựa trên pool cược. Chỉ ngựa về nhất mới thắng.
                         </div>
                       )}
 
@@ -1186,10 +1165,13 @@ export function PredictionsPage() {
                         <div className="mb-5 p-4 flex items-center justify-between bg-gold/10 border border-gold/40">
                           <div>
                             <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">
-                              Tiềm Năng Thắng ({multiplier}x)
+                              Tiềm Năng Thắng (ước tính ~3x)
                             </div>
                             <div className="font-serif text-xl font-bold text-[#8F7318] tabular-nums">
-                              {potentialWin.toLocaleString('vi-VN')} coins
+                              ~{potentialWin.toLocaleString('vi-VN')} coins
+                            </div>
+                            <div className="text-[10px] text-muted-foreground mt-1">
+                              ⚠️ Odds thực sẽ tính khi race kết thúc
                             </div>
                           </div>
                           <ArrowUpRight className="w-6 h-6 text-[#8F7318] opacity-60" />
@@ -1218,8 +1200,8 @@ export function PredictionsPage() {
                                     <div>
                                       <span className="font-bold text-foreground">Ngựa #{hNum}</span>
                                       <span className="text-muted-foreground ml-1">({bet.horseId?.name})</span>
-                                      <span className="text-[9px] uppercase font-extrabold px-1 py-0.2 ml-2 rounded bg-muted text-muted-foreground capitalize">
-                                        {bet.betType}
+                                      <span className="text-[9px] uppercase font-extrabold px-1 py-0.2 ml-2 rounded bg-muted text-muted-foreground">
+                                        {bet.multiplier > 0 ? `x${bet.multiplier}` : 'Pending'}
                                       </span>
                                     </div>
                                     <div className="font-bold text-[#8F7318]">
@@ -1322,7 +1304,7 @@ export function PredictionsPage() {
                                 </div>
                                 <div className="flex items-center justify-between text-xs">
                                   <span className="text-muted-foreground">
-                                    {bet.betType} · {bet.amount.toLocaleString()}c
+                                    {bet.multiplier > 0 ? `x${bet.multiplier} (parimutuel)` : 'Odds tính sau race'} · {bet.amount.toLocaleString()}c
                                   </span>
                                   <span
                                     className={`font-bold tabular-nums ${bet.status === "won" ? "text-primary" : bet.status === "lost" ? "text-destructive line-through" : "text-[#8F7318]"}`}

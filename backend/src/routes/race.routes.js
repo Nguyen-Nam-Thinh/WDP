@@ -55,6 +55,7 @@ router.get('/', optionalAuthenticate, raceController.getRaces);
 router.get('/:id', optionalAuthenticate, raceController.getRaceById);
 router.get('/:id/registrations', optionalAuthenticate, raceController.getRaceRegistrations);
 router.get('/:id/horses', optionalAuthenticate, raceController.getRaceHorses);
+router.get('/:id/betting-odds', optionalAuthenticate, raceController.getRaceBettingOdds);
 router.get('/:id/results', optionalAuthenticate, raceController.getRaceResults);
 router.get('/:id/ai-predictions', optionalAuthenticate, aiPredictionController.getRaceAIPredictions);
 

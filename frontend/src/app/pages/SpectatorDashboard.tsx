@@ -65,9 +65,8 @@ import { API_URL } from "../api/auth";
 import {
   betApi,
   type Bet,
-  type BetType,
   type RaceBettingOdds,
-  BET_BASE_ODDS,
+  getHorseEstimatedMultiplier,
 } from "../api/bet";
 import { tournamentApi, type Tournament } from "../api/tournament";
 import {
@@ -123,13 +122,22 @@ const lightSelectSx = {
 
 const SOCKET_URL = API_URL.replace("/api/v1", "");
 
+function normalizeHorseId(id: unknown): string {
+  if (!id) return "";
+  if (typeof id === "string") return id;
+  if (typeof id === "object" && id !== null && "_id" in id) {
+    return String((id as { _id: string })._id);
+  }
+  return String(id);
+}
+
+/** Lấy estimated multiplier của ngựa từ pool parimutuel hiện tại */
 function getHorseOdds(
   odds: RaceBettingOdds | null,
-  horseId: string,
-  betType: BetType,
+  horseId: unknown,
 ) {
-  const horse = odds?.horses.find((h) => h.horseId === horseId);
-  return horse?.odds[betType]?.multiplier ?? BET_BASE_ODDS[betType];
+  const id = normalizeHorseId(horseId);
+  return getHorseEstimatedMultiplier(odds, id);
 }
 
 export function SpectatorDashboard() {
@@ -341,7 +349,6 @@ export function SpectatorDashboard() {
   const [selectedTournamentForDetails, setSelectedTournamentForDetails] =
     useState<any>(null);
   const [selectedRace, setSelectedRace] = useState<any>(null);
-  const [betType, setBetType] = useState("win");
   const [selectedHorse, setSelectedHorse] = useState("");
   const [betAmount, setBetAmount] = useState("");
   const [rankingType, setRankingType] = useState("horses");
@@ -544,26 +551,28 @@ export function SpectatorDashboard() {
     setSelectedRace(race);
     setSelectedHorse("");
     setBetAmount("");
-    setBetType("win");
     setSelectedRaceRegistrations([]);
     setRaceBettingOdds(null);
     setPredictionModalOpen(true);
-    if (token) {
-      try {
-        const [res, odds] = await Promise.all([
-          raceApi.getRaceHorses(token, race._id),
-          betApi.getRaceOdds(token, race._id),
-        ]);
-        setSelectedRaceRegistrations(res.horses ?? []);
-        setRaceBettingOdds(odds);
-      } catch {
-        try {
-          const res = await raceApi.getRaceHorses(token, race._id);
-          setSelectedRaceRegistrations(res.horses ?? []);
-        } catch {
-          /* ignore */
-        }
-      }
+    if (!token) return;
+
+    try {
+      const res = await raceApi.getRaceHorses(token, race._id);
+      const horses = (res.horses ?? []).map((h: any) => ({
+        ...h,
+        horseId: normalizeHorseId(h.horseId),
+      }));
+      setSelectedRaceRegistrations(horses);
+    } catch (err: any) {
+      toast.error(err.message || "Không thể tải danh sách ngựa");
+    }
+
+    try {
+      const odds = await betApi.getRaceOdds(token, race._id);
+      setRaceBettingOdds(odds);
+    } catch (err: any) {
+      console.error("[betting-odds]", err);
+      toast.error(err.message || "Không tải được hệ số dự đoán — đang dùng hệ số mặc định");
     }
   };
 
@@ -609,24 +618,18 @@ export function SpectatorDashboard() {
       return;
     }
     setPlacingBet(true);
-    const lockedMultiplier = getHorseOdds(
-      raceBettingOdds,
-      selectedHorse,
-      betType as BetType,
-    );
+    const estimatedMultiplier = getHorseOdds(raceBettingOdds, selectedHorse);
     try {
       const placed = await betApi.place(token, {
         raceId: selectedRace._id,
         horseId: selectedHorse,
-        betType: betType as BetType,
         amount,
       });
-      const payoutMultiplier = placed.multiplier ?? lockedMultiplier;
+      const displayMult = placed.estimatedMultiplier ?? estimatedMultiplier;
       toast.success(
-        `Dự đoán thành công! Hệ số khóa: ${payoutMultiplier}x — Tiềm năng thắng: ${Math.floor(amount * payoutMultiplier).toLocaleString("vi-VN")} coins`,
+        `Dự đoán thành công! Odds ước tính: x${displayMult} — Sẽ nhận được sau khi race kết thúc`,
       );
       setPredictionModalOpen(false);
-      setBetType("win");
       setSelectedHorse("");
       setBetAmount("");
       if (activeTab === "predictions") loadMyBets();
@@ -3149,45 +3152,33 @@ export function SpectatorDashboard() {
                 {(() => {
                   const horseIndexMap = new Map<string, number>(
                     selectedRaceRegistrations.map((h: any, i: number) => [
-                      h.horseId as string,
+                      normalizeHorseId(h.horseId),
                       h.gateNumber !== undefined ? h.gateNumber - 1 : i
                     ])
                   );
                   return (
                     <>
+                      {!raceBettingOdds && (
+                        <div className="text-xs text-muted-foreground bg-muted/30 border border-border px-3 py-2">
+                          Đang tải hệ số dự đoán...
+                        </div>
+                      )}
                       {raceBettingOdds && raceBettingOdds.horses.length > 0 && (
                         <div className="border border-border overflow-x-auto">
                           <table className="w-full text-xs">
                             <thead>
                               <tr className="bg-muted/50 text-muted-foreground">
                                 <th className="text-left px-3 py-2 font-medium">Ngựa</th>
-                                {(["win", "place", "show"] as BetType[]).map((t) => (
-                                  <th key={t} className="text-right px-2 py-2 font-medium">
-                                    <div className="flex items-center justify-end gap-1">
-                                      <span className="capitalize">{t}</span>
-                                      <MuiTooltip 
-                                        title={
-                                          <div className="text-xs text-white">
-                                            <div className="font-bold mb-1 text-[#FCD34D]">Hệ số dự đoán & Tổng Pool</div>
-                                            <div>Dòng trên (vàng): Hệ số nhân tiền thưởng.</div>
-                                            <div className="text-white/70 mt-0.5">Dòng dưới: Tổng coin đã dự đoán vào ngựa này. Tỷ trọng % càng cao, hệ số thưởng càng giảm.</div>
-                                          </div>
-                                        } 
-                                        arrow
-                                        placement="top"
-                                      >
-                                        <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/70 cursor-help" />
-                                      </MuiTooltip>
-                                    </div>
-                                  </th>
-                                ))}
+                                <th className="text-right px-2 py-2 font-medium">Odds Ước Tính</th>
+                                <th className="text-right px-2 py-2 font-medium">Pool</th>
+                                <th className="text-right px-2 py-2 font-medium">Tỷ Trọng</th>
                               </tr>
                             </thead>
                             <tbody>
                               {[...raceBettingOdds.horses]
-                                .sort((a, b) => (horseIndexMap.get(a.horseId) ?? 999) - (horseIndexMap.get(b.horseId) ?? 999))
+                                .sort((a, b) => (horseIndexMap.get(normalizeHorseId(a.horseId)) ?? 999) - (horseIndexMap.get(normalizeHorseId(b.horseId)) ?? 999))
                                 .map((horse) => {
-                                const hIdx = horseIndexMap.get(horse.horseId);
+                                const hIdx = horseIndexMap.get(normalizeHorseId(horse.horseId));
                                 const label = hIdx !== undefined ? `Ngựa số ${hIdx + 1}` : horse.horseName;
                                 return (
                                   <tr
@@ -3195,47 +3186,27 @@ export function SpectatorDashboard() {
                                     className={`border-t border-border ${selectedHorse === horse.horseId ? "bg-gold/10" : ""}`}
                                   >
                                     <td className="px-3 py-2 font-medium text-foreground">{label}</td>
-                                    {(["win", "place", "show"] as BetType[]).map((t) => (
-                                      <td key={t} className="px-2 py-2 text-right tabular-nums">
-                                        <div className="text-[#8F7318] font-bold">{horse.odds[t].multiplier}x</div>
-                                        <div className="text-muted-foreground">
-                                          {horse.odds[t].poolAmount.toLocaleString("vi-VN")} <span className="text-[10px] opacity-70">coins</span> ({horse.odds[t].poolShare}%)
-                                        </div>
-                                      </td>
-                                    ))}
+                                    <td className="px-2 py-2 text-right">
+                                      <span className="text-[#8F7318] font-bold">{horse.estimatedMultiplier}x</span>
+                                    </td>
+                                    <td className="px-2 py-2 text-right tabular-nums text-muted-foreground">
+                                      {horse.poolAmount.toLocaleString("vi-VN")} <span className="text-[10px] opacity-70">coins</span>
+                                    </td>
+                                    <td className="px-2 py-2 text-right tabular-nums text-muted-foreground">
+                                      {horse.poolShare}%
+                                    </td>
                                   </tr>
                                 );
                               })}
                             </tbody>
                           </table>
+                          <div className="px-3 py-2 bg-muted/30 border-t border-border text-[11px] text-muted-foreground flex justify-between">
+                            <span>Tổng pool: <strong className="text-[#8F7318]">{raceBettingOdds.totalPool.toLocaleString('vi-VN')} coins</strong></span>
+                            <span>Sau rake 10%: <strong>{raceBettingOdds.payoutPool?.toLocaleString('vi-VN') ?? '—'} coins</strong></span>
+                          </div>
                         </div>
                       )}
 
-                      <FormControl fullWidth sx={{ mb: 3 }}>
-                        <InputLabel sx={{ color: "#7A7468" }}>Loại Dự Đoán</InputLabel>
-                        <Select
-                          value={betType}
-                          onChange={(e) => setBetType(e.target.value)}
-                          label="Loại Dự Đoán"
-                          sx={lightSelectSx}
-                        >
-                          {(["win", "place", "show"] as BetType[]).map((t) => {
-                            const mult = selectedHorse
-                              ? getHorseOdds(raceBettingOdds, selectedHorse, t)
-                              : BET_BASE_ODDS[t];
-                            const labels: Record<BetType, string> = {
-                              win: "Thắng — ngựa về hạng 1",
-                              place: "Về Nhì — ngựa về hạng 2",
-                              show: "Về Ba — ngựa về hạng 3",
-                            };
-                            return (
-                              <MenuItem key={t} value={t}>
-                                {labels[t]} ({mult}x)
-                              </MenuItem>
-                            );
-                          })}
-                        </Select>
-                      </FormControl>
 
                       <FormControl fullWidth sx={{ mb: 3 }}>
                         <InputLabel sx={{ color: "#7A7468" }}>Chọn Ngựa *</InputLabel>
@@ -3246,12 +3217,12 @@ export function SpectatorDashboard() {
                           sx={lightSelectSx}
                           renderValue={(val) => {
                             const idx = horseIndexMap.get(val as string);
-                            const odds = getHorseOdds(raceBettingOdds, val as string, "win");
+                            const odds = getHorseOdds(raceBettingOdds, val as string);
                             if (idx === undefined) return "";
                             return (
                               <span style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
                                 <span>Ngựa số {idx + 1}</span>
-                                <span style={{ color: "#8F7318", fontWeight: 600, marginRight: "8px" }}>{odds}x</span>
+                                <span style={{ color: "#8F7318", fontWeight: 600, marginRight: "8px" }}>~{odds}x</span>
                               </span>
                             );
                           }}
@@ -3259,11 +3230,11 @@ export function SpectatorDashboard() {
                           {selectedRaceRegistrations.length > 0 ? (
                             selectedRaceRegistrations.map((h: any) => {
                               const hNum = (horseIndexMap.get(h.horseId) ?? 0) + 1;
-                              const winOdds = getHorseOdds(raceBettingOdds, h.horseId, "win");
+                              const estOdds = getHorseOdds(raceBettingOdds, h.horseId);
                               return (
                                 <MenuItem key={h.horseId} value={h.horseId} sx={{ display: "flex", justifyContent: "space-between", gap: "16px" }}>
                                   <span>Ngựa số {hNum}</span>
-                                  <span style={{ color: "#8F7318", fontWeight: 600 }}>{winOdds}x</span>
+                                  <span style={{ color: "#8F7318", fontWeight: 600 }}>~{estOdds}x</span>
                                 </MenuItem>
                               );
                             })
@@ -3349,21 +3320,21 @@ export function SpectatorDashboard() {
                 <div className="bg-gold/10 border border-gold/40 p-4">
                   {(() => {
                     const currentMultiplier = selectedHorse
-                      ? getHorseOdds(raceBettingOdds, selectedHorse, betType as BetType)
-                      : BET_BASE_ODDS[betType as BetType];
+                      ? getHorseOdds(raceBettingOdds, selectedHorse)
+                      : 3;
                     return (
                       <>
                         <div className="flex justify-between text-sm mb-2">
-                          <span className="text-muted-foreground">Tiềm năng thắng:</span>
+                          <span className="text-muted-foreground">Tiềm năng thắng (ước tính):</span>
                           <span className="text-[#8F7318] font-bold text-lg tabular-nums">
                             {betAmount && !isNaN(Number(betAmount)) && Number(betAmount) > 0
-                              ? `${Math.floor(Number(betAmount) * currentMultiplier).toLocaleString("vi-VN")} coins`
+                              ? `~${Math.floor(Number(betAmount) * currentMultiplier).toLocaleString("vi-VN")} coins`
                               : "0 coins"}
                           </span>
                         </div>
                         <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>Hệ số khóa: {currentMultiplier}x</span>
-                          <span>Phí sẽ trừ ngay từ ví</span>
+                          <span>Odds ước tính: ~{currentMultiplier}x</span>
+                          <span>⚠️ Odds thực tính sau khi race kết thúc</span>
                         </div>
                       </>
                     );
@@ -3685,7 +3656,7 @@ export function SpectatorDashboard() {
                         </div>
                         <div className="mt-1 flex items-center gap-2">
                           <span className="text-xs text-[#8F7318] bg-gold/10 px-2 py-0.5 rounded font-bold border border-gold/30">
-                            {typeLabel[bet.betType] || bet.betType} ({bet.multiplier}x)
+                            {bet.multiplier > 0 ? `x${bet.multiplier} (parimutuel)` : 'Odds tính sau race'}
                           </span>
                         </div>
                       </div>

@@ -6,10 +6,10 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { raceService } from '../../services/api/race.service';
-import { betService } from '../../services/api/bet.service';
-import { Race, RaceHorse, Bet, BetType } from '../../types';
+import { betService, RaceOddsResponse } from '../../services/api/bet.service';
+import { Race, RaceHorse, Bet } from '../../types';
 import { colors, spacing, radius, fontSize, fontWeight } from '../../constants/theme';
-import { BET_MULTIPLIERS, BET_TYPE_LABEL, RACE_STATUS_LABEL } from '../../constants/api';
+import { RACE_STATUS_LABEL } from '../../constants/api';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 const GRADE_COLORS: Record<string, string> = {
@@ -29,15 +29,22 @@ function PlaceBetModal({
   const [horses, setHorses] = useState<RaceHorse[]>([]);
   const [loadingHorses, setLoadingHorses] = useState(false);
   const [selectedHorse, setSelectedHorse] = useState('');
-  const [betType, setBetType] = useState<BetType>('win');
   const [amount, setAmount] = useState('');
   const [placing, setPlacing] = useState(false);
   const [myPredictions, setMyPredictions] = useState<Bet[]>([]);
-  const [raceOdds, setRaceOdds] = useState<any>(null);
+  const [raceOdds, setRaceOdds] = useState<RaceOddsResponse | null>(null);
 
-  const getHorseOdds = (horseId: string, type: BetType) => {
-    const horse = raceOdds?.horses?.find((h: any) => h.horseId === horseId);
-    return horse?.odds?.[type]?.multiplier ?? BET_MULTIPLIERS[type];
+  /** Lấy estimated multiplier của ngựa từ pool hiện tại */
+  const getHorseOdds = (horseId: string) => {
+    const horse = raceOdds?.horses?.find((h) => h.horseId === horseId);
+    return horse?.estimatedMultiplier ?? raceOdds?.horses?.length
+      ? (raceOdds!.totalPool === 0 ? 3 : 3)  // fallback default
+      : 3;
+  };
+
+  const getHorseWinProb = (horseId: string) => {
+    const horse = raceOdds?.horses?.find((h) => h.horseId === horseId);
+    return horse?.winProb ?? null;
   };
 
   const loadPredictions = async () => {
@@ -53,7 +60,6 @@ function PlaceBetModal({
   useEffect(() => {
     if (!visible || !race) return;
     setSelectedHorse('');
-    setBetType('win');
     setAmount('');
     setLoadingHorses(true);
     setMyPredictions([]);
@@ -77,10 +83,12 @@ function PlaceBetModal({
     if (!amt || amt < 1) { Alert.alert('Lỗi', 'Số tiền tối thiểu là 1'); return; }
     setPlacing(true);
     try {
-      await betService.place({ raceId: race._id, horseId: selectedHorse, betType, amount: amt });
-      const mult = getHorseOdds(selectedHorse, betType);
-      const potential = Math.floor(amt * mult);
-      Alert.alert('✅ Dự Đoán Thành Công', `Tiềm năng nhận: ${potential} coins`);
+      const result = await betService.place({ raceId: race._id, horseId: selectedHorse, amount: amt });
+      const estimated = result.estimatedMultiplier ?? getHorseOdds(selectedHorse);
+      Alert.alert(
+        '✅ Dự Đoán Thành Công',
+        `Odds ước tính: x${estimated}\n⚠️ Odds thực tế sẽ được tính khi race kết thúc`,
+      );
       onSuccess();
       loadPredictions();
       setSelectedHorse('');
@@ -91,6 +99,12 @@ function PlaceBetModal({
       setPlacing(false);
     }
   };
+
+  const estimatedPayout = (() => {
+    if (!amount || Number(amount) <= 0 || !selectedHorse) return null;
+    const odds = getHorseOdds(selectedHorse);
+    return Math.floor(Number(amount) * odds);
+  })();
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -103,9 +117,20 @@ function PlaceBetModal({
           </View>
           {race && <Text style={modal.raceName} numberOfLines={1}>{race.name}</Text>}
 
+          {/* Pool info */}
+          {raceOdds && (
+            <View style={modal.poolInfo}>
+              <Ionicons name="wallet-outline" size={13} color={colors.textMuted} />
+              <Text style={modal.poolText}>
+                Pool hiện tại: <Text style={{ color: colors.gold, fontWeight: 'bold' }}>{raceOdds.totalPool.toLocaleString()} coins</Text>
+                {'  '}·  Rake 10%
+              </Text>
+            </View>
+          )}
+
           <View style={{ flex: 1, overflow: 'hidden' }}>
             <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
-              {/* My Predictions for this race */}
+              {/* My Predictions */}
               {myPredictions.length > 0 && (
                 <View style={modal.myBetsContainer}>
                   <Text style={modal.myBetsTitle}>🌟 Dự đoán của bạn trong cuộc đua này:</Text>
@@ -117,7 +142,7 @@ function PlaceBetModal({
                     return (
                       <View key={b._id} style={modal.myBetItem}>
                         <Text style={modal.myBetText}>
-                          Ngựa số {gateNo} ({hname}) · <Text style={{ textTransform: 'uppercase', fontWeight: 'bold' }}>{b.betType}</Text>
+                          Ngựa số {gateNo} ({hname})
                         </Text>
                         <Text style={modal.myBetAmount}>{b.amount} coins</Text>
                       </View>
@@ -145,6 +170,9 @@ function PlaceBetModal({
                     const breed = typeof h.horseId === 'object' ? (h.horseId as any)?.breed : h.breed;
                     const winRatePct = winRate != null ? `${Math.round(winRate)}%` : null;
 
+                    const estimatedMult = hid ? getHorseOdds(hid) : 3;
+                    const winProb = hid ? getHorseWinProb(hid) : null;
+
                     return (
                       <TouchableOpacity
                         key={horseKey}
@@ -154,11 +182,11 @@ function PlaceBetModal({
                         <View style={modal.horseLeft}>
                           <View style={modal.horseTopRow}>
                             <Text style={modal.horseName}>
-                              Ngựa số {h.gateNumber || (idx + 1)} — {hname}{' '}
-                              <Text style={{ color: colors.accent, fontWeight: 'bold' }}>
-                                [{getHorseOdds(hid, 'win')}x]
-                              </Text>
+                              Ngựa số {h.gateNumber || (idx + 1)} — {hname}
                             </Text>
+                            <View style={modal.oddsTag}>
+                              <Text style={modal.oddsTagText}>x{estimatedMult}</Text>
+                            </View>
                             <View style={[modal.gradeBadge, { borderColor: (GRADE_COLORS[currentGrade || 'Maiden'] ?? '#fff') + '60' }]}>
                               <Text style={[modal.gradeText, { color: GRADE_COLORS[currentGrade || 'Maiden'] ?? '#fff' }]}>
                                 {currentGrade}
@@ -171,6 +199,9 @@ function PlaceBetModal({
                             )}
                             {winRatePct && (
                               <Text style={modal.statChip}>🏆 {winRatePct}</Text>
+                            )}
+                            {winProb != null && (
+                              <Text style={modal.statChip}>📊 {winProb}% thắng</Text>
                             )}
                             {breed ? (
                               <Text style={modal.statChip}>{breed}</Text>
@@ -187,22 +218,6 @@ function PlaceBetModal({
                     );
                   })
               }
-
-              {/* Bet type */}
-              <Text style={[modal.label, { marginTop: spacing.md }]}>Loại Dự Đoán</Text>
-              <View style={modal.betTypeRow}>
-                {(['win', 'place', 'show'] as BetType[]).map((t) => (
-                  <TouchableOpacity
-                    key={t}
-                    style={[modal.betTypeBtn, betType === t && modal.betTypeBtnActive]}
-                    onPress={() => setBetType(t)}
-                  >
-                    <Text style={[modal.betTypeBtnText, betType === t && modal.betTypeBtnTextActive]}>
-                      {t === 'win' ? 'Thắng' : t === 'place' ? 'Top 2' : 'Top 3'} {selectedHorse ? `${getHorseOdds(selectedHorse, t)}x` : `${BET_MULTIPLIERS[t]}x`}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
 
               {/* Amount */}
               <Text style={[modal.label, { marginTop: spacing.md }]}>Số Tiền (coins)</Text>
@@ -227,11 +242,14 @@ function PlaceBetModal({
                 ))}
               </View>
 
-              {/* Potential payout */}
-              {!!amount && Number(amount) > 0 && selectedHorse && (
+              {/* Estimated payout */}
+              {estimatedPayout !== null && (
                 <View style={modal.payoutBox}>
-                  <Text style={modal.payoutLabel}>Tiềm năng nhận:</Text>
-                  <Text style={modal.payoutValue}>{Math.floor(Number(amount) * getHorseOdds(selectedHorse, betType))} coins</Text>
+                  <View>
+                    <Text style={modal.payoutLabel}>Ước tính nhận (nếu thắng):</Text>
+                    <Text style={modal.payoutNote}>⚠️ Odds thực tế tính sau khi race kết thúc</Text>
+                  </View>
+                  <Text style={modal.payoutValue}>~{estimatedPayout} coins</Text>
                 </View>
               )}
 
@@ -246,7 +264,6 @@ function PlaceBetModal({
           </View>
         </View>
       </View>
-
     </Modal>
   );
 }
@@ -261,7 +278,13 @@ const modal = StyleSheet.create({
   handle: { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: spacing.md },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.text },
-  raceName: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: 2, marginBottom: spacing.md },
+  raceName: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: 2, marginBottom: 4 },
+  poolInfo: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: colors.surfaceHover, borderRadius: radius.sm,
+    paddingHorizontal: 10, paddingVertical: 5, marginBottom: spacing.md, alignSelf: 'flex-start',
+  },
+  poolText: { fontSize: fontSize.xs, color: colors.textMuted },
   label: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.textMuted, marginBottom: spacing.sm },
   empty: { color: colors.textSubtle, fontSize: fontSize.sm, textAlign: 'center', paddingVertical: spacing.md },
   horseRow: {
@@ -273,19 +296,16 @@ const modal = StyleSheet.create({
   horseLeft: { flex: 1 },
   horseTopRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap', marginBottom: 3 },
   horseName: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.text, flexShrink: 1 },
+  oddsTag: {
+    backgroundColor: colors.accent + '25', borderRadius: radius.sm,
+    paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1, borderColor: colors.accent + '60',
+  },
+  oddsTagText: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, color: colors.accent },
   statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, alignItems: 'center', marginBottom: 3 },
   statChip: { fontSize: fontSize.xs, color: colors.textMuted, backgroundColor: colors.surfaceHover, paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm },
   jockeyName: { fontSize: fontSize.xs, color: colors.textMuted },
   gradeBadge: { borderWidth: 1, borderRadius: radius.sm, paddingHorizontal: 6, paddingVertical: 2 },
   gradeText: { fontSize: fontSize.xs, fontWeight: fontWeight.bold },
-  betTypeRow: { flexDirection: 'row', gap: spacing.sm },
-  betTypeBtn: {
-    flex: 1, paddingVertical: spacing.sm, borderRadius: radius.md,
-    borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center',
-  },
-  betTypeBtnActive: { borderColor: colors.accent, backgroundColor: colors.accentDim },
-  betTypeBtnText: { fontSize: fontSize.xs, color: colors.textMuted, fontWeight: fontWeight.medium },
-  betTypeBtnTextActive: { color: colors.accent },
   amountRow: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
@@ -303,6 +323,7 @@ const modal = StyleSheet.create({
     backgroundColor: colors.successDim, borderRadius: radius.md, padding: spacing.md, marginTop: spacing.md,
   },
   payoutLabel: { color: colors.textMuted, fontSize: fontSize.sm },
+  payoutNote: { color: colors.textSubtle, fontSize: fontSize.xs, marginTop: 2 },
   payoutValue: { color: colors.success, fontSize: fontSize.lg, fontWeight: fontWeight.bold },
   placeBtn: {
     backgroundColor: colors.accent, borderRadius: radius.md,
@@ -310,10 +331,10 @@ const modal = StyleSheet.create({
   },
   placeBtnText: { fontSize: fontSize.md, fontWeight: fontWeight.bold, color: '#FFFFFF' },
   myBetsContainer: {
-    backgroundColor: '#FFFFFF', padding: spacing.md, borderRadius: radius.md,
+    backgroundColor: colors.surfaceHover, padding: spacing.md, borderRadius: radius.md,
     borderWidth: 1, borderColor: colors.border, marginBottom: spacing.md,
   },
-  myBetsTitle: { fontSize: fontSize.sm, fontWeight: fontWeight.bold, color: colors.primary, marginBottom: spacing.xs },
+  myBetsTitle: { fontSize: fontSize.sm, fontWeight: fontWeight.bold, color: colors.text, marginBottom: spacing.xs },
   myBetItem: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4, borderBottomWidth: 0.5, borderBottomColor: colors.border },
   myBetText: { fontSize: fontSize.xs, color: colors.text },
   myBetAmount: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, color: colors.gold },
@@ -325,12 +346,8 @@ const getRemainingTimeText = (scheduledTime: string | Date): string => {
   const diffMins = Math.floor(diffMs / (60 * 1000));
   const diffHours = Math.floor(diffMins / 60);
   const diffDays = Math.floor(diffHours / 24);
-  if (diffDays > 0) {
-    return `Còn ${diffDays} ngày ${diffHours % 24}g`;
-  }
-  if (diffHours > 0) {
-    return `Còn ${diffHours}g ${diffMins % 60}p`;
-  }
+  if (diffDays > 0) return `Còn ${diffDays} ngày ${diffHours % 24}g`;
+  if (diffHours > 0) return `Còn ${diffHours}g ${diffMins % 60}p`;
   return `Còn ${diffMins}p`;
 };
 
@@ -366,7 +383,13 @@ function BetCard({ bet, onCancel }: { bet: Bet; onCancel: (id: string) => void }
         </View>
         <Text style={betCard.horseName}>🐎 {(bet.horseId as any)?.name ?? '—'}</Text>
         <View style={betCard.row}>
-          <Text style={betCard.meta}>{BET_TYPE_LABEL[bet.betType]}</Text>
+          <Text style={betCard.meta}>
+            {bet.status === 'pending'
+              ? 'Chờ kết quả race...'
+              : bet.multiplier > 0
+                ? `x${bet.multiplier} (parimutuel)`
+                : 'Hoàn tiền'}
+          </Text>
           <Text style={betCard.amount}>{bet.amount} coins</Text>
         </View>
         {bet.status === 'won' && (
@@ -518,6 +541,13 @@ export function BetScreen() {
                 </View>
                 <Text style={styles.raceName} numberOfLines={1}>{item.name}</Text>
                 <Text style={styles.raceMeta}>{item.distance}m · Giải: ${item.purse?.toLocaleString()}</Text>
+
+                {/* Parimutuel info badge */}
+                <View style={styles.parimutuelBadge}>
+                  <Ionicons name="people-outline" size={12} color={colors.textMuted} />
+                  <Text style={styles.parimutuelText}>Parimutuel · Odds thực tế tính sau race</Text>
+                </View>
+
                 <TouchableOpacity
                   style={[styles.betBtn, !canBet && styles.betBtnDisabled]}
                   disabled={!canBet}
@@ -586,6 +616,12 @@ const styles = StyleSheet.create({
   raceTime: { fontSize: fontSize.xs, color: colors.textMuted },
   raceName: { fontSize: fontSize.md, fontWeight: fontWeight.bold, color: colors.text },
   raceMeta: { fontSize: fontSize.xs, color: colors.textMuted },
+  parimutuelBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: colors.surfaceHover, borderRadius: radius.sm,
+    paddingHorizontal: 8, paddingVertical: 4, alignSelf: 'flex-start',
+  },
+  parimutuelText: { fontSize: fontSize.xs, color: colors.textMuted },
   betBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
     backgroundColor: colors.accent, borderRadius: radius.md, paddingVertical: 12, marginTop: 4,

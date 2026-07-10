@@ -111,8 +111,18 @@ async function getRaceResults(req, res, next) {
   }
 }
 
+async function getRaceBettingOdds(req, res, next) {
+  try {
+    const bettingOddsService = require('../services/betting-odds.service');
+    const odds = await bettingOddsService.getRaceBettingOdds(req.params.id);
+    sendSuccess(res, odds);
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   createRace, getRaces, getRaceById, updateRace,
   cancelRace, assignReferee, updateRaceStatus, getRaceRegistrations, getRaceHorses,
-  getRaceResults, forceSimulateRace,
+  getRaceResults, forceSimulateRace, getRaceBettingOdds,
 };

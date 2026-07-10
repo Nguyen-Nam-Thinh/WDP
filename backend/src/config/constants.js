@@ -14,25 +14,12 @@ const GRADE_THRESHOLDS = {
   G1: 100,
 };
 
-// Legacy base odds — used as anchor for dynamic pool-based multipliers
-const BET_MULTIPLIERS = {
-  win: 3,
-  place: 2,
-  show: 1.5,
-};
-
-const BET_ODDS_CONFIG = {
-  baseOdds: BET_MULTIPLIERS,
-  bounds: {
-    win: [1.2, 15],
-    place: [1.1, 8],
-    show: [1.05, 5],
-  },
-  historyWeight: 0.6,
-  poolWeight: 0.4,
-  formBonusScale: 0.4,
-  upsetChance: 0.25,
-  raceSegments: 4,
+// Parimutuel betting config
+const PARIMUTUEL_CONFIG = {
+  rake: 0.10,          // 10% hệ thống giữ lại từ pool
+  minMultiplier: 1.1,  // tối thiểu x1.1 (không thể lỗ toàn bộ nếu thắng)
+  maxMultiplier: 50,   // giới hạn tối đa tránh cực đoan
+  defaultEstimate: 3,  // odds ước tính mặc định khi chưa có pool
 };
 
 const REFUND_RATES = {
@@ -149,8 +136,7 @@ module.exports = {
   POINTS_BY_GRADE,
   PRIZE_RATIO,
   GRADE_THRESHOLDS,
-  BET_MULTIPLIERS,
-  BET_ODDS_CONFIG,
+  PARIMUTUEL_CONFIG,
   REFUND_RATES,
   CUTOFFS,
   CRON_INTERVALS,

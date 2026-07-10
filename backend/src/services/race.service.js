@@ -232,7 +232,7 @@ async function getRaceHorses(raceId) {
   const horses = registrations.map((reg, index) => ({
     gateNumber: index + 1,
     registrationId: reg._id,
-    horseId: reg.horseId?._id,
+    horseId: reg.horseId?._id?.toString() ?? null,
     horseName: reg.horseId?.name,
     breed: reg.horseId?.breed,
     gender: reg.horseId?.gender,

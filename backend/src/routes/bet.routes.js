@@ -9,7 +9,6 @@ const router = Router();
 const placeBetSchema = z.object({
   raceId: z.string().min(1),
   horseId: z.string().min(1),
-  betType: z.enum(['win', 'place', 'show']),
   amount: z.number().int().min(1),
 });
 

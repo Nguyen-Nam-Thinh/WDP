@@ -1,11 +1,36 @@
 import { apiClient } from './client';
-import { Bet, BetListResponse, BetType } from '../../types';
+import { Bet, BetListResponse } from '../../types';
+
+/** Shape của 1 horse trong response getRaceOdds */
+export interface HorseOdds {
+  horseId: string;
+  horseName: string;
+  winProb: number;          // % win probability (từ AI/stats, chỉ tham khảo)
+  estimatedMultiplier: number; // odds ước tính dựa trên pool hiện tại
+  poolAmount: number;       // tổng tiền cược vào ngựa này
+  betCount: number;
+  poolShare: number;        // % pool vào ngựa này
+}
+
+/** Response của getRaceOdds */
+export interface RaceOddsResponse {
+  raceId: string;
+  totalPool: number;
+  payoutPool: number;       // totalPool × 0.9 (sau rake 10%)
+  rake: number;             // 10
+  horses: HorseOdds[];
+  updatedAt: string;
+}
 
 export const betService = {
+  /**
+   * Đặt cược vào ngựa.
+   * Parimutuel Option B: không cần betType, multiplier = 0 lúc đặt.
+   * API trả về estimatedMultiplier để hiển thị.
+   */
   place: async (data: {
     raceId: string;
     horseId: string;
-    betType: BetType;
     amount: number;
   }): Promise<Bet> => {
     const res = await apiClient.post('/bets', data);
@@ -38,7 +63,8 @@ export const betService = {
     return res.data.data;
   },
 
-  getRaceOdds: async (raceId: string): Promise<any> => {
+  /** Lấy odds ước tính của từng ngựa trong race (real-time từ pool) */
+  getRaceOdds: async (raceId: string): Promise<RaceOddsResponse> => {
     const res = await apiClient.get(`/bets/race/${raceId}/odds`);
     return res.data.data;
   },

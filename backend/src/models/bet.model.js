@@ -5,9 +5,10 @@ const betSchema = new mongoose.Schema(
     spectatorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     raceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Race', required: true },
     horseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Horse', required: true },
-    betType: { type: String, enum: ['win', 'place', 'show'], required: true },
+    // betType removed — parimutuel: chỉ 1 loại cược (đặt vào ngựa về nhất)
     amount: { type: Number, required: true, min: 1 },
-    multiplier: { type: Number, required: true },
+    // multiplier = 0 lúc đặt, tính thực sau khi race kết thúc (parimutuel)
+    multiplier: { type: Number, default: 0 },
     status: {
       type: String,
       enum: ['pending', 'won', 'lost', 'cancelled', 'refunded'],
