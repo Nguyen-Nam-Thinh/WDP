@@ -629,10 +629,18 @@ export function SpectatorDashboard() {
       toast.success(
         `Dự đoán thành công! Odds ước tính: x${displayMult} — Sẽ nhận được sau khi race kết thúc`,
       );
+      // Cập nhật myBets ngay lập tức (không cần refresh trang)
+      const newBet: Bet = {
+        ...placed,
+        raceId: selectedRace as any,
+        horseId: selectedRaceRegistrations.find((h: any) => h.horseId === selectedHorse) as any,
+      };
+      setMyBets((prev) => [newBet, ...prev]);
       setPredictionModalOpen(false);
       setSelectedHorse("");
       setBetAmount("");
-      if (activeTab === "predictions") loadMyBets();
+      // Reload để đồng bộ dữ liệu chính xác từ server
+      loadMyBets();
     } catch (err: any) {
       toast.error(err.message || "Dự đoán thất bại");
     } finally {
@@ -741,7 +749,7 @@ export function SpectatorDashboard() {
                       label: "Dự Đoán Đang Chờ",
                       value: String(
                         overview?.pendingBets ??
-                          myBets.filter((b) => b.status === "pending").length,
+                        myBets.filter((b) => b.status === "pending").length,
                       ),
                       icon: Clock,
                       cls: "bg-primary text-primary-foreground",
@@ -879,7 +887,7 @@ export function SpectatorDashboard() {
                       </button>
                     </div>
                     {(overview?.recentBets ?? myBets.slice(0, 5)).length ===
-                    0 ? (
+                      0 ? (
                       <div className="text-center py-8 text-muted-foreground text-sm">
                         Chưa có dự đoán nào
                       </div>
@@ -1467,7 +1475,7 @@ export function SpectatorDashboard() {
                                     },
                                   }}
                                 >
-                                  Xem Chi Tiết
+                                  Xem Dự Đoán của tôi
                                 </Button>
                               </div>
                             )}
@@ -1636,13 +1644,12 @@ export function SpectatorDashboard() {
                           className={`flex items-center gap-2 ${i + 1 <= depositStep ? "text-[#8F7318]" : "text-muted-foreground/60"}`}
                         >
                           <div
-                            className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${
-                              i + 1 < depositStep
-                                ? "bg-gold border-gold text-foreground"
-                                : i + 1 === depositStep
-                                  ? "border-gold text-[#8F7318]"
-                                  : "border-border text-muted-foreground/60"
-                            }`}
+                            className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${i + 1 < depositStep
+                              ? "bg-gold border-gold text-foreground"
+                              : i + 1 === depositStep
+                                ? "border-gold text-[#8F7318]"
+                                : "border-border text-muted-foreground/60"
+                              }`}
                           >
                             {i + 1 < depositStep ? (
                               <CheckCircle className="w-3.5 h-3.5" />
@@ -1786,10 +1793,12 @@ export function SpectatorDashboard() {
                       <label className="text-sm text-muted-foreground mb-2 block">
                         Số Tiền Muốn Nạp (coins)
                       </label>
+                      <div className="mb-2 flex items-center gap-1.5 text-xs text-[#8F7318] bg-gold/10 border border-gold/30 px-3 py-1.5">
+                        <span>💡</span>
+                        <span><strong>1 coin = 1.000 VND</strong> </span>
+                      </div>
                       <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">
-                          🪙
-                        </span>
+
                         <input
                           type="number"
                           value={depositAmountInput}
@@ -2114,8 +2123,8 @@ export function SpectatorDashboard() {
                     <tr>
                       <th className="text-left px-6 py-4 text-sm font-semibold text-muted-foreground">Mã Giao Dịch</th>
                       <th className="text-left px-6 py-4 text-sm font-semibold text-muted-foreground">Ngày</th>
-                      <th className="text-left px-6 py-4 text-sm font-semibold text-muted-foreground">Số Tiền</th>
-                      <th className="text-left px-6 py-4 text-sm font-semibold text-muted-foreground">Số Dư Sau</th>
+                      <th className="text-left px-6 py-4 text-sm font-semibold text-muted-foreground">Số Coin Nạp</th>
+                      <th className="text-left px-6 py-4 text-sm font-semibold text-muted-foreground">Số Tiền VND</th>
                       <th className="text-left px-6 py-4 text-sm font-semibold text-muted-foreground">Mô Tả</th>
                     </tr>
                   </thead>
@@ -2126,13 +2135,14 @@ export function SpectatorDashboard() {
                         <tr key={tx._id} className="border-t border-border hover:bg-muted/40 transition-colors">
                           <td className="px-6 py-4 text-muted-foreground font-mono text-xs">{tx._id.slice(-8).toUpperCase()}</td>
                           <td className="px-6 py-4 text-foreground">{new Date(tx.createdAt).toLocaleString('vi-VN')}</td>
-                          <td className="px-6 py-4 text-primary font-bold tabular-nums">
-                            +{tx.amount.toLocaleString('vi-VN')} coins
-                            <span className="text-xs text-muted-foreground block font-normal mt-0.5">
-                              ({(tx.amount * 1000).toLocaleString('vi-VN')} VND)
-                            </span>
+                          <td className="px-6 py-4">
+                            <span className="text-primary font-bold tabular-nums">+{tx.amount.toLocaleString('vi-VN')}</span>
+                            <span className="text-xs text-muted-foreground ml-1">coins</span>
                           </td>
-                          <td className="px-6 py-4 text-foreground tabular-nums">{tx.balanceAfter.toLocaleString('vi-VN')} coins</td>
+                          <td className="px-6 py-4">
+                            <span className="text-[#8F7318] font-bold tabular-nums">{(tx.amount * 1000).toLocaleString('vi-VN')}</span>
+                            <span className="text-xs text-muted-foreground ml-1">VND</span>
+                          </td>
                           <td className="px-6 py-4 text-muted-foreground text-sm">{tx.description || 'Nạp tiền vào ví'}</td>
                         </tr>
                       ))}
@@ -2437,15 +2447,14 @@ export function SpectatorDashboard() {
             };
             const rankBadge = (rank: number) => (
               <div
-                className={`w-12 h-12 shrink-0 flex items-center justify-center text-sm font-bold ${
-                  rank === 1
-                    ? "bg-gold text-foreground"
-                    : rank === 2
-                      ? "bg-[#9A937F] text-white"
-                      : rank === 3
-                        ? "bg-[#A85C32] text-white"
-                        : "bg-muted text-muted-foreground"
-                }`}
+                className={`w-12 h-12 shrink-0 flex items-center justify-center text-sm font-bold ${rank === 1
+                  ? "bg-gold text-foreground"
+                  : rank === 2
+                    ? "bg-[#9A937F] text-white"
+                    : rank === 3
+                      ? "bg-[#A85C32] text-white"
+                      : "bg-muted text-muted-foreground"
+                  }`}
               >
                 {rank <= 3 ? <Medal className="w-5 h-5" /> : `#${rank}`}
               </div>
@@ -2471,268 +2480,267 @@ export function SpectatorDashboard() {
 
             return (
               <>
-              <div>
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                  <div>
-                    <h2 className="font-serif text-3xl font-bold text-foreground mb-1">
-                      Bảng Xếp Hạng
-                    </h2>
-                    <p className="text-muted-foreground text-sm">
-                      Dữ liệu tích lũy toàn sự nghiệp
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                      <input
-                        type="text"
-                        placeholder="Tìm tên..."
-                        value={rankingsSearch}
-                        onChange={e => { setRankingsSearch(e.target.value); setRankingsPage(1); }}
-                        className="pl-9 pr-3 py-2 text-sm bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary w-40"
-                      />
+                <div>
+                  {/* Header */}
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                      <h2 className="font-serif text-3xl font-bold text-foreground mb-1">
+                        Bảng Xếp Hạng
+                      </h2>
+                      <p className="text-muted-foreground text-sm">
+                        Dữ liệu tích lũy toàn sự nghiệp
+                      </p>
                     </div>
-                    <div className="flex gap-2 p-1 bg-card border border-border">
-                      {(["horses", "jockeys", "owners"] as const).map((t) => (
-                        <button
-                          type="button"
-                          key={t}
-                          onClick={() => { setRankingType(t); setRankingsPage(1); setRankingsSearch(''); }}
-                          className={`px-4 py-2 text-sm font-semibold transition-all ${
-                            rankingType === t
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                        <input
+                          type="text"
+                          placeholder="Tìm tên..."
+                          value={rankingsSearch}
+                          onChange={e => { setRankingsSearch(e.target.value); setRankingsPage(1); }}
+                          className="pl-9 pr-3 py-2 text-sm bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary w-40"
+                        />
+                      </div>
+                      <div className="flex gap-2 p-1 bg-card border border-border">
+                        {(["horses", "jockeys", "owners"] as const).map((t) => (
+                          <button
+                            type="button"
+                            key={t}
+                            onClick={() => { setRankingType(t); setRankingsPage(1); setRankingsSearch(''); }}
+                            className={`px-4 py-2 text-sm font-semibold transition-all ${rankingType === t
                               ? "bg-primary text-primary-foreground"
                               : "text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          {t === "horses" ? "🐎 Ngựa" : t === "jockeys" ? "🏇 Kỵ Sĩ" : "👑 Chủ Ngựa"}
-                        </button>
-                      ))}
+                              }`}
+                          >
+                            {t === "horses" ? "🐎 Ngựa" : t === "jockeys" ? "🏇 Kỵ Sĩ" : "👑 Chủ Ngựa"}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
+
+                  {loadingRankings ? (
+                    <div className="flex justify-center py-16">
+                      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  ) : filteredRankings.length === 0 ? (
+                    <div className="bg-card border border-border p-12 text-center">
+                      <Trophy className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
+                      <p className="text-muted-foreground">
+                        Chưa có dữ liệu xếp hạng
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="bg-card border border-border overflow-hidden">
+                      <div className="overflow-x-auto">
+                        {rankingType === "horses" && (
+                          <table className="w-full">
+                            <thead className="bg-muted/50">
+                              <tr>
+                                <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">
+                                  Hạng
+                                </th>
+                                <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">
+                                  Ngựa
+                                </th>
+                                <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">
+                                  Grade
+                                </th>
+                                <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">
+                                  Chủ
+                                </th>
+                                <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">
+                                  Điểm
+                                </th>
+                                <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">
+                                  Thắng
+                                </th>
+                                <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">
+                                  Tỷ Lệ
+                                </th>
+                                <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">
+                                  Coins
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {(pagedRankings as typeof horseRankings).map((h) => (
+                                <tr
+                                  key={h._id}
+                                  className="border-t border-border hover:bg-muted/40 transition-colors"
+                                >
+                                  <td className="px-5 py-4">
+                                    {rankBadge(h.rank)}
+                                  </td>
+                                  <td className="px-5 py-4 text-foreground font-medium">
+                                    {h.name}
+                                  </td>
+                                  <td className="px-5 py-4">
+                                    <span
+                                      className={`text-xs px-2 py-0.5 border font-semibold uppercase tracking-wider ${gradeColor[h.currentGrade] || gradeColor.Maiden}`}
+                                    >
+                                      {h.currentGrade}
+                                    </span>
+                                  </td>
+                                  <td className="px-5 py-4 text-sm text-muted-foreground">
+                                    {h.owner}
+                                  </td>
+                                  <td className="px-5 py-4 text-right font-medium tabular-nums">
+                                    {h.totalPoints.toLocaleString()}
+                                  </td>
+                                  <td className="px-5 py-4 text-right font-medium text-[#8F7318] tabular-nums">
+                                    {h.winCount}
+                                  </td>
+                                  <td className="px-5 py-4 text-right">
+                                    <div className="font-medium text-primary tabular-nums">
+                                      {h.winRate}%
+                                    </div>
+                                    <div className="w-16 bg-muted h-1.5 mt-1 ml-auto">
+                                      {winBar(h.winRate)}
+                                    </div>
+                                  </td>
+                                  <td className="px-5 py-4 text-right font-medium text-secondary tabular-nums">
+                                    {h.totalEarnings.toLocaleString('vi-VN')} coins
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+
+                        {rankingType === "jockeys" && (
+                          <table className="w-full">
+                            <thead className="bg-muted/50">
+                              <tr>
+                                <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">
+                                  Hạng
+                                </th>
+                                <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">
+                                  Kỵ Sĩ
+                                </th>
+                                <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">
+                                  Kinh Nghiệm
+                                </th>
+                                <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">
+                                  Cuộc Đua
+                                </th>
+                                <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">
+                                  Thắng
+                                </th>
+                                <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">
+                                  Tỷ Lệ
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {(pagedRankings as typeof jockeyRankings).map((j) => (
+                                <tr
+                                  key={j._id}
+                                  className="border-t border-border hover:bg-muted/40 transition-colors"
+                                >
+                                  <td className="px-5 py-4">
+                                    {rankBadge(j.rank)}
+                                  </td>
+                                  <td className="px-5 py-4 text-foreground font-medium">
+                                    {j.name}
+                                  </td>
+                                  <td className="px-5 py-4 text-sm text-muted-foreground">
+                                    {j.experienceYears} năm
+                                  </td>
+                                  <td className="px-5 py-4 text-right font-medium tabular-nums">
+                                    {j.raceCount}
+                                  </td>
+                                  <td className="px-5 py-4 text-right font-medium text-[#8F7318] tabular-nums">
+                                    {j.winCount}
+                                  </td>
+                                  <td className="px-5 py-4 text-right">
+                                    <div className="font-medium text-primary tabular-nums">
+                                      {j.winRate}%
+                                    </div>
+                                    <div className="w-16 bg-muted h-1.5 mt-1 ml-auto">
+                                      {winBar(j.winRate)}
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+
+                        {rankingType === "owners" && (
+                          <table className="w-full">
+                            <thead className="bg-muted/50">
+                              <tr>
+                                <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">
+                                  Hạng
+                                </th>
+                                <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">
+                                  Chủ Ngựa
+                                </th>
+                                <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">
+                                  Ngựa
+                                </th>
+                                <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">
+                                  Cuộc Đua
+                                </th>
+                                <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">
+                                  Thắng
+                                </th>
+                                <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">
+                                  Tỷ Lệ
+                                </th>
+                                <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">
+                                  Coins
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {(pagedRankings as typeof ownerRankings).map((o) => (
+                                <tr
+                                  key={o._id}
+                                  className="border-t border-border hover:bg-muted/40 transition-colors"
+                                >
+                                  <td className="px-5 py-4">
+                                    {rankBadge(o.rank)}
+                                  </td>
+                                  <td className="px-5 py-4 text-foreground font-medium">
+                                    {o.name}
+                                  </td>
+                                  <td className="px-5 py-4 text-right font-medium tabular-nums">
+                                    {o.totalHorses}
+                                  </td>
+                                  <td className="px-5 py-4 text-right font-medium tabular-nums">
+                                    {o.totalRaces}
+                                  </td>
+                                  <td className="px-5 py-4 text-right font-medium text-[#8F7318] tabular-nums">
+                                    {o.totalWins}
+                                  </td>
+                                  <td className="px-5 py-4 text-right">
+                                    <div className="font-medium text-primary tabular-nums">
+                                      {o.winRate}%
+                                    </div>
+                                    <div className="w-16 bg-muted h-1.5 mt-1 ml-auto">
+                                      {winBar(o.winRate)}
+                                    </div>
+                                  </td>
+                                  <td className="px-5 py-4 text-right font-medium text-secondary tabular-nums">
+                                    {o.totalEarnings.toLocaleString('vi-VN')} coins
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
-
-                {loadingRankings ? (
-                  <div className="flex justify-center py-16">
-                    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  </div>
-                ) : filteredRankings.length === 0 ? (
-                  <div className="bg-card border border-border p-12 text-center">
-                    <Trophy className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
-                    <p className="text-muted-foreground">
-                      Chưa có dữ liệu xếp hạng
-                    </p>
-                  </div>
-                ) : (
-                  <div className="bg-card border border-border overflow-hidden">
-                    <div className="overflow-x-auto">
-                      {rankingType === "horses" && (
-                        <table className="w-full">
-                          <thead className="bg-muted/50">
-                            <tr>
-                              <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">
-                                Hạng
-                              </th>
-                              <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">
-                                Ngựa
-                              </th>
-                              <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">
-                                Grade
-                              </th>
-                              <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">
-                                Chủ
-                              </th>
-                              <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">
-                                Điểm
-                              </th>
-                              <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">
-                                Thắng
-                              </th>
-                              <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">
-                                Tỷ Lệ
-                              </th>
-                              <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">
-                                Coins
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {(pagedRankings as typeof horseRankings).map((h) => (
-                              <tr
-                                key={h._id}
-                                className="border-t border-border hover:bg-muted/40 transition-colors"
-                              >
-                                <td className="px-5 py-4">
-                                  {rankBadge(h.rank)}
-                                </td>
-                                <td className="px-5 py-4 text-foreground font-medium">
-                                  {h.name}
-                                </td>
-                                <td className="px-5 py-4">
-                                  <span
-                                    className={`text-xs px-2 py-0.5 border font-semibold uppercase tracking-wider ${gradeColor[h.currentGrade] || gradeColor.Maiden}`}
-                                  >
-                                    {h.currentGrade}
-                                  </span>
-                                </td>
-                                <td className="px-5 py-4 text-sm text-muted-foreground">
-                                  {h.owner}
-                                </td>
-                                <td className="px-5 py-4 text-right font-medium tabular-nums">
-                                  {h.totalPoints.toLocaleString()}
-                                </td>
-                                <td className="px-5 py-4 text-right font-medium text-[#8F7318] tabular-nums">
-                                  {h.winCount}
-                                </td>
-                                <td className="px-5 py-4 text-right">
-                                  <div className="font-medium text-primary tabular-nums">
-                                    {h.winRate}%
-                                  </div>
-                                  <div className="w-16 bg-muted h-1.5 mt-1 ml-auto">
-                                    {winBar(h.winRate)}
-                                  </div>
-                                </td>
-                                <td className="px-5 py-4 text-right font-medium text-secondary tabular-nums">
-                                  {h.totalEarnings.toLocaleString('vi-VN')} coins
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      )}
-
-                      {rankingType === "jockeys" && (
-                        <table className="w-full">
-                          <thead className="bg-muted/50">
-                            <tr>
-                              <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">
-                                Hạng
-                              </th>
-                              <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">
-                                Kỵ Sĩ
-                              </th>
-                              <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">
-                                Kinh Nghiệm
-                              </th>
-                              <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">
-                                Cuộc Đua
-                              </th>
-                              <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">
-                                Thắng
-                              </th>
-                              <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">
-                                Tỷ Lệ
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {(pagedRankings as typeof jockeyRankings).map((j) => (
-                              <tr
-                                key={j._id}
-                                className="border-t border-border hover:bg-muted/40 transition-colors"
-                              >
-                                <td className="px-5 py-4">
-                                  {rankBadge(j.rank)}
-                                </td>
-                                <td className="px-5 py-4 text-foreground font-medium">
-                                  {j.name}
-                                </td>
-                                <td className="px-5 py-4 text-sm text-muted-foreground">
-                                  {j.experienceYears} năm
-                                </td>
-                                <td className="px-5 py-4 text-right font-medium tabular-nums">
-                                  {j.raceCount}
-                                </td>
-                                <td className="px-5 py-4 text-right font-medium text-[#8F7318] tabular-nums">
-                                  {j.winCount}
-                                </td>
-                                <td className="px-5 py-4 text-right">
-                                  <div className="font-medium text-primary tabular-nums">
-                                    {j.winRate}%
-                                  </div>
-                                  <div className="w-16 bg-muted h-1.5 mt-1 ml-auto">
-                                    {winBar(j.winRate)}
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      )}
-
-                      {rankingType === "owners" && (
-                        <table className="w-full">
-                          <thead className="bg-muted/50">
-                            <tr>
-                              <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">
-                                Hạng
-                              </th>
-                              <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">
-                                Chủ Ngựa
-                              </th>
-                              <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">
-                                Ngựa
-                              </th>
-                              <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">
-                                Cuộc Đua
-                              </th>
-                              <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">
-                                Thắng
-                              </th>
-                              <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">
-                                Tỷ Lệ
-                              </th>
-                              <th className="text-right px-5 py-4 text-sm font-semibold text-muted-foreground">
-                                Coins
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {(pagedRankings as typeof ownerRankings).map((o) => (
-                              <tr
-                                key={o._id}
-                                className="border-t border-border hover:bg-muted/40 transition-colors"
-                              >
-                                <td className="px-5 py-4">
-                                  {rankBadge(o.rank)}
-                                </td>
-                                <td className="px-5 py-4 text-foreground font-medium">
-                                  {o.name}
-                                </td>
-                                <td className="px-5 py-4 text-right font-medium tabular-nums">
-                                  {o.totalHorses}
-                                </td>
-                                <td className="px-5 py-4 text-right font-medium tabular-nums">
-                                  {o.totalRaces}
-                                </td>
-                                <td className="px-5 py-4 text-right font-medium text-[#8F7318] tabular-nums">
-                                  {o.totalWins}
-                                </td>
-                                <td className="px-5 py-4 text-right">
-                                  <div className="font-medium text-primary tabular-nums">
-                                    {o.winRate}%
-                                  </div>
-                                  <div className="w-16 bg-muted h-1.5 mt-1 ml-auto">
-                                    {winBar(o.winRate)}
-                                  </div>
-                                </td>
-                                <td className="px-5 py-4 text-right font-medium text-secondary tabular-nums">
-                                  {o.totalEarnings.toLocaleString('vi-VN')} coins
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <Pagination
-                page={rankingsPage}
-                totalPages={Math.ceil(filteredRankings.length / PAGE_SIZE)}
-                onPageChange={setRankingsPage}
-              />
+                <Pagination
+                  page={rankingsPage}
+                  totalPages={Math.ceil(filteredRankings.length / PAGE_SIZE)}
+                  onPageChange={setRankingsPage}
+                />
               </>
             );
           })()}
@@ -2792,27 +2800,25 @@ export function SpectatorDashboard() {
                   return (
                     <div
                       key={entry._id}
-                      className={`flex items-center gap-4 p-4 bg-card border transition-all ${
-                        isMe
-                          ? "border-gold bg-gold/5"
-                          : entry.rank <= 3
-                            ? "border-gold/50"
-                            : "border-border hover:border-primary"
-                      }`}
+                      className={`flex items-center gap-4 p-4 bg-card border transition-all ${isMe
+                        ? "border-gold bg-gold/5"
+                        : entry.rank <= 3
+                          ? "border-gold/50"
+                          : "border-border hover:border-primary"
+                        }`}
                     >
                       {/* Rank badge */}
                       <div
-                        className={`w-12 h-12 shrink-0 flex items-center justify-center text-sm font-bold ${
-                          entry.rank === 1
-                            ? "bg-gold text-foreground"
-                            : entry.rank === 2
-                              ? "bg-[#9A937F] text-white"
-                              : entry.rank === 3
-                                ? "bg-[#A85C32] text-white"
-                                : isMe
-                                  ? "bg-gold/20 text-[#8F7318] border border-gold/50"
-                                  : "bg-muted text-muted-foreground"
-                        }`}
+                        className={`w-12 h-12 shrink-0 flex items-center justify-center text-sm font-bold ${entry.rank === 1
+                          ? "bg-gold text-foreground"
+                          : entry.rank === 2
+                            ? "bg-[#9A937F] text-white"
+                            : entry.rank === 3
+                              ? "bg-[#A85C32] text-white"
+                              : isMe
+                                ? "bg-gold/20 text-[#8F7318] border border-gold/50"
+                                : "bg-muted text-muted-foreground"
+                          }`}
                       >
                         {entry.rank <= 3 ? (
                           <Medal className="w-5 h-5" />
@@ -2824,11 +2830,10 @@ export function SpectatorDashboard() {
                       {/* Avatar + name */}
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div
-                          className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
-                            isMe
-                              ? "bg-gold text-foreground"
-                              : "bg-primary text-primary-foreground"
-                          }`}
+                          className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${isMe
+                            ? "bg-gold text-foreground"
+                            : "bg-primary text-primary-foreground"
+                            }`}
                         >
                           {entry.name.charAt(0).toUpperCase()}
                         </div>
@@ -3048,7 +3053,7 @@ export function SpectatorDashboard() {
                               {new Date(redemption.createdAt).toLocaleString('vi-VN')}
                             </div>
                           </div>
-                          
+
                           <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
                             {isPhysical ? "Mã Nhận Quà:" : "Mã Voucher:"}
                           </div>
@@ -3074,8 +3079,8 @@ export function SpectatorDashboard() {
                           </div>
 
                           <div className="text-[10px] text-muted-foreground italic">
-                            {isPhysical 
-                              ? "⚡ Vui lòng trình mã này cho ban tổ chức tại quầy để nhận quà vật lý." 
+                            {isPhysical
+                              ? "⚡ Vui lòng trình mã này cho ban tổ chức tại quầy để nhận quà vật lý."
                               : "⚡ Sử dụng mã này khi mua sắm để được áp dụng giảm giá."
                             }
                           </div>
@@ -3178,26 +3183,26 @@ export function SpectatorDashboard() {
                               {[...raceBettingOdds.horses]
                                 .sort((a, b) => (horseIndexMap.get(normalizeHorseId(a.horseId)) ?? 999) - (horseIndexMap.get(normalizeHorseId(b.horseId)) ?? 999))
                                 .map((horse) => {
-                                const hIdx = horseIndexMap.get(normalizeHorseId(horse.horseId));
-                                const label = hIdx !== undefined ? `Ngựa số ${hIdx + 1}` : horse.horseName;
-                                return (
-                                  <tr
-                                    key={horse.horseId}
-                                    className={`border-t border-border ${selectedHorse === horse.horseId ? "bg-gold/10" : ""}`}
-                                  >
-                                    <td className="px-3 py-2 font-medium text-foreground">{label}</td>
-                                    <td className="px-2 py-2 text-right">
-                                      <span className="text-[#8F7318] font-bold">{horse.estimatedMultiplier}x</span>
-                                    </td>
-                                    <td className="px-2 py-2 text-right tabular-nums text-muted-foreground">
-                                      {horse.poolAmount.toLocaleString("vi-VN")} <span className="text-[10px] opacity-70">coins</span>
-                                    </td>
-                                    <td className="px-2 py-2 text-right tabular-nums text-muted-foreground">
-                                      {horse.poolShare}%
-                                    </td>
-                                  </tr>
-                                );
-                              })}
+                                  const hIdx = horseIndexMap.get(normalizeHorseId(horse.horseId));
+                                  const label = hIdx !== undefined ? `Ngựa số ${hIdx + 1}` : horse.horseName;
+                                  return (
+                                    <tr
+                                      key={horse.horseId}
+                                      className={`border-t border-border ${selectedHorse === horse.horseId ? "bg-gold/10" : ""}`}
+                                    >
+                                      <td className="px-3 py-2 font-medium text-foreground">{label}</td>
+                                      <td className="px-2 py-2 text-right">
+                                        <span className="text-[#8F7318] font-bold">{horse.estimatedMultiplier}x</span>
+                                      </td>
+                                      <td className="px-2 py-2 text-right tabular-nums text-muted-foreground">
+                                        {horse.poolAmount.toLocaleString("vi-VN")} <span className="text-[10px] opacity-70">coins</span>
+                                      </td>
+                                      <td className="px-2 py-2 text-right tabular-nums text-muted-foreground">
+                                        {horse.poolShare}%
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
                             </tbody>
                           </table>
                           <div className="px-3 py-2 bg-muted/30 border-t border-border text-[11px] text-muted-foreground flex justify-between">
@@ -3665,15 +3670,14 @@ export function SpectatorDashboard() {
                           <div className="text-xs text-muted-foreground text-right">Số coin dự đoán</div>
                           <div className="font-bold text-[#8F7318] text-base">{bet.amount?.toLocaleString()} coins</div>
                         </div>
-                        <span className={`text-xs font-black px-2.5 py-1 uppercase rounded ${
-                          bet.status === "won" ? "bg-primary/10 text-primary" :
+                        <span className={`text-xs font-black px-2.5 py-1 uppercase rounded ${bet.status === "won" ? "bg-primary/10 text-primary" :
                           bet.status === "lost" ? "bg-destructive/10 text-[#8C2F1B]" :
-                          bet.status === "cancelled" ? "bg-muted text-muted-foreground" : "bg-warning/10 text-[#8F7318]"
-                        }`}>
+                            bet.status === "cancelled" ? "bg-muted text-muted-foreground" : "bg-warning/10 text-[#8F7318]"
+                          }`}>
                           {bet.status === "won" ? "Thắng" :
-                           bet.status === "lost" ? "Thua" :
-                           bet.status === "cancelled" ? "Đã Hủy" :
-                           bet.status === "refunded" ? "Hoàn Tiền" : "Đang Chờ"}
+                            bet.status === "lost" ? "Thua" :
+                              bet.status === "cancelled" ? "Đã Hủy" :
+                                bet.status === "refunded" ? "Hoàn Tiền" : "Đang Chờ"}
                         </span>
                       </div>
                     </div>

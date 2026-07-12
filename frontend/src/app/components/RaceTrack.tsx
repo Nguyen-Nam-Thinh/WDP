@@ -277,7 +277,7 @@ function LanesTrack({
 
               {/* Gate number + name */}
               <div className="shrink-0 w-[110px] flex items-center gap-1.5 min-w-0">
-                <span className="text-sm leading-none" style={{ filter: horse.isMyBet ? 'drop-shadow(0 0 4px #FFDE42)' : undefined }}>🐎</span>
+                <span className="text-sm leading-none" style={{ filter: horse.isMyBet ? 'drop-shadow(0 0 4px #FFDE42)' : undefined, transform: 'scaleX(-1)', display: 'inline-block' }}>🐎</span>
                 <span
                   className={`text-[11px] truncate font-medium ${horse.isMyBet ? 'text-[#FFDE42]' : isTop3 ? 'text-white' : 'text-slate-400'}`}
                 >
@@ -297,10 +297,21 @@ function LanesTrack({
                     boxShadow: isTop3 ? `0 0 6px ${color}88` : undefined,
                   }}
                 >
-                  {/* Horse emoji at tip of bar */}
+                  {/* Horse emoji at tip of bar — faces right */}
                   <span
-                    className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 text-[13px] leading-none select-none pointer-events-none"
-                    style={{ filter: horse.isMyBet ? 'drop-shadow(0 0 5px #FFDE42)' : undefined }}
+                    style={{
+                      position: 'absolute',
+                      right: 0,
+                      top: '50%',
+                      transform: 'scaleX(-1) translateX(50%) translateY(-50%)',
+                      transformOrigin: 'center',
+                      fontSize: '13px',
+                      lineHeight: 1,
+                      userSelect: 'none',
+                      pointerEvents: 'none',
+                      display: 'inline-block',
+                      filter: horse.isMyBet ? 'drop-shadow(0 0 5px #FFDE42)' : undefined,
+                    }}
                   >
                     🐎
                   </span>
