@@ -8,6 +8,7 @@ const redemptionSchema = new Schema(
     coinsSpent: { type: Number, required: true, min: 0 },
     status: { type: String, enum: ['pending', 'completed', 'cancelled'], default: 'completed' },
     voucherCode: { type: String },
+    isUsed: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

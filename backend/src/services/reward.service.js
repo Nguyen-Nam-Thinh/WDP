@@ -18,8 +18,7 @@ async function seedRewards() {
   try {
     const count = await Reward.countDocuments();
     const hasMissingType = await Reward.findOne({ type: { $exists: false } });
-    const hasOldCoinsFormat = await Reward.findOne({ coinsRequired: { $lt: 1000 } });
-    if (count === 0 || hasMissingType || hasOldCoinsFormat) {
+    if (count === 0 || hasMissingType) {
       await Reward.deleteMany({});
       const initialRewards = [
         {
@@ -90,6 +89,13 @@ async function redeemReward(userId, rewardId) {
     if (!reward.isActive) throw new AppError(400, 'Phần thưởng này hiện không khả dụng');
     if (reward.stock <= 0) throw new AppError(400, 'Phần thưởng này đã hết hàng');
 
+    if (reward.maxPerUser > 0) {
+      const pastCount = await Redemption.countDocuments({ userId, rewardId }).session(session);
+      if (pastCount >= reward.maxPerUser) {
+        throw new AppError(400, `Bạn chỉ được đổi phần thưởng này tối đa ${reward.maxPerUser} lần`);
+      }
+    }
+
     const wallet = await Wallet.findOne({ userId }).session(session);
     if (!wallet) throw new AppError(404, 'Không tìm thấy ví của bạn');
     
@@ -114,7 +120,26 @@ async function redeemReward(userId, rewardId) {
     reward.stock -= 1;
     await reward.save({ session });
 
-    const voucherCode = generateVoucherCode();
+    let voucherCode = null;
+    let isUsed = false;
+
+    if (reward.voucherType === 'coin_exchange') {
+      // Add coins directly to wallet
+      const receiveCoins = reward.exchangeReceiveCoins || 0;
+      await walletService.creditWallet(
+        wallet._id,
+        userId,
+        receiveCoins,
+        'reward_redeem',
+        `Nhận coin từ gói: ${reward.name}`,
+        reward._id,
+        'Reward',
+        session
+      );
+      isUsed = true; // no code needed to be entered later
+    } else if (reward.type === 'voucher') {
+      voucherCode = generateVoucherCode();
+    }
 
     // Create redemption record
     const [redemption] = await Redemption.create(
@@ -123,7 +148,8 @@ async function redeemReward(userId, rewardId) {
         rewardId,
         coinsSpent: cost,
         status: 'completed',
-        voucherCode
+        voucherCode,
+        isUsed
       }],
       { session }
     );

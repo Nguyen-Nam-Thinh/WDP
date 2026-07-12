@@ -16,6 +16,7 @@ const betSchema = new mongoose.Schema(
     },
     payoutAmount: { type: Number, default: 0, min: 0 },
     settledAt: { type: Date, default: null },
+    voucherId: { type: mongoose.Schema.Types.ObjectId, ref: 'Redemption', default: null },
   },
   { timestamps: true },
 );

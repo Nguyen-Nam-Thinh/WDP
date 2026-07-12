@@ -290,11 +290,11 @@ function RaceDialog({ open, editing, tournaments, onClose, onSaved }: any) {
             <input type="number" value={form.maxCapacity} onChange={e => setF('maxCapacity', e.target.value)} className="w-full rounded-md border border-slate-300 bg-white py-2 px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-slate-700">Thưởng ($)</label>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-700">Thưởng (coin)</label>
             <input type="number" value={form.purse} onChange={e => setF('purse', e.target.value)} className="w-full rounded-md border border-slate-300 bg-white py-2 px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-slate-700">Phí ĐK ($)</label>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-700">Phí ĐK (coin)</label>
             <input type="number" value={form.registrationFee} onChange={e => setF('registrationFee', e.target.value)} className="w-full rounded-md border border-slate-300 bg-white py-2 px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
           </div>
         </div>

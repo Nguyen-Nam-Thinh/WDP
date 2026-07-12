@@ -22,6 +22,11 @@ const PARIMUTUEL_CONFIG = {
   defaultEstimate: 3,  // odds ước tính mặc định khi chưa có pool
 };
 
+const BET_ODDS_CONFIG = {
+  upsetChance: 0.15,
+  raceSegments: 4,
+};
+
 const REFUND_RATES = {
   ownerCancel: 0.4,
   disqualifyOwner: 0.7,
@@ -137,6 +142,7 @@ module.exports = {
   PRIZE_RATIO,
   GRADE_THRESHOLDS,
   PARIMUTUEL_CONFIG,
+  BET_ODDS_CONFIG,
   REFUND_RATES,
   CUTOFFS,
   CRON_INTERVALS,

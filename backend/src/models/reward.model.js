@@ -10,6 +10,10 @@ const rewardSchema = new Schema(
     stock: { type: Number, required: true, min: 0, default: 10 },
     isActive: { type: Boolean, default: true },
     type: { type: String, enum: ['voucher', 'physical'], default: 'voucher' },
+    voucherType: { type: String, enum: ['external', 'bet_multiplier', 'coin_exchange'], default: 'external' },
+    rewardMultiplier: { type: Number },
+    exchangeReceiveCoins: { type: Number },
+    maxPerUser: { type: Number, default: 0 },
   },
   { timestamps: true },
 );

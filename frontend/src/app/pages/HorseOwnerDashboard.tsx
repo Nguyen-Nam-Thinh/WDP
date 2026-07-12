@@ -3656,6 +3656,7 @@ export function HorseOwnerDashboard() {
                           sx: {
                             bgcolor: "#FFFFFF",
                             border: "1px solid #E3DCCB",
+                            maxHeight: 250,
                             "& .MuiMenuItem-root": {
                               color: "#23201A",
                               "&:hover": { bgcolor: "rgba(35,32,26,0.05)" },

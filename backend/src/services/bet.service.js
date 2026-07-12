@@ -28,7 +28,7 @@ function roundOdds(value) {
  * Đặt cược vào 1 ngựa trong race.
  * Parimutuel Option B: multiplier = 0 lúc đặt, tính thực khi settle.
  */
-async function placeBet(spectatorId, { raceId, horseId, amount }) {
+async function placeBet(spectatorId, { raceId, horseId, amount, voucherCode }) {
   const race = await Race.findById(raceId);
   if (!race) throw new AppError(404, 'Không tìm thấy cuộc đua');
   if (!BETTABLE_STATUSES.includes(race.status)) {
@@ -64,9 +64,32 @@ async function placeBet(spectatorId, { raceId, horseId, amount }) {
       null, 'Race', session,
     );
 
+    let voucherId = null;
+    if (voucherCode) {
+      const { Redemption } = require('../models/redemption.model');
+      const redemption = await Redemption.findOne({
+        voucherCode,
+        userId: spectatorId,
+        isUsed: false,
+        status: 'completed'
+      }).populate('rewardId').session(session);
+
+      if (!redemption) {
+        throw new AppError(400, 'Mã Voucher không hợp lệ hoặc đã được sử dụng');
+      }
+
+      if (redemption.rewardId.voucherType !== 'bet_multiplier') {
+        throw new AppError(400, 'Voucher này không thể áp dụng cho dự đoán');
+      }
+
+      redemption.isUsed = true;
+      await redemption.save({ session });
+      voucherId = redemption._id;
+    }
+
     // multiplier = 0: sẽ được cập nhật thực khi race kết thúc
     [bet] = await Bet.create(
-      [{ spectatorId, raceId, horseId, amount, multiplier: 0 }],
+      [{ spectatorId, raceId, horseId, amount, multiplier: 0, voucherId }],
       { session },
     );
 
@@ -158,6 +181,11 @@ async function cancelBet(betId, spectatorId) {
     bet.status = 'cancelled';
     await bet.save({ session });
 
+    if (bet.voucherId) {
+      const { Redemption } = require('../models/redemption.model');
+      await Redemption.findByIdAndUpdate(bet.voucherId, { $set: { isUsed: false } }, { session });
+    }
+
     await session.commitTransaction();
   } catch (err) {
     await session.abortTransaction();
@@ -211,7 +239,7 @@ async function settleBets(raceId) {
   const winnerResult = results.find((r) => r.position === 1);
   if (!winnerResult) throw new AppError(400, 'Không tìm được ngựa về nhất');
 
-  const pendingBets = await Bet.find({ raceId, status: 'pending' });
+  const pendingBets = await Bet.find({ raceId, status: 'pending' }).populate({ path: 'voucherId', populate: { path: 'rewardId' } });
   if (pendingBets.length === 0) return { settled: 0, message: 'Không có dự đoán chờ thanh toán' };
 
   // Tính pool
@@ -244,6 +272,11 @@ async function settleBets(raceId) {
         bet.status = 'refunded';
         bet.settledAt = new Date();
         await bet.save({ session });
+
+        if (bet.voucherId) {
+          const { Redemption } = require('../models/redemption.model');
+          await Redemption.findByIdAndUpdate(bet.voucherId._id, { $set: { isUsed: false } }, { session });
+        }
       }
     } else {
       // Tính multiplier thực
@@ -253,7 +286,13 @@ async function settleBets(raceId) {
         const isWinner = bet.horseId.toString() === winnerHorseId;
 
         if (isWinner) {
-          const payout = Math.floor((bet.amount / amountOnWinner) * payoutPool);
+          let payout = Math.floor((bet.amount / amountOnWinner) * payoutPool);
+          
+          if (bet.voucherId && bet.voucherId.rewardId && bet.voucherId.rewardId.voucherType === 'bet_multiplier') {
+            const multiplier = bet.voucherId.rewardId.rewardMultiplier || 0;
+            payout = Math.floor(payout * (1 + multiplier));
+          }
+
           const wallet = await Wallet.findOne({ userId: bet.spectatorId }).session(session);
           if (wallet) {
             await walletService.creditWallet(
@@ -301,7 +340,9 @@ async function settleBets(raceId) {
  * positionMap: { [horseId]: position }
  */
 async function settleBetsWithSession(raceId, positionMap, raceName, session) {
-  const pendingBets = await Bet.find({ raceId, status: 'pending' }).session(session);
+  const pendingBets = await Bet.find({ raceId, status: 'pending' })
+    .populate({ path: 'voucherId', populate: { path: 'rewardId' } })
+    .session(session);
   if (!pendingBets.length) return 0;
 
   // Tìm ngựa về nhất
@@ -332,6 +373,11 @@ async function settleBetsWithSession(raceId, positionMap, raceName, session) {
       bet.status = 'refunded';
       bet.settledAt = new Date();
       await bet.save({ session });
+
+      if (bet.voucherId) {
+        const { Redemption } = require('../models/redemption.model');
+        await Redemption.findByIdAndUpdate(bet.voucherId._id, { $set: { isUsed: false } }, { session });
+      }
     }
     return pendingBets.length;
   }
@@ -342,7 +388,13 @@ async function settleBetsWithSession(raceId, positionMap, raceName, session) {
     const isWinner = winnerHorseId && bet.horseId.toString() === winnerHorseId;
 
     if (isWinner) {
-      const payout = Math.floor((bet.amount / amountOnWinner) * payoutPool);
+      let payout = Math.floor((bet.amount / amountOnWinner) * payoutPool);
+      
+      if (bet.voucherId && bet.voucherId.rewardId && bet.voucherId.rewardId.voucherType === 'bet_multiplier') {
+        const multiplier = bet.voucherId.rewardId.rewardMultiplier || 0;
+        payout = Math.floor(payout * (1 + multiplier));
+      }
+
       const wallet = await Wallet.findOne({ userId: bet.spectatorId }).session(session);
       if (wallet) {
         await walletService.creditWallet(
@@ -383,6 +435,11 @@ async function refundRaceBets(raceId, session) {
     bet.status = 'refunded';
     bet.settledAt = new Date();
     await bet.save({ session });
+
+    if (bet.voucherId) {
+      const { Redemption } = require('../models/redemption.model');
+      await Redemption.findByIdAndUpdate(bet.voucherId, { $set: { isUsed: false } }, { session });
+    }
   }
   return pendingBets.length;
 }

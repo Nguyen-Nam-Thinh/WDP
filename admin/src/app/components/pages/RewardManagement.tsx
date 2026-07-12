@@ -46,6 +46,10 @@ export default function RewardManagement() {
   const [formStock, setFormStock] = useState(10);
   const [formIsActive, setFormIsActive] = useState(true);
   const [formType, setFormType] = useState<'voucher' | 'physical'>('voucher');
+  const [formVoucherType, setFormVoucherType] = useState<'external' | 'bet_multiplier' | 'coin_exchange'>('external');
+  const [formRewardMultiplier, setFormRewardMultiplier] = useState(0);
+  const [formExchangeReceiveCoins, setFormExchangeReceiveCoins] = useState(0);
+  const [formMaxPerUser, setFormMaxPerUser] = useState(0);
 
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -102,6 +106,10 @@ export default function RewardManagement() {
     setFormStock(50);
     setFormIsActive(true);
     setFormType('voucher');
+    setFormVoucherType('external');
+    setFormRewardMultiplier(0);
+    setFormExchangeReceiveCoins(0);
+    setFormMaxPerUser(0);
     setOpenDialog(true);
   };
 
@@ -115,6 +123,10 @@ export default function RewardManagement() {
     setFormStock(reward.stock);
     setFormIsActive(reward.isActive);
     setFormType(reward.type);
+    setFormVoucherType(reward.voucherType || 'external');
+    setFormRewardMultiplier(reward.rewardMultiplier || 0);
+    setFormExchangeReceiveCoins(reward.exchangeReceiveCoins || 0);
+    setFormMaxPerUser(reward.maxPerUser || 0);
     setOpenDialog(true);
   };
 
@@ -156,6 +168,10 @@ export default function RewardManagement() {
       stock: formStock,
       isActive: formIsActive,
       type: formType,
+      voucherType: formType === 'voucher' ? formVoucherType : 'external',
+      rewardMultiplier: formType === 'voucher' && formVoucherType === 'bet_multiplier' ? formRewardMultiplier : undefined,
+      exchangeReceiveCoins: formType === 'voucher' && formVoucherType === 'coin_exchange' ? formExchangeReceiveCoins : undefined,
+      maxPerUser: formMaxPerUser,
     };
 
     try {
@@ -500,6 +516,38 @@ export default function RewardManagement() {
             </div>
           </div>
 
+          {formType === 'voucher' && (
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+              <label className="mb-2 block text-xs font-bold text-slate-400 uppercase tracking-wider">Loại Voucher điện tử</label>
+              <div className="flex flex-col gap-3">
+                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 cursor-pointer">
+                  <input type="radio" name="voucherType" value="external" checked={formVoucherType === 'external'} onChange={() => setFormVoucherType('external')} className="accent-blue-600 w-4 h-4" />
+                  Voucher thông thường (mã dùng cho dịch vụ ngoài)
+                </label>
+                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 cursor-pointer">
+                  <input type="radio" name="voucherType" value="bet_multiplier" checked={formVoucherType === 'bet_multiplier'} onChange={() => setFormVoucherType('bet_multiplier')} className="accent-blue-600 w-4 h-4" />
+                  Voucher nhân hệ số thưởng dự đoán (Cược)
+                </label>
+                {formVoucherType === 'bet_multiplier' && (
+                  <div className="pl-6 pb-2">
+                    <label className="mb-1 block text-xs font-bold text-slate-600 uppercase tracking-wider">Hệ số cộng thêm (vd: 0.5 = +50%)</label>
+                    <input type="number" step="0.01" value={formRewardMultiplier} onChange={(e) => setFormRewardMultiplier(Number(e.target.value))} className="w-full rounded-md border border-slate-300 py-1.5 px-3 text-sm" />
+                  </div>
+                )}
+                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 cursor-pointer">
+                  <input type="radio" name="voucherType" value="coin_exchange" checked={formVoucherType === 'coin_exchange'} onChange={() => setFormVoucherType('coin_exchange')} className="accent-blue-600 w-4 h-4" />
+                  Voucher quy đổi thành Coin (Gói Coin)
+                </label>
+                {formVoucherType === 'coin_exchange' && (
+                  <div className="pl-6 pb-2">
+                    <label className="mb-1 block text-xs font-bold text-slate-600 uppercase tracking-wider">Số Coin nhận được (vd: 110)</label>
+                    <input type="number" value={formExchangeReceiveCoins} onChange={(e) => setFormExchangeReceiveCoins(Number(e.target.value))} className="w-full rounded-md border border-slate-300 py-1.5 px-3 text-sm" />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="mb-1.5 block text-xs font-bold text-slate-600 uppercase tracking-wider">Tên phần quà</label>
             <input 
@@ -538,6 +586,15 @@ export default function RewardManagement() {
                 type="number" 
                 value={formStock} 
                 onChange={(e) => setFormStock(Number(e.target.value))} 
+                className="w-full rounded-md border border-slate-300 bg-white py-2 px-3 text-sm font-medium text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" 
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-bold text-slate-600 uppercase tracking-wider">Giới hạn đổi/người (0=vô hạn)</label>
+              <input 
+                type="number" 
+                value={formMaxPerUser} 
+                onChange={(e) => setFormMaxPerUser(Number(e.target.value))} 
                 className="w-full rounded-md border border-slate-300 bg-white py-2 px-3 text-sm font-medium text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" 
               />
             </div>

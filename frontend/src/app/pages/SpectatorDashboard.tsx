@@ -243,6 +243,9 @@ export function SpectatorDashboard() {
   >([]);
   const [raceBettingOdds, setRaceBettingOdds] = useState<RaceBettingOdds | null>(null);
   const bettingSocketRef = useRef<Socket | null>(null);
+  const [selectedHorse, setSelectedHorse] = useState<string>("");
+  const [betAmount, setBetAmount] = useState<string>("");
+  const [betVoucherCode, setBetVoucherCode] = useState<string>("");
 
   // ── Real bets ──
   const [myBets, setMyBets] = useState<Bet[]>([]);
@@ -349,8 +352,7 @@ export function SpectatorDashboard() {
   const [selectedTournamentForDetails, setSelectedTournamentForDetails] =
     useState<any>(null);
   const [selectedRace, setSelectedRace] = useState<any>(null);
-  const [selectedHorse, setSelectedHorse] = useState("");
-  const [betAmount, setBetAmount] = useState("");
+
   const [rankingType, setRankingType] = useState("horses");
   const [tournamentFilter, setTournamentFilter] = useState("all");
 
@@ -620,11 +622,15 @@ export function SpectatorDashboard() {
     setPlacingBet(true);
     const estimatedMultiplier = getHorseOdds(raceBettingOdds, selectedHorse);
     try {
-      const placed = await betApi.place(token, {
+      const payload: any = {
         raceId: selectedRace._id,
         horseId: selectedHorse,
         amount,
-      });
+      };
+      if (betVoucherCode.trim()) {
+        payload.voucherCode = betVoucherCode.trim();
+      }
+      const placed = await betApi.place(token, payload);
       const displayMult = placed.estimatedMultiplier ?? estimatedMultiplier;
       toast.success(
         `Dự đoán thành công! Odds ước tính: x${displayMult} — Sẽ nhận được sau khi race kết thúc`,
@@ -639,6 +645,7 @@ export function SpectatorDashboard() {
       setPredictionModalOpen(false);
       setSelectedHorse("");
       setBetAmount("");
+      setBetVoucherCode("");
       // Reload để đồng bộ dữ liệu chính xác từ server
       loadMyBets();
     } catch (err: any) {
@@ -2991,7 +2998,26 @@ export function SpectatorDashboard() {
                         )}
                         <div className="p-5 flex-1 flex flex-col justify-between">
                           <div>
-                            <h4 className="font-serif text-lg font-bold text-foreground mb-2">{reward.name}</h4>
+                            <div className="flex items-start justify-between mb-2 gap-2">
+                              <h4 className="font-serif text-lg font-bold text-foreground">{reward.name}</h4>
+                              <div className="flex flex-col gap-1 items-end shrink-0">
+                                <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded shadow-sm border ${
+                                  reward.type === 'voucher' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                }`}>
+                                  {reward.type === 'voucher' ? 'Voucher' : 'Vật lý'}
+                                </span>
+                                {reward.voucherType === 'bet_multiplier' && (
+                                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded shadow-sm border bg-amber-50 text-amber-700 border-amber-200">
+                                    Cược x{reward.rewardMultiplier}
+                                  </span>
+                                )}
+                                {reward.voucherType === 'coin_exchange' && (
+                                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded shadow-sm border bg-green-50 text-green-700 border-green-200">
+                                    +{reward.exchangeReceiveCoins} Coin
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                             <p className="text-muted-foreground text-xs leading-relaxed mb-4">{reward.description}</p>
                           </div>
                           <div className="space-y-4">
@@ -3310,6 +3336,24 @@ export function SpectatorDashboard() {
                   value={betAmount}
                   onChange={(e) => setBetAmount(e.target.value)}
                   placeholder="Nhập số tiền (tối thiểu 1)"
+                  sx={{
+                    "& .MuiInputLabel-root": { color: "#7A7468" },
+                    "& .MuiOutlinedInput-root": {
+                      color: "#23201A",
+                      borderRadius: 0,
+                      "& fieldset": { borderColor: "#E3DCCB" },
+                      "&:hover fieldset": { borderColor: "#C9C2B0" },
+                      "&.Mui-focused fieldset": { borderColor: "#1F3D2B" },
+                    },
+                  }}
+                />
+
+                <TextField
+                  fullWidth
+                  label="Mã Voucher (nếu có)"
+                  value={betVoucherCode}
+                  onChange={(e) => setBetVoucherCode(e.target.value)}
+                  placeholder="Nhập mã voucher nhân thưởng"
                   sx={{
                     "& .MuiInputLabel-root": { color: "#7A7468" },
                     "& .MuiOutlinedInput-root": {

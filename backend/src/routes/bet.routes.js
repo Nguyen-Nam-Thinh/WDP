@@ -10,6 +10,7 @@ const placeBetSchema = z.object({
   raceId: z.string().min(1),
   horseId: z.string().min(1),
   amount: z.number().int().min(1),
+  voucherCode: z.string().optional(),
 });
 
 router.use(authenticate);

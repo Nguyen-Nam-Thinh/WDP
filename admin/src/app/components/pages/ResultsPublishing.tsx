@@ -78,9 +78,19 @@ export default function ResultsPublishing() {
   const [settling, setSettling] = useState(false);
 
   const [simPage, setSimPage] = useState(1);
+  const [simSearch, setSimSearch] = useState('');
   const SIM_PER_PAGE = 10;
-  const simTotalPages = Math.ceil(simRaces.length / SIM_PER_PAGE);
-  const pagedSimRaces = simRaces.slice((simPage - 1) * SIM_PER_PAGE, simPage * SIM_PER_PAGE);
+  
+  const filteredSim = simSearch
+    ? simRaces.filter(r =>
+        r.name.toLowerCase().includes(simSearch.toLowerCase()) ||
+        r.grade.toLowerCase().includes(simSearch.toLowerCase()) ||
+        (typeof r.tournamentId === 'object' && r.tournamentId.name.toLowerCase().includes(simSearch.toLowerCase()))
+      )
+    : simRaces;
+
+  const simTotalPages = Math.ceil(filteredSim.length / SIM_PER_PAGE);
+  const pagedSimRaces = filteredSim.slice((simPage - 1) * SIM_PER_PAGE, simPage * SIM_PER_PAGE);
 
   const [finPage, setFinPage] = useState(1);
   const FIN_PER_PAGE = 10;
@@ -134,9 +144,17 @@ export default function ResultsPublishing() {
   const handleForceSimulate = async (race: Race) => {
     setSimulatingId(race._id);
     try {
+      if (race.status === 'open') {
+        await raceApi.updateStatus(race._id, 'closed');
+      }
+      if (race.status === 'open' || race.status === 'closed') {
+        await raceApi.updateStatus(race._id, 'pre_check');
+      }
+
       await raceApi.forceSimulate(race._id);
-      toast.success(`Mô phỏng cuộc đua "${race.name}" đã bắt đầu`);
+      toast.success(`Mô phỏng cuộc đua "${race.name}" đã hoàn tất`);
       loadSimRaces();
+      loadFinishedRaces();
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -254,18 +272,33 @@ export default function ResultsPublishing() {
         {/* ── TAB: SIM ── */}
         {activeTab === 'sim' && (
           <div className="flex flex-col flex-1 h-full">
-            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-5 py-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 bg-slate-50/50 px-5 py-4 gap-3">
               <h3 className="font-semibold text-slate-800 flex items-center gap-2 text-sm">
                 <Zap size={16} className="text-amber-500" /> Danh sách chặng đua chờ mô phỏng
+                {simRaces.length > 0 && (
+                  <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-600 ml-1">{simRaces.length}</span>
+                )}
               </h3>
-              <button
-                onClick={loadSimRaces}
-                disabled={loadingSim}
-                className="inline-flex items-center justify-center gap-1.5 rounded-md border border-slate-200 bg-white py-1.5 px-3 text-xs font-bold text-slate-600 hover:bg-slate-50 transition shadow-sm disabled:opacity-50 uppercase tracking-wider"
-              >
-                <RefreshCw size={14} className={loadingSim ? 'animate-spin' : ''} />
-                Làm mới
-              </button>
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Tìm chặng đua..."
+                    value={simSearch}
+                    onChange={e => { setSimSearch(e.target.value); setSimPage(1); }}
+                    className="w-full sm:w-56 rounded-md border border-slate-200 bg-white py-1.5 pl-9 pr-3 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm transition"
+                  />
+                </div>
+                <button
+                  onClick={loadSimRaces}
+                  disabled={loadingSim}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-md border border-slate-200 bg-white py-1.5 px-3 text-xs font-bold text-slate-600 hover:bg-slate-50 transition shadow-sm disabled:opacity-50 uppercase tracking-wider"
+                >
+                  <RefreshCw size={14} className={loadingSim ? 'animate-spin' : ''} />
+                  Làm mới
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-auto custom-scrollbar">
