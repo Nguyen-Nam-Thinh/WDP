@@ -256,6 +256,10 @@ export function ProfilePage() {
   };
 
   const handleChangePassword = async () => {
+    if (passwordForm.currentPassword === passwordForm.newPassword) {
+      toast.error("Mật khẩu mới không được trùng với mật khẩu hiện tại");
+      return;
+    }
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       toast.error("Mật khẩu xác nhận không khớp");
       return;

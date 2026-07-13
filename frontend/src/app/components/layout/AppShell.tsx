@@ -267,7 +267,7 @@ export function AppShell({ roleLabel, nav, children }: AppShellProps) {
                 key={item.to}
                 to={item.to}
                 title={collapsed ? item.label : undefined}
-                className={`flex items-center gap-2 px-2.5 py-2 text-sm rounded transition-colors ${
+                className={`font-sans flex items-center gap-2 px-2.5 py-2 text-sm rounded transition-colors ${
                   active
                     ? "bg-sidebar-primary font-bold text-sidebar-primary-foreground"
                     : "opacity-85 hover:bg-sidebar-accent hover:opacity-100"

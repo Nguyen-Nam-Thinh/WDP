@@ -29,8 +29,8 @@ export function PublicShell({ children }: { children: ReactNode }) {
                 to={l.to}
                 className={
                   pathname === l.to
-                    ? "font-semibold text-secondary"
-                    : "text-foreground transition-colors hover:text-primary"
+                    ? "font-sans font-semibold text-secondary"
+                    : "font-sans text-foreground transition-colors hover:text-primary"
                 }
               >
                 {l.label}

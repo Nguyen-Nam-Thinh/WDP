@@ -220,4 +220,14 @@
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
   }
+
+  /* Override MUI default typography to use our app font */
+  .MuiButtonBase-root, 
+  .MuiButton-root, 
+  .MuiChip-root, 
+  .MuiInputBase-root, 
+  .MuiMenuItem-root,
+  .MuiTypography-root {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+  }
 }

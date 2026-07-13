@@ -151,6 +151,10 @@ async function resetPassword(resetToken, newPassword) {
 }
 
 async function changePassword(userId, currentPassword, newPassword) {
+  if (currentPassword === newPassword) {
+    throw new AppError(400, 'Mật khẩu mới không được trùng với mật khẩu hiện tại');
+  }
+
   const user = await User.findById(userId).select('+passwordHash');
   if (!user) throw new AppError(404, 'Không tìm thấy người dùng');
 
