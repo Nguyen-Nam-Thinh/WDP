@@ -660,7 +660,7 @@ export function PredictionsPage() {
 
   const currentRaceBets = selectedRace
     ? myBets.filter((b) => {
-        const rId = typeof b.raceId === "object" ? b.raceId._id : b.raceId;
+        const rId = b.raceId && typeof b.raceId === "object" ? (b.raceId as any)._id : b.raceId;
         return rId === selectedRace._id;
       })
     : [];

@@ -2965,15 +2965,7 @@ export function SpectatorDashboard() {
             </div>
 
             {/* Balances */}
-            <div className="bg-card border border-border p-5 flex items-center justify-between">
-              <div>
-                <span className="text-muted-foreground text-sm uppercase tracking-wide font-medium">Số dư khả dụng</span>
-                <div className="text-[#8F7318] text-3xl font-extrabold tabular-nums mt-1">{walletBalance ?? "0 coins"}</div>
-              </div>
-              <div className="w-12 h-12 bg-gold/15 flex items-center justify-center rounded-none text-[#8F7318]">
-                <Coins className="w-6 h-6" />
-              </div>
-            </div>
+
 
             <div className="grid lg:grid-cols-3 gap-6">
               {/* Rewards List */}

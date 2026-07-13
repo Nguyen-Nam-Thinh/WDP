@@ -15,6 +15,7 @@ export function useWallet() {
       const raw: number = data?.balance ?? 0;
       setBalance(raw);
       updateUser({ balance: `${raw.toLocaleString('vi-VN')} coins` });
+      window.dispatchEvent(new CustomEvent('wallet_updated', { detail: raw }));
     } catch {
       // silently ignore — show last known value
     } finally {
@@ -26,6 +27,15 @@ export function useWallet() {
     fetchWallet();
   }, [fetchWallet]);
 
+  useEffect(() => {
+    const handleUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<number>;
+      setBalance(customEvent.detail);
+    };
+    window.addEventListener('wallet_updated', handleUpdate);
+    return () => window.removeEventListener('wallet_updated', handleUpdate);
+  }, []);
+
   const formatted = balance !== null ? `${balance.toLocaleString('vi-VN')} coins` : null;
 
   const adjustBalance = useCallback((delta: number) => {
@@ -33,6 +43,7 @@ export function useWallet() {
       if (prev === null) return prev;
       const next = Math.max(0, prev + delta);
       updateUser({ balance: `${next.toLocaleString('vi-VN')} coins` });
+      window.dispatchEvent(new CustomEvent('wallet_updated', { detail: next }));
       return next;
     });
   }, [updateUser]);
