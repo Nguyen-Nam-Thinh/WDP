@@ -44,6 +44,7 @@ import {
   FormControl,
   InputLabel,
   Tooltip as MuiTooltip,
+  InputAdornment,
 } from "@mui/material";
 import {
   BarChart,
@@ -648,6 +649,7 @@ export function SpectatorDashboard() {
       setBetVoucherCode("");
       // Reload để đồng bộ dữ liệu chính xác từ server
       loadMyBets();
+      refetchWallet();
     } catch (err: any) {
       toast.error(err.message || "Dự đoán thất bại");
     } finally {
@@ -662,6 +664,7 @@ export function SpectatorDashboard() {
       await betApi.cancel(token, betId);
       toast.success("Đã hủy dự đoán, tiền đã được hoàn trả");
       loadMyBets();
+      refetchWallet();
     } catch (err: any) {
       toast.error(err.message || "Hủy dự đoán thất bại");
     } finally {
@@ -3328,6 +3331,18 @@ export function SpectatorDashboard() {
                   value={betAmount}
                   onChange={(e) => setBetAmount(e.target.value)}
                   placeholder="Nhập số tiền (tối thiểu 1)"
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <Button 
+                          onClick={() => setBetAmount(balance?.toString() || "")}
+                          sx={{ minWidth: "auto", px: 1, py: 0.5, fontSize: "0.75rem", color: "#8F7318", fontWeight: "bold" }}
+                        >
+                          ALL IN
+                        </Button>
+                      </InputAdornment>
+                    ),
+                  }}
                   sx={{
                     "& .MuiInputLabel-root": { color: "#7A7468" },
                     "& .MuiOutlinedInput-root": {

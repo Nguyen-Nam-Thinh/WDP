@@ -50,7 +50,7 @@ function getHorseRotationDeg(progressPct: number, laneShift = 0) {
 // ─── Legend chips (shared) ─────────────────────────────────────────────────
 function LegendChips({ horses }: { horses: TrackHorse[] }) {
   return (
-    <div className="relative bg-slate-900/70 border-t border-white/5">
+    <div className="relative bg-[#0a150a] border-t border-white/5">
       <div
         className="pointer-events-none absolute right-0 top-0 h-full w-10 z-10"
         style={{ background: 'linear-gradient(to left, rgba(15,23,42,0.85), transparent)' }}
@@ -89,7 +89,7 @@ function LegendChips({ horses }: { horses: TrackHorse[] }) {
                 </span>
               )}
               <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color, boxShadow: `0 0 5px ${color}` }} />
-              <span className="max-w-[72px] truncate">{horse.horseName}</span>
+              <span className="max-w-[120px] truncate">{horse.horseName}</span>
               {horse.isMyBet && <span className="text-[#FFDE42] text-[10px] shrink-0">★</span>}
             </div>
           );
@@ -208,7 +208,12 @@ function OvalTrack({
                 stroke="#0c1a0c" strokeWidth="2.5" paintOrder="stroke" style={{ pointerEvents: 'none', userSelect: 'none' }}>
                 {horse.horseName.slice(0, 9)}
               </text>
-            ) : null}
+            ) : (
+              <text y={-(r + 6)} textAnchor="middle" fill="rgba(255,255,255,0.6)" fontSize="6.5"
+                stroke="#0c1a0c" strokeWidth="2.5" paintOrder="stroke" style={{ pointerEvents: 'none', userSelect: 'none' }}>
+                {horse.horseName.slice(0, 9)}
+              </text>
+            )}
           </g>
         );
       })}
@@ -276,7 +281,7 @@ function LanesTrack({
               </div>
 
               {/* Gate number + name */}
-              <div className="shrink-0 w-[110px] flex items-center gap-1.5 min-w-0">
+              <div className="shrink-0 w-[140px] flex items-center gap-1.5 min-w-0">
                 <span className="text-sm leading-none" style={{ filter: horse.isMyBet ? 'drop-shadow(0 0 4px #FFDE42)' : undefined, transform: 'scaleX(-1)', display: 'inline-block' }}>🐎</span>
                 <span
                   className={`text-[11px] truncate font-medium ${horse.isMyBet ? 'text-[#FFDE42]' : isTop3 ? 'text-white' : 'text-slate-400'}`}
@@ -343,7 +348,7 @@ export function RaceTrack({
   const useLanes = horses.length > ADAPTIVE_THRESHOLD;
 
   return (
-    <div className="w-full rounded-2xl overflow-hidden border border-white/10 bg-slate-950">
+    <div className="w-full rounded-2xl overflow-hidden border border-white/10 bg-[#0a150a]">
       {useLanes ? (
         <div className="bg-[#0c1a0c]">
           <LanesTrack horses={horses} raceName={raceName} distance={distance} />

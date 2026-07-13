@@ -351,17 +351,22 @@ export default function ResultsPublishing() {
                         <td className="py-3 px-5">
                           <div className="flex items-center justify-end">
                             <button
-                              disabled={isRunning || race.status === 'running'}
+                              disabled={isRunning || race.status === 'running' || !race.refereeId}
                               onClick={() => handleForceSimulate(race)}
+                              title={!race.refereeId ? "Chưa có trọng tài, không thể mô phỏng" : ""}
                               className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded transition shadow-sm border ${
                                 race.status === 'running'
                                   ? 'bg-emerald-50 text-emerald-700 border-emerald-200 cursor-not-allowed'
                                   : isRunning
                                   ? 'bg-amber-50 text-amber-700 border-amber-200 cursor-wait'
+                                  : !race.refereeId
+                                  ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
                                   : 'bg-white text-slate-700 border-slate-200 hover:text-amber-700 hover:bg-amber-50 hover:border-amber-200'
                               }`}
                             >
-                              {race.status === 'running' ? (
+                              {!race.refereeId ? (
+                                <>Chưa phân công TT</>
+                              ) : race.status === 'running' ? (
                                 <><RefreshCw className="animate-spin" size={14} /> Đang chạy...</>
                               ) : isRunning ? (
                                 <><RefreshCw className="animate-spin" size={14} /> Đang khởi động</>

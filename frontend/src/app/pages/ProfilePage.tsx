@@ -373,7 +373,14 @@ export function ProfilePage() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-lg border-b border-border">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-4">
           <button
-            onClick={() => navigate("/spectator")}
+            onClick={() => {
+              const r = user.role || "spectator";
+              if (r === "admin") navigate("/admin");
+              else if (r === "owner") navigate("/horse-owner");
+              else if (r === "jockey") navigate("/jockey");
+              else if (r === "referee") navigate("/referee");
+              else navigate("/spectator");
+            }}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group"
           >
             <div className="w-8 h-8 rounded-lg bg-card group-hover:bg-muted flex items-center justify-center transition-colors">
