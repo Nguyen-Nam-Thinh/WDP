@@ -13,8 +13,21 @@ function firstClientUrl() {
   return (env.CLIENT_URL || '').split(',')[0] || 'http://localhost:5173';
 }
 
-async function createTopupSession(userId, coins) {
+// Chỉ chấp nhận path nội bộ (tránh open redirect qua Stripe success_url)
+const SAFE_RETURN_PATH = /^\/[a-zA-Z0-9\-_/]*$/;
+
+async function createTopupSession(userId, coins, returnPath) {
   if (!coins || coins <= 0) throw new AppError(400, 'Số coin không hợp lệ');
+
+  const base = firstClientUrl();
+  const safePath =
+    typeof returnPath === 'string' && SAFE_RETURN_PATH.test(returnPath) ? returnPath : null;
+  const successUrl = safePath
+    ? `${base}${safePath}?topup=success`
+    : `${base}/spectator/deposit-history?topup=success`;
+  const cancelUrl = safePath
+    ? `${base}${safePath}?topup=cancel`
+    : `${base}/spectator/deposit?topup=cancel`;
 
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
@@ -30,8 +43,8 @@ async function createTopupSession(userId, coins) {
       },
     ],
     metadata: { userId: String(userId), coins: String(coins) },
-    success_url: `${firstClientUrl()}/spectator/deposit-history?topup=success`,
-    cancel_url: `${firstClientUrl()}/spectator/deposit?topup=cancel`,
+    success_url: successUrl,
+    cancel_url: cancelUrl,
   });
 
   return { url: session.url, sessionId: session.id };

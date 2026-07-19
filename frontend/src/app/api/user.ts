@@ -244,11 +244,11 @@ export const userApi = {
     return json.data;
   },
 
-  createTopup: async (token: string, coins: number): Promise<{ url: string; sessionId: string }> => {
+  createTopup: async (token: string, coins: number, returnPath?: string): Promise<{ url: string; sessionId: string }> => {
     const response = await fetchWithAuth(`${API_URL}/users/me/topup`, {
       method: "POST",
       headers: authHeader(token),
-      body: JSON.stringify({ coins }),
+      body: JSON.stringify(returnPath ? { coins, returnPath } : { coins }),
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));

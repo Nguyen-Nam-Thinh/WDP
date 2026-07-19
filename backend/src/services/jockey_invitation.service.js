@@ -84,7 +84,20 @@ async function getInvitations(userId, role, { page = 1, limit = 10, status } = {
     JockeyInvitation.countDocuments(filter),
   ]);
 
-  return { invitations, total, page, limit, totalPages: Math.ceil(total / limit) };
+  // Loại invitation có reference đã chết (race/horse/user bị xóa khỏi DB)
+  // để frontend không nhận rows rỗng
+  const validInvitations = invitations.filter(
+    (inv) => inv.raceId && inv.horseId && inv.ownerId && inv.jockeyId,
+  );
+  const dangling = invitations.length - validInvitations.length;
+
+  return {
+    invitations: validInvitations,
+    total: total - dangling,
+    page,
+    limit,
+    totalPages: Math.ceil((total - dangling) / limit),
+  };
 }
 
 async function getInvitationById(invitationId, userId, role) {

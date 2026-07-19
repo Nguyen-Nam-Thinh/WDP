@@ -26,6 +26,13 @@ import {
   Loader2,
   AlertTriangle,
   Coins,
+  Building2,
+  CreditCard,
+  Smartphone,
+  Bitcoin,
+  Shield,
+  AlertCircle,
+  Copy,
 } from "lucide-react";
 import {
   Button,
@@ -95,13 +102,13 @@ const OWNER_NAV: NavItem[] = [
 export function HorseOwnerDashboard() {
   const navigate = useNavigate();
   const { user, token } = useAuth();
-  const { balance: walletBalance } = useWallet();
+  const { balance: walletBalance, refetch: refetchWallet } = useWallet();
 
   useEffect(() => {
     if (!user) navigate("/");
   }, [user, navigate]);
 
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const activeTab =
     pathname === "/horse-owner/jockeys"
       ? "jockeys"
@@ -158,7 +165,61 @@ export function HorseOwnerDashboard() {
   const [viewingJockey, setViewingJockey] = useState<JockeyListItem | null>(
     null,
   );
-  const [topupOpen, setTopupOpen] = useState(false);
+  const [walletSubTab, setWalletSubTab] = useState<"deposit" | "history">(
+    "deposit",
+  );
+  const [depositStep, setDepositStep] = useState(1);
+  const [depositMethod, setDepositMethod] = useState("bank");
+  const [depositAmountInput, setDepositAmountInput] = useState("");
+  const [stripeLoading, setStripeLoading] = useState(false);
+  const [txRefreshKey, setTxRefreshKey] = useState(0);
+
+  const handleStripeTopup = async () => {
+    if (!token) return;
+    const coins = Number(depositAmountInput);
+    if (!coins || coins <= 0) {
+      toast.error("Vui lòng nhập số coin hợp lệ");
+      return;
+    }
+    setStripeLoading(true);
+    try {
+      const { url } = await userApi.createTopup(
+        token,
+        coins,
+        "/horse-owner/wallet",
+      );
+      window.location.href = url;
+    } catch (err: any) {
+      toast.error(err.message || "Không thể tạo phiên thanh toán");
+      setStripeLoading(false);
+    }
+  };
+
+  // Quay về từ Stripe Checkout
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    const topup = params.get("topup");
+    if (topup === "success") {
+      toast.success("Nạp coin thành công! Số dư sẽ cập nhật trong giây lát.");
+      setWalletSubTab("history");
+      setDepositStep(1);
+      setDepositAmountInput("");
+      // webhook cộng coin bất đồng bộ -> refetch sau vài giây
+      refetchWallet();
+      const t = setTimeout(() => {
+        refetchWallet();
+        setTxRefreshKey((k) => k + 1);
+      }, 3000);
+      navigate("/horse-owner/wallet", { replace: true });
+      return () => clearTimeout(t);
+    }
+    if (topup === "cancel") {
+      toast.info("Bạn đã hủy giao dịch nạp coin");
+      setWalletSubTab("deposit");
+      navigate("/horse-owner/wallet", { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
 
   // Horses — real API
   const [horses, setHorses] = useState<Horse[]>([]);
@@ -604,7 +665,7 @@ export function HorseOwnerDashboard() {
       })
       .catch(() => {})
       .finally(() => setLoadingTx(false));
-  }, [activeTab, token, txPage]);
+  }, [activeTab, token, txPage, txRefreshKey]);
 
   const calcHorseAge = (birthDate: string) => {
     const now = new Date();
@@ -703,17 +764,26 @@ export function HorseOwnerDashboard() {
   );
   const regTotalPages = Math.ceil(activeRegs.length / PAGE_SIZE);
 
-  const pagedOpenRaces = useMemo(
-    () => openRaces.slice((openPage - 1) * PAGE_SIZE, openPage * PAGE_SIZE),
-    [openRaces, openPage],
-  );
-  const openTotalPages = Math.ceil(openRaces.length / PAGE_SIZE);
-
-  // Check if horse is already registered in a race
-  const isHorseRegistered = (raceId: string) =>
-    myRegistrations.some(
-      (r) => (r.raceId as any)?._id === raceId && r.status === "active",
+  // Races đang mở mà owner CHƯA đăng ký (đã đăng ký thì chỉ hiện ở "Đăng Ký Của Tôi")
+  const availableOpenRaces = useMemo(() => {
+    const registeredRaceIds = new Set(
+      myRegistrations
+        .filter((r) => r.status === "active")
+        .map((r) => (r.raceId as any)?._id)
+        .filter(Boolean),
     );
+    return openRaces.filter((race) => !registeredRaceIds.has(race._id));
+  }, [openRaces, myRegistrations]);
+
+  const pagedOpenRaces = useMemo(
+    () =>
+      availableOpenRaces.slice(
+        (openPage - 1) * PAGE_SIZE,
+        openPage * PAGE_SIZE,
+      ),
+    [availableOpenRaces, openPage],
+  );
+  const openTotalPages = Math.ceil(availableOpenRaces.length / PAGE_SIZE);
 
   const performanceData = [
     { month: "T1", earnings: 15000, points: 200 },
@@ -1470,13 +1540,14 @@ export function HorseOwnerDashboard() {
                           <div className="flex items-center gap-3 min-w-0 flex-1">
                             <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shrink-0 overflow-hidden">
                               {typeof inv.jockeyId === "object" &&
-                              inv.jockeyId.avatarUrl ? (
+                              inv.jockeyId?.avatarUrl ? (
                                 <img
                                   src={inv.jockeyId.avatarUrl}
                                   alt=""
                                   className="w-full h-full object-cover"
                                 />
-                              ) : typeof inv.jockeyId === "object" ? (
+                              ) : typeof inv.jockeyId === "object" &&
+                                inv.jockeyId ? (
                                 inv.jockeyId.fullName.charAt(0)
                               ) : (
                                 "?"
@@ -1484,16 +1555,17 @@ export function HorseOwnerDashboard() {
                             </div>
                             <div className="min-w-0">
                               <p className="font-semibold text-foreground">
-                                {typeof inv.jockeyId === "object"
+                                {typeof inv.jockeyId === "object" &&
+                                inv.jockeyId
                                   ? inv.jockeyId.fullName
                                   : "—"}
                               </p>
                               <p className="text-xs text-muted-foreground truncate">
-                                {typeof inv.horseId === "object"
+                                {typeof inv.horseId === "object" && inv.horseId
                                   ? inv.horseId.name
                                   : "—"}{" "}
                                 ·{" "}
-                                {typeof inv.raceId === "object"
+                                {typeof inv.raceId === "object" && inv.raceId
                                   ? inv.raceId.name
                                   : "—"}
                               </p>
@@ -1580,7 +1652,11 @@ export function HorseOwnerDashboard() {
                     label: "Đăng Ký Của Tôi",
                     count: activeRegs.length,
                   },
-                  { id: "open", label: "Cuộc Đua Mở", count: openRaces.length },
+                  {
+                    id: "open",
+                    label: "Cuộc Đua Mở",
+                    count: availableOpenRaces.length,
+                  },
                 ] as const
               ).map((t) => (
                 <button
@@ -1790,7 +1866,7 @@ export function HorseOwnerDashboard() {
 
                 {/* ── Sub-tab: Cuộc Đua Mở ── */}
                 {scheduleSubTab === "open" &&
-                  (openRaces.length === 0 ? (
+                  (availableOpenRaces.length === 0 ? (
                     <div className="bg-muted/40 border border-border rounded-2xl p-8 text-center">
                       <Trophy className="w-10 h-10 text-slate-600 mx-auto mb-3" />
                       <p className="text-slate-500">
@@ -1800,13 +1876,12 @@ export function HorseOwnerDashboard() {
                   ) : (
                     <div className="space-y-4">
                       {pagedOpenRaces.map((race) => {
-                        const alreadyRegistered = isHorseRegistered(race._id);
                         const cutoffPassed =
                           new Date() > new Date(race.cutoffTime);
                         return (
                           <div
                             key={race._id}
-                            className={`bg-card backdrop-blur-md border rounded-2xl p-6 transition-all ${alreadyRegistered ? "border-[#C9A227]/30" : "border-border hover:border-[#C9A227]/20"}`}
+                            className="bg-card backdrop-blur-md border rounded-2xl p-6 transition-all border-border hover:border-[#C9A227]/20"
                           >
                             <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                               <div className="flex-1">
@@ -1836,19 +1911,6 @@ export function HorseOwnerDashboard() {
                                       fontWeight: "bold",
                                     }}
                                   />
-                                  {alreadyRegistered && (
-                                    <Chip
-                                      label="✓ Đã đăng ký"
-                                      size="small"
-                                      sx={{
-                                        height: "20px",
-                                        fontSize: "0.65rem",
-                                        bgcolor: "rgba(255,222,66,0.15)",
-                                        color: "#C9A227",
-                                        border: "1px solid #C9A227",
-                                      }}
-                                    />
-                                  )}
                                 </div>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-900/40 rounded-xl p-4 border border-border">
                                   <div>
@@ -1930,21 +1992,7 @@ export function HorseOwnerDashboard() {
                                 )}
                               </div>
                               <div className="md:ml-4 flex-shrink-0">
-                                {alreadyRegistered ? (
-                                  <Button
-                                    disabled
-                                    variant="outlined"
-                                    sx={{
-                                      borderColor: "rgba(255,222,66,0.3)",
-                                      color: "#C9A227",
-                                      textTransform: "none",
-                                      opacity: 0.7,
-                                      whiteSpace: "nowrap",
-                                    }}
-                                  >
-                                    Đã đăng ký
-                                  </Button>
-                                ) : cutoffPassed ? (
+                                {cutoffPassed ? (
                                   <Button
                                     disabled
                                     variant="outlined"
@@ -1995,7 +2043,7 @@ export function HorseOwnerDashboard() {
                       })}
                     </div>
                   ))}
-                {openRaces.length > 0 && (
+                {scheduleSubTab === "open" && availableOpenRaces.length > 0 && (
                   <Pagination page={openPage} totalPages={openTotalPages} onPageChange={setOpenPage} />
                 )}
               </>
@@ -2117,79 +2165,367 @@ export function HorseOwnerDashboard() {
               Ví & Giao Dịch
             </h2>
 
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="md:col-span-1 space-y-6">
-                <div className="bg-gradient-to-br from-[#C9A227] to-[#8F7318] rounded-3xl p-8 relative overflow-hidden shadow-2xl shadow-[#C9A227]/50">
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-card rounded-full -translate-y-1/2 translate-x-1/3 blur-3xl"></div>
+            {/* Sub-tabs */}
+            <div className="flex gap-2 mb-6 border-b border-border pb-0">
+              {(
+                [
+                  { id: "deposit", label: "Nạp Tiền" },
+                  { id: "history", label: "Lịch Sử Giao Dịch" },
+                ] as const
+              ).map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setWalletSubTab(t.id)}
+                  className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-all ${
+                    walletSubTab === t.id
+                      ? "border-[#C9A227] text-[#C9A227]"
+                      : "border-transparent text-slate-400 hover:text-foreground"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
 
-                  <div className="relative z-10">
-                    <div className="text-foreground font-medium mb-2">
-                      Tổng Số Dư
+            {/* ── Sub-tab: Nạp Tiền ── */}
+            {walletSubTab === "deposit" && (
+              <div className="bg-card border border-border max-w-2xl mx-auto overflow-hidden rounded-2xl">
+                <div className="relative bg-[#C9A227]/10 border-b border-border p-6">
+                  <div className="flex items-center justify-between relative">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-[#C9A227] rounded-xl flex items-center justify-center">
+                        <Wallet className="w-6 h-6 text-foreground" />
+                      </div>
+                      <div>
+                        <h3 className="font-serif text-xl font-bold text-foreground">
+                          Cổng Nạp Tiền
+                        </h3>
+                        <p className="text-muted-foreground text-sm mt-0.5">
+                          An toàn · Nhanh chóng · Tiện lợi
+                        </p>
+                      </div>
                     </div>
-                    <div className="font-serif text-4xl font-bold text-foreground mb-8">
-                      {walletBalance !== null
-                        ? walletBalance.toLocaleString("vi-VN")
-                        : "—"}{" "}
-                      coins
+                    <div className="flex items-center gap-3">
+                      <div className="hidden sm:flex items-center gap-2 bg-primary/10 border border-primary/20 px-3 py-1.5">
+                        <Shield className="w-3.5 h-3.5 text-primary" />
+                        <span className="text-primary text-xs font-semibold">
+                          Bảo Mật SSL
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs text-muted-foreground">
+                          Số Dư Hiện Tại
+                        </div>
+                        <div className="text-[#8F7318] font-bold text-lg tabular-nums">
+                          {walletBalance !== null
+                            ? `${walletBalance.toLocaleString("vi-VN")} coins`
+                            : "..."}
+                        </div>
+                      </div>
                     </div>
-
-                    <div className="flex gap-3">
-                      <Button
-                        variant="contained"
-                        onClick={() => setTopupOpen(true)}
-                        startIcon={<Plus />}
-                        sx={{
-                          background: "white",
-                          color: "#23201A",
-                          fontWeight: 600,
-                          textTransform: "none",
-                          "&:hover": { background: "#f8fafc" },
-                        }}
-                      >
-                        Nạp Tiền
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        sx={{
-                          borderColor: "#C9C2B0",
-                          color: "#23201A",
-                          fontWeight: 600,
-                          textTransform: "none",
-                          "&:hover": {
-                            borderColor: "#1F3D2B",
-                            background: "rgba(35,32,26,0.06)",
-                          },
-                        }}
-                      >
-                        Rút Tiền
-                      </Button>
-                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 mt-5">
+                    {["Chọn Phương Thức", "Nhập Số Tiền", "Xác Nhận"].map(
+                      (step, i) => (
+                        <div
+                          key={i}
+                          className="flex items-center gap-2 flex-1"
+                        >
+                          <div
+                            className={`flex items-center gap-2 ${i + 1 <= depositStep ? "text-[#8F7318]" : "text-muted-foreground/60"}`}
+                          >
+                            <div
+                              className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${
+                                i + 1 < depositStep
+                                  ? "bg-[#C9A227] border-[#C9A227] text-foreground"
+                                  : i + 1 === depositStep
+                                    ? "border-[#C9A227] text-[#8F7318]"
+                                    : "border-border text-muted-foreground/60"
+                              }`}
+                            >
+                              {i + 1 < depositStep ? (
+                                <CheckCircle className="w-3.5 h-3.5" />
+                              ) : (
+                                i + 1
+                              )}
+                            </div>
+                            <span className="text-xs font-medium whitespace-nowrap hidden sm:block">
+                              {step}
+                            </span>
+                          </div>
+                          {i < 2 && (
+                            <div
+                              className={`flex-1 h-0.5 mx-1 rounded-full ${i + 1 < depositStep ? "bg-[#C9A227]" : "bg-muted"}`}
+                            />
+                          )}
+                        </div>
+                      ),
+                    )}
                   </div>
                 </div>
 
-                {/* <div className="bg-card backdrop-blur-md border border-border rounded-2xl p-6">
-                  <h3 className="font-serif text-lg font-bold text-foreground mb-4">Thống Kê Nhanh</h3>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center pb-4 border-b border-border">
-                      <span className="text-slate-400">Tổng Đã Nạp</span>
-                      <span className="text-foreground font-medium">$50,000</span>
+                <div className="overflow-x-hidden">
+                  {depositStep === 1 && (
+                    <div className="p-6 space-y-4">
+                      <h3 className="font-serif text-foreground font-bold mb-4">
+                        Chọn phương thức nạp tiền
+                      </h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        {[
+                          {
+                            id: "bank",
+                            icon: Building2,
+                            label: "Chuyển Khoản Ngân Hàng",
+                            sub: "Vietcombank, Techcombank, MB Bank...",
+                            time: "5-30 phút",
+                            color: "text-primary",
+                          },
+                          {
+                            id: "card",
+                            icon: CreditCard,
+                            label: "Thẻ Tín Dụng / Ghi Nợ",
+                            sub: "Visa, Mastercard, JCB",
+                            time: "1-5 phút",
+                            color: "text-secondary",
+                          },
+                          {
+                            id: "ewallet",
+                            icon: Smartphone,
+                            label: "Ví Điện Tử",
+                            sub: "MoMo, ZaloPay, VNPay",
+                            time: "Tức thì",
+                            color: "text-secondary",
+                          },
+                          {
+                            id: "crypto",
+                            icon: Bitcoin,
+                            label: "Tiền Điện Tử",
+                            sub: "USDT (TRC20), BTC, ETH",
+                            time: "10-30 phút",
+                            color: "text-[#8F7318]",
+                          },
+                        ].map((method) => (
+                          <button
+                            type="button"
+                            key={method.id}
+                            onClick={() => setDepositMethod(method.id)}
+                            className={`relative p-4 border-2 text-left transition-all hover:scale-[1.02] ${depositMethod === method.id ? "bg-primary/5 border-primary" : "bg-background border-border hover:border-muted-foreground/40"}`}
+                          >
+                            {depositMethod === method.id && (
+                              <div className="absolute top-3 right-3 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                                <CheckCircle className="w-3 h-3 text-primary-foreground" />
+                              </div>
+                            )}
+                            <method.icon
+                              className={`w-8 h-8 mb-3 ${method.color}`}
+                            />
+                            <div className="text-foreground font-semibold text-sm mb-1">
+                              {method.label}
+                            </div>
+                            <div className="text-muted-foreground text-xs mb-2">
+                              {method.sub}
+                            </div>
+                            <span className="text-xs text-primary font-medium">
+                              ⚡ {method.time}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                      <div className="bg-primary/5 border border-primary/20 p-4 flex gap-3">
+                        <AlertCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                        <div className="text-sm text-foreground">
+                          <span className="font-semibold">Hướng Dẫn: </span>
+                          Chọn phương thức nạp phù hợp với bạn. Tất cả giao
+                          dịch đều được mã hóa và bảo mật. Nếu cần hỗ trợ, liên
+                          hệ 24/7 qua chat trực tiếp.
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center pb-4 border-b border-border">
-                      <span className="text-slate-400">Tổng Thắng</span>
-                      <span className="text-[#C9A227] font-medium">$45,000</span>
+                  )}
+
+                  {depositStep === 2 && (
+                    <div className="p-6 space-y-5">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 bg-[#C9A227]/15 flex items-center justify-center">
+                          {depositMethod === "bank" && (
+                            <Building2 className="w-5 h-5 text-primary" />
+                          )}
+                          {depositMethod === "card" && (
+                            <CreditCard className="w-5 h-5 text-secondary" />
+                          )}
+                          {depositMethod === "ewallet" && (
+                            <Smartphone className="w-5 h-5 text-secondary" />
+                          )}
+                          {depositMethod === "crypto" && (
+                            <Bitcoin className="w-5 h-5 text-[#8F7318]" />
+                          )}
+                        </div>
+                        <div>
+                          <div className="text-foreground font-bold">
+                            {depositMethod === "bank" &&
+                              "Chuyển Khoản Ngân Hàng"}
+                            {depositMethod === "card" &&
+                              "Thẻ Tín Dụng / Ghi Nợ"}
+                            {depositMethod === "ewallet" && "Ví Điện Tử"}
+                            {depositMethod === "crypto" &&
+                              "Tiền Điện Tử (USDT)"}
+                          </div>
+                          <div className="text-muted-foreground text-sm">
+                            Điền thông tin nạp tiền bên dưới
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm text-muted-foreground mb-2 block">
+                          Số Tiền Muốn Nạp (coins)
+                        </label>
+                        <div className="mb-2 flex items-center gap-1.5 text-xs text-[#8F7318] bg-[#C9A227]/10 border border-[#C9A227]/30 px-3 py-1.5">
+                          <span>💡</span>
+                          <span>
+                            <strong>1 coin = 1.000 VND</strong>
+                          </span>
+                        </div>
+                        <input
+                          type="number"
+                          value={depositAmountInput}
+                          onChange={(e) =>
+                            setDepositAmountInput(e.target.value)
+                          }
+                          placeholder="0"
+                          className="w-full bg-background border border-border px-4 py-3.5 text-foreground text-xl font-bold placeholder-muted-foreground/60 focus:outline-none focus:border-primary transition-all"
+                        />
+                        <div className="flex gap-2 mt-3">
+                          {[
+                            "50000",
+                            "100000",
+                            "200000",
+                            "500000",
+                            "1000000",
+                          ].map((amt) => (
+                            <button
+                              type="button"
+                              key={amt}
+                              onClick={() => setDepositAmountInput(amt)}
+                              className={`flex-1 py-2 text-xs font-bold border transition-all ${depositAmountInput === amt ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-border hover:border-primary hover:text-foreground"}`}
+                            >
+                              {Number(amt).toLocaleString("vi-VN")}
+                            </button>
+                          ))}
+                        </div>
+                        {Number(depositAmountInput) > 0 && (
+                          <div className="mt-3 text-sm text-muted-foreground">
+                            Thanh toán:{" "}
+                            <span className="font-bold text-foreground">
+                              {(
+                                Number(depositAmountInput) * 1000
+                              ).toLocaleString("vi-VN")}{" "}
+                              VND
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="bg-[#C9A227]/5 border border-[#C9A227]/30 p-4">
+                        <div className="flex gap-3">
+                          <AlertCircle className="w-5 h-5 text-[#8F7318] flex-shrink-0 mt-0.5" />
+                          <div className="text-sm space-y-1.5">
+                            <div className="text-[#8F7318] font-semibold">
+                              Lưu Ý Quan Trọng
+                            </div>
+                            <ul className="text-muted-foreground space-y-1 list-disc list-inside text-xs">
+                              <li>
+                                Thanh toán được xử lý an toàn qua Stripe
+                              </li>
+                              <li>
+                                Coin sẽ được cộng vào ví trong vòng vài phút
+                                sau khi thanh toán thành công
+                              </li>
+                              <li>
+                                Hỗ trợ 24/7: support@racingvn.com hoặc Hotline
+                                1800-8888
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-400">Tổng Chi Phí</span>
-                      <span className="text-red-400 font-medium">$49,200</span>
+                  )}
+                </div>
+
+                <div className="p-4 border-t border-border flex items-center gap-2">
+                  {depositStep > 1 && (
+                    <Button
+                      onClick={() => setDepositStep((s) => s - 1)}
+                      sx={{ color: "#7A7468", textTransform: "none" }}
+                    >
+                      ← Quay Lại
+                    </Button>
+                  )}
+                  <div className="flex-1" />
+                  <Button
+                    onClick={() => {
+                      setDepositStep(1);
+                      setDepositAmountInput("");
+                    }}
+                    sx={{ color: "#7A7468", textTransform: "none" }}
+                  >
+                    Hủy
+                  </Button>
+                  <Button
+                    variant="contained"
+                    disabled={
+                      (depositStep === 2 && !depositAmountInput) ||
+                      stripeLoading
+                    }
+                    onClick={() => {
+                      if (depositStep === 2) {
+                        handleStripeTopup();
+                      } else {
+                        setDepositStep((s) => s + 1);
+                      }
+                    }}
+                    sx={{
+                      background: "#1F3D2B",
+                      color: "#F7F3EA",
+                      fontWeight: 700,
+                      textTransform: "none",
+                      borderRadius: 0,
+                      px: 3,
+                      boxShadow: "none",
+                      "&:hover": { background: "#172D20", boxShadow: "none" },
+                      "&:disabled": {
+                        background: "#EDE7D8",
+                        color: "#7A7468",
+                      },
+                    }}
+                  >
+                    {depositStep === 1
+                      ? "Tiếp Theo →"
+                      : stripeLoading
+                        ? "Đang chuyển đến Stripe..."
+                        : "Thanh Toán Qua Stripe"}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* ── Sub-tab: Lịch Sử Giao Dịch ── */}
+            {walletSubTab === "history" && (
+              <div className="bg-card backdrop-blur-md border border-border rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="font-serif text-xl font-bold text-foreground">
+                    Lịch Sử Giao Dịch
+                  </h3>
+                  <div className="text-right">
+                    <div className="text-xs text-muted-foreground">
+                      Số Dư Hiện Tại
+                    </div>
+                    <div className="text-[#8F7318] font-bold tabular-nums">
+                      {walletBalance !== null
+                        ? `${walletBalance.toLocaleString("vi-VN")} coins`
+                        : "..."}
                     </div>
                   </div>
-                </div> */}
-              </div>
-
-              <div className="md:col-span-2 bg-card backdrop-blur-md border border-border rounded-2xl p-6">
-                <h3 className="font-serif text-xl font-bold text-foreground mb-6">
-                  Lịch Sử Giao Dịch
-                </h3>
+                </div>
 
                 {loadingTx ? (
                   <div className="flex justify-center py-12">
@@ -2265,7 +2601,7 @@ export function HorseOwnerDashboard() {
                   </>
                 )}
               </div>
-            </div>
+            )}
           </div>
         )}
       </div>
@@ -3119,71 +3455,6 @@ export function HorseOwnerDashboard() {
             </div>
           )}
         </DialogContent>
-      </Dialog>
-
-      {/* Topup Dialog */}
-      <Dialog
-        open={topupOpen}
-        onClose={() => setTopupOpen(false)}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{
-          style: {
-            backgroundColor: "#FFFFFF",
-            border: "1px solid #E3DCCB",
-            borderRadius: "16px",
-          },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            color: "#23201A",
-            borderBottom: "1px solid #E3DCCB",
-            pb: 2,
-          }}
-        >
-          Nạp Tiền Vào Ví
-        </DialogTitle>
-        <DialogContent sx={{ paddingTop: "24px !important" }}>
-          <TextField
-            fullWidth
-            label="Số Tiền ($)"
-            type="number"
-            sx={{
-              "& .MuiInputLabel-root": { color: "#7A7468" },
-              "& .MuiOutlinedInput-root": {
-                color: "#23201A",
-                "& fieldset": { borderColor: "#E3DCCB" },
-                "&:hover fieldset": { borderColor: "#C9C2B0" },
-                "&.Mui-focused fieldset": { borderColor: "#1F3D2B" },
-              },
-            }}
-          />
-        </DialogContent>
-        <DialogActions
-          sx={{
-            borderTop: "1px solid #E3DCCB",
-            padding: "16px 24px",
-          }}
-        >
-          <Button
-            onClick={() => setTopupOpen(false)}
-            sx={{ color: "#7A7468", textTransform: "none" }}
-          >
-            Hủy
-          </Button>
-          <Button
-            variant="contained"
-            onClick={() => setTopupOpen(false)}
-            sx={{
-              background: "#1F3D2B",
-              textTransform: "none",
-              "&:hover": { background: "#172D20" },
-            }}
-          >
-            Xác Nhận Nạp Tiền
-          </Button>
-        </DialogActions>
       </Dialog>
 
       {/* Jockey Profile Dialog */}

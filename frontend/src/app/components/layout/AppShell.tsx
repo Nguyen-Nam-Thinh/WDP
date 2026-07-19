@@ -72,7 +72,7 @@ function getNotificationPath(n: Notification, role: string): string | null {
   }
 }
 
-function NotificationPanel({ token, role, onClose }: { token: string; role: string; onClose: () => void }) {
+function NotificationPanel({ token, role, onClose, onUnreadChange }: { token: string; role: string; onClose: () => void; onUnreadChange: (count: number | ((c: number) => number)) => void }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -80,7 +80,7 @@ function NotificationPanel({ token, role, onClose }: { token: string; role: stri
 
   useEffect(() => {
     notificationApi.getNotifications(token, { limit: 30 })
-      .then(d => { setNotifications(d.notifications); setUnreadCount(d.unreadCount); })
+      .then(d => { setNotifications(d.notifications); setUnreadCount(d.unreadCount); onUnreadChange(d.unreadCount); })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [token]);
@@ -89,6 +89,7 @@ function NotificationPanel({ token, role, onClose }: { token: string; role: stri
     await notificationApi.markRead(token, id);
     setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
     setUnreadCount(c => Math.max(0, c - 1));
+    onUnreadChange(c => Math.max(0, c - 1));
   };
 
   const handleClickNotification = async (n: Notification) => {
@@ -104,6 +105,7 @@ function NotificationPanel({ token, role, onClose }: { token: string; role: stri
     await notificationApi.markAllRead(token);
     setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
     setUnreadCount(0);
+    onUnreadChange(0);
   };
 
   return (
@@ -216,6 +218,7 @@ export function BellButton({ token, role }: { token: string; role: string }) {
           token={token}
           role={role}
           onClose={() => setOpen(false)}
+          onUnreadChange={setUnread}
         />
       )}
     </div>

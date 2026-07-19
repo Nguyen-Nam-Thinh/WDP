@@ -6,7 +6,11 @@ const { sendSuccess } = require('../utils/response');
 
 async function createTopup(req, res, next) {
   try {
-    const result = await paymentService.createTopupSession(req.user._id, req.body.coins);
+    const result = await paymentService.createTopupSession(
+      req.user._id,
+      req.body.coins,
+      req.body.returnPath,
+    );
     sendSuccess(res, result);
   } catch (error) {
     next(error);
