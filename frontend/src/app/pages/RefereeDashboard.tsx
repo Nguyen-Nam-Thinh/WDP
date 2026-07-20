@@ -181,6 +181,20 @@ export function RefereeDashboard() {
   const toggleCheckItem = (regId: string, key: string) =>
     setCheckItems(prev => ({ ...prev, [regId]: { ...prev[regId], [key]: !prev[regId]?.[key] } }));
 
+  const toggleCategoryAll = (regId: string, categoryKey: string) => {
+    const category = checkCategories.find(c => c.key === categoryKey);
+    if (!category) return;
+    setCheckItems(prev => {
+      const current = prev[regId] || {};
+      const allChecked = category.items.every(item => current[item.key]);
+      const next = { ...current };
+      category.items.forEach(item => {
+        next[item.key] = !allChecked;
+      });
+      return { ...prev, [regId]: next };
+    });
+  };
+
   const getCompletionRate = (regId: string) => {
     const checks = checkItems[regId] || {};
     const total = checkCategories.reduce((a, c) => a + c.items.length, 0);
@@ -650,12 +664,22 @@ export function RefereeDashboard() {
                       <div className="space-y-4">
                         {checkCategories.map(cat => {
                           const done = cat.items.filter(i => currentChecks[i.key]).length;
+                          const allChecked = done === cat.items.length;
                           const colorMap: Record<string, string> = { blue: 'text-blue-400 bg-blue-500/10 border-blue-500/20', green: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', purple: 'text-purple-400 bg-purple-500/10 border-purple-500/20', orange: 'text-orange-400 bg-orange-500/10 border-orange-500/20' };
                           return (
                             <div key={cat.key} className="bg-slate-900/50 rounded-xl border border-border overflow-hidden">
                               <div className={`flex items-center justify-between px-4 py-3 border-b border-border ${colorMap[cat.color]}`}>
                                 <div className="flex items-center gap-2"><cat.icon className="w-4 h-4" /><span className="font-semibold text-sm">{cat.title}</span></div>
-                                <span className="text-xs font-mono">{done}/{cat.items.length}</span>
+                                <div className="flex items-center gap-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleCategoryAll(currentReg._id, cat.key)}
+                                    className="text-xs font-semibold underline underline-offset-2 hover:opacity-80 transition-opacity"
+                                  >
+                                    {allChecked ? 'Bỏ chọn' : 'Chọn tất cả'}
+                                  </button>
+                                  <span className="text-xs font-mono">{done}/{cat.items.length}</span>
+                                </div>
                               </div>
                               <div className="p-3 space-y-1">
                                 {cat.items.map(item => (
