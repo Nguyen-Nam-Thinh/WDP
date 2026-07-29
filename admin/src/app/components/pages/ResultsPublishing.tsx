@@ -534,7 +534,7 @@ export default function ResultsPublishing() {
               className="inline-flex items-center justify-center gap-2 rounded-md bg-blue-600 py-1.5 px-4 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50 transition shadow ml-4"
             >
               {settling ? <RefreshCw className="animate-spin" size={16} /> : <DollarSign size={16} />}
-              Quyết toán TOÀN BỘ ({pendingBets} cược)
+              Quyết toán ({pendingBets} cược)
             </button>
           ) : (
             <span className="inline-flex items-center justify-center gap-1.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 py-1.5 px-4 text-sm font-bold shadow-sm ml-4">
@@ -570,7 +570,7 @@ export default function ResultsPublishing() {
             {pendingBets > 0 && (
               <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900 shadow-sm">
                 <AlertCircle size={20} className="shrink-0 mt-0.5 text-amber-500" />
-                <p className="text-[13px] font-medium">Có <strong>{pendingBets}</strong> cược chưa được quyết toán. Bấm nút "Quyết toán TOÀN BỘ" ở góc trên để xử lý.</p>
+                <p className="text-[13px] font-medium">Có <strong>{pendingBets}</strong> cược chưa được quyết toán. Bấm nút "Quyết toán" ở góc trên để xử lý.</p>
               </div>
             )}
 

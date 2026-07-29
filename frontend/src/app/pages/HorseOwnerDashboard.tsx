@@ -702,16 +702,18 @@ export function HorseOwnerDashboard() {
     if (!selectedRaceForReg || !regHorseId || !token) return;
     setSubmittingReg(true);
     try {
+      const fee = selectedRaceForReg.registrationFee ?? 0;
       await registrationApi.register(token, {
         raceId: selectedRaceForReg._id,
         horseId: regHorseId,
       });
       toast.success(
-        `Đăng ký thành công! Phí ${selectedRaceForReg.registrationFee?.toLocaleString("vi-VN")} coins đã được trừ.`,
+        `Đăng ký thành công! Phí ${fee.toLocaleString("vi-VN")} coins đã được trừ.`,
       );
       setRegisterRaceOpen(false);
       setSelectedRaceForReg(null);
-      await loadScheduleData();
+      await Promise.all([loadScheduleData(), refetchWallet()]);
+      setTxRefreshKey((k) => k + 1);
     } catch (err: any) {
       toast.error(err.message || "Đăng ký thất bại");
     } finally {
@@ -732,7 +734,8 @@ export function HorseOwnerDashboard() {
     try {
       await registrationApi.cancel(token, pendingCancelRegId);
       toast.success("Đã hủy đăng ký, 40% phí đã được hoàn trả");
-      await loadScheduleData();
+      await Promise.all([loadScheduleData(), refetchWallet()]);
+      setTxRefreshKey((k) => k + 1);
     } catch (err: any) {
       toast.error(err.message || "Hủy đăng ký thất bại");
     } finally {

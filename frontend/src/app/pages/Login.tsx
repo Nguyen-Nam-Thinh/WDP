@@ -115,15 +115,6 @@ export function Login() {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-              <div className="flex justify-end mt-1.5">
-                <button
-                  type="button"
-                  onClick={() => navigate('/forgot-password')}
-                  className="text-xs text-secondary hover:text-secondary/80 transition-colors cursor-pointer"
-                >
-                  Quên mật khẩu?
-                </button>
-              </div>
             </div>
 
             <button

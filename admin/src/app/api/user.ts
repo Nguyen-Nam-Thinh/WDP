@@ -74,6 +74,39 @@ export const userApi = {
       body: JSON.stringify(data),
     }),
 
+  /** Admin tạo tài khoản (owner / jockey / referee / spectator) */
+  createUser: (data: {
+    email: string;
+    password: string;
+    fullName: string;
+    phone?: string;
+    role: 'owner' | 'jockey' | 'referee' | 'spectator';
+    licenseNumber?: string;
+    yearsOfService?: number;
+    weight?: number;
+    height?: number;
+    experienceYears?: number;
+    bio?: string;
+  }) =>
+    apiRequest<AdminUser>('/users', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  /** Admin tạo tài khoản trọng tài */
+  createReferee: (data: {
+    email: string;
+    password: string;
+    fullName: string;
+    phone?: string;
+    licenseNumber: string;
+    yearsOfService?: number;
+  }) =>
+    apiRequest<AdminUser>('/users/referees', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
   /** Lấy danh sách trọng tài */
   listReferees: (page = 1, limit = 50) => {
     const q = new URLSearchParams({ page: String(page), limit: String(limit) });

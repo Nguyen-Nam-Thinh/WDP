@@ -111,6 +111,24 @@ async function toggleActive(req, res, next) {
   }
 }
 
+async function adminCreateReferee(req, res, next) {
+  try {
+    const user = await userService.adminCreateReferee(req.body);
+    sendSuccess(res, user, 201, 'Tạo tài khoản trọng tài thành công');
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function adminCreateUser(req, res, next) {
+  try {
+    const user = await userService.adminCreateUser(req.body);
+    sendSuccess(res, user, 201, 'Tạo tài khoản thành công');
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function getMyRaceResults(req, res, next) {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -352,5 +370,5 @@ async function updateAvailability(req, res, next) {
 module.exports = {
   getMe, updateMe, getMyWallet, getMyTransactions, getMyRaceResults,
   uploadAvatar, getJockeys, getReferees, getUsers, toggleActive, adminUpdateUser,
-  getOverviewStats, getMonthlyStats, updateAvailability, createTopup,
+  adminCreateReferee, adminCreateUser, getOverviewStats, getMonthlyStats, updateAvailability, createTopup,
 };

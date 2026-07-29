@@ -108,8 +108,8 @@ export default function RaceManagement() {
 
   const loadTournaments = useCallback(async () => {
     try {
-      const res = await tournamentApi.list(1, 100);
-      setTournaments(res.tournaments);
+      const res = await tournamentApi.list(1, 100, undefined, true);
+      setTournaments(res.tournaments.filter(t => t.status !== 'cancelled'));
     } catch (err: any) {
       toast.error(err.message);
     }

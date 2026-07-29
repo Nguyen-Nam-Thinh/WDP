@@ -78,11 +78,13 @@ async function deleteTournament(tournamentId) {
   if (!tournament.isActive) throw new AppError(400, 'Giải đấu đã bị vô hiệu hóa trước đó');
 
   const { Race } = require('../models/race.model');
-  const blockingRace = await Race.findOne({
+  const existingRace = await Race.findOne({
     tournamentId,
-    status: { $in: ['running', 'finished'] },
+    status: { $ne: 'cancelled' },
   });
-  if (blockingRace) throw new AppError(409, 'Không thể xóa giải đấu khi đang có cuộc đua diễn ra hoặc đã kết thúc');
+  if (existingRace) {
+    throw new AppError(409, 'Không thể xóa giải đấu khi vẫn còn cuộc đua. Hãy hủy các cuộc đua trước.');
+  }
 
   tournament.isActive = false;
   tournament.status = 'cancelled';

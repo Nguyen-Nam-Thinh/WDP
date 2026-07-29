@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Edit, Search, Ban, CheckCircle, RefreshCw, Filter, X, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Edit, Search, Ban, CheckCircle, RefreshCw, Filter, X, MoreHorizontal, ChevronLeft, ChevronRight, Plus, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { userApi, AdminUser } from '../../api/user';
 
@@ -113,6 +113,24 @@ export default function UserManagement() {
   const [editRole, setEditRole] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // Create user dialog
+  const [createOpen, setCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const emptyCreateForm = {
+    email: '',
+    password: '',
+    fullName: '',
+    phone: '',
+    role: 'spectator' as 'owner' | 'jockey' | 'referee' | 'spectator',
+    licenseNumber: '',
+    yearsOfService: '0',
+    weight: '',
+    height: '',
+    experienceYears: '0',
+    bio: '',
+  };
+  const [createForm, setCreateForm] = useState(emptyCreateForm);
+
   // Toggle active loading set
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
 
@@ -198,6 +216,73 @@ export default function UserManagement() {
     }
   };
 
+  const handleOpenCreateUser = () => {
+    setCreateForm(emptyCreateForm);
+    setCreateOpen(true);
+  };
+
+  const handleCreateUser = async () => {
+    if (!createForm.email || !createForm.password || !createForm.fullName) {
+      toast.error('Vui lòng điền đầy đủ thông tin bắt buộc');
+      return;
+    }
+    if (createForm.password.length < 8) {
+      toast.error('Mật khẩu phải có ít nhất 8 ký tự');
+      return;
+    }
+    if (createForm.role === 'referee' && !createForm.licenseNumber.trim()) {
+      toast.error('Vui lòng nhập số giấy phép trọng tài');
+      return;
+    }
+    if (createForm.role === 'jockey') {
+      if (!createForm.weight || Number(createForm.weight) <= 0) {
+        toast.error('Vui lòng nhập cân nặng hợp lệ cho kỵ thủ');
+        return;
+      }
+      if (!createForm.height || Number(createForm.height) <= 0) {
+        toast.error('Vui lòng nhập chiều cao hợp lệ cho kỵ thủ');
+        return;
+      }
+    }
+
+    setCreating(true);
+    try {
+      const payload: Parameters<typeof userApi.createUser>[0] = {
+        email: createForm.email.trim(),
+        password: createForm.password,
+        fullName: createForm.fullName.trim(),
+        phone: createForm.phone.trim() || undefined,
+        role: createForm.role,
+      };
+      if (createForm.role === 'referee') {
+        payload.licenseNumber = createForm.licenseNumber.trim();
+        payload.yearsOfService = Number(createForm.yearsOfService) || 0;
+      }
+      if (createForm.role === 'jockey') {
+        payload.weight = Number(createForm.weight);
+        payload.height = Number(createForm.height);
+        payload.experienceYears = Number(createForm.experienceYears) || 0;
+        payload.bio = createForm.bio.trim() || undefined;
+      }
+
+      await userApi.createUser(payload);
+      const createdRole = createForm.role;
+      toast.success(`Tạo tài khoản ${ROLE_LABELS[createdRole]} thành công`);
+      setCreateOpen(false);
+      setCreateForm(emptyCreateForm);
+      if (roleFilter === createdRole && page === 1) {
+        fetchUsers();
+      } else {
+        setRoleFilter(createdRole);
+        setPage(1);
+      }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Tạo tài khoản thất bại');
+    } finally {
+      setCreating(false);
+    }
+  };
+
   return (
     <>
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -213,6 +298,13 @@ export default function UserManagement() {
           >
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
             Làm mới
+          </button>
+          <button
+            onClick={handleOpenCreateUser}
+            className="inline-flex items-center gap-2 rounded-md bg-blue-600 py-2 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition"
+          >
+            <UserPlus size={16} />
+            Tạo người dùng
           </button>
         </div>
       </div>
@@ -457,6 +549,168 @@ export default function UserManagement() {
           >
             {saving ? <RefreshCw className="animate-spin mr-2" size={16} /> : null}
             Lưu thay đổi
+          </button>
+        </div>
+      </Modal>
+
+      {/* Create User Modal */}
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Tạo người dùng mới" maxWidth="max-w-lg">
+        <div className="p-6 pb-2">
+          <div className="mb-6">
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">Thông tin đăng nhập</h4>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label className="mb-1.5 block text-sm font-semibold text-slate-700">Vai trò <span className="text-red-500">*</span></label>
+                <select
+                  value={createForm.role}
+                  onChange={(e) => setCreateForm((p) => ({ ...p, role: e.target.value as typeof createForm.role }))}
+                  className="w-full appearance-none rounded-md border border-slate-300 bg-white py-2 px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium text-slate-800 shadow-sm"
+                >
+                  <option value="spectator">Khán giả</option>
+                  <option value="owner">Chủ ngựa</option>
+                  <option value="jockey">Kỵ thủ</option>
+                  <option value="referee">Trọng tài</option>
+                </select>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="mb-1.5 block text-sm font-semibold text-slate-700">Email <span className="text-red-500">*</span></label>
+                <input
+                  type="email"
+                  value={createForm.email}
+                  onChange={(e) => setCreateForm((p) => ({ ...p, email: e.target.value }))}
+                  className="w-full rounded-md border border-slate-300 bg-white py-2 px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  placeholder="user@example.com"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="mb-1.5 block text-sm font-semibold text-slate-700">Mật khẩu <span className="text-red-500">*</span></label>
+                <input
+                  type="password"
+                  value={createForm.password}
+                  onChange={(e) => setCreateForm((p) => ({ ...p, password: e.target.value }))}
+                  className="w-full rounded-md border border-slate-300 bg-white py-2 px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  placeholder="Tối thiểu 8 ký tự"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="mb-1.5 block text-sm font-semibold text-slate-700">Họ và tên <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={createForm.fullName}
+                  onChange={(e) => setCreateForm((p) => ({ ...p, fullName: e.target.value }))}
+                  className="w-full rounded-md border border-slate-300 bg-white py-2 px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  placeholder="Nguyễn Văn A"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="mb-1.5 block text-sm font-semibold text-slate-700">Số điện thoại</label>
+                <input
+                  type="text"
+                  value={createForm.phone}
+                  onChange={(e) => setCreateForm((p) => ({ ...p, phone: e.target.value }))}
+                  className="w-full rounded-md border border-slate-300 bg-white py-2 px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  placeholder="09xxxxxxxx"
+                />
+              </div>
+            </div>
+          </div>
+
+          {createForm.role === 'referee' && (
+            <div className="mb-6">
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">Hồ sơ trọng tài</h4>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Số giấy phép <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    value={createForm.licenseNumber}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, licenseNumber: e.target.value }))}
+                    className="w-full rounded-md border border-slate-300 bg-white py-2 px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    placeholder="REF-2026-001"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Số năm kinh nghiệm</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={createForm.yearsOfService}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, yearsOfService: e.target.value }))}
+                    className="w-full rounded-md border border-slate-300 bg-white py-2 px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {createForm.role === 'jockey' && (
+            <div className="mb-6">
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">Hồ sơ kỵ thủ</h4>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Cân nặng (kg) <span className="text-red-500">*</span></label>
+                  <input
+                    type="number"
+                    min={1}
+                    step="0.1"
+                    value={createForm.weight}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, weight: e.target.value }))}
+                    className="w-full rounded-md border border-slate-300 bg-white py-2 px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    placeholder="52"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Chiều cao (cm) <span className="text-red-500">*</span></label>
+                  <input
+                    type="number"
+                    min={1}
+                    step="0.1"
+                    value={createForm.height}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, height: e.target.value }))}
+                    className="w-full rounded-md border border-slate-300 bg-white py-2 px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    placeholder="165"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Số năm kinh nghiệm</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={createForm.experienceYears}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, experienceYears: e.target.value }))}
+                    className="w-full rounded-md border border-slate-300 bg-white py-2 px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Tiểu sử</label>
+                  <textarea
+                    rows={2}
+                    value={createForm.bio}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, bio: e.target.value }))}
+                    className="w-full rounded-md border border-slate-300 bg-white py-2 px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    placeholder="Mô tả ngắn về kỵ thủ"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4 mt-auto rounded-b-xl">
+          <button
+            onClick={() => setCreateOpen(false)}
+            disabled={creating}
+            className="rounded-md border border-slate-300 bg-white py-2 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition shadow-sm"
+          >
+            Hủy bỏ
+          </button>
+          <button
+            onClick={handleCreateUser}
+            disabled={creating}
+            className="rounded-md bg-blue-600 py-2 px-5 text-sm font-semibold text-white hover:bg-blue-700 shadow-sm disabled:opacity-50 transition flex items-center justify-center min-w-[140px]"
+          >
+            {creating ? <RefreshCw className="animate-spin mr-2" size={16} /> : <Plus className="mr-2" size={16} />}
+            Tạo người dùng
           </button>
         </div>
       </Modal>

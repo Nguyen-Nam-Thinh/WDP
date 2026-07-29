@@ -29,9 +29,10 @@ export interface CreateTournamentData {
 }
 
 export const tournamentApi = {
-  list: (page = 1, limit = 20, status?: string) => {
+  list: (page = 1, limit = 20, status?: string, isActive?: boolean) => {
     const q = new URLSearchParams({ page: String(page), limit: String(limit) });
     if (status) q.append('status', status);
+    if (isActive !== undefined) q.append('isActive', String(isActive));
     return apiRequest<TournamentListResponse>(`/tournaments?${q}`);
   },
 

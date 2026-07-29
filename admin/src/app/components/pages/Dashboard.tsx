@@ -67,8 +67,8 @@ export default function Dashboard() {
       try {
         const [usersRes, ongoingRes, upcomingTRes, regsRes, racesOpenRes] = await Promise.all([
           userApi.getUsers({ page: 1, limit: 1 }),
-          tournamentApi.list(1, 1, 'ongoing'),
-          tournamentApi.list(1, 5),
+          tournamentApi.list(1, 1, 'ongoing', true),
+          tournamentApi.list(1, 5, undefined, true),
           registrationApi.list({ page: 1, limit: 1, status: 'active' }),
           raceApi.list({ status: 'open', page: 1, limit: 1 }),
         ]);

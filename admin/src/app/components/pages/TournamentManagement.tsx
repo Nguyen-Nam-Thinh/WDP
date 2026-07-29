@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import { Edit, Trash2, Plus, Calendar, Clock, Trophy, Eye, RefreshCw, X, AlertCircle, ChevronLeft, ChevronRight, Search, TrendingUp, Flag, MoreHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
@@ -208,6 +208,18 @@ function RaceDialog({ open, editing, tournaments, onClose, onSaved }: any) {
 
   const setF = (k: string, v: any) => setForm(prev => ({ ...prev, [k]: v }));
 
+  const tournamentOptions = (() => {
+    const list = [...tournaments];
+    if (editing) {
+      const tid = typeof editing.tournamentId === 'object' ? editing.tournamentId._id : editing.tournamentId;
+      const tName = typeof editing.tournamentId === 'object' ? editing.tournamentId.name : null;
+      if (tid && !list.some((t: any) => t._id === tid)) {
+        list.unshift({ _id: tid, name: tName || 'Giải đã xóa' });
+      }
+    }
+    return list;
+  })();
+
   const handleSave = async () => {
     if (!form.tournamentId || !form.name || !form.scheduledTime || !form.cutoffTime) {
       toast.error('Vui lòng điền đầy đủ thông tin bắt buộc');
@@ -245,9 +257,9 @@ function RaceDialog({ open, editing, tournaments, onClose, onSaved }: any) {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1.5 block text-sm font-semibold text-slate-700">Thuộc Giải đấu <span className="text-red-500">*</span></label>
-            <select value={form.tournamentId} onChange={e => setF('tournamentId', e.target.value)} className="w-full appearance-none rounded-md border border-slate-300 bg-white py-2 px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm">
+            <select value={form.tournamentId} onChange={e => setF('tournamentId', e.target.value)} disabled={!!editing} className="w-full appearance-none rounded-md border border-slate-300 bg-white py-2 px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm disabled:bg-slate-50 disabled:text-slate-500">
               <option value="">-- Chọn giải đấu --</option>
-              {tournaments.map((t: any) => <option key={t._id} value={t._id}>{t.name}</option>)}
+              {tournamentOptions.map((t: any) => <option key={t._id} value={t._id}>{t.name}</option>)}
             </select>
           </div>
           <div>
@@ -310,6 +322,50 @@ function RaceDialog({ open, editing, tournaments, onClose, onSaved }: any) {
   );
 }
 
+// ── Confirm / Alert Dialogs ────────────────────────────────────────────────────
+function ConfirmDialog({
+  open, title, message, confirmLabel = 'Xác nhận', danger = false,
+  loading = false, onClose, onConfirm,
+}: {
+  open: boolean; title: string; message: ReactNode; confirmLabel?: string;
+  danger?: boolean; loading?: boolean; onClose: () => void; onConfirm: () => void;
+}) {
+  return (
+    <Modal open={open} onClose={onClose} title={title} maxWidth="max-w-md">
+      <div className="mb-2 text-slate-600 text-sm leading-relaxed">{message}</div>
+      <div className="flex justify-between gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4 -mx-6 mt-6 rounded-b-xl">
+        <button onClick={onClose} disabled={loading} className="rounded-md border border-slate-300 bg-white py-2 px-4 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 transition">Hủy bỏ</button>
+        <button
+          onClick={onConfirm}
+          disabled={loading}
+          className={`rounded-md py-2 px-5 text-sm font-semibold text-white shadow-sm disabled:opacity-50 transition flex items-center justify-center min-w-[120px] ${danger ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'}`}
+        >
+          {loading ? <RefreshCw className="animate-spin mr-2" size={16} /> : null}
+          {confirmLabel}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+function AlertDialog({
+  open, title, message, onClose,
+}: { open: boolean; title: string; message: ReactNode; onClose: () => void }) {
+  return (
+    <Modal open={open} onClose={onClose} title={title} maxWidth="max-w-md">
+      <div className="mb-2 flex gap-3 items-start">
+        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50 border border-amber-200">
+          <AlertCircle size={18} className="text-amber-600" />
+        </div>
+        <p className="text-slate-600 text-sm leading-relaxed">{message}</p>
+      </div>
+      <div className="flex justify-end border-t border-slate-100 bg-slate-50 px-6 py-4 -mx-6 mt-6 rounded-b-xl">
+        <button onClick={onClose} className="rounded-md bg-blue-600 py-2 px-5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition">Đã hiểu</button>
+      </div>
+    </Modal>
+  );
+}
+
 // ── Status Change Dialog ───────────────────────────────────────────────────────
 function StatusDialog({ open, race, onClose, onSaved }: any) {
   const [saving, setSaving] = useState(false);
@@ -361,11 +417,15 @@ export default function TournamentManagement() {
 
   // Tournaments
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [tournamentsWithRaces, setTournamentsWithRaces] = useState<Set<string>>(new Set());
   const [loadingT, setLoadingT] = useState(true);
   const [tDialog, setTDialog] = useState(false);
   const [editingT, setEditingT] = useState<Tournament | null>(null);
   const [tSearch, setTSearch] = useState('');
   const [tSort, setTSort] = useState<'newest' | 'oldest' | 'status'>('newest');
+  const [deleteTarget, setDeleteTarget] = useState<Tournament | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [blockDeleteMsg, setBlockDeleteMsg] = useState<string | null>(null);
 
   // Races
   const [races, setRaces] = useState<Race[]>([]);
@@ -376,6 +436,10 @@ export default function TournamentManagement() {
   const [statusRace, setStatusRace] = useState<Race | null>(null);
   const [filterTournament, setFilterTournament] = useState('');
   const [rSearch, setRSearch] = useState('');
+  const [cancelRaceTarget, setCancelRaceTarget] = useState<Race | null>(null);
+  const [cancellingRace, setCancellingRace] = useState(false);
+
+  const activeTournaments = tournaments.filter(t => t.isActive && t.status !== 'cancelled');
 
   // Pagination
   const [tPage, setTPage] = useState(1);
@@ -415,52 +479,93 @@ export default function TournamentManagement() {
   const pagedRaces = filteredRaces.slice((rPage - 1) * R_PER_PAGE, rPage * R_PER_PAGE);
   const rTotalPages = Math.ceil(filteredRaces.length / R_PER_PAGE);
 
+  const refreshRaceOwnership = useCallback(async () => {
+    try {
+      const res = await raceApi.list({ limit: 200 });
+      const ids = new Set<string>();
+      for (const r of res.races) {
+        if (r.status === 'cancelled') continue;
+        const tid = typeof r.tournamentId === 'object' ? r.tournamentId._id : r.tournamentId;
+        if (tid) ids.add(tid);
+      }
+      setTournamentsWithRaces(ids);
+    } catch {
+      /* ignore — edit-button guard is best-effort */
+    }
+  }, []);
+
   const loadTournaments = useCallback(async () => {
     setLoadingT(true);
     try {
       const res = await tournamentApi.list(1, 100);
       setTournaments(res.tournaments);
+      await refreshRaceOwnership();
     } catch (err: any) {
       toast.error(err.message);
     } finally {
       setLoadingT(false);
     }
-  }, []);
+  }, [refreshRaceOwnership]);
 
   const loadRaces = useCallback(async () => {
     setLoadingR(true);
     try {
       const res = await raceApi.list({ tournamentId: filterTournament || undefined, limit: 100 });
       setRaces(res.races);
+      await refreshRaceOwnership();
     } catch (err: any) {
       toast.error(err.message);
     } finally {
       setLoadingR(false);
     }
-  }, [filterTournament]);
+  }, [filterTournament, refreshRaceOwnership]);
 
   useEffect(() => { loadTournaments(); }, [loadTournaments]);
   useEffect(() => { if (tab === 1) loadRaces(); }, [tab, loadRaces]);
 
-  const handleDeleteTournament = async (t: Tournament) => {
-    if (!confirm(`Xóa giải đấu "${t.name}"?`)) return;
+  useEffect(() => {
+    if (!filterTournament) return;
+    const stillValid = tournaments.some(t => t._id === filterTournament && t.isActive && t.status !== 'cancelled');
+    if (!stillValid) setFilterTournament('');
+  }, [filterTournament, tournaments]);
+
+  const handleRequestDeleteTournament = (t: Tournament) => {
+    if (tournamentsWithRaces.has(t._id)) {
+      setBlockDeleteMsg(`Không thể xóa giải đấu "${t.name}" vì vẫn còn cuộc đua. Hãy hủy các cuộc đua trước.`);
+      return;
+    }
+    setDeleteTarget(t);
+  };
+
+  const handleConfirmDeleteTournament = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await tournamentApi.delete(t._id);
+      await tournamentApi.delete(deleteTarget._id);
       toast.success('Đã xóa giải đấu');
+      setDeleteTarget(null);
+      if (filterTournament === deleteTarget._id) setFilterTournament('');
       loadTournaments();
     } catch (err: any) {
-      toast.error(err.message);
+      setDeleteTarget(null);
+      setBlockDeleteMsg(err.message || 'Không thể xóa giải đấu');
+    } finally {
+      setDeleting(false);
     }
   };
 
-  const handleCancelRace = async (r: Race) => {
-    if (!confirm(`Hủy cuộc đua "${r.name}"? Tất cả phí đăng ký sẽ được hoàn trả 100%.`)) return;
+  const handleConfirmCancelRace = async () => {
+    if (!cancelRaceTarget) return;
+    setCancellingRace(true);
     try {
-      await raceApi.cancel(r._id);
+      await raceApi.cancel(cancelRaceTarget._id);
       toast.success('Đã hủy cuộc đua và hoàn phí');
+      setCancelRaceTarget(null);
       loadRaces();
     } catch (err: any) {
       toast.error(err.message);
+    } finally {
+      setCancellingRace(false);
     }
   };
 
@@ -574,15 +679,19 @@ export default function TournamentManagement() {
                         </td>
                         <td className="px-5 py-4">
                           <div className="flex items-center justify-end gap-2">
-                            <button onClick={() => { setEditingT(t); setTDialog(true); }} className="flex items-center gap-1 px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-600 hover:text-blue-700 hover:bg-blue-50 border border-slate-200 rounded transition shadow-sm bg-white">
-                              <Edit size={12} /> Sửa
-                            </button>
+                            {t.isActive && t.status !== 'cancelled' && !tournamentsWithRaces.has(t._id) && (
+                              <button onClick={() => { setEditingT(t); setTDialog(true); }} className="flex items-center gap-1 px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-600 hover:text-blue-700 hover:bg-blue-50 border border-slate-200 rounded transition shadow-sm bg-white">
+                                <Edit size={12} /> Sửa
+                              </button>
+                            )}
                             <button onClick={() => { setFilterTournament(t._id); setTab(1); }} className="flex items-center gap-1 px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-600 hover:text-blue-700 hover:bg-blue-50 border border-slate-200 rounded transition shadow-sm bg-white">
                               <Eye size={12} /> Chặng đua
                             </button>
-                            <button onClick={() => handleDeleteTournament(t)} className="flex items-center gap-1 px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-600 hover:text-red-700 hover:bg-red-50 border border-slate-200 rounded transition shadow-sm bg-white">
-                              <Trash2 size={12} /> Xóa
-                            </button>
+                            {t.isActive && t.status !== 'cancelled' && (
+                              <button onClick={() => handleRequestDeleteTournament(t)} className="flex items-center gap-1 px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-600 hover:text-red-700 hover:bg-red-50 border border-slate-200 rounded transition shadow-sm bg-white">
+                                <Trash2 size={12} /> Xóa
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -638,7 +747,7 @@ export default function TournamentManagement() {
                        className="appearance-none rounded-md border border-slate-200 bg-white py-1.5 px-3 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm font-medium text-slate-700 min-w-[150px]"
                      >
                        <option value="">-- Tất cả giải đấu --</option>
-                       {tournaments.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
+                       {activeTournaments.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
                      </select>
                   </div>
                 </div>
@@ -697,7 +806,7 @@ export default function TournamentManagement() {
                                 </button>
                               )}
                               {canCancel && (
-                                <button onClick={() => handleCancelRace(r)} className="flex items-center gap-1 px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-600 hover:text-red-700 hover:bg-red-50 border border-slate-200 rounded transition shadow-sm bg-white">
+                                <button onClick={() => setCancelRaceTarget(r)} className="flex items-center gap-1 px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-600 hover:text-red-700 hover:bg-red-50 border border-slate-200 rounded transition shadow-sm bg-white">
                                   <Trash2 size={12} /> Hủy
                                 </button>
                               )}
@@ -739,8 +848,37 @@ export default function TournamentManagement() {
       </div>
 
       <TournamentDialog open={tDialog} editing={editingT} onClose={() => setTDialog(false)} onSaved={loadTournaments} />
-      <RaceDialog open={rDialog} editing={editingR} tournaments={tournaments} onClose={() => setRDialog(false)} onSaved={loadRaces} />
+      <RaceDialog open={rDialog} editing={editingR} tournaments={activeTournaments} onClose={() => setRDialog(false)} onSaved={loadRaces} />
       <StatusDialog open={statusDialog} race={statusRace} onClose={() => setStatusDialog(false)} onSaved={loadRaces} />
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Xóa giải đấu"
+        message={<>Bạn có chắc muốn xóa giải đấu <b>"{deleteTarget?.name}"</b>? Giải đấu sẽ bị vô hiệu hóa và không thể dùng để tạo chặng đua mới.</>}
+        confirmLabel="Xác nhận xóa"
+        danger
+        loading={deleting}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDeleteTournament}
+      />
+
+      <ConfirmDialog
+        open={!!cancelRaceTarget}
+        title="Hủy cuộc đua"
+        message={<>Hủy cuộc đua <b>"{cancelRaceTarget?.name}"</b>? Tất cả phí đăng ký sẽ được hoàn trả 100%.</>}
+        confirmLabel="Xác nhận hủy"
+        danger
+        loading={cancellingRace}
+        onClose={() => setCancelRaceTarget(null)}
+        onConfirm={handleConfirmCancelRace}
+      />
+
+      <AlertDialog
+        open={!!blockDeleteMsg}
+        title="Không thể xóa giải đấu"
+        message={blockDeleteMsg}
+        onClose={() => setBlockDeleteMsg(null)}
+      />
     </>
   );
 }

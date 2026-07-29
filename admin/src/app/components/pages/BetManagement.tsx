@@ -5,16 +5,10 @@ import {
   ChevronLeft, ChevronRight, Filter, Coins,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { betAdminApi, type Bet, BET_TYPE_LABEL, BET_STATUS_LABEL, type BetStatus } from '../../api/bet';
+import { betAdminApi, type Bet, BET_STATUS_LABEL, type BetStatus } from '../../api/bet';
 import { raceApi, type Race } from '../../api/race';
 
 const fmtDateTime = (d: string) => d ? new Date(d).toLocaleString('vi-VN') : '-';
-
-const BET_TYPE_COLOR: Record<string, string> = {
-  win:   'bg-purple-50 text-purple-700 border border-purple-200',
-  place: 'bg-blue-50 text-blue-700 border border-blue-200',
-  show:  'bg-cyan-50 text-cyan-700 border border-cyan-200',
-};
 
 const STATUS_PILL: Record<string, string> = {
   pending:   'bg-amber-50 text-amber-700 border border-amber-200',
@@ -65,6 +59,9 @@ export default function BetManagement() {
   const [settlingRaceId, setSettlingRaceId] = useState('');
   const [settling, setSettling] = useState(false);
   const [settleSearch, setSettleSearch] = useState('');
+  const [settleRaces, setSettleRaces] = useState<Race[]>([]);
+  const [loadingSettleRaces, setLoadingSettleRaces] = useState(false);
+  const [pendingByRace, setPendingByRace] = useState<Record<string, number>>({});
 
   const [stats, setStats] = useState({ totalAmount: 0, totalPayout: 0, pending: 0, total: 0 });
   const [loadingStats, setLoadingStats] = useState(true);
@@ -114,12 +111,61 @@ export default function BetManagement() {
   useEffect(() => { loadRaces(); }, [loadRaces]);
   useEffect(() => { setPage(1); }, [filterStatus, filterRaceId]);
 
+  const openSettleDialog = async () => {
+    setSettleSearch('');
+    setSettlingRaceId('');
+    setSettleDialog(true);
+    setLoadingSettleRaces(true);
+    try {
+      const [finishedRes, pendingRes] = await Promise.all([
+        raceApi.list({ status: 'finished', limit: 100 }),
+        betAdminApi.getAllBets({ status: 'pending', limit: 10000 }),
+      ]);
+
+      const counts: Record<string, number> = {};
+      for (const bet of pendingRes.bets ?? []) {
+        const rid = typeof bet.raceId === 'object' ? bet.raceId._id : bet.raceId;
+        if (!rid) continue;
+        counts[rid] = (counts[rid] || 0) + 1;
+      }
+      setPendingByRace(counts);
+
+      // Chỉ hiện race đã kết thúc; ưu tiên race còn cược pending
+      const finished = (finishedRes.races ?? [])
+        .filter(r => r.status === 'finished')
+        .sort((a, b) => {
+          const pa = counts[a._id] || 0;
+          const pb = counts[b._id] || 0;
+          if (pb !== pa) return pb - pa;
+          return new Date(b.scheduledTime).getTime() - new Date(a.scheduledTime).getTime();
+        });
+      setSettleRaces(finished);
+    } catch (err: any) {
+      toast.error(err.message || 'Không thể tải danh sách cuộc đua');
+      setSettleRaces([]);
+    } finally {
+      setLoadingSettleRaces(false);
+    }
+  };
+
   const handleSettle = async () => {
     if (!settlingRaceId) return;
+    const race = settleRaces.find(r => r._id === settlingRaceId);
+    if (!race || race.status !== 'finished') {
+      toast.error('Chỉ có thể quyết toán cuộc đua đã kết thúc');
+      return;
+    }
     setSettling(true);
     try {
       const result = await betAdminApi.settleBets(settlingRaceId);
-      toast.success(`Quyết toán ${result.settled} cược: ${result.won} thắng, ${result.lost} thua`);
+      const settled = result.settled ?? 0;
+      const won = result.won ?? 0;
+      const lost = result.lost ?? 0;
+      if (settled === 0) {
+        toast.success('Không còn cược chờ quyết toán');
+      } else {
+        toast.success(`Quyết toán ${settled} cược: ${won} thắng, ${lost} thua`);
+      }
       setSettleDialog(false);
       setSettlingRaceId('');
       loadBets();
@@ -142,13 +188,12 @@ export default function BetManagement() {
       })
     : bets;
 
-  const finishedRaces = races.filter(r => r.status === 'finished');
   const filteredSettleRaces = settleSearch
-    ? finishedRaces.filter(r =>
+    ? settleRaces.filter(r =>
         r.name.toLowerCase().includes(settleSearch.toLowerCase()) ||
         r.grade.toLowerCase().includes(settleSearch.toLowerCase())
       )
-    : finishedRaces;
+    : settleRaces;
 
   return (
     <>
@@ -162,11 +207,11 @@ export default function BetManagement() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <button
-            onClick={() => { setSettleSearch(''); setSettlingRaceId(''); setSettleDialog(true); }}
+            onClick={openSettleDialog}
             className="inline-flex items-center gap-2 rounded-md bg-blue-600 py-2 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition"
           >
             <DollarSign size={16} />
-            Quyết toán Hàng loạt
+            Quyết toán
           </button>
           <button
             onClick={() => { loadBets(); loadStats(); }}
@@ -313,7 +358,6 @@ export default function BetManagement() {
                   <th className="py-3 px-5 text-xs font-bold uppercase tracking-wider text-slate-400">Người cược</th>
                   <th className="py-3 px-5 text-xs font-bold uppercase tracking-wider text-slate-400">Cuộc đua</th>
                   <th className="py-3 px-5 text-xs font-bold uppercase tracking-wider text-slate-400">Ngựa</th>
-                  <th className="py-3 px-5 text-xs font-bold uppercase tracking-wider text-slate-400 text-center">Loại</th>
                   <th className="py-3 px-5 text-xs font-bold uppercase tracking-wider text-slate-400 text-right">Tiền cược</th>
                   <th className="py-3 px-5 text-xs font-bold uppercase tracking-wider text-slate-400 text-center">Hệ số</th>
                   <th className="py-3 px-5 text-xs font-bold uppercase tracking-wider text-slate-400 text-center">Trạng thái</th>
@@ -343,11 +387,6 @@ export default function BetManagement() {
                       <td className="py-3 px-5">
                         <p className="font-semibold text-slate-900 text-[13px]">{horse?.name || '-'}</p>
                         <p className="text-[11px] font-medium text-slate-500 mt-0.5">{horse?.currentGrade || ''}</p>
-                      </td>
-                      <td className="py-3 px-5 text-center">
-                        <span className={`inline-block rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-sm ${BET_TYPE_COLOR[bet.betType] || 'bg-slate-50 border border-slate-200 text-slate-600'}`}>
-                          {BET_TYPE_LABEL[bet.betType as keyof typeof BET_TYPE_LABEL] || bet.betType}
-                        </span>
                       </td>
                       <td className="py-3 px-5 text-right">
                         <p className="font-bold text-slate-900 text-[13px]">{bet.amount.toLocaleString('vi-VN')} $</p>
@@ -431,13 +470,13 @@ export default function BetManagement() {
       <Modal
         open={settleDialog}
         onClose={() => setSettleDialog(false)}
-        title="Quyết Toán Cược"
+        title="Quyết toán"
         maxWidth="max-w-lg"
         icon={<DollarSign size={18} className="text-blue-600" />}
       >
         <div className="flex flex-col gap-4">
           <p className="text-[13px] font-medium text-slate-500">
-            Chọn cuộc đua đã kết thúc để quyết toán. Hệ thống sẽ tự động tính toán dựa trên kết quả chính thức.
+            Chỉ hiện các cuộc đua <strong className="text-slate-700">đã kết thúc</strong>. Hệ thống quyết toán dựa trên kết quả chính thức.
           </p>
 
           {/* Search */}
@@ -455,7 +494,12 @@ export default function BetManagement() {
           {/* Race list */}
           <div className="rounded-lg border border-slate-200 bg-white overflow-hidden shadow-sm">
             <div className="max-h-56 overflow-y-auto divide-y divide-slate-100 custom-scrollbar">
-              {finishedRaces.length === 0 ? (
+              {loadingSettleRaces ? (
+                <div className="flex flex-col items-center justify-center py-10 gap-3 bg-slate-50">
+                  <RefreshCw className="animate-spin text-slate-300" size={24} />
+                  <p className="text-sm font-medium text-slate-500">Đang tải cuộc đua đã kết thúc...</p>
+                </div>
+              ) : settleRaces.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 gap-3 bg-slate-50">
                   <Clock size={24} className="text-slate-300" />
                   <p className="text-sm font-medium text-slate-500">Chưa có cuộc đua nào kết thúc</p>
@@ -466,27 +510,46 @@ export default function BetManagement() {
                   <p className="text-sm font-medium text-slate-500">Không tìm thấy cuộc đua phù hợp</p>
                 </div>
               ) : (
-                filteredSettleRaces.map(r => (
-                  <button
-                    key={r._id}
-                    onClick={() => setSettlingRaceId(r._id)}
-                    className={`w-full flex items-center justify-between px-4 py-3 text-sm text-left transition hover:bg-slate-50 ${
-                      settlingRaceId === r._id ? 'bg-blue-50/50' : 'bg-white'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`flex h-4 w-4 rounded-full border items-center justify-center shrink-0 ${settlingRaceId === r._id ? 'border-blue-500 bg-blue-500' : 'border-slate-300 bg-white'}`}>
-                        {settlingRaceId === r._id && <div className="h-1.5 w-1.5 bg-white rounded-full"></div>}
+                filteredSettleRaces.map(r => {
+                  const pendingCount = pendingByRace[r._id] || 0;
+                  return (
+                    <button
+                      key={r._id}
+                      onClick={() => setSettlingRaceId(r._id)}
+                      className={`w-full flex items-center justify-between px-4 py-3 text-sm text-left transition hover:bg-slate-50 ${
+                        settlingRaceId === r._id ? 'bg-blue-50/50' : 'bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`flex h-4 w-4 rounded-full border items-center justify-center shrink-0 ${settlingRaceId === r._id ? 'border-blue-500 bg-blue-500' : 'border-slate-300 bg-white'}`}>
+                          {settlingRaceId === r._id && <div className="h-1.5 w-1.5 bg-white rounded-full"></div>}
+                        </div>
+                        <div className="min-w-0">
+                          <span className={`font-bold text-[13px] block truncate ${settlingRaceId === r._id ? 'text-blue-700' : 'text-slate-800'}`}>
+                            {r.name}
+                          </span>
+                          <span className="text-[11px] text-slate-400 font-medium">
+                            {fmtDateTime(r.scheduledTime)}
+                          </span>
+                        </div>
                       </div>
-                      <span className={`font-bold text-[13px] truncate ${settlingRaceId === r._id ? 'text-blue-700' : 'text-slate-800'}`}>
-                        {r.name}
-                      </span>
-                    </div>
-                    <span className="ml-2 shrink-0 rounded bg-slate-100 border border-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 shadow-sm">
-                      {r.grade}
-                    </span>
-                  </button>
-                ))
+                      <div className="ml-2 shrink-0 flex items-center gap-1.5">
+                        {pendingCount > 0 ? (
+                          <span className="rounded bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-700 shadow-sm">
+                            {pendingCount} chờ
+                          </span>
+                        ) : (
+                          <span className="rounded bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700 shadow-sm">
+                            Đã xong
+                          </span>
+                        )}
+                        <span className="rounded bg-slate-100 border border-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 shadow-sm">
+                          {r.grade}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })
               )}
             </div>
           </div>
@@ -495,7 +558,10 @@ export default function BetManagement() {
             <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 shadow-sm mt-1">
               <CheckCircle size={16} className="text-emerald-500 shrink-0" />
               <p className="text-[13px] font-medium text-emerald-800">
-                Đã chọn: <strong className="font-bold">{races.find(r => r._id === settlingRaceId)?.name}</strong>
+                Đã chọn: <strong className="font-bold">{settleRaces.find(r => r._id === settlingRaceId)?.name}</strong>
+                {(pendingByRace[settlingRaceId] || 0) === 0 && (
+                  <span className="text-emerald-600"> — không còn cược chờ quyết toán</span>
+                )}
               </p>
             </div>
           )}
@@ -512,11 +578,11 @@ export default function BetManagement() {
           </button>
           <button
             onClick={handleSettle}
-            disabled={!settlingRaceId || settling}
+            disabled={!settlingRaceId || settling || (pendingByRace[settlingRaceId] || 0) === 0}
             className="inline-flex items-center gap-2 rounded-md bg-blue-600 py-2 px-5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 disabled:bg-slate-300 disabled:text-slate-500 transition shadow-sm"
           >
             {settling && <RefreshCw className="animate-spin" size={16} />}
-            {settling ? 'Đang quyết toán...' : 'Quyết toán Cược'}
+            {settling ? 'Đang quyết toán...' : 'Quyết toán'}
           </button>
         </div>
       </Modal>

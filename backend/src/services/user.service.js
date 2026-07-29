@@ -1,6 +1,11 @@
+const bcrypt = require('bcrypt');
+const mongoose = require('mongoose');
 const { User } = require('../models/user.model');
+const { createWallet } = require('./wallet.service');
 const { AppError } = require('../middleware/error.middleware');
 const cloudinaryService = require('./cloudinary.service');
+
+const SALT_ROUNDS = 12;
 
 async function getUserById(userId) {
   const user = await User.findById(userId).populate('walletId', 'balance');
@@ -113,4 +118,74 @@ async function adminUpdateUser(userId, data) {
   return user;
 }
 
-module.exports = { getUserById, updateProfile, uploadAvatar, getJockeys, getReferees, getUsers, toggleActive, adminUpdateUser };
+async function adminCreateUser({
+  email, password, fullName, phone, role,
+  licenseNumber, yearsOfService = 0,
+  weight, height, experienceYears = 0, bio,
+}) {
+  const allowedRoles = ['owner', 'jockey', 'referee', 'spectator'];
+  if (!allowedRoles.includes(role)) {
+    throw new AppError(400, 'Role không hợp lệ. Chỉ được tạo owner, jockey, referee, spectator');
+  }
+
+  const existing = await User.findOne({ email });
+  if (existing) throw new AppError(409, 'Email đã được đăng ký');
+
+  const userData = {
+    email,
+    passwordHash: await bcrypt.hash(password, SALT_ROUNDS),
+    fullName,
+    phone,
+    role,
+  };
+
+  if (role === 'referee') {
+    if (!licenseNumber?.trim()) throw new AppError(400, 'Vui lòng nhập số giấy phép trọng tài');
+    userData.refereeProfile = {
+      licenseNumber: licenseNumber.trim(),
+      yearsOfService: Number(yearsOfService) || 0,
+    };
+  }
+
+  if (role === 'jockey') {
+    const w = Number(weight);
+    const h = Number(height);
+    if (!w || w <= 0) throw new AppError(400, 'Vui lòng nhập cân nặng hợp lệ cho kỵ thủ');
+    if (!h || h <= 0) throw new AppError(400, 'Vui lòng nhập chiều cao hợp lệ cho kỵ thủ');
+    userData.jockeyProfile = {
+      weight: w,
+      height: h,
+      experienceYears: Number(experienceYears) || 0,
+      bio: bio || undefined,
+    };
+  }
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const [user] = await User.create([userData], { session });
+    const wallet = await createWallet(user._id, session);
+    user.walletId = wallet._id;
+    await user.save({ session });
+    await session.commitTransaction();
+
+    return User.findById(user._id).select(
+      'fullName email phone avatarUrl role isActive jockeyProfile refereeProfile createdAt',
+    );
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
+  }
+}
+
+/** @deprecated use adminCreateUser */
+async function adminCreateReferee(data) {
+  return adminCreateUser({ ...data, role: 'referee' });
+}
+
+module.exports = {
+  getUserById, updateProfile, uploadAvatar, getJockeys, getReferees,
+  getUsers, toggleActive, adminUpdateUser, adminCreateUser, adminCreateReferee,
+};
