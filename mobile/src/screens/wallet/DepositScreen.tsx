@@ -29,17 +29,10 @@ const BANK_ACCOUNTS = [
   { bank: 'MB Bank',            number: '0909 8888 0002',       owner: 'CONG TY TNHH RACING VN', branch: 'TP. Hồ Chí Minh', color: '#1E3A8A',  logo: '🏦' },
 ];
 
-const EWALLETS = [
-  { name: 'MoMo',    phone: '0909.888.777', color: '#D14D72' },
-  { name: 'ZaloPay', phone: '0909.888.777', color: '#0084FF' },
-  { name: 'VNPay',   phone: '0909.888.777', color: '#E11D48' },
-];
-
 export function DepositScreen() {
   const navigation = useNavigation();
-  const [method, setMethod] = useState<'bank' | 'ewallet'>('bank');
+  const [method, setMethod] = useState<'bank'>('bank');
   const [selectedBank, setSelectedBank] = useState(0);
-  const [selectedWallet, setSelectedWallet] = useState(0);
   const [coinAmount, setCoinAmount] = useState('');
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [copied, setCopied] = useState<string | null>(null);
@@ -50,7 +43,6 @@ export function DepositScreen() {
   const refCode = `NAP-ALEX-${coinAmount || 'XXX'}`;
 
   const currentBank = BANK_ACCOUNTS[selectedBank];
-  const currentWallet = EWALLETS[selectedWallet];
 
   const handleCopy = (text: string, key: string) => {
     // Mock copy in React Native - since native clipboard requires a separate library,
@@ -150,7 +142,7 @@ export function DepositScreen() {
         {step === 1 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Chọn Phương Thức Thanh Toán</Text>
-            <Text style={styles.sectionSubtitle}>Hỗ trợ chuyển khoản ngân hàng và ví điện tử Việt Nam.</Text>
+            <Text style={styles.sectionSubtitle}>Hỗ trợ chuyển khoản ngân hàng Việt Nam.</Text>
 
             <View style={styles.methodGrid}>
               <TouchableOpacity
@@ -169,28 +161,6 @@ export function DepositScreen() {
                   <Ionicons name="checkmark-circle" size={20} color={colors.primary} style={styles.checkIcon} />
                 )}
               </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.methodCard, method === 'ewallet' && styles.methodCardActive]}
-                onPress={() => setMethod('ewallet')}
-              >
-                <View style={[styles.methodIconBox, { backgroundColor: colors.purpleDim }]}>
-                  <Ionicons name="phone-portrait-outline" size={24} color={colors.purple} />
-                </View>
-                <Text style={styles.methodName}>Ví Điện Tử</Text>
-                <Text style={styles.methodDesc}>MoMo, ZaloPay, VNPay</Text>
-                <View style={[styles.methodBadge, { backgroundColor: colors.successDim }]}>
-                  <Text style={[styles.methodBadgeText, { color: colors.success }]}>Tức thì</Text>
-                </View>
-                {method === 'ewallet' && (
-                  <Ionicons name="checkmark-circle" size={20} color={colors.primary} style={styles.checkIcon} />
-                )}
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.infoBox}>
-              <Ionicons name="information-circle" size={16} color={colors.primary} />
-              <Text style={styles.infoText}>Mọi giao dịch đều được mã hóa SSL an toàn tuyệt đối 100%.</Text>
             </View>
 
             <TouchableOpacity style={styles.nextBtn} onPress={() => setStep(2)}>
@@ -277,120 +247,65 @@ export function DepositScreen() {
             <Text style={styles.sectionSubtitle}>Vui lòng chuyển khoản đúng số tiền và nội dung bên dưới.</Text>
 
             {/* BANK OPTION */}
-            {method === 'bank' ? (
-              <View style={styles.paymentContainer}>
-                {/* Bank picker */}
-                <View style={styles.bankPicker}>
-                  {BANK_ACCOUNTS.map((b, idx) => (
-                    <TouchableOpacity
-                      key={idx}
-                      style={[styles.bankItem, selectedBank === idx && styles.bankItemActive]}
-                      onPress={() => setSelectedBank(idx)}
-                    >
-                      <Text style={styles.bankLogo}>{b.logo}</Text>
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.bankName, selectedBank === idx && { color: colors.primary }]}>
-                          {b.bank}
-                        </Text>
-                        <Text style={styles.bankBranch}>{b.branch}</Text>
-                      </View>
-                      {selectedBank === idx && (
-                        <Ionicons name="checkmark-circle" size={18} color={colors.primary} />
-                      )}
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                {/* Transfer Info card */}
-                <View style={styles.transferCard}>
-                  <View style={[styles.transferCardHeader, { backgroundColor: currentBank.color }]}>
-                    <Text style={styles.transferCardTitle}>{currentBank.bank}</Text>
-                    <Text style={styles.transferCardBranch}>{currentBank.branch}</Text>
-                  </View>
-
-                  <View style={styles.transferBody}>
-                    {[
-                      { label: 'Chủ Tài Khoản', value: currentBank.owner, key: 'owner' },
-                      { label: 'Số Tài Khoản', value: currentBank.number, key: 'number' },
-                      { label: 'Số Tiền', value: `${vndAmount.toLocaleString('vi-VN')} VND`, key: 'vnd' },
-                      { label: 'Nội Dung CK', value: refCode, key: 'ref', highlight: true },
-                    ].map((item, idx) => (
-                      <View key={idx} style={[styles.infoRow, item.highlight && styles.infoRowHighlight]}>
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.infoLabel}>{item.label}</Text>
-                          <Text style={[styles.infoValue, item.highlight && { color: colors.secondary, fontWeight: 'bold' }]}>
-                            {item.value}
-                          </Text>
-                        </View>
-                        <TouchableOpacity
-                          style={styles.copyBtn}
-                          onPress={() => handleCopy(item.value, item.key)}
-                        >
-                          {copied === item.key ? (
-                            <Text style={styles.copiedText}>Đã chép</Text>
-                          ) : (
-                            <Ionicons name="copy-outline" size={16} color={colors.primary} />
-                          )}
-                        </TouchableOpacity>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              </View>
-            ) : (
-              /* E-WALLET OPTION */
-              <View style={styles.paymentContainer}>
-                <View style={styles.walletPicker}>
-                  {EWALLETS.map((w, idx) => (
-                    <TouchableOpacity
-                      key={idx}
-                      style={[styles.walletItem, selectedWallet === idx && styles.walletItemActive, { borderColor: selectedWallet === idx ? w.color : colors.border }]}
-                      onPress={() => setSelectedWallet(idx)}
-                    >
-                      <Text style={[styles.walletNameText, { color: selectedWallet === idx ? w.color : colors.text }]}>
-                        {w.name}
+            <View style={styles.paymentContainer}>
+              {/* Bank picker */}
+              <View style={styles.bankPicker}>
+                {BANK_ACCOUNTS.map((b, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    style={[styles.bankItem, selectedBank === idx && styles.bankItemActive]}
+                    onPress={() => setSelectedBank(idx)}
+                  >
+                    <Text style={styles.bankLogo}>{b.logo}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.bankName, selectedBank === idx && { color: colors.primary }]}>
+                        {b.bank}
                       </Text>
-                    </TouchableOpacity>
+                      <Text style={styles.bankBranch}>{b.branch}</Text>
+                    </View>
+                    {selectedBank === idx && (
+                      <Ionicons name="checkmark-circle" size={18} color={colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Transfer Info card */}
+              <View style={styles.transferCard}>
+                <View style={[styles.transferCardHeader, { backgroundColor: currentBank.color }]}>
+                  <Text style={styles.transferCardTitle}>{currentBank.bank}</Text>
+                  <Text style={styles.transferCardBranch}>{currentBank.branch}</Text>
+                </View>
+
+                <View style={styles.transferBody}>
+                  {[
+                    { label: 'Chủ Tài Khoản', value: currentBank.owner, key: 'owner' },
+                    { label: 'Số Tài Khoản', value: currentBank.number, key: 'number' },
+                    { label: 'Số Tiền', value: `${vndAmount.toLocaleString('vi-VN')} VND`, key: 'vnd' },
+                    { label: 'Nội Dung CK', value: refCode, key: 'ref', highlight: true },
+                  ].map((item, idx) => (
+                    <View key={idx} style={[styles.infoRow, item.highlight && styles.infoRowHighlight]}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.infoLabel}>{item.label}</Text>
+                        <Text style={[styles.infoValue, item.highlight && { color: colors.secondary, fontWeight: 'bold' }]}>
+                          {item.value}
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.copyBtn}
+                        onPress={() => handleCopy(item.value, item.key)}
+                      >
+                        {copied === item.key ? (
+                          <Text style={styles.copiedText}>Đã chép</Text>
+                        ) : (
+                          <Ionicons name="copy-outline" size={16} color={colors.primary} />
+                        )}
+                      </TouchableOpacity>
+                    </View>
                   ))}
                 </View>
-
-                {/* QR Simulation Card */}
-                <View style={styles.qrCard}>
-                  <View style={styles.qrBox}>
-                    <Ionicons name="qr-code-outline" size={120} color={colors.text} />
-                    <Text style={styles.qrScanText}>Quét mã QR để thanh toán</Text>
-                  </View>
-
-                  <View style={styles.transferBody}>
-                    {[
-                      { label: 'Ứng Dụng', value: currentWallet.name, key: 'wname' },
-                      { label: 'Số Điện Thoại', value: currentWallet.phone, key: 'wphone' },
-                      { label: 'Số Tiền', value: `${vndAmount.toLocaleString('vi-VN')} VND`, key: 'wvnd' },
-                      { label: 'Nội Dung', value: refCode, key: 'wref', highlight: true },
-                    ].map((item, idx) => (
-                      <View key={idx} style={[styles.infoRow, item.highlight && styles.infoRowHighlight]}>
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.infoLabel}>{item.label}</Text>
-                          <Text style={[styles.infoValue, item.highlight && { color: colors.secondary, fontWeight: 'bold' }]}>
-                            {item.value}
-                          </Text>
-                        </View>
-                        <TouchableOpacity
-                          style={styles.copyBtn}
-                          onPress={() => handleCopy(item.value, item.key)}
-                        >
-                          {copied === item.key ? (
-                            <Text style={styles.copiedText}>Đã chép</Text>
-                          ) : (
-                            <Ionicons name="copy-outline" size={16} color={colors.primary} />
-                          )}
-                        </TouchableOpacity>
-                      </View>
-                    ))}
-                  </View>
-                </View>
               </View>
-            )}
+            </View>
 
             {/* Warning note */}
             <View style={styles.warningBox}>

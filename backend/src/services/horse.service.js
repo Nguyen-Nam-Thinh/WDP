@@ -57,6 +57,28 @@ async function updateHorse(horseId, ownerId, data) {
   ];
   IMMUTABLE.forEach((field) => delete data[field]);
 
+  // Clean up deleted images from Cloudinary
+  if (data.imageUrls && Array.isArray(data.imageUrls)) {
+    const deletedImages = horse.imageUrls.filter((img) => !data.imageUrls.includes(img));
+    for (const img of deletedImages) {
+      const publicId = cloudinaryService.extractPublicId(img);
+      if (publicId) {
+        await cloudinaryService.deleteFile(publicId);
+      }
+    }
+  }
+
+  // Clean up old primaryImageUrl if it is changed and not used anywhere else
+  if (data.primaryImageUrl !== undefined && horse.primaryImageUrl && horse.primaryImageUrl !== data.primaryImageUrl) {
+    const isStillUsed = (data.imageUrls || horse.imageUrls).includes(horse.primaryImageUrl);
+    if (!isStillUsed) {
+      const publicId = cloudinaryService.extractPublicId(horse.primaryImageUrl);
+      if (publicId) {
+        await cloudinaryService.deleteFile(publicId);
+      }
+    }
+  }
+
   Object.assign(horse, data);
   await horse.save();
   return horse;

@@ -28,6 +28,8 @@ const updateHorseSchema = z.object({
   weight: z.number().positive().optional(),
   color: z.string().max(50).optional(),
   imageUrl: z.string().url().optional(),
+  imageUrls: z.array(z.string()).optional(),
+  primaryImageUrl: z.string().url().nullable().optional(),
 });
 
 router.use(authenticate);

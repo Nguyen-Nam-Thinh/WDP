@@ -400,6 +400,7 @@ export function HorseOwnerDashboard() {
     string[]
   >([]);
   const editHorseImageInputRef = useRef<HTMLInputElement>(null);
+  const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
 
   // View Horse state
   const [viewHorseOpen, setViewHorseOpen] = useState(false);
@@ -408,11 +409,11 @@ export function HorseOwnerDashboard() {
 
   const openViewHorse = (horse: Horse) => {
     setViewingHorse(horse);
-    const allImages = horse.imageUrls?.length
-      ? horse.imageUrls
-      : horse.primaryImageUrl
-        ? [horse.primaryImageUrl]
-        : [];
+    const urls = [...(horse.imageUrls || [])];
+    if (horse.primaryImageUrl && !urls.includes(horse.primaryImageUrl)) {
+      urls.unshift(horse.primaryImageUrl);
+    }
+    const allImages = urls;
     setViewHorseActiveImage(allImages[0] || "");
     setViewHorseOpen(true);
   };
@@ -515,6 +516,14 @@ export function HorseOwnerDashboard() {
     }
   };
 
+  const handleCloseEditHorse = () => {
+    setEditHorseOpen(false);
+    setEditingHorse(null);
+    setEditHorseImageFiles([]);
+    setEditHorseImagePreviews([]);
+    setExistingImageUrls([]);
+  };
+
   const handleUpdateHorse = async () => {
     if (
       !editHorseForm.name ||
@@ -528,31 +537,63 @@ export function HorseOwnerDashboard() {
     if (!token || !editingHorse) return;
     setUpdatingHorse(true);
     try {
-      await horseApi.updateHorse(token, editingHorse._id, {
-        name: editHorseForm.name,
-        breed: editHorseForm.breed || undefined,
-        gender: editHorseForm.gender,
-        birthDate: editHorseForm.birthDate,
-        weight: Number(editHorseForm.weight),
-        color: editHorseForm.color || undefined,
-        preferredTrackCondition:
-          editHorseForm.preferredTrackCondition || undefined,
-        temperament: editHorseForm.temperament,
-      });
+      let newPrimaryImageUrl = editingHorse.primaryImageUrl;
 
       if (editHorseImageFiles.length > 0) {
-        await horseApi.uploadImages(
+        // 1. Upload new images first to obtain their URLs
+        const uploadedHorse = await horseApi.uploadImages(
           token,
           editingHorse._id,
           editHorseImageFiles,
         );
+        const newUploadedUrls =
+          uploadedHorse.imageUrls?.slice(-editHorseImageFiles.length) || [];
+        const finalImageUrls = [...existingImageUrls, ...newUploadedUrls];
+
+        // 2. Adjust primary image selection if necessary
+        if (newPrimaryImageUrl && !finalImageUrls.includes(newPrimaryImageUrl)) {
+          newPrimaryImageUrl = finalImageUrls.length > 0 ? finalImageUrls[0] : "";
+        } else if (!newPrimaryImageUrl && finalImageUrls.length > 0) {
+          newPrimaryImageUrl = finalImageUrls[0];
+        }
+
+        // 3. Update the horse details with the final merged array
+        await horseApi.updateHorse(token, editingHorse._id, {
+          name: editHorseForm.name,
+          breed: editHorseForm.breed || undefined,
+          gender: editHorseForm.gender,
+          birthDate: editHorseForm.birthDate,
+          weight: Number(editHorseForm.weight),
+          color: editHorseForm.color || undefined,
+          preferredTrackCondition:
+            editHorseForm.preferredTrackCondition || undefined,
+          temperament: editHorseForm.temperament,
+          imageUrls: finalImageUrls,
+          primaryImageUrl: newPrimaryImageUrl || undefined,
+        });
+      } else {
+        // If no new files are uploaded, perform update directly
+        if (newPrimaryImageUrl && !existingImageUrls.includes(newPrimaryImageUrl)) {
+          newPrimaryImageUrl = existingImageUrls.length > 0 ? existingImageUrls[0] : "";
+        }
+
+        await horseApi.updateHorse(token, editingHorse._id, {
+          name: editHorseForm.name,
+          breed: editHorseForm.breed || undefined,
+          gender: editHorseForm.gender,
+          birthDate: editHorseForm.birthDate,
+          weight: Number(editHorseForm.weight),
+          color: editHorseForm.color || undefined,
+          preferredTrackCondition:
+            editHorseForm.preferredTrackCondition || undefined,
+          temperament: editHorseForm.temperament,
+          imageUrls: existingImageUrls,
+          primaryImageUrl: newPrimaryImageUrl || undefined,
+        });
       }
 
       toast.success("Cập nhật thông tin ngựa thành công!");
-      setEditHorseOpen(false);
-      setEditingHorse(null);
-      setEditHorseImageFiles([]);
-      setEditHorseImagePreviews([]);
+      handleCloseEditHorse();
       await loadHorses();
     } catch (err: any) {
       toast.error(err.message || "Cập nhật ngựa thất bại");
@@ -581,9 +622,12 @@ export function HorseOwnerDashboard() {
         | "conservative",
     });
     setEditHorseImageFiles([]);
-    setEditHorseImagePreviews(
-      horse.imageUrls || (horse.primaryImageUrl ? [horse.primaryImageUrl] : []),
-    );
+    setEditHorseImagePreviews([]);
+    const urls = [...(horse.imageUrls || [])];
+    if (horse.primaryImageUrl && !urls.includes(horse.primaryImageUrl)) {
+      urls.unshift(horse.primaryImageUrl);
+    }
+    setExistingImageUrls(urls);
     setEditHorseOpen(true);
   };
 
@@ -650,7 +694,7 @@ export function HorseOwnerDashboard() {
         setResultsTotalPages(r.totalPages);
         setResultsTotal(r.total);
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoadingResults(false));
   }, [activeTab, token, resultsPage]);
 
@@ -663,7 +707,7 @@ export function HorseOwnerDashboard() {
         setTxList(r.transactions ?? []);
         setTxTotalPages(Math.ceil(r.total / 10));
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoadingTx(false));
   }, [activeTab, token, txPage, txRefreshKey]);
 
@@ -1163,9 +1207,9 @@ export function HorseOwnerDashboard() {
                   {pagedHorses.map((horse) => {
                     const ageYears = horse.birthDate
                       ? Math.floor(
-                          (Date.now() - new Date(horse.birthDate).getTime()) /
-                            (365.25 * 24 * 3600 * 1000),
-                        )
+                        (Date.now() - new Date(horse.birthDate).getTime()) /
+                        (365.25 * 24 * 3600 * 1000),
+                      )
                       : "?";
                     const winRate =
                       horse.raceCount > 0
@@ -1374,8 +1418,8 @@ export function HorseOwnerDashboard() {
                         const winRate =
                           (jp?.raceCount ?? 0) > 0
                             ? Math.round(
-                                ((jp?.winCount ?? 0) / jp!.raceCount!) * 100,
-                              )
+                              ((jp?.winCount ?? 0) / jp!.raceCount!) * 100,
+                            )
                             : 0;
                         const styleLabel: Record<string, string> = {
                           aggressive: "Công",
@@ -1543,7 +1587,7 @@ export function HorseOwnerDashboard() {
                           <div className="flex items-center gap-3 min-w-0 flex-1">
                             <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shrink-0 overflow-hidden">
                               {typeof inv.jockeyId === "object" &&
-                              inv.jockeyId?.avatarUrl ? (
+                                inv.jockeyId?.avatarUrl ? (
                                 <img
                                   src={inv.jockeyId.avatarUrl}
                                   alt=""
@@ -1559,7 +1603,7 @@ export function HorseOwnerDashboard() {
                             <div className="min-w-0">
                               <p className="font-semibold text-foreground">
                                 {typeof inv.jockeyId === "object" &&
-                                inv.jockeyId
+                                  inv.jockeyId
                                   ? inv.jockeyId.fullName
                                   : "—"}
                               </p>
@@ -1665,19 +1709,17 @@ export function HorseOwnerDashboard() {
                 <button
                   key={t.id}
                   onClick={() => setScheduleSubTab(t.id)}
-                  className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-all ${
-                    scheduleSubTab === t.id
+                  className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-all ${scheduleSubTab === t.id
                       ? "border-[#C9A227] text-[#C9A227]"
                       : "border-transparent text-slate-400 hover:text-foreground"
-                  }`}
+                    }`}
                 >
                   {t.label}
                   <span
-                    className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
-                      scheduleSubTab === t.id
+                    className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${scheduleSubTab === t.id
                         ? "bg-[#C9A227]/20 text-[#C9A227]"
                         : "bg-muted/40 text-slate-400"
-                    }`}
+                      }`}
                   >
                     {t.count}
                   </span>
@@ -1726,8 +1768,8 @@ export function HorseOwnerDashboard() {
                                       <div className="text-slate-400 text-xs">
                                         {race?.scheduledTime
                                           ? new Date(
-                                              race.scheduledTime,
-                                            ).toLocaleString("vi-VN")
+                                            race.scheduledTime,
+                                          ).toLocaleString("vi-VN")
                                           : ""}
                                       </div>
                                     </div>
@@ -1964,20 +2006,20 @@ export function HorseOwnerDashboard() {
                                     </span>
                                     {(race.eligibility.allowedGrades ?? [])
                                       .length > 0 && (
-                                      <span className="text-slate-400">
-                                        Hạng:{" "}
-                                        {race.eligibility.allowedGrades.map(
-                                          (g) => (
-                                            <span
-                                              key={g}
-                                              className="mr-1 px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/25 font-bold"
-                                            >
-                                              {g}
-                                            </span>
-                                          ),
-                                        )}
-                                      </span>
-                                    )}
+                                        <span className="text-slate-400">
+                                          Hạng:{" "}
+                                          {race.eligibility.allowedGrades.map(
+                                            (g) => (
+                                              <span
+                                                key={g}
+                                                className="mr-1 px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/25 font-bold"
+                                              >
+                                                {g}
+                                              </span>
+                                            ),
+                                          )}
+                                        </span>
+                                      )}
                                     {race.eligibility.minPoints > 0 && (
                                       <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">
                                         Tối thiểu {race.eligibility.minPoints}{" "}
@@ -1986,11 +2028,11 @@ export function HorseOwnerDashboard() {
                                     )}
                                     {(race.eligibility.minAge > 0 ||
                                       race.eligibility.maxAge > 0) && (
-                                      <span className="px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">
-                                        Tuổi {race.eligibility.minAge}–
-                                        {race.eligibility.maxAge} năm
-                                      </span>
-                                    )}
+                                        <span className="px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                                          Tuổi {race.eligibility.minAge}–
+                                          {race.eligibility.maxAge} năm
+                                        </span>
+                                      )}
                                   </div>
                                 )}
                               </div>
@@ -2179,11 +2221,10 @@ export function HorseOwnerDashboard() {
                 <button
                   key={t.id}
                   onClick={() => setWalletSubTab(t.id)}
-                  className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-all ${
-                    walletSubTab === t.id
+                  className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-all ${walletSubTab === t.id
                       ? "border-[#C9A227] text-[#C9A227]"
                       : "border-transparent text-slate-400 hover:text-foreground"
-                  }`}
+                    }`}
                 >
                   {t.label}
                 </button>
@@ -2238,13 +2279,12 @@ export function HorseOwnerDashboard() {
                             className={`flex items-center gap-2 ${i + 1 <= depositStep ? "text-[#8F7318]" : "text-muted-foreground/60"}`}
                           >
                             <div
-                              className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${
-                                i + 1 < depositStep
+                              className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${i + 1 < depositStep
                                   ? "bg-[#C9A227] border-[#C9A227] text-foreground"
                                   : i + 1 === depositStep
                                     ? "border-[#C9A227] text-[#8F7318]"
                                     : "border-border text-muted-foreground/60"
-                              }`}
+                                }`}
                             >
                               {i + 1 < depositStep ? (
                                 <CheckCircle className="w-3.5 h-3.5" />
@@ -2923,7 +2963,7 @@ export function HorseOwnerDashboard() {
       {/* Edit Horse Dialog */}
       <Dialog
         open={editHorseOpen}
-        onClose={() => setEditHorseOpen(false)}
+        onClose={handleCloseEditHorse}
         maxWidth="sm"
         fullWidth
         PaperProps={{
@@ -2946,7 +2986,7 @@ export function HorseOwnerDashboard() {
         <DialogContent sx={{ paddingTop: "24px !important" }}>
           <div className="space-y-4">
             <div className="flex gap-4 mb-6 overflow-x-auto pb-2">
-              {editHorseImagePreviews.map((preview, idx) => (
+              {[...existingImageUrls, ...editHorseImagePreviews].map((preview, idx) => (
                 <div
                   key={idx}
                   className="relative w-32 h-32 flex-shrink-0 rounded-xl overflow-hidden border border-border group bg-slate-800"
@@ -2958,12 +2998,19 @@ export function HorseOwnerDashboard() {
                   />
                   <button
                     onClick={() => {
-                      setEditHorseImagePreviews((prev) =>
-                        prev.filter((_, i) => i !== idx),
-                      );
-                      setEditHorseImageFiles((prev) =>
-                        prev.filter((_, i) => i !== idx),
-                      );
+                      if (idx < existingImageUrls.length) {
+                        setExistingImageUrls((prev) =>
+                          prev.filter((_, i) => i !== idx),
+                        );
+                      } else {
+                        const localIdx = idx - existingImageUrls.length;
+                        setEditHorseImageFiles((prev) =>
+                          prev.filter((_, i) => i !== localIdx),
+                        );
+                        setEditHorseImagePreviews((prev) =>
+                          prev.filter((_, i) => i !== localIdx),
+                        );
+                      }
                     }}
                     className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
                   >
@@ -3192,7 +3239,7 @@ export function HorseOwnerDashboard() {
           }}
         >
           <Button
-            onClick={() => setEditHorseOpen(false)}
+            onClick={handleCloseEditHorse}
             sx={{ color: "#7A7468", textTransform: "none" }}
           >
             Hủy
@@ -3277,11 +3324,11 @@ export function HorseOwnerDashboard() {
                 </div>
 
                 {(() => {
-                  const images = viewingHorse.imageUrls?.length
-                    ? viewingHorse.imageUrls
-                    : viewingHorse.primaryImageUrl
-                      ? [viewingHorse.primaryImageUrl]
-                      : [];
+                  const urls = [...(viewingHorse.imageUrls || [])];
+                  if (viewingHorse.primaryImageUrl && !urls.includes(viewingHorse.primaryImageUrl)) {
+                    urls.unshift(viewingHorse.primaryImageUrl);
+                  }
+                  const images = urls;
 
                   if (images.length <= 1) return null;
 
@@ -3291,11 +3338,10 @@ export function HorseOwnerDashboard() {
                         <button
                           key={idx}
                           onClick={() => setViewHorseActiveImage(imgUrl)}
-                          className={`w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
-                            viewHorseActiveImage === imgUrl
+                          className={`w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${viewHorseActiveImage === imgUrl
                               ? "border-[#C9A227] opacity-100 scale-105"
                               : "border-transparent opacity-50 hover:opacity-100 hover:scale-105"
-                          }`}
+                            }`}
                         >
                           <img
                             src={imgUrl}
@@ -3401,9 +3447,9 @@ export function HorseOwnerDashboard() {
                       <span className="text-foreground font-medium">
                         {viewingHorse.raceCount > 0
                           ? Math.round(
-                              (viewingHorse.winCount / viewingHorse.raceCount) *
-                                100,
-                            )
+                            (viewingHorse.winCount / viewingHorse.raceCount) *
+                            100,
+                          )
                           : 0}
                         %
                       </span>
