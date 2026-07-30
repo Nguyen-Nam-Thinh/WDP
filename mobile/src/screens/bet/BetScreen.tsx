@@ -34,6 +34,39 @@ function PlaceBetModal({
   const [myPredictions, setMyPredictions] = useState<Bet[]>([]);
   const [raceOdds, setRaceOdds] = useState<RaceOddsResponse | null>(null);
 
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string | React.ReactNode;
+    type?: 'success' | 'error' | 'info' | 'confirm';
+    confirmText?: string;
+    cancelText?: string;
+    onConfirm?: () => void;
+    onCancel?: () => void;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'info',
+  });
+
+  const showAlert = (config: Omit<typeof alertConfig, 'visible'>) => {
+    setAlertConfig({ ...config, visible: true });
+  };
+
+  const hideAlert = () => {
+    setAlertConfig(prev => ({ ...prev, visible: false }));
+  };
+
+  const handleConfirm = () => {
+    if (alertConfig.onConfirm) alertConfig.onConfirm();
+    hideAlert();
+  };
+  const handleCancel = () => {
+    if (alertConfig.onCancel) alertConfig.onCancel();
+    hideAlert();
+  };
+
   /** Lấy estimated multiplier của ngựa từ pool hiện tại */
   const getHorseOdds = (horseId: string) => {
     const horse = raceOdds?.horses?.find((h) => h.horseId === horseId);
@@ -76,23 +109,45 @@ function PlaceBetModal({
   }, [visible, race]);
 
   const handlePlace = async () => {
-    if (!race || !selectedHorse) { Alert.alert('Lỗi', 'Chọn ngựa trước'); return; }
+    if (!race || !selectedHorse) {
+      showAlert({
+        title: 'Thiếu thông tin',
+        message: 'Vui lòng chọn một chiến mã trước khi đặt cược.',
+        type: 'error',
+      });
+      return;
+    }
     const amt = Number(amount);
-    if (!amt || amt < 1) { Alert.alert('Lỗi', 'Số tiền tối thiểu là 1'); return; }
+    if (!amt || amt < 1) {
+      showAlert({
+        title: 'Số tiền không hợp lệ',
+        message: 'Số tiền dự đoán tối thiểu là 1 coin.',
+        type: 'error',
+      });
+      return;
+    }
     setPlacing(true);
     try {
       const result = await betService.place({ raceId: race._id, horseId: selectedHorse, amount: amt });
       const estimated = result.estimatedMultiplier ?? getHorseOdds(selectedHorse);
-      Alert.alert(
-        '✅ Dự Đoán Thành Công',
-        `Odds ước tính: x${estimated}\n⚠️ Odds thực tế sẽ được tính khi race kết thúc`,
-      );
+      
       onSuccess();
       loadPredictions();
       setSelectedHorse('');
       setAmount('');
+
+      showAlert({
+        title: 'Dự Đoán Thành Công',
+        message: `Hệ số cược ước tính của bạn là x${estimated}.\n\n⚠️ Lưu ý: Tỉ lệ cược thực tế sẽ được tổng kết sau khi cuộc đua kết thúc (Parimutuel).`,
+        type: 'success',
+        confirmText: 'Đồng ý',
+      });
     } catch (err: any) {
-      Alert.alert('Lỗi', err?.message || 'Dự đoán thất bại');
+      showAlert({
+        title: 'Thao tác thất bại',
+        message: err?.message || 'Đã có lỗi xảy ra trong quá trình đặt cược.',
+        type: 'error',
+      });
     } finally {
       setPlacing(false);
     }
@@ -171,11 +226,36 @@ function PlaceBetModal({
                     const estimatedMult = hid ? getHorseOdds(hid) : 3;
                     const winProb = hid ? getHorseWinProb(hid) : null;
 
+                    const existingBet = myPredictions.find(b => {
+                      const betHorseId = typeof b.horseId === 'object' ? b.horseId?._id : b.horseId;
+                      return betHorseId === hid;
+                    });
+
                     return (
                       <TouchableOpacity
                         key={horseKey}
-                        style={[modal.horseRow, selectedHorse === hid && modal.horseRowSelected]}
-                        onPress={() => { if (hid) setSelectedHorse(hid); }}
+                        style={[
+                          modal.horseRow,
+                          selectedHorse === hid && modal.horseRowSelected,
+                          existingBet && modal.horseRowBet,
+                        ]}
+                        onPress={() => {
+                          if (existingBet) {
+                            showAlert({
+                              title: 'Chi Tiết Dự Đoán',
+                              message: renderBetDetails(
+                                hname || 'Không rõ',
+                                existingBet.amount,
+                                estimatedMult,
+                                existingBet.status
+                              ),
+                              type: 'info',
+                              confirmText: 'Đóng',
+                            });
+                            return;
+                          }
+                          if (hid) setSelectedHorse(hid);
+                        }}
                       >
                         <View style={modal.horseLeft}>
                           <View style={modal.horseTopRow}>
@@ -211,7 +291,14 @@ function PlaceBetModal({
                             </Text>
                           ) : null}
                         </View>
-                        {selectedHorse === hid && <Ionicons name="checkmark-circle" size={20} color={colors.accent} />}
+                        {existingBet ? (
+                          <View style={{ alignItems: 'center', justifyContent: 'center', minWidth: 45 }}>
+                            <Ionicons name="checkmark-done-circle" size={22} color={colors.success} />
+                            <Text style={{ fontSize: 10, color: colors.success, marginTop: 2, fontWeight: '600' }}>Đã cược</Text>
+                          </View>
+                        ) : selectedHorse === hid ? (
+                          <Ionicons name="checkmark-circle" size={20} color={colors.accent} />
+                        ) : null}
                       </TouchableOpacity>
                     );
                   })
@@ -262,6 +349,16 @@ function PlaceBetModal({
           </View>
         </View>
       </View>
+      <CustomAlert
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        confirmText={alertConfig.confirmText}
+        cancelText={alertConfig.cancelText}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
     </Modal>
   );
 }
@@ -291,6 +388,7 @@ const modal = StyleSheet.create({
     backgroundColor: colors.surface, marginBottom: spacing.sm,
   },
   horseRowSelected: { borderColor: colors.accent, backgroundColor: colors.accentDim },
+  horseRowBet: { borderColor: colors.success + '80', backgroundColor: colors.successDim },
   horseLeft: { flex: 1 },
   horseTopRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap', marginBottom: 3 },
   horseName: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.text, flexShrink: 1 },
@@ -441,6 +539,39 @@ export function BetScreen() {
   const [selectedRace, setSelectedRace] = useState<Race | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string | React.ReactNode;
+    type?: 'success' | 'error' | 'info' | 'confirm';
+    confirmText?: string;
+    cancelText?: string;
+    onConfirm?: () => void;
+    onCancel?: () => void;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'info',
+  });
+
+  const showAlert = (config: Omit<typeof alertConfig, 'visible'>) => {
+    setAlertConfig({ ...config, visible: true });
+  };
+
+  const hideAlert = () => {
+    setAlertConfig(prev => ({ ...prev, visible: false }));
+  };
+
+  const handleConfirm = () => {
+    if (alertConfig.onConfirm) alertConfig.onConfirm();
+    hideAlert();
+  };
+  const handleCancel = () => {
+    if (alertConfig.onCancel) alertConfig.onCancel();
+    hideAlert();
+  };
+
   useEffect(() => {
     navigation.setOptions({
       tabBarStyle: {
@@ -473,19 +604,25 @@ export function BetScreen() {
   useEffect(() => { loadData(); }, []);
 
   const handleCancelBet = (id: string) => {
-    Alert.alert('Hủy Dự Đoán', 'Bạn sẽ được hoàn 100% tiền. Tiếp tục?', [
-      { text: 'Không', style: 'cancel' },
-      {
-        text: 'Hủy Dự Đoán', style: 'destructive', onPress: async () => {
-          try {
-            await betService.cancel(id);
-            loadData();
-          } catch (err: any) {
-            Alert.alert('Lỗi', err?.message || 'Hủy dự đoán thất bại');
-          }
-        },
+    showAlert({
+      title: 'Hủy Dự Đoán',
+      message: 'Bạn sẽ được hoàn lại 100% số tiền cược vào ví. Bạn có chắc chắn muốn hủy dự đoán này không?',
+      type: 'confirm',
+      confirmText: 'Hủy cược',
+      cancelText: 'Không',
+      onConfirm: async () => {
+        try {
+          await betService.cancel(id);
+          loadData();
+        } catch (err: any) {
+          showAlert({
+            title: 'Lỗi',
+            message: err?.message || 'Hủy dự đoán thất bại',
+            type: 'error',
+          });
+        }
       },
-    ]);
+    });
   };
 
   const openBetModal = (race: Race) => {
@@ -588,6 +725,16 @@ export function BetScreen() {
         onClose={() => setModalVisible(false)}
         onSuccess={loadData}
       />
+      <CustomAlert
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        confirmText={alertConfig.confirmText}
+        cancelText={alertConfig.cancelText}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
     </SafeAreaView>
   );
 }
@@ -628,4 +775,220 @@ const styles = StyleSheet.create({
   betBtnText: { fontSize: fontSize.sm, fontWeight: fontWeight.bold, color: '#FFFFFF' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80, gap: spacing.md },
   emptyText: { color: colors.textMuted, fontSize: fontSize.md },
+});
+
+// ── Custom Details Render Helper ──────────────────────────────────────────────
+const renderBetDetails = (hname: string, amount: number, estimatedMult: number, status: string) => {
+  const statusColor = status === 'pending' ? colors.warning : status === 'won' ? colors.success : colors.danger;
+  const statusText = status === 'pending' ? 'Đang chờ đua' : status === 'won' ? 'Thắng' : 'Thua';
+  return (
+    <View style={detailsStyles.container}>
+      <Text style={detailsStyles.subTitle}>Bạn đã dự đoán cho chiến mã này rồi!</Text>
+      
+      <View style={detailsStyles.card}>
+        <View style={detailsStyles.row}>
+          <Text style={detailsStyles.label}>Ngựa đua:</Text>
+          <Text style={detailsStyles.value}>{hname}</Text>
+        </View>
+        <View style={detailsStyles.row}>
+          <Text style={detailsStyles.label}>Tiền cược:</Text>
+          <Text style={detailsStyles.goldValue}>{amount.toLocaleString()} coins</Text>
+        </View>
+        <View style={detailsStyles.row}>
+          <Text style={detailsStyles.label}>Odds ước tính:</Text>
+          <Text style={detailsStyles.value}>x{estimatedMult}</Text>
+        </View>
+        <View style={detailsStyles.row}>
+          <Text style={detailsStyles.label}>Trạng thái:</Text>
+          <View style={[detailsStyles.badge, { backgroundColor: statusColor + '15', borderColor: statusColor + '30' }]}>
+            <Text style={[detailsStyles.badgeText, { color: statusColor }]}>{statusText}</Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+// ── CustomAlert Component ───────────────────────────────────────────────────
+function CustomAlert({
+  visible,
+  title,
+  message,
+  type = 'info',
+  confirmText = 'Đồng ý',
+  cancelText,
+  onConfirm,
+  onCancel,
+}: {
+  visible: boolean;
+  title: string;
+  message: string | React.ReactNode;
+  type?: 'success' | 'error' | 'info' | 'confirm';
+  confirmText?: string;
+  cancelText?: string;
+  onConfirm: () => void;
+  onCancel?: () => void;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel || onConfirm}>
+      <View style={alertStyles.overlay}>
+        <View style={alertStyles.container}>
+          {/* Icon Header based on Type */}
+          <View style={alertStyles.iconContainer}>
+            {type === 'success' && <Ionicons name="checkmark-circle" size={40} color={colors.success} />}
+            {type === 'error' && <Ionicons name="alert-circle" size={40} color={colors.danger} />}
+            {type === 'info' && <Ionicons name="information-circle" size={40} color={colors.accent} />}
+            {type === 'confirm' && <Ionicons name="help-circle" size={40} color={colors.warning} />}
+          </View>
+
+          <Text style={alertStyles.title}>{title}</Text>
+          
+          <View style={alertStyles.messageContainer}>
+            {typeof message === 'string' ? (
+              <Text style={alertStyles.messageText}>{message}</Text>
+            ) : (
+              message
+            )}
+          </View>
+
+          <View style={alertStyles.buttonRow}>
+            {cancelText && onCancel && (
+              <TouchableOpacity style={[alertStyles.btn, alertStyles.btnCancel]} onPress={onCancel}>
+                <Text style={alertStyles.btnCancelText}>{cancelText}</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={[alertStyles.btn, alertStyles.btnConfirm]} onPress={onConfirm}>
+              <Text style={alertStyles.btnConfirmText}>{confirmText}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const alertStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  container: {
+    backgroundColor: colors.bg,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.lg,
+    width: '100%',
+    maxWidth: 320,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  iconContainer: {
+    marginBottom: spacing.xs,
+  },
+  title: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  messageContainer: {
+    marginVertical: spacing.md,
+    width: '100%',
+  },
+  messageText: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    width: '100%',
+    marginTop: spacing.xs,
+  },
+  btn: {
+    flex: 1,
+    height: 44,
+    borderRadius: radius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  btnConfirm: {
+    backgroundColor: colors.accent,
+  },
+  btnConfirmText: {
+    color: '#FFFFFF',
+    fontWeight: fontWeight.bold,
+    fontSize: fontSize.sm,
+  },
+  btnCancel: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  btnCancelText: {
+    color: colors.textMuted,
+    fontWeight: fontWeight.semibold,
+    fontSize: fontSize.sm,
+  },
+});
+
+const detailsStyles = StyleSheet.create({
+  container: {
+    width: '100%',
+    gap: spacing.sm,
+  },
+  subTitle: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+  },
+  card: {
+    backgroundColor: colors.surfaceHover,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  label: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+  },
+  value: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
+  },
+  goldValue: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+    color: colors.gold,
+  },
+  badge: {
+    borderWidth: 1,
+    borderRadius: radius.sm,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  badgeText: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+  },
 });
