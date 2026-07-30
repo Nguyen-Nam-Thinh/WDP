@@ -87,9 +87,9 @@ export function LoginScreen({ navigation }: Props) {
             </View>
           </View>
 
-          <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')} style={styles.forgotRow}>
+          {/* <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')} style={styles.forgotRow}>
             <Text style={styles.forgotText}>Quên mật khẩu?</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           <TouchableOpacity style={styles.loginBtn} onPress={handleLogin} disabled={loading} activeOpacity={0.85}>
             {loading

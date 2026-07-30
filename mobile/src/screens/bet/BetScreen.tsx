@@ -37,9 +37,7 @@ function PlaceBetModal({
   /** Lấy estimated multiplier của ngựa từ pool hiện tại */
   const getHorseOdds = (horseId: string) => {
     const horse = raceOdds?.horses?.find((h) => h.horseId === horseId);
-    return horse?.estimatedMultiplier ?? raceOdds?.horses?.length
-      ? (raceOdds!.totalPool === 0 ? 3 : 3)  // fallback default
-      : 3;
+    return horse?.estimatedMultiplier ?? 3;
   };
 
   const getHorseWinProb = (horseId: string) => {
