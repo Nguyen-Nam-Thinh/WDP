@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 import { colors, spacing, radius, fontSize, fontWeight } from '../../constants/theme';
 import { userService } from '../../services/api/user.service';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -64,15 +65,25 @@ export function DepositScreen() {
     }
     setPaying(true);
     try {
-      const { url } = await userService.createTopup(coins);
-      // Stripe Checkout success_url là http(s) nên không tự đóng được;
-      // user thanh toán xong rồi đóng browser -> webhook đã cộng coin server-side.
-      await WebBrowser.openBrowserAsync(url);
-      Alert.alert(
-        'Đã mở thanh toán',
-        'Sau khi thanh toán thành công, coin sẽ được cộng vào ví trong giây lát.',
-        [{ text: 'OK', onPress: () => navigation.goBack() }],
-      );
+      const returnUrl = Linking.createURL('deposit-result');
+      const { url } = await userService.createTopup(coins, returnUrl);
+      
+      const result = await WebBrowser.openAuthSessionAsync(url, returnUrl);
+      
+      if (result.type === 'success') {
+        Alert.alert(
+          'Thanh toán thành công',
+          'Coin đã được cộng vào ví của bạn.',
+          [{ text: 'OK', onPress: () => navigation.goBack() }],
+        );
+      } else {
+        // If dismissed or cancelled
+        Alert.alert(
+          'Thanh toán chưa hoàn tất',
+          'Vui lòng kiểm tra lại nếu bạn đã thanh toán.',
+          [{ text: 'OK', onPress: () => navigation.goBack() }],
+        );
+      }
     } catch (err: any) {
       Alert.alert('Lỗi', err?.message || 'Không thể tạo phiên thanh toán');
     } finally {

@@ -68,6 +68,7 @@ const availabilitySchema = z.object({
 const topupSchema = z.object({
   coins: z.number().int().positive(),
   returnPath: z.string().max(200).regex(/^\//).optional(),
+  returnUrl: z.string().optional(),
 });
 
 router.use(authenticate);

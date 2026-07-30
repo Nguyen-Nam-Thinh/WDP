@@ -16,18 +16,23 @@ function firstClientUrl() {
 // Chỉ chấp nhận path nội bộ (tránh open redirect qua Stripe success_url)
 const SAFE_RETURN_PATH = /^\/[a-zA-Z0-9\-_/]*$/;
 
-async function createTopupSession(userId, coins, returnPath) {
+async function createTopupSession(userId, coins, returnUrl) {
   if (!coins || coins <= 0) throw new AppError(400, 'Số coin không hợp lệ');
 
   const base = firstClientUrl();
-  const safePath =
-    typeof returnPath === 'string' && SAFE_RETURN_PATH.test(returnPath) ? returnPath : null;
-  const successUrl = safePath
-    ? `${base}${safePath}?topup=success`
-    : `${base}/spectator/deposit-history?topup=success`;
-  const cancelUrl = safePath
-    ? `${base}${safePath}?topup=cancel`
-    : `${base}/spectator/deposit?topup=cancel`;
+  let successUrl = `${base}/spectator/deposit-history?topup=success`;
+  let cancelUrl = `${base}/spectator/deposit?topup=cancel`;
+
+  if (typeof returnUrl === 'string') {
+    if (returnUrl.startsWith('http') || returnUrl.startsWith('exp://') || returnUrl.includes('://')) {
+       // Allow full URLs including deep links (e.g., racingvn:// or exp://)
+       successUrl = `${returnUrl}?topup=success`;
+       cancelUrl = `${returnUrl}?topup=cancel`;
+    } else if (SAFE_RETURN_PATH.test(returnUrl)) {
+       successUrl = `${base}${returnUrl}?topup=success`;
+       cancelUrl = `${base}${returnUrl}?topup=cancel`;
+    }
+  }
 
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',

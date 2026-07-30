@@ -11,6 +11,7 @@
     "axios": "^1.16.1",
     "expo": "~56.0.14",
     "expo-image-picker": "~56.0.19",
+    "expo-linking": "~56.0.16",
     "expo-secure-store": "^56.0.4",
     "expo-status-bar": "~56.0.4",
     "expo-web-browser": "~56.0.5",

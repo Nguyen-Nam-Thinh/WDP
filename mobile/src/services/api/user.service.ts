@@ -25,8 +25,8 @@ export const userService = {
     return res.data.data;
   },
 
-  createTopup: async (coins: number): Promise<{ url: string; sessionId: string }> => {
-    const res = await apiClient.post('/users/me/topup', { coins });
+  createTopup: async (coins: number, returnUrl?: string): Promise<{ url: string; sessionId: string }> => {
+    const res = await apiClient.post('/users/me/topup', { coins, returnUrl });
     return res.data.data;
   },
 

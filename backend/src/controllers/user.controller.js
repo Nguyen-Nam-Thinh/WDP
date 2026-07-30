@@ -9,7 +9,7 @@ async function createTopup(req, res, next) {
     const result = await paymentService.createTopupSession(
       req.user._id,
       req.body.coins,
-      req.body.returnPath,
+      req.body.returnUrl || req.body.returnPath,
     );
     sendSuccess(res, result);
   } catch (error) {
