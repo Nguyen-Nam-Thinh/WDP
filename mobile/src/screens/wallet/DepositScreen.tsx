@@ -9,6 +9,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { colors, spacing, radius, fontSize, fontWeight } from '../../constants/theme';
 import { userService } from '../../services/api/user.service';
+import Toast from 'react-native-toast-message';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 const COIN_RATE = 1000; // 1 coin = 1000 VND
@@ -71,18 +72,15 @@ export function DepositScreen() {
       const result = await WebBrowser.openAuthSessionAsync(url, returnUrl);
       
       if (result.type === 'success') {
-        Alert.alert(
-          'Thanh toán thành công',
-          'Coin đã được cộng vào ví của bạn.',
-          [{ text: 'OK', onPress: () => navigation.goBack() }],
-        );
+        Toast.show({
+          type: 'success',
+          text1: 'Thanh toán thành công',
+          text2: 'Coin sẽ được cộng vào ví của bạn trong giây lát.',
+        });
+        navigation.goBack();
       } else {
         // If dismissed or cancelled
-        Alert.alert(
-          'Thanh toán chưa hoàn tất',
-          'Vui lòng kiểm tra lại nếu bạn đã thanh toán.',
-          [{ text: 'OK', onPress: () => navigation.goBack() }],
-        );
+        navigation.goBack();
       }
     } catch (err: any) {
       Alert.alert('Lỗi', err?.message || 'Không thể tạo phiên thanh toán');
