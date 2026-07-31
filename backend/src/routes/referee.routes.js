@@ -3,6 +3,7 @@ const { z } = require('zod');
 const refereeController = require('../controllers/referee.controller');
 const { authenticate, authorize } = require('../middleware/auth.middleware');
 const { validate } = require('../middleware/validate.middleware');
+const { PRE_RACE_TRACK_CONDITIONS } = require('../config/constants');
 
 const router = Router();
 
@@ -17,10 +18,21 @@ const createReportSchema = z.object({
   raceId: z.string().min(1),
 });
 
+const trackEnum = z.enum(PRE_RACE_TRACK_CONDITIONS);
+
 const updateReportSchema = z.object({
-  preCheckSummary: z.string().max(2000).optional(),
   overallNotes: z.string().max(2000).optional(),
-}).refine((d) => Object.keys(d).length > 0, { message: 'At least one field required' });
+  preRaceReport: z.object({
+    trackCondition: z.union([trackEnum, z.literal('')]).optional(),
+    trackConditionNote: z.string().max(500).optional(),
+    riderChanges: z.array(z.string().max(300)).max(50).optional(),
+    gearChanges: z.array(z.string().max(300)).max(50).optional(),
+    vetChecks: z.array(z.string().max(300)).max(50).optional(),
+  }).optional(),
+}).refine(
+  (d) => d.overallNotes !== undefined || d.preRaceReport !== undefined,
+  { message: 'At least one field required' },
+);
 
 // ── UC-R5: Incidents ──────────────────────────────────────────────────────────
 const incidentSchema = z.object({
