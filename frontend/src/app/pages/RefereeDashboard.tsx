@@ -868,7 +868,7 @@ export function RefereeDashboard() {
             const lineSections = [
               { title: '3. Rider Changes', lines: editRiderChanges, draftKey: 'rider' as const, setLines: setEditRiderChanges },
               { title: '4. Gear Changes', lines: editGearChanges, draftKey: 'gear' as const, setLines: setEditGearChanges },
-              { title: '5. Veterinary Checks', lines: editVetChecks, draftKey: 'vet' as const, setLines: setEditVetChecks },
+              { title: '5. Vet Checks', lines: editVetChecks, draftKey: 'vet' as const, setLines: setEditVetChecks },
             ];
 
             return (

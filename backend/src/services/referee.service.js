@@ -65,7 +65,7 @@ async function getReportById(reportId, userId, role) {
   const isReferee = report.refereeId.toString() === userId;
   if (!isReferee && role !== 'admin') throw new AppError(403, 'Bạn không có quyền truy cập');
 
-  if (migratePreCheckSummary(report)) {
+  if (migratePreCheckSummary(report) && report.status === 'draft') {
     await report.save();
   }
 
@@ -323,7 +323,7 @@ async function generateReportPdf(reportId, userId, role) {
     doc.text('4. Gear Changes:');
     doc.text(nilOrLines(pr.gearChanges), { width: doc.page.width - 100 });
     doc.moveDown(0.3);
-    doc.text('5. Pre-race Vet Checks:');
+    doc.text('5. Vet Checks:');
     doc.text(nilOrLines(pr.vetChecks), { width: doc.page.width - 100 });
 
     doc.moveDown(1);
@@ -368,7 +368,7 @@ async function generateReportPdf(reportId, userId, role) {
     doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).strokeColor(accentColor).lineWidth(2).stroke();
     doc.moveDown(0.4);
     doc.fontSize(10).font('Helvetica').fillColor(primaryColor)
-      .text(report.overallNotes || '(No notes provided)', { width: doc.page.width - 100 });
+      .text(report.overallNotes || report.preCheckSummary || '(No notes provided)', { width: doc.page.width - 100 });
 
     doc.moveDown(2);
 
