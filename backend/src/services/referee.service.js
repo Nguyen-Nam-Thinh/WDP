@@ -62,7 +62,7 @@ async function getReportById(reportId, userId, role) {
   const report = await RefereeReport.findById(reportId);
   if (!report) throw new AppError(404, 'Không tìm thấy báo cáo');
 
-  const isReferee = report.refereeId.toString() === userId.toString();
+  const isReferee = report.refereeId.toString() === userId;
   if (!isReferee && role !== 'admin') throw new AppError(403, 'Bạn không có quyền truy cập');
 
   if (migratePreCheckSummary(report)) {
@@ -150,7 +150,7 @@ async function submitReport(reportId, refereeId) {
 
   const track = report.preRaceReport?.trackCondition || '';
   if (!PRE_RACE_TRACK_CONDITIONS.includes(track)) {
-    throw new AppError(400, 'Track Condition is required before submitting.');
+    throw new AppError(400, 'Track Condition is required before submitting');
   }
 
   report.status = 'submitted';
@@ -323,7 +323,7 @@ async function generateReportPdf(reportId, userId, role) {
     doc.text('4. Gear Changes:');
     doc.text(nilOrLines(pr.gearChanges), { width: doc.page.width - 100 });
     doc.moveDown(0.3);
-    doc.text('5. Vet Checks:');
+    doc.text('5. Pre-race Vet Checks:');
     doc.text(nilOrLines(pr.vetChecks), { width: doc.page.width - 100 });
 
     doc.moveDown(1);
