@@ -3,6 +3,8 @@ const { RefereeReport } = require('../models/referee_report.model');
 const { Race } = require('../models/race.model');
 const { Registration } = require('../models/registration.model');
 const { AppError } = require('../middleware/error.middleware');
+const { PRE_RACE_TRACK_CONDITIONS } = require('../config/constants');
+const { migratePreCheckSummary } = require('./referee-prerace.helper');
 
 // ── UC-R2: Xem race được phân công ────────────────────────────────────────────
 
@@ -57,22 +59,48 @@ async function getMyReports(refereeId, { page = 1, limit = 10, status } = {}) {
 }
 
 async function getReportById(reportId, userId, role) {
-  const report = await populateReport(await RefereeReport.findById(reportId));
+  const report = await RefereeReport.findById(reportId);
   if (!report) throw new AppError(404, 'Không tìm thấy báo cáo');
 
-  const isReferee = report.refereeId._id.toString() === userId;
+  const isReferee = report.refereeId.toString() === userId.toString();
   if (!isReferee && role !== 'admin') throw new AppError(403, 'Bạn không có quyền truy cập');
 
-  return report;
+  if (migratePreCheckSummary(report)) {
+    await report.save();
+  }
+
+  return populateReport(report);
 }
 
-async function updateReport(reportId, refereeId, { preCheckSummary, overallNotes }) {
+async function updateReport(reportId, refereeId, { overallNotes, preRaceReport }) {
   const report = await RefereeReport.findOne({ _id: reportId, refereeId });
   if (!report) throw new AppError(404, 'Không tìm thấy báo cáo hoặc bạn không có quyền truy cập');
   if (report.status === 'submitted') throw new AppError(400, 'Không thể chỉnh sửa báo cáo đã nộp');
 
-  if (preCheckSummary !== undefined) report.preCheckSummary = preCheckSummary;
+  migratePreCheckSummary(report);
+
   if (overallNotes !== undefined) report.overallNotes = overallNotes;
+
+  if (preRaceReport && typeof preRaceReport === 'object') {
+    if (!report.preRaceReport) report.preRaceReport = {};
+    const pr = report.preRaceReport;
+    if (preRaceReport.trackCondition !== undefined) {
+      pr.trackCondition = preRaceReport.trackCondition;
+    }
+    if (preRaceReport.trackConditionNote !== undefined) {
+      pr.trackConditionNote = preRaceReport.trackConditionNote;
+    }
+    if (preRaceReport.riderChanges !== undefined) {
+      pr.riderChanges = preRaceReport.riderChanges;
+    }
+    if (preRaceReport.gearChanges !== undefined) {
+      pr.gearChanges = preRaceReport.gearChanges;
+    }
+    if (preRaceReport.vetChecks !== undefined) {
+      pr.vetChecks = preRaceReport.vetChecks;
+    }
+  }
+
   await report.save();
 
   return populateReport(report);
@@ -117,6 +145,13 @@ async function submitReport(reportId, refereeId) {
   const report = await RefereeReport.findOne({ _id: reportId, refereeId });
   if (!report) throw new AppError(404, 'Không tìm thấy báo cáo hoặc bạn không có quyền truy cập');
   if (report.status === 'submitted') throw new AppError(400, 'Báo cáo đã được nộp trước đó');
+
+  migratePreCheckSummary(report);
+
+  const track = report.preRaceReport?.trackCondition || '';
+  if (!PRE_RACE_TRACK_CONDITIONS.includes(track)) {
+    throw new AppError(400, 'Track Condition is required before submitting.');
+  }
 
   report.status = 'submitted';
   report.submittedAt = new Date();
@@ -260,12 +295,36 @@ async function generateReportPdf(reportId, userId, role) {
 
     doc.moveDown(1);
 
-    // ── Pre-check Summary ──
-    doc.fillColor(primaryColor).fontSize(13).font('Helvetica-Bold').text('PRE-CHECK SUMMARY');
+    // ── Pre-race Stewards' Report ──
+    const pr = report.preRaceReport || {};
+    const nilOrLines = (arr) =>
+      (!arr || arr.length === 0) ? 'Nil' : arr.map((x) => `• ${x}`).join('\n');
+
+    let trackText = 'Nil';
+    if (pr.trackCondition) {
+      trackText = pr.trackConditionNote
+        ? `${pr.trackCondition} — ${pr.trackConditionNote}`
+        : pr.trackCondition;
+    }
+    const lateLabels = (pr.lateScratchings || []).map((s) => s.label).filter(Boolean);
+
+    doc.fillColor(primaryColor).fontSize(13).font('Helvetica-Bold').text("PRE-RACE STEWARDS' REPORT");
     doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).strokeColor(accentColor).lineWidth(2).stroke();
     doc.moveDown(0.4);
-    doc.fontSize(10).font('Helvetica').fillColor(primaryColor)
-      .text(report.preCheckSummary || '(No summary provided)', { width: doc.page.width - 100 });
+    doc.fontSize(10).font('Helvetica').fillColor(primaryColor);
+    doc.text(`1. Track Condition: ${trackText}`, { width: doc.page.width - 100 });
+    doc.moveDown(0.3);
+    doc.text('2. Late Scratchings:', { continued: false });
+    doc.text(nilOrLines(lateLabels), { width: doc.page.width - 100 });
+    doc.moveDown(0.3);
+    doc.text('3. Rider Changes:');
+    doc.text(nilOrLines(pr.riderChanges), { width: doc.page.width - 100 });
+    doc.moveDown(0.3);
+    doc.text('4. Gear Changes:');
+    doc.text(nilOrLines(pr.gearChanges), { width: doc.page.width - 100 });
+    doc.moveDown(0.3);
+    doc.text('5. Vet Checks:');
+    doc.text(nilOrLines(pr.vetChecks), { width: doc.page.width - 100 });
 
     doc.moveDown(1);
 
