@@ -112,6 +112,9 @@ const TRACK_CONDITIONS = {
   },
 };
 
+/** Stewards' pre-race report track rating (not simulation track conditions) */
+const PRE_RACE_TRACK_CONDITIONS = ['Firm', 'Good', 'Soft', 'Heavy', 'Synthetic'];
+
 // Jockey racing styles — per-phase speed multipliers for animation + risk/track metadata
 // phases: [phase1, phase2, phase3] — integrate to ~1.0 so total distance is preserved
 // riskFactor: Gaussian noise sigma used in scoring (higher = more variance)
@@ -148,5 +151,6 @@ module.exports = {
   CRON_INTERVALS,
   AI_CONFIG,
   TRACK_CONDITIONS,
+  PRE_RACE_TRACK_CONDITIONS,
   JOCKEY_STYLE_SPEED_PROFILES,
 };
