@@ -8,6 +8,7 @@ const walletService = require('./wallet.service');
 const { AppError } = require('../middleware/error.middleware');
 const { REFUND_RATES } = require('../config/constants');
 const { clearPredictionCache } = require('./ai-prediction.service');
+const { appendLateScratching } = require('./referee-prerace.helper');
 
 function calcHorseAge(birthDate) {
   const now = new Date();
@@ -237,6 +238,12 @@ async function updatePreCheck(registrationId, refereeId, { status, note }) {
   reg.preCheckResult = { status, note: note || '', checkedAt: new Date() };
 
   if (status === 'failed') {
+    let horseName = 'Unknown horse';
+    if (reg.horseId) {
+      const horse = await Horse.findById(reg.horseId).select('name');
+      if (horse?.name) horseName = horse.name;
+    }
+
     const refundAmount = Math.floor(reg.feePaid * REFUND_RATES.disqualifyOwner);
 
     const session = await mongoose.startSession();
@@ -257,6 +264,18 @@ async function updatePreCheck(registrationId, refereeId, { status, note }) {
       reg.status = 'disqualified';
       reg.refundAmount = refundAmount;
       await reg.save({ session });
+
+      await appendLateScratching(
+        {
+          raceId: race._id,
+          refereeId,
+          registrationId: reg._id,
+          horseId: reg.horseId,
+          note: note || '',
+          horseName,
+        },
+        session,
+      );
 
       await session.commitTransaction();
     } catch (error) {
