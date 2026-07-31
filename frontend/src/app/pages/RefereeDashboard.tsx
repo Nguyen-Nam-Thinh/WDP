@@ -878,9 +878,10 @@ export function RefereeDashboard() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormControl fullWidth disabled={readOnly}>
                       <InputLabel sx={{ color: '#7A7468' }}>Track Condition *</InputLabel>
-                      <Select value={editTrack} label="Track Condition *" onChange={e => setEditTrack(e.target.value as TrackCondition | '')}
+                      <Select value={editTrack} displayEmpty label="Track Condition *"
+                        onChange={e => setEditTrack(e.target.value as TrackCondition | '')}
+                        renderValue={selected => selected || <span className="text-sm italic text-[#7A7468]">Nil</span>}
                         sx={{ color: '#23201A', '& fieldset': { borderColor: '#C9C2B0' }, '& .MuiSelect-icon': { color: '#7A7468' } }}>
-                        <MenuItem value="">Chưa chọn</MenuItem>
                         {TRACK_OPTIONS.map(option => <MenuItem key={option} value={option}>{option}</MenuItem>)}
                       </Select>
                     </FormControl>
