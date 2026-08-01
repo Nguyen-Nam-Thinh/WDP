@@ -1,9 +1,14 @@
 const { RefereeReport } = require('../models/referee_report.model');
 
-function buildLateScratchingLabel(horseName, note) {
+function isReportEditable(status) {
+  return status === 'draft' || status === 'rejected';
+}
+
+function buildLateScratchingLabel(horseName, note, category) {
   const name = (horseName || 'Unknown horse').trim();
   const reason = (note && String(note).trim()) || 'Failed pre-check';
-  return `${name} — ${reason}`;
+  const cat = category ? `[${String(category).toUpperCase()}] ` : '';
+  return `${name} — ${cat}${reason}`;
 }
 
 /** Lazy migrate deprecated preCheckSummary → overallNotes. Returns true if mutated. */
@@ -18,8 +23,15 @@ function migratePreCheckSummary(report) {
   return true;
 }
 
+/** Legacy submitted → pending_approval. Returns true if mutated. */
+function migrateSubmittedStatus(report) {
+  if (!report || report.status !== 'submitted') return false;
+  report.status = 'pending_approval';
+  return true;
+}
+
 async function appendLateScratching(
-  { raceId, refereeId, registrationId, horseId, note, horseName },
+  { raceId, refereeId, registrationId, horseId, note, horseName, category },
   session,
 ) {
   const query = RefereeReport.findOne({ raceId });
@@ -34,7 +46,9 @@ async function appendLateScratching(
     report = docs[0];
   }
 
-  if (report.status === 'submitted') return;
+  migrateSubmittedStatus(report);
+
+  if (!isReportEditable(report.status)) return;
 
   if (!report.preRaceReport) report.preRaceReport = {};
   if (!Array.isArray(report.preRaceReport.lateScratchings)) {
@@ -42,19 +56,21 @@ async function appendLateScratching(
   }
 
   const regIdStr = registrationId.toString();
-  const label = buildLateScratchingLabel(horseName, note);
+  const label = buildLateScratchingLabel(horseName, note, category);
   const existing = report.preRaceReport.lateScratchings.find(
     (s) => s.registrationId && s.registrationId.toString() === regIdStr,
   );
 
   if (existing) {
     existing.note = note || '';
+    existing.category = category;
     existing.label = label;
     existing.scratchedAt = new Date();
   } else {
     report.preRaceReport.lateScratchings.push({
       registrationId,
       horseId,
+      category,
       note: note || '',
       label,
       scratchedAt: new Date(),
@@ -64,8 +80,25 @@ async function appendLateScratching(
   await report.save(session ? { session } : undefined);
 }
 
+/** Create draft report if missing (pre-check complete / live flag). */
+async function ensureDraftReportForRace(raceId, refereeId, session) {
+  let query = RefereeReport.findOne({ raceId });
+  if (session) query = query.session(session);
+  let report = await query;
+  if (report) return report;
+
+  const docs = await RefereeReport.create(
+    [{ raceId, refereeId, status: 'draft' }],
+    session ? { session } : undefined,
+  );
+  return docs[0];
+}
+
 module.exports = {
+  isReportEditable,
   buildLateScratchingLabel,
   migratePreCheckSummary,
+  migrateSubmittedStatus,
   appendLateScratching,
+  ensureDraftReportForRace,
 };

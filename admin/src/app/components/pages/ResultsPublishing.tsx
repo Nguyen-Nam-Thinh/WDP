@@ -351,21 +351,34 @@ export default function ResultsPublishing() {
                         <td className="py-3 px-5">
                           <div className="flex items-center justify-end">
                             <button
-                              disabled={isRunning || race.status === 'running' || !race.refereeId}
+                              disabled={
+                                isRunning
+                                || race.status === 'running'
+                                || !race.refereeId
+                                || !race.preRaceApproved
+                              }
                               onClick={() => handleForceSimulate(race)}
-                              title={!race.refereeId ? "Chưa có trọng tài, không thể mô phỏng" : ""}
+                              title={
+                                !race.refereeId
+                                  ? 'Chưa có trọng tài, không thể mô phỏng'
+                                  : !race.preRaceApproved
+                                    ? 'Cần duyệt Pre-race Report trước khi chạy mô phỏng'
+                                    : ''
+                              }
                               className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded transition shadow-sm border ${
                                 race.status === 'running'
                                   ? 'bg-emerald-50 text-emerald-700 border-emerald-200 cursor-not-allowed'
                                   : isRunning
                                   ? 'bg-amber-50 text-amber-700 border-amber-200 cursor-wait'
-                                  : !race.refereeId
+                                  : !race.refereeId || !race.preRaceApproved
                                   ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
                                   : 'bg-white text-slate-700 border-slate-200 hover:text-amber-700 hover:bg-amber-50 hover:border-amber-200'
                               }`}
                             >
                               {!race.refereeId ? (
                                 <>Chưa phân công TT</>
+                              ) : !race.preRaceApproved ? (
+                                <>Chờ duyệt Pre-race</>
                               ) : race.status === 'running' ? (
                                 <><RefreshCw className="animate-spin" size={14} /> Đang chạy...</>
                               ) : isRunning ? (

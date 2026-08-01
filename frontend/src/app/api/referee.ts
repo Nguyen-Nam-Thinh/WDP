@@ -2,15 +2,50 @@ import { API_URL } from './auth';
 import { getApiErrorMessage } from '../utils/errorMessages';
 import type { Race } from './race';
 
+export type InquiryStatementRole = 'jockey' | 'owner' | 'witness';
+export type InquiryFaultParty = 'subject' | 'other' | 'both' | 'none';
+export type PenaltyReasonCode = 'interference' | 'whip' | 'careless' | 'late' | 'other';
+export type PostRaceVetOrderType = 'blood' | 'urine' | 'endoscopy' | 'clinical';
+
+export interface InquiryStatement {
+  role: InquiryStatementRole;
+  name?: string;
+  text?: string;
+}
+
+export interface IncidentInquiry {
+  statements?: InquiryStatement[];
+  cameraAngles?: string[];
+  faultParty?: InquiryFaultParty | null;
+  conclusion?: string;
+}
+
 export interface Incident {
   _id: string;
   registrationId?: string;
-  horseId?: { _id: string; name: string; breed: string } | null;
+  horseId?: { _id: string; name: string; breed: string } | string | null;
   type: 'interference' | 'doping' | 'equipment_violation' | 'jockey_violation' | 'other';
   description: string;
   action?: string;
   recordedAt: string;
+  source?: 'manual' | 'live_flag';
+  status?: 'draft' | 'resolved';
+  raceTimeMs?: number | null;
+  flaggedAt?: string | null;
+  inquiry?: IncidentInquiry | null;
+  resolution?: {
+    verdict: 'none' | 'warning' | 'fine' | 'disqualified' | null;
+    fineAmount?: number | null;
+    fineTargetRole?: 'owner' | 'jockey' | null;
+    fineTargetUserId?: string | null;
+    reasonCode?: PenaltyReasonCode | null;
+    suspensionDays?: number | null;
+    note?: string;
+    resolvedAt?: string | null;
+  } | null;
 }
+
+export type IncidentVerdict = 'none' | 'warning' | 'fine' | 'disqualified';
 
 export type TrackCondition = 'Firm' | 'Good' | 'Soft' | 'Heavy' | 'Synthetic';
 
@@ -18,6 +53,7 @@ export interface LateScratching {
   _id: string;
   registrationId: string;
   horseId: string;
+  category: 'veterinary' | 'jockey' | 'gear' | 'administrative';
   note: string;
   label: string;
   scratchedAt: string;
@@ -32,15 +68,63 @@ export interface PreRaceReport {
   vetChecks: string[];
 }
 
+export interface PerformanceExplanation {
+  _id?: string;
+  registrationId: string;
+  horseId: string;
+  label: string;
+  summonedRoles: Array<'jockey' | 'owner'>;
+  explanation: string;
+  recordedAt?: string;
+}
+
+export interface VetOrder {
+  _id?: string;
+  registrationId: string;
+  horseId: string;
+  label: string;
+  orderType: PostRaceVetOrderType;
+  note: string;
+  orderedAt?: string;
+}
+
+export interface PostRaceReport {
+  performanceExplanations: PerformanceExplanation[];
+  vetOrders: VetOrder[];
+}
+
 export interface RefereeReport {
   _id: string;
-  raceId: { _id: string; name: string; grade: string; scheduledTime: string; status: string; distance: number; purse: number; tournamentId?: string };
+  raceId: {
+    _id: string;
+    name: string;
+    grade: string;
+    scheduledTime: string;
+    status: string;
+    distance: number;
+    purse: number;
+    tournamentId?: string;
+    isOfficial?: boolean;
+    stewardsReady?: boolean;
+    preRaceApproved?: boolean;
+    resultsConfirmedAt?: string | null;
+  };
   refereeId: { _id: string; fullName: string; email: string; refereeProfile?: { licenseNumber?: string; yearsOfService?: number } };
   incidents: Incident[];
   preRaceReport: PreRaceReport;
+  postRaceReport?: PostRaceReport;
   overallNotes: string;
-  status: 'draft' | 'submitted';
+  preRaceStatus?: 'draft' | 'pending_approval' | 'rejected' | 'approved';
+  preRaceSubmittedAt?: string | null;
+  preRaceReviewedBy?: { _id: string; fullName: string; email: string } | string | null;
+  preRaceReviewedAt?: string | null;
+  preRaceRejectReason?: string;
+  status: 'draft' | 'pending_approval' | 'rejected' | 'approved' | 'submitted';
+  submittedBy?: { _id: string; fullName: string; email: string } | string | null;
   submittedAt?: string;
+  reviewedBy?: { _id: string; fullName: string; email: string } | string | null;
+  reviewedAt?: string;
+  rejectReason?: string;
   createdAt: string;
 }
 
@@ -52,6 +136,10 @@ export type UpdateRefereeReportPayload = {
     riderChanges?: string[];
     gearChanges?: string[];
     vetChecks?: string[];
+  };
+  postRaceReport?: {
+    performanceExplanations?: PerformanceExplanation[];
+    vetOrders?: VetOrder[];
   };
 };
 
@@ -144,6 +232,92 @@ export const refereeApi = {
     return json.data;
   },
 
+  flagIncident: async (
+    token: string,
+    reportId: string,
+    data: { registrationId?: string; horseId?: string; raceTimeMs?: number },
+  ): Promise<RefereeReport> => {
+    const res = await fetch(`${API_URL}/referee/reports/${reportId}/incidents/flag`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader(token) },
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
+    return json.data;
+  },
+
+  ensureReport: async (token: string, raceId: string): Promise<RefereeReport> => {
+    const res = await fetch(`${API_URL}/referee/reports/ensure`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader(token) },
+      body: JSON.stringify({ raceId }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
+    return json.data;
+  },
+
+  updateIncident: async (
+    token: string,
+    reportId: string,
+    incidentId: string,
+    data: {
+      type?: Incident['type'];
+      description?: string;
+      action?: string;
+      inquiry?: IncidentInquiry;
+    },
+  ): Promise<RefereeReport> => {
+    const res = await fetch(`${API_URL}/referee/reports/${reportId}/incidents/${incidentId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeader(token) },
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
+    return json.data;
+  },
+
+  resolveIncident: async (
+    token: string,
+    reportId: string,
+    incidentId: string,
+    data: {
+      type?: Incident['type'];
+      description?: string;
+      action?: string;
+      inquiry?: IncidentInquiry;
+      resolution: {
+        verdict: IncidentVerdict;
+        fineAmount?: number;
+        fineTargetRole?: 'owner' | 'jockey';
+        reasonCode?: PenaltyReasonCode | null;
+        suspensionDays?: number | null;
+        note?: string;
+      };
+    },
+  ): Promise<RefereeReport> => {
+    const res = await fetch(`${API_URL}/referee/reports/${reportId}/incidents/${incidentId}/resolve`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeader(token) },
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
+    return json.data;
+  },
+
+  confirmResults: async (token: string, raceId: string): Promise<any> => {
+    const res = await fetch(`${API_URL}/referee/races/${raceId}/confirm-results`, {
+      method: 'POST',
+      headers: authHeader(token),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
+    return json.data;
+  },
+
   removeIncident: async (token: string, reportId: string, incidentId: string): Promise<RefereeReport> => {
     const res = await fetch(`${API_URL}/referee/reports/${reportId}/incidents/${incidentId}`, {
       method: 'DELETE',
@@ -156,6 +330,16 @@ export const refereeApi = {
 
   submitReport: async (token: string, reportId: string): Promise<RefereeReport> => {
     const res = await fetch(`${API_URL}/referee/reports/${reportId}/submit`, {
+      method: 'POST',
+      headers: authHeader(token),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
+    return json.data;
+  },
+
+  submitPreRace: async (token: string, reportId: string): Promise<RefereeReport> => {
+    const res = await fetch(`${API_URL}/referee/reports/${reportId}/submit-prerace`, {
       method: 'POST',
       headers: authHeader(token),
     });

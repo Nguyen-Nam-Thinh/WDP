@@ -21,6 +21,9 @@ export interface UserProfile {
     raceCount: number;
     bio?: string;
     style?: 'aggressive' | 'balanced' | 'conservative';
+    isAvailable?: boolean;
+    askingFeePerRace?: number;
+    suspendedUntil?: string | null;
   };
   refereeProfile?: {
     licenseNumber: string;
@@ -58,10 +61,21 @@ export interface Transaction {
 
 export interface OwnerRaceResult {
   _id: string;
-  raceId: { _id: string; name: string; grade: string; scheduledTime: string; purse: number; distance: number };
+  raceId: {
+    _id: string;
+    name: string;
+    grade: string;
+    scheduledTime: string;
+    purse: number;
+    distance: number;
+    status?: string;
+    isOfficial?: boolean;
+    payoutSettledAt?: string | null;
+  };
   horseId: { _id: string; name: string; breed?: string; currentGrade: string };
   jockeyId?: { _id: string; fullName: string } | null;
-  position: number;
+  position: number | null;
+  disqualified?: boolean;
   finishTime: number;
   prizeAmount: number;
   pointsEarned: number;

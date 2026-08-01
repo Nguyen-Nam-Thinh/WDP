@@ -1,11 +1,9 @@
 const mongoose = require('mongoose');
 const { Race } = require('../models/race.model');
 const { Registration } = require('../models/registration.model');
-const { RaceResult } = require('../models/race_result.model');
 const { Horse } = require('../models/horse.model');
-const { Wallet } = require('../models/wallet.model');
-const walletService = require('./wallet.service');
-const { settleBetsWithSession, refundRaceBets } = require('./bet.service');
+const { RaceResult } = require('../models/race_result.model');
+const { refundRaceBets } = require('./bet.service');
 const { createManyNotifications } = require('./notification.service');
 const { completeInvitationsForRace } = require('./jockey_invitation.service');
 const { Bet } = require('../models/bet.model');
@@ -206,25 +204,14 @@ function scheduleSegmentEmits(io, raceId, segments) {
   return () => timers.forEach(clearTimeout);
 }
 
-// ─── Atomic DB write: results + prizes + points + grade upgrades + bets ───────
+// ─── Provisional DB write: results only (no purse / points / bets) ────────────
 async function finalizeRace(race, ordered) {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    const positionMap = {};
-
     for (const entry of ordered) {
       const { registration, position, finishTime } = entry;
-
-      const prizeAmount =
-        position <= PRIZE_RATIO.length
-          ? Math.floor(race.purse * PRIZE_RATIO[position - 1])
-          : 0;
-      const pointsEarned =
-        position <= (POINTS_BY_GRADE[race.grade]?.length ?? 0)
-          ? POINTS_BY_GRADE[race.grade][position - 1]
-          : 0;
 
       await RaceResult.create(
         [{
@@ -233,53 +220,16 @@ async function finalizeRace(race, ordered) {
           horseId: registration.horseId._id,
           jockeyId: registration.jockeyId?._id ?? null,
           position,
+          provisionalPosition: position,
+          disqualified: false,
           finishTime,
-          prizeAmount,
-          pointsEarned,
+          prizeAmount: 0,
+          pointsEarned: 0,
         }],
         { session },
       );
-
-      if (prizeAmount > 0) {
-        const ownerWallet = await Wallet.findOne({ userId: registration.ownerId }).session(session);
-        if (ownerWallet) {
-          await walletService.creditWallet(
-            ownerWallet._id,
-            registration.ownerId,
-            prizeAmount,
-            'prize_payout',
-            `Prize P${position}: ${race.name}`,
-            race._id,
-            'Race',
-            session,
-          );
-        }
-      }
-
-      const incFields = { raceCount: 1, totalPoints: pointsEarned, totalEarnings: prizeAmount };
-      if (position === 1) incFields.winCount = 1;
-
-      const updatedHorse = await Horse.findByIdAndUpdate(
-        registration.horseId._id,
-        { $inc: incFields },
-        { new: true, session },
-      );
-
-      if (updatedHorse) {
-        const newGrade = getUpgradedGrade(updatedHorse.currentGrade, updatedHorse.totalPoints);
-        if (newGrade !== updatedHorse.currentGrade) {
-          await Horse.findByIdAndUpdate(
-            updatedHorse._id,
-            { $set: { currentGrade: newGrade } },
-            { session },
-          );
-        }
-      }
-
-      positionMap[registration.horseId._id.toString()] = position;
     }
 
-    await settleBetsWithSession(race._id, positionMap, race.name, session);
     await completeInvitationsForRace(race._id, session);
     await Race.findByIdAndUpdate(race._id, { $set: { status: 'finished' } }, { session });
     await session.commitTransaction();
@@ -439,20 +389,16 @@ async function runRaceSimulation(raceId) {
       raceId,
       raceName: race.name,
       trackCondition,
+      provisional: true,
+      isOfficial: false,
       results: ordered.map(e => ({
         position: e.position,
         horseId: e.horseId,
         horseName: e.horseName,
         jockeyName: e.jockeyName,
         finishTime: e.finishTime,
-        prizeAmount:
-          e.position <= PRIZE_RATIO.length
-            ? Math.floor(race.purse * PRIZE_RATIO[e.position - 1])
-            : 0,
-        pointsEarned:
-          e.position <= (POINTS_BY_GRADE[race.grade]?.length ?? 0)
-            ? POINTS_BY_GRADE[race.grade][e.position - 1]
-            : 0,
+        prizeAmount: 0,
+        pointsEarned: 0,
       })),
     });
     clearActiveRace(raceId);
@@ -468,56 +414,43 @@ async function sendRaceFinishedNotifications(race, ordered, registrations) {
   for (const entry of ordered) {
     const reg = entry.registration;
     const pos = entry.position;
-    const prizeAmount = pos <= PRIZE_RATIO.length ? Math.floor(race.purse * PRIZE_RATIO[pos - 1]) : 0;
     const posLabel = pos === 1 ? '🥇 Hạng 1' : pos === 2 ? '🥈 Hạng 2' : pos === 3 ? '🥉 Hạng 3' : `Hạng ${pos}`;
 
-    // Notify owner
     if (reg.ownerId) {
       notifications.push({
         userId: reg.ownerId,
-        type: prizeAmount > 0 ? 'prize_received' : 'race_finished',
+        type: 'race_finished',
         title: `Race "${race.name}" đã kết thúc`,
-        message: prizeAmount > 0
-          ? `Ngựa ${entry.horseName} về ${posLabel} — nhận ${prizeAmount.toLocaleString('vi-VN')} coins`
-          : `Ngựa ${entry.horseName} về ${posLabel}`,
-        data: { raceId: race._id, position: pos },
+        message: `Ngựa ${entry.horseName} về ${posLabel} — kết quả tạm thời, chờ steward/admin duyệt`,
+        data: { raceId: race._id, position: pos, provisional: true },
       });
     }
 
-    // Notify jockey
     if (reg.jockeyId) {
       notifications.push({
-        userId: reg.jockeyId._id ?? reg.jockeyId,
+        userId: reg.jockeyId._id || reg.jockeyId,
         type: 'race_finished',
         title: `Race "${race.name}" đã kết thúc`,
-        message: `Bạn cưỡi ${entry.horseName} về ${posLabel}${prizeAmount > 0 ? ` — thưởng ${prizeAmount.toLocaleString('vi-VN')} coins` : ''}`,
-        data: { raceId: race._id, position: pos },
+        message: `Bạn về ${posLabel} với ${entry.horseName} — kết quả tạm thời, chờ duyệt`,
+        data: { raceId: race._id, position: pos, provisional: true },
       });
     }
   }
 
-  // Notify spectators who placed bets
-  const bets = await Bet.find({ raceId: race._id, status: { $in: ['won', 'lost', 'refunded'] } })
-    .select('spectatorId status payoutAmount betType');
-
-  for (const bet of bets) {
-    if (bet.status === 'won') {
-      notifications.push({
-        userId: bet.spectatorId,
-        type: 'bet_won',
-        title: '🎉 Dự Đoán thắng!',
-        message: `Bạn thắng dự đoán race "${race.name}" — nhận ${(bet.payoutAmount || 0).toLocaleString('vi-VN')} coins`,
-        data: { raceId: race._id, betId: bet._id },
-      });
-    } else if (bet.status === 'lost') {
-      notifications.push({
-        userId: bet.spectatorId,
-        type: 'bet_lost',
-        title: 'Dự Đoán thua',
-        message: `Dự Đoán của bạn trong race "${race.name}" không thắng`,
-        data: { raceId: race._id, betId: bet._id },
-      });
-    }
+  // Bets settle only after admin approve — notify spectators to wait
+  const pendingBets = await Bet.find({ raceId: race._id, status: 'pending' }).select('spectatorId');
+  const seen = new Set();
+  for (const bet of pendingBets) {
+    const sid = bet.spectatorId.toString();
+    if (seen.has(sid)) continue;
+    seen.add(sid);
+    notifications.push({
+      userId: bet.spectatorId,
+      type: 'race_finished',
+      title: `Race "${race.name}" đã kết thúc`,
+      message: 'Kết quả tạm thời — cược sẽ settle sau khi admin duyệt biên bản',
+      data: { raceId: race._id, provisional: true },
+    });
   }
 
   await createManyNotifications(notifications);

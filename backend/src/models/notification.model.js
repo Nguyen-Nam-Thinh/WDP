@@ -16,6 +16,9 @@ const notificationSchema = new Schema(
         'race_cancelled',     // race bị hủy
         'horse_grade_upgrade',// ngựa lên hạng
         'prize_received',     // nhận tiền thưởng (owner/jockey)
+        'referee_report_pending', // admin: biên bản chờ duyệt
+        'penalty_issued',         // steward fine ticket
+        'results_official',       // admin approved — official results + payout
       ],
       required: true,
     },

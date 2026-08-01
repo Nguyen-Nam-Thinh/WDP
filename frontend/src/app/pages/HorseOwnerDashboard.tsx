@@ -33,6 +33,8 @@ import {
   Shield,
   AlertCircle,
   Copy,
+  Search,
+  Ticket,
 } from "lucide-react";
 import {
   Button,
@@ -62,6 +64,7 @@ import { AppShell, type NavItem } from "../components/layout/AppShell";
 import { Home } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useWallet } from "../hooks/useWallet";
+import { PenaltiesPanel } from "./shared/PenaltiesPanel";
 import { horseApi, Horse } from "../api/horse";
 import {
   userApi,
@@ -97,18 +100,22 @@ const OWNER_NAV: NavItem[] = [
   { to: "/horse-owner/schedule", label: "Lịch Đua", icon: <Calendar /> },
   { to: "/horse-owner/results", label: "Thành Tích", icon: <TrendingUp /> },
   { to: "/horse-owner/wallet", label: "Ví Tiền", icon: <Wallet /> },
+  { to: "/horse-owner/penalties", label: "Vé Phạt", icon: <Ticket /> },
 ];
 
 export function HorseOwnerDashboard() {
   const navigate = useNavigate();
   const { user, token } = useAuth();
+  const { pathname, search } = useLocation();
+  const highlightPenalties =
+    pathname === "/horse-owner/penalties"
+    && new URLSearchParams(search).get("penalties") === "1";
   const { balance: walletBalance, refetch: refetchWallet } = useWallet();
 
   useEffect(() => {
     if (!user) navigate("/");
   }, [user, navigate]);
 
-  const { pathname, search } = useLocation();
   const activeTab =
     pathname === "/horse-owner/jockeys"
       ? "jockeys"
@@ -118,9 +125,11 @@ export function HorseOwnerDashboard() {
           ? "results"
           : pathname === "/horse-owner/wallet"
             ? "wallet"
-            : pathname === "/horse-owner/horses"
-              ? "horses"
-              : "overview";
+            : pathname === "/horse-owner/penalties"
+              ? "penalties"
+              : pathname === "/horse-owner/horses"
+                ? "horses"
+                : "overview";
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // ── Overview real data ──
@@ -226,6 +235,11 @@ export function HorseOwnerDashboard() {
   const [loadingHorses, setLoadingHorses] = useState(false);
   const [horsePage, setHorsePage] = useState(1);
   const [jockeyPage, setJockeyPage] = useState(1);
+  const [horseSearch, setHorseSearch] = useState("");
+  const [jockeySearch, setJockeySearch] = useState("");
+  const [scheduleSearch, setScheduleSearch] = useState("");
+  const [resultsSearch, setResultsSearch] = useState("");
+  const [txSearch, setTxSearch] = useState("");
 
   const loadHorses = async () => {
     if (!token) return;
@@ -746,11 +760,24 @@ export function HorseOwnerDashboard() {
   };
 
   const PAGE_SIZE = 10;
+
+  const filteredHorses = useMemo(() => {
+    const q = horseSearch.trim().toLowerCase();
+    if (!q) return horses;
+    return horses.filter((h) =>
+      [h.name, h.breed, h.currentGrade, h.gender, h.color]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(q),
+    );
+  }, [horses, horseSearch]);
+
   const pagedHorses = useMemo(
-    () => horses.slice((horsePage - 1) * PAGE_SIZE, horsePage * PAGE_SIZE),
-    [horses, horsePage],
+    () => filteredHorses.slice((horsePage - 1) * PAGE_SIZE, horsePage * PAGE_SIZE),
+    [filteredHorses, horsePage],
   );
-  const horseTotalPages = Math.ceil(horses.length / PAGE_SIZE);
+  const horseTotalPages = Math.ceil(filteredHorses.length / PAGE_SIZE) || 1;
   const pagedJockeys = useMemo(
     () => jockeys.slice((jockeyPage - 1) * PAGE_SIZE, jockeyPage * PAGE_SIZE),
     [jockeys, jockeyPage],
@@ -761,11 +788,27 @@ export function HorseOwnerDashboard() {
     () => myRegistrations.filter((r) => r.status === "active"),
     [myRegistrations],
   );
+
+  const filteredActiveRegs = useMemo(() => {
+    const q = scheduleSearch.trim().toLowerCase();
+    if (!q) return activeRegs;
+    return activeRegs.filter((reg) => {
+      const race = reg.raceId as any;
+      const horse = reg.horseId as any;
+      const jockey = reg.jockeyId as any;
+      return [race?.name, race?.grade, race?.status, horse?.name, jockey?.fullName]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(q);
+    });
+  }, [activeRegs, scheduleSearch]);
+
   const pagedRegs = useMemo(
-    () => activeRegs.slice((regPage - 1) * PAGE_SIZE, regPage * PAGE_SIZE),
-    [activeRegs, regPage],
+    () => filteredActiveRegs.slice((regPage - 1) * PAGE_SIZE, regPage * PAGE_SIZE),
+    [filteredActiveRegs, regPage],
   );
-  const regTotalPages = Math.ceil(activeRegs.length / PAGE_SIZE);
+  const regTotalPages = Math.ceil(filteredActiveRegs.length / PAGE_SIZE) || 1;
 
   // Races đang mở mà owner CHƯA đăng ký (đã đăng ký thì chỉ hiện ở "Đăng Ký Của Tôi")
   const availableOpenRaces = useMemo(() => {
@@ -778,15 +821,88 @@ export function HorseOwnerDashboard() {
     return openRaces.filter((race) => !registeredRaceIds.has(race._id));
   }, [openRaces, myRegistrations]);
 
+  const filteredOpenRaces = useMemo(() => {
+    const q = scheduleSearch.trim().toLowerCase();
+    if (!q) return availableOpenRaces;
+    return availableOpenRaces.filter((race) =>
+      [race.name, race.grade, race.status, String(race.distance ?? "")]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(q),
+    );
+  }, [availableOpenRaces, scheduleSearch]);
+
   const pagedOpenRaces = useMemo(
     () =>
-      availableOpenRaces.slice(
+      filteredOpenRaces.slice(
         (openPage - 1) * PAGE_SIZE,
         openPage * PAGE_SIZE,
       ),
-    [availableOpenRaces, openPage],
+    [filteredOpenRaces, openPage],
   );
-  const openTotalPages = Math.ceil(availableOpenRaces.length / PAGE_SIZE);
+  const openTotalPages = Math.ceil(filteredOpenRaces.length / PAGE_SIZE) || 1;
+
+  const filteredForumJockeys = useMemo(() => {
+    const q = jockeySearch.trim().toLowerCase();
+    if (!q) return forumJockeys;
+    return forumJockeys.filter((j) => {
+      const jp = j.jockeyProfile;
+      return [j.fullName, j.email, jp?.style, jp?.bio]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(q);
+    });
+  }, [forumJockeys, jockeySearch]);
+
+  const filteredOwnerInvitations = useMemo(() => {
+    const q = jockeySearch.trim().toLowerCase();
+    if (!q) return ownerInvitations;
+    return ownerInvitations.filter((inv) => {
+      const jockey = typeof inv.jockeyId === "object" ? inv.jockeyId : null;
+      const horse = typeof inv.horseId === "object" ? inv.horseId : null;
+      const race = typeof inv.raceId === "object" ? inv.raceId : null;
+      return [jockey?.fullName, horse?.name, race?.name, inv.status]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(q);
+    });
+  }, [ownerInvitations, jockeySearch]);
+
+  const filteredRaceResults = useMemo(() => {
+    const q = resultsSearch.trim().toLowerCase();
+    if (!q) return raceResults;
+    return raceResults.filter((r) =>
+      [r.raceId?.name, r.horseId?.name, r.jockeyId?.fullName, String(r.position ?? "")]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(q),
+    );
+  }, [raceResults, resultsSearch]);
+
+  const filteredTxList = useMemo(() => {
+    const q = txSearch.trim().toLowerCase();
+    if (!q) return txList;
+    const typeLabel: Record<string, string> = {
+      topup: "Nạp Tiền",
+      registration_fee: "Phí Đăng Ký",
+      registration_refund: "Hoàn Phí ĐK",
+      prize_payout: "Tiền Thưởng",
+      bet_placed: "Dự Đoán",
+      bet_payout: "Thắng Dự Đoán",
+      bet_refund: "Hoàn Dự Đoán",
+    };
+    return txList.filter((tx) =>
+      [typeLabel[tx.type] ?? tx.type, tx.description, tx.type]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(q),
+    );
+  }, [txList, txSearch]);
 
   const performanceData = [
     { month: "T1", earnings: 15000, points: 200 },
@@ -1120,7 +1236,7 @@ export function HorseOwnerDashboard() {
         {/* Content: Horses */}
         {activeTab === "horses" && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
               <div>
                 <h2 className="font-serif text-3xl font-bold text-foreground mb-2">
                   Ngựa Của Tôi
@@ -1129,24 +1245,39 @@ export function HorseOwnerDashboard() {
                   Quản lý đàn ngựa và đăng ký ngựa mới
                 </p>
               </div>
-              <Button
-                variant="contained"
-                startIcon={<Plus />}
-                onClick={() => setAddHorseOpen(true)}
-                sx={{
-                  background:
-                    "linear-gradient(135deg, #C9A227 0%, #8F7318 100%)",
-                  textTransform: "none",
-                  fontWeight: 600,
-                  boxShadow: "0 4px 6px -1px rgba(255, 222, 66, 0.2)",
-                  "&:hover": {
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Tìm theo tên / giống / hạng..."
+                    value={horseSearch}
+                    onChange={(e) => {
+                      setHorseSearch(e.target.value);
+                      setHorsePage(1);
+                    }}
+                    className="bg-slate-900 border border-border rounded-lg pl-9 pr-4 py-2 text-foreground placeholder-slate-500 focus:outline-none focus:border-[#C9A227] text-sm w-56"
+                  />
+                </div>
+                <Button
+                  variant="contained"
+                  startIcon={<Plus />}
+                  onClick={() => setAddHorseOpen(true)}
+                  sx={{
                     background:
-                      "linear-gradient(135deg, #C9A227 0%, #4C5C2D 100%)",
-                  },
-                }}
-              >
-                Đăng Ký Ngựa
-              </Button>
+                      "linear-gradient(135deg, #C9A227 0%, #8F7318 100%)",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    boxShadow: "0 4px 6px -1px rgba(255, 222, 66, 0.2)",
+                    "&:hover": {
+                      background:
+                        "linear-gradient(135deg, #C9A227 0%, #4C5C2D 100%)",
+                    },
+                  }}
+                >
+                  Đăng Ký Ngựa
+                </Button>
+              </div>
             </div>
 
             {loadingHorses ? (
@@ -1156,6 +1287,11 @@ export function HorseOwnerDashboard() {
             ) : horses.length === 0 ? (
               <div className="text-center py-20 text-slate-500">
                 Chưa có ngựa nào. Nhấn "Đăng Ký Ngựa" để bắt đầu.
+              </div>
+            ) : filteredHorses.length === 0 ? (
+              <div className="text-center py-20 text-slate-500">
+                <Search className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                Không tìm thấy ngựa phù hợp
               </div>
             ) : (
               <>
@@ -1310,7 +1446,7 @@ export function HorseOwnerDashboard() {
         {/* Content: Jockeys */}
         {activeTab === "jockeys" && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
               <div>
                 <h2 className="font-serif text-3xl font-bold text-foreground mb-2">
                   Thuê Kỵ Sĩ
@@ -1318,6 +1454,16 @@ export function HorseOwnerDashboard() {
                 <p className="text-slate-400">
                   Diễn đàn tìm và thuê kỵ sĩ cho race của bạn
                 </p>
+              </div>
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Tìm kỵ sĩ / ngựa / race..."
+                  value={jockeySearch}
+                  onChange={(e) => setJockeySearch(e.target.value)}
+                  className="bg-slate-900 border border-border rounded-lg pl-9 pr-4 py-2 text-foreground placeholder-slate-500 focus:outline-none focus:border-[#C9A227] text-sm w-56"
+                />
               </div>
             </div>
 
@@ -1366,10 +1512,15 @@ export function HorseOwnerDashboard() {
                       Các kỵ sĩ bật trạng thái sẵn sàng sẽ xuất hiện ở đây
                     </p>
                   </div>
+                ) : filteredForumJockeys.length === 0 ? (
+                  <div className="text-center py-20 text-muted-foreground border border-dashed border-border">
+                    <Search className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                    <p className="font-semibold text-foreground mb-1">Không tìm thấy kỵ sĩ</p>
+                  </div>
                 ) : (
                   <>
                     <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-                      {forumJockeys.map((jockey) => {
+                      {filteredForumJockeys.map((jockey) => {
                         const jp = jockey.jockeyProfile;
                         const winRate =
                           (jp?.raceCount ?? 0) > 0
@@ -1505,9 +1656,14 @@ export function HorseOwnerDashboard() {
                       Vào "Diễn Đàn Thuê" để tìm kỵ sĩ và gửi lời mời
                     </p>
                   </div>
+                ) : filteredOwnerInvitations.length === 0 ? (
+                  <div className="text-center py-20 text-muted-foreground border border-dashed border-border">
+                    <Search className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                    <p className="font-semibold text-foreground mb-1">Không tìm thấy lời mời</p>
+                  </div>
                 ) : (
                   <div className="space-y-3">
-                    {ownerInvitations.map((inv) => {
+                    {filteredOwnerInvitations.map((inv) => {
                       const statusMap: Record<
                         string,
                         { label: string; cls: string }
@@ -1637,13 +1793,29 @@ export function HorseOwnerDashboard() {
         {/* Content: Schedule */}
         {activeTab === "schedule" && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="mb-6">
-              <h2 className="font-serif text-3xl font-bold text-foreground mb-2">
-                Lịch Đua & Đăng Ký
-              </h2>
-              <p className="text-slate-400">
-                Đăng ký ngựa vào cuộc đua và quản lý các đăng ký của bạn
-              </p>
+            <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+              <div>
+                <h2 className="font-serif text-3xl font-bold text-foreground mb-2">
+                  Lịch Đua & Đăng Ký
+                </h2>
+                <p className="text-slate-400">
+                  Đăng ký ngựa vào cuộc đua và quản lý các đăng ký của bạn
+                </p>
+              </div>
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Tìm race / ngựa / kỵ sĩ..."
+                  value={scheduleSearch}
+                  onChange={(e) => {
+                    setScheduleSearch(e.target.value);
+                    setRegPage(1);
+                    setOpenPage(1);
+                  }}
+                  className="bg-slate-900 border border-border rounded-lg pl-9 pr-4 py-2 text-foreground placeholder-slate-500 focus:outline-none focus:border-[#C9A227] text-sm w-56"
+                />
+              </div>
             </div>
 
             {/* Sub-tabs */}
@@ -1699,6 +1871,11 @@ export function HorseOwnerDashboard() {
                       <p className="text-slate-500">
                         Bạn chưa đăng ký cuộc đua nào
                       </p>
+                    </div>
+                  ) : filteredActiveRegs.length === 0 ? (
+                    <div className="bg-muted/40 border border-border rounded-2xl p-8 text-center">
+                      <Search className="w-10 h-10 text-slate-600 mx-auto mb-3" />
+                      <p className="text-slate-500">Không tìm thấy đăng ký phù hợp</p>
                     </div>
                   ) : (
                     <>
@@ -1876,6 +2053,11 @@ export function HorseOwnerDashboard() {
                         Hiện không có cuộc đua nào đang mở đăng ký
                       </p>
                     </div>
+                  ) : filteredOpenRaces.length === 0 ? (
+                    <div className="bg-muted/40 border border-border rounded-2xl p-8 text-center">
+                      <Search className="w-10 h-10 text-slate-600 mx-auto mb-3" />
+                      <p className="text-slate-500">Không tìm thấy cuộc đua phù hợp</p>
+                    </div>
                   ) : (
                     <div className="space-y-4">
                       {pagedOpenRaces.map((race) => {
@@ -2046,7 +2228,7 @@ export function HorseOwnerDashboard() {
                       })}
                     </div>
                   ))}
-                {scheduleSubTab === "open" && availableOpenRaces.length > 0 && (
+                {scheduleSubTab === "open" && filteredOpenRaces.length > 0 && (
                   <Pagination page={openPage} totalPages={openTotalPages} onPageChange={setOpenPage} />
                 )}
               </>
@@ -2057,13 +2239,25 @@ export function HorseOwnerDashboard() {
         {/* Content: Performance & Results */}
         {activeTab === "results" && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
               <h2 className="font-serif text-3xl font-bold text-foreground">
                 Thành Tích
               </h2>
-              <span className="text-slate-500 text-sm">
-                {resultsTotal} kết quả
-              </span>
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Tìm race / ngựa / kỵ sĩ..."
+                    value={resultsSearch}
+                    onChange={(e) => setResultsSearch(e.target.value)}
+                    className="bg-slate-900 border border-border rounded-lg pl-9 pr-4 py-2 text-foreground placeholder-slate-500 focus:outline-none focus:border-[#C9A227] text-sm w-56"
+                  />
+                </div>
+                <span className="text-slate-500 text-sm">
+                  {resultsTotal} kết quả
+                </span>
+              </div>
             </div>
 
             <div className="bg-card backdrop-blur-md border border-border rounded-2xl p-6">
@@ -2080,11 +2274,17 @@ export function HorseOwnerDashboard() {
                   <Trophy className="w-12 h-12 mx-auto mb-3 opacity-20" />
                   <p>Chưa có kết quả race nào</p>
                 </div>
+              ) : filteredRaceResults.length === 0 ? (
+                <div className="text-center py-12 text-slate-500">
+                  <Search className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                  <p>Không tìm thấy kết quả phù hợp</p>
+                </div>
               ) : (
                 <>
                   <div className="space-y-3">
-                    {raceResults.map((r) => {
-                      const pos = r.position;
+                    {filteredRaceResults.map((r) => {
+                      const official = !!r.raceId?.isOfficial || !!r.raceId?.payoutSettledAt;
+                      const pos = r.disqualified ? null : r.position;
                       const posCls =
                         pos === 1
                           ? "bg-amber-500/20 text-amber-400 border-amber-500/30"
@@ -2102,11 +2302,20 @@ export function HorseOwnerDashboard() {
                             <div
                               className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-base border ${posCls}`}
                             >
-                              #{pos}
+                              {r.disqualified ? 'DQ' : `#${pos ?? '—'}`}
                             </div>
                             <div>
-                              <div className="text-foreground font-bold">
+                              <div className="text-foreground font-bold flex items-center gap-2 flex-wrap">
                                 {r.raceId?.name}
+                                <span
+                                  className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${
+                                    official
+                                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                                      : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                                  }`}
+                                >
+                                  {official ? 'Official' : 'Tạm thời'}
+                                </span>
                               </div>
                               <div className="text-xs text-slate-400 mt-0.5">
                                 {new Date(
@@ -2135,12 +2344,14 @@ export function HorseOwnerDashboard() {
                           </div>
                           <div className="text-right shrink-0">
                             <div className="text-[#C9A227] font-bold">
-                              {r.prizeAmount > 0
+                              {official && r.prizeAmount > 0
                                 ? `+${r.prizeAmount.toLocaleString("vi-VN")} coins`
-                                : "—"}
+                                : official
+                                  ? "—"
+                                  : "Chờ duyệt"}
                             </div>
                             <div className="text-blue-400 text-sm">
-                              +{r.pointsEarned} pts
+                              {official ? `+${r.pointsEarned} pts` : '— pts'}
                             </div>
                             <div className="text-xs text-slate-500 mt-0.5">
                               {(r.finishTime / 1000).toFixed(2)}s
@@ -2164,9 +2375,23 @@ export function HorseOwnerDashboard() {
         {/* Content: Wallet */}
         {activeTab === "wallet" && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <h2 className="font-serif text-3xl font-bold text-foreground mb-6">
-              Ví & Giao Dịch
-            </h2>
+            <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+              <h2 className="font-serif text-3xl font-bold text-foreground">
+                Ví & Giao Dịch
+              </h2>
+              {walletSubTab === "history" && (
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Tìm loại / mô tả giao dịch..."
+                    value={txSearch}
+                    onChange={(e) => setTxSearch(e.target.value)}
+                    className="bg-slate-900 border border-border rounded-lg pl-9 pr-4 py-2 text-foreground placeholder-slate-500 focus:outline-none focus:border-[#C9A227] text-sm w-56"
+                  />
+                </div>
+              )}
+            </div>
 
             {/* Sub-tabs */}
             <div className="flex gap-2 mb-6 border-b border-border pb-0">
@@ -2539,10 +2764,15 @@ export function HorseOwnerDashboard() {
                     <DollarSign className="w-10 h-10 mx-auto mb-3 opacity-20" />
                     <p>Chưa có giao dịch nào</p>
                   </div>
+                ) : filteredTxList.length === 0 ? (
+                  <div className="text-center py-12 text-slate-500">
+                    <Search className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                    <p>Không tìm thấy giao dịch phù hợp</p>
+                  </div>
                 ) : (
                   <>
                     <div className="space-y-3">
-                      {txList.map((tx) => {
+                      {filteredTxList.map((tx) => {
                         const isCredit = tx.amount > 0;
                         const typeLabel: Record<string, string> = {
                           topup: "Nạp Tiền",
@@ -2605,6 +2835,26 @@ export function HorseOwnerDashboard() {
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === "penalties" && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="mb-6">
+              <h2 className="font-serif text-3xl font-bold text-foreground mb-1">
+                Vé Phạt
+              </h2>
+              <p className="text-slate-400 text-sm">
+                Phiếu phạt steward — nộp bằng số dư ví
+              </p>
+            </div>
+            <div className="bg-card border border-border rounded-2xl p-5">
+              <PenaltiesPanel
+                token={token}
+                highlight={highlightPenalties}
+                onPaid={() => refetchWallet()}
+              />
+            </div>
           </div>
         )}
       </div>

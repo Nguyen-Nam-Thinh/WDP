@@ -6,7 +6,11 @@ const raceResultSchema = new mongoose.Schema(
     registrationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Registration', required: true },
     horseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Horse', required: true },
     jockeyId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
-    position: { type: Number, required: true, min: 1 },
+    /** Official/display place; null when disqualified */
+    position: { type: Number, min: 1, default: null },
+    /** Immutable simulation finish order */
+    provisionalPosition: { type: Number, min: 1, required: true },
+    disqualified: { type: Boolean, default: false },
     finishTime: { type: Number, default: null },
     prizeAmount: { type: Number, default: 0, min: 0 },
     pointsEarned: { type: Number, default: 0, min: 0 },
@@ -16,6 +20,7 @@ const raceResultSchema = new mongoose.Schema(
 
 raceResultSchema.index({ raceId: 1, position: 1 });
 raceResultSchema.index({ horseId: 1, createdAt: -1 });
+raceResultSchema.index({ raceId: 1, registrationId: 1 }, { unique: true });
 
 const RaceResult = mongoose.model('RaceResult', raceResultSchema);
 

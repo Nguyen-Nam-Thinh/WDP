@@ -115,6 +115,16 @@ const TRACK_CONDITIONS = {
 /** Stewards' pre-race report track rating (not simulation track conditions) */
 const PRE_RACE_TRACK_CONDITIONS = ['Firm', 'Good', 'Soft', 'Heavy', 'Synthetic'];
 
+/** Pre-check fail categories (stewards) */
+const PRE_CHECK_FAIL_CATEGORIES = ['veterinary', 'jockey', 'gear', 'administrative'];
+
+/** Post-race inquiry / penalty constants */
+const INQUIRY_STATEMENT_ROLES = ['jockey', 'owner', 'witness'];
+const INQUIRY_FAULT_PARTIES = ['subject', 'other', 'both', 'none'];
+const PENALTY_REASON_CODES = ['interference', 'whip', 'careless', 'late', 'other'];
+const POST_RACE_VET_ORDER_TYPES = ['blood', 'urine', 'endoscopy', 'clinical'];
+const INQUIRY_CAMERA_ANGLES = ['Head-on', 'Side', 'Tower', 'Replay', 'Other'];
+
 // Jockey racing styles — per-phase speed multipliers for animation + risk/track metadata
 // phases: [phase1, phase2, phase3] — integrate to ~1.0 so total distance is preserved
 // riskFactor: Gaussian noise sigma used in scoring (higher = more variance)
@@ -152,5 +162,11 @@ module.exports = {
   AI_CONFIG,
   TRACK_CONDITIONS,
   PRE_RACE_TRACK_CONDITIONS,
+  PRE_CHECK_FAIL_CATEGORIES,
+  INQUIRY_STATEMENT_ROLES,
+  INQUIRY_FAULT_PARTIES,
+  PENALTY_REASON_CODES,
+  POST_RACE_VET_ORDER_TYPES,
+  INQUIRY_CAMERA_ANGLES,
   JOCKEY_STYLE_SPEED_PROFILES,
 };

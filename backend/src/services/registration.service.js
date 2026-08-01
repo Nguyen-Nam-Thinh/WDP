@@ -6,7 +6,7 @@ const { User } = require('../models/user.model');
 const { Wallet } = require('../models/wallet.model');
 const walletService = require('./wallet.service');
 const { AppError } = require('../middleware/error.middleware');
-const { REFUND_RATES } = require('../config/constants');
+const { REFUND_RATES, PRE_CHECK_FAIL_CATEGORIES } = require('../config/constants');
 const { clearPredictionCache } = require('./ai-prediction.service');
 const { appendLateScratching } = require('./referee-prerace.helper');
 
@@ -64,6 +64,8 @@ async function registerHorse(ownerId, { raceId, horseId, jockeyId }) {
   if (jockeyId) {
     const jockey = await User.findOne({ _id: jockeyId, role: 'jockey', isActive: true });
     if (!jockey) throw new AppError(404, 'Không tìm thấy kỵ sĩ');
+    const { assertJockeyNotSuspended } = require('./jockey-suspension.helper');
+    await assertJockeyNotSuspended(jockeyId);
 
     // Jockey can only ride 1 horse per race
     const jockeyConflict = await Registration.findOne({ raceId, jockeyId, status: 'active' });
@@ -159,6 +161,9 @@ async function assignJockey(registrationId, ownerId, jockeyId) {
   const jockey = await User.findOne({ _id: jockeyId, role: 'jockey', isActive: true });
   if (!jockey) throw new AppError(404, 'Không tìm thấy kỵ sĩ');
 
+  const { assertJockeyNotSuspended } = require('./jockey-suspension.helper');
+  await assertJockeyNotSuspended(jockeyId);
+
   // Jockey can only ride 1 horse per race (exclude current registration)
   const conflict = await Registration.findOne({
     raceId: reg.raceId,
@@ -224,7 +229,39 @@ async function cancelRegistration(registrationId, ownerId) {
     .populate('horseId', 'name breed gender currentGrade');
 }
 
-async function updatePreCheck(registrationId, refereeId, { status, note }) {
+async function maybeMarkStewardsReady(raceId, session) {
+  let query = Registration.find({
+    raceId,
+    status: { $in: ['active', 'disqualified'] },
+  });
+  if (session) query = query.session(session);
+  const regs = await query;
+
+  if (regs.length === 0) return;
+
+  const allDone = regs.every((r) => {
+    const s = r.preCheckResult?.status;
+    return s === 'passed' || s === 'failed';
+  });
+  if (!allDone) return;
+
+  let raceQuery = Race.findById(raceId);
+  if (session) raceQuery = raceQuery.session(session);
+  const race = await raceQuery;
+  if (!race) return;
+
+  if (!race.stewardsReady) {
+    race.stewardsReady = true;
+    await race.save(session ? { session } : undefined);
+  }
+
+  if (race.refereeId) {
+    const { ensureDraftReportForRace } = require('./referee-prerace.helper');
+    await ensureDraftReportForRace(raceId, race.refereeId, session);
+  }
+}
+
+async function updatePreCheck(registrationId, refereeId, { status, note, category }) {
   const reg = await Registration.findById(registrationId).populate('raceId');
   if (!reg) throw new AppError(404, 'Không tìm thấy đăng ký');
 
@@ -235,7 +272,19 @@ async function updatePreCheck(registrationId, refereeId, { status, note }) {
   }
   if (reg.status !== 'active') throw new AppError(400, `Đăng ký đã ở trạng thái ${reg.status}`);
 
-  reg.preCheckResult = { status, note: note || '', checkedAt: new Date() };
+  if (status === 'failed') {
+    if (!category || !PRE_CHECK_FAIL_CATEGORIES.includes(category)) {
+      throw new AppError(400, 'Category is required when marking pre-check as failed');
+    }
+  }
+
+  const resolvedCategory = status === 'failed' ? category : null;
+  reg.preCheckResult = {
+    status,
+    category: resolvedCategory,
+    note: note || '',
+    checkedAt: new Date(),
+  };
 
   if (status === 'failed') {
     let horseName = 'Unknown horse';
@@ -273,9 +322,12 @@ async function updatePreCheck(registrationId, refereeId, { status, note }) {
           horseId: reg.horseId,
           note: note || '',
           horseName,
+          category: resolvedCategory,
         },
         session,
       );
+
+      await maybeMarkStewardsReady(race._id, session);
 
       await session.commitTransaction();
     } catch (error) {
@@ -286,10 +338,11 @@ async function updatePreCheck(registrationId, refereeId, { status, note }) {
     }
   } else {
     await reg.save();
+    await maybeMarkStewardsReady(race._id);
   }
 
   return Registration.findById(registrationId)
-    .populate('raceId', 'name grade scheduledTime status')
+    .populate('raceId', 'name grade scheduledTime status stewardsReady')
     .populate('horseId', 'name breed gender currentGrade')
     .populate('ownerId', 'fullName email');
 }

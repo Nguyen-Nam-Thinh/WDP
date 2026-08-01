@@ -18,6 +18,7 @@ const transactionSchema = new Schema(
         'jockey_hire_fee',
         'jockey_hire_income',
         'reward_redeem',
+        'penalty_payment',
       ],
       required: true,
     },

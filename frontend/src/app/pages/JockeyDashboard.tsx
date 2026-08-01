@@ -26,6 +26,8 @@ import {
   Image as ImageIcon,
   Ban,
   Coins,
+  Search,
+  Ticket,
 } from 'lucide-react';
 import { 
   Button, Chip, Dialog, DialogTitle, DialogContent, DialogActions,
@@ -39,6 +41,7 @@ import { AppShell, type NavItem } from '../components/layout/AppShell';
 import { Home } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useWallet } from '../hooks/useWallet';
+import { PenaltiesPanel } from './shared/PenaltiesPanel';
 import { invitationApi, jockeyApi, JockeyInvitation } from '../api/invitation';
 import { toast } from 'sonner';
 import { userApi, type JockeyOverview, type MonthlyStatPoint } from '../api/user';
@@ -55,11 +58,15 @@ const JOCKEY_NAV: NavItem[] = [
   { to: '/jockey/invitations', label: 'Lời Mời Đua', icon: <Clock /> },
   { to: '/jockey/schedule', label: 'Lịch Đua', icon: <Calendar /> },
   { to: '/jockey/results', label: 'Kết Quả Quá Khứ', icon: <Trophy /> },
+  { to: '/jockey/penalties', label: 'Vé Phạt', icon: <Ticket /> },
 ];
 
 export function JockeyDashboard() {
   const navigate = useNavigate();
   const { user, token } = useAuth();
+  const { pathname, search } = useLocation();
+  const highlightPenalties = pathname === '/jockey/penalties'
+    && new URLSearchParams(search).get('penalties') === '1';
   const { formatted: walletBalance } = useWallet();
 
   useEffect(() => {
@@ -67,10 +74,10 @@ export function JockeyDashboard() {
       navigate('/');
     }
   }, [user, navigate]);
-  const { pathname } = useLocation();
   const activeTab = pathname === '/jockey/schedule' ? 'schedule'
     : pathname === '/jockey/results' ? 'results'
     : pathname === '/jockey/invitations' ? 'invitations'
+    : pathname === '/jockey/penalties' ? 'penalties'
     : 'overview';
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [horseInfoOpen, setHorseInfoOpen] = useState(false);
@@ -128,6 +135,8 @@ export function JockeyDashboard() {
   };
 
   const [scheduleSubTab, setScheduleSubTab] = useState<'accepted' | 'rejected'>('accepted');
+  const [scheduleSearch, setScheduleSearch] = useState('');
+  const [resultsSearch, setResultsSearch] = useState('');
 
   const [acceptedInvitations, setAcceptedInvitations] = useState<JockeyInvitation[]>([]);
   const [loadingSchedule, setLoadingSchedule] = useState(false);
@@ -221,10 +230,43 @@ export function JockeyDashboard() {
   };
 
   const JOCKEY_PAGE_SIZE = 10;
-  const pagedAccepted = useMemo(() => acceptedInvitations.slice((acceptedPage - 1) * JOCKEY_PAGE_SIZE, acceptedPage * JOCKEY_PAGE_SIZE), [acceptedInvitations, acceptedPage]);
-  const acceptedTotalPages = Math.ceil(acceptedInvitations.length / JOCKEY_PAGE_SIZE);
-  const pagedRejected = useMemo(() => rejectedInvitations.slice((rejectedPage - 1) * JOCKEY_PAGE_SIZE, rejectedPage * JOCKEY_PAGE_SIZE), [rejectedInvitations, rejectedPage]);
-  const rejectedTotalPages = Math.ceil(rejectedInvitations.length / JOCKEY_PAGE_SIZE);
+
+  const matchInvitationSearch = (inv: JockeyInvitation, q: string) => {
+    if (!q) return true;
+    const race = inv.raceId;
+    const horse = inv.horseId;
+    const owner = inv.ownerId;
+    const hay = [
+      race?.name,
+      race?.tournamentId && typeof race.tournamentId === 'object' ? (race.tournamentId as any).name : '',
+      race?.grade,
+      race?.status,
+      horse && typeof horse === 'object' ? horse.name : '',
+      owner && typeof owner === 'object' ? owner.fullName : '',
+    ].join(' ').toLowerCase();
+    return hay.includes(q);
+  };
+
+  const filteredAccepted = useMemo(() => {
+    const q = scheduleSearch.trim().toLowerCase();
+    return acceptedInvitations.filter((inv) => matchInvitationSearch(inv, q));
+  }, [acceptedInvitations, scheduleSearch]);
+
+  const filteredRejected = useMemo(() => {
+    const q = scheduleSearch.trim().toLowerCase();
+    return rejectedInvitations.filter((inv) => matchInvitationSearch(inv, q));
+  }, [rejectedInvitations, scheduleSearch]);
+
+  const pagedAccepted = useMemo(
+    () => filteredAccepted.slice((acceptedPage - 1) * JOCKEY_PAGE_SIZE, acceptedPage * JOCKEY_PAGE_SIZE),
+    [filteredAccepted, acceptedPage],
+  );
+  const acceptedTotalPages = Math.ceil(filteredAccepted.length / JOCKEY_PAGE_SIZE) || 1;
+  const pagedRejected = useMemo(
+    () => filteredRejected.slice((rejectedPage - 1) * JOCKEY_PAGE_SIZE, rejectedPage * JOCKEY_PAGE_SIZE),
+    [filteredRejected, rejectedPage],
+  );
+  const rejectedTotalPages = Math.ceil(filteredRejected.length / JOCKEY_PAGE_SIZE) || 1;
 
   const recentResults = [
     { race: 'Spring Classic', date: '2026-05-15', horse: 'Thunder Strike', position: 1, prize: '$5,000', points: 100, violations: 0 },
@@ -232,6 +274,14 @@ export function JockeyDashboard() {
     { race: 'Elite Championship', date: '2026-05-05', horse: 'Wild Fire', position: 1, prize: '$5,000', points: 100, violations: 1 },
     { race: 'Grand Prix', date: '2026-04-28', horse: 'Thunder Strike', position: 3, prize: '$2,000', points: 50, violations: 0 },
   ];
+
+  const filteredResults = useMemo(() => {
+    const q = resultsSearch.trim().toLowerCase();
+    if (!q) return recentResults;
+    return recentResults.filter((r) =>
+      [r.race, r.horse, r.date, String(r.position)].join(' ').toLowerCase().includes(q),
+    );
+  }, [resultsSearch]);
 
   const performanceData = [
     { month: 'Jan', winRate: 35, finishes: 8 },
@@ -304,6 +354,17 @@ export function JockeyDashboard() {
               </div>
             ) : (
               <>
+                {(() => {
+                  const until = (user as any)?.jockeyProfile?.suspendedUntil;
+                  if (!until || new Date(until).getTime() <= Date.now()) return null;
+                  return (
+                    <div className="mb-6 border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
+                      <strong>Đang bị treo giò steward</strong>
+                      {' '}đến {new Date(until).toLocaleString('vi-VN')}. Không thể nhận lời mời / được gán race mới trong thời gian này.
+                    </div>
+                  );
+                })()}
+
                 {/* Stat cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                   {[
@@ -493,7 +554,7 @@ export function JockeyDashboard() {
                         { label: 'Xem Lời Mời', icon: Clock, to: '/jockey/invitations' as string | null, badge: (invitations.length || null) as number | null },
                         { label: 'Lịch Đua', icon: Calendar, to: '/jockey/schedule' as string | null, badge: null as number | null },
                         { label: 'Kết Quả', icon: Trophy, to: '/jockey/results' as string | null, badge: null as number | null },
-                        { label: 'Nạp Tiền', icon: Coins, to: null as string | null, badge: null as number | null },
+                        { label: 'Vé Phạt', icon: Ticket, to: '/jockey/penalties' as string | null, badge: null as number | null },
                       ].map((action, i) => (
                         <button key={i} onClick={() => { if (action.to) navigate(action.to); }}
                           className="flex items-center gap-3 p-4 border border-border hover:border-[#C9A227]/40 hover:bg-muted/40 transition-all text-left group">
@@ -660,17 +721,33 @@ export function JockeyDashboard() {
         {activeTab === 'schedule' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Header + sub-tab toggle */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
               <div>
                 <h2 className="font-serif text-2xl font-bold text-foreground mb-1">Lịch Đua</h2>
                 <p className="text-slate-400 text-sm">Quản lý lịch đua và lời mời đã từ chối</p>
               </div>
-              <button
-                onClick={() => { loadSchedule(); loadRejected(); }}
-                className="text-slate-400 hover:text-[#C9A227] transition-colors p-2 rounded-lg hover:bg-muted"
-              >
-                <Activity className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Tìm race / ngựa / chủ..."
+                    value={scheduleSearch}
+                    onChange={(e) => {
+                      setScheduleSearch(e.target.value);
+                      setAcceptedPage(1);
+                      setRejectedPage(1);
+                    }}
+                    className="bg-slate-900 border border-border rounded-lg pl-9 pr-4 py-2 text-foreground placeholder-slate-500 focus:outline-none focus:border-[#C9A227] text-sm w-56"
+                  />
+                </div>
+                <button
+                  onClick={() => { loadSchedule(); loadRejected(); }}
+                  className="text-slate-400 hover:text-[#C9A227] transition-colors p-2 rounded-lg hover:bg-muted"
+                >
+                  <Activity className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             {/* Sub-tab buttons */}
@@ -717,6 +794,13 @@ export function JockeyDashboard() {
                   Đang tải lịch đua...
                 </div>
               ) : acceptedInvitations.length > 0 ? (
+                filteredAccepted.length === 0 ? (
+                  <div className="bg-slate-900/60 border border-border rounded-2xl p-16 text-center backdrop-blur-md">
+                    <Search className="w-10 h-10 text-slate-500 mx-auto mb-4" />
+                    <h3 className="font-serif text-xl font-bold text-foreground mb-2">Không tìm thấy</h3>
+                    <p className="text-slate-400 max-w-md mx-auto">Không có lịch đua khớp với từ khóa.</p>
+                  </div>
+                ) : (
                 <div className="space-y-4">
                   {pagedAccepted.map(inv => {
                     const race = inv.raceId;
@@ -799,6 +883,7 @@ export function JockeyDashboard() {
                   })}
                   <Pagination page={acceptedPage} totalPages={acceptedTotalPages} onPageChange={setAcceptedPage} />
                 </div>
+                )
               ) : (
                 <div className="bg-slate-900/60 border border-border rounded-2xl p-16 text-center backdrop-blur-md">
                   <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-border">
@@ -818,6 +903,13 @@ export function JockeyDashboard() {
                   Đang tải...
                 </div>
               ) : rejectedInvitations.length > 0 ? (
+                filteredRejected.length === 0 ? (
+                  <div className="bg-slate-900/60 border border-border rounded-2xl p-16 text-center backdrop-blur-md">
+                    <Search className="w-10 h-10 text-slate-500 mx-auto mb-4" />
+                    <h3 className="font-serif text-xl font-bold text-foreground mb-2">Không tìm thấy</h3>
+                    <p className="text-slate-400 max-w-md mx-auto">Không có lời mời từ chối khớp với từ khóa.</p>
+                  </div>
+                ) : (
                 <div className="space-y-4">
                   {pagedRejected.map(inv => {
                     const horse = inv.horseId;
@@ -858,6 +950,7 @@ export function JockeyDashboard() {
                   })}
                   <Pagination page={rejectedPage} totalPages={rejectedTotalPages} onPageChange={setRejectedPage} />
                 </div>
+                )
               ) : (
                 <div className="bg-slate-900/60 border border-border rounded-2xl p-16 text-center backdrop-blur-md">
                   <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-border">
@@ -874,7 +967,19 @@ export function JockeyDashboard() {
         {/* Content: Results */}
         {activeTab === 'results' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <h2 className="font-serif text-2xl font-bold text-foreground mb-6">Kết Quả Đua Đã Xác Minh</h2>
+            <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+              <h2 className="font-serif text-2xl font-bold text-foreground">Kết Quả Đua Đã Xác Minh</h2>
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Tìm race / ngựa..."
+                  value={resultsSearch}
+                  onChange={(e) => setResultsSearch(e.target.value)}
+                  className="bg-slate-900 border border-border rounded-lg pl-9 pr-4 py-2 text-foreground placeholder-slate-500 focus:outline-none focus:border-[#C9A227] text-sm w-56"
+                />
+              </div>
+            </div>
 
             <div className="bg-slate-900/80 backdrop-blur-md border border-border rounded-2xl overflow-hidden shadow-xl">
               <div className="overflow-x-auto">
@@ -890,7 +995,13 @@ export function JockeyDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {recentResults.map((result, idx) => (
+                    {filteredResults.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
+                          Không tìm thấy kết quả phù hợp
+                        </td>
+                      </tr>
+                    ) : filteredResults.map((result, idx) => (
                       <tr key={idx} className="hover:bg-muted transition-colors group">
                         <td className="px-6 py-4">
                           <div className="text-foreground font-bold">{result.race}</div>
@@ -922,6 +1033,19 @@ export function JockeyDashboard() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Content: Penalties */}
+        {activeTab === 'penalties' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="mb-6">
+              <h2 className="font-serif text-2xl font-bold text-foreground mb-1">Vé Phạt</h2>
+              <p className="text-slate-400 text-sm">Phiếu phạt steward — nộp bằng số dư ví</p>
+            </div>
+            <div className="bg-card border border-border rounded-2xl p-5">
+              <PenaltiesPanel token={token} highlight={highlightPenalties} />
             </div>
           </div>
         )}

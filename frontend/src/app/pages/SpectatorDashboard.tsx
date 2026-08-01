@@ -307,7 +307,9 @@ export function SpectatorDashboard() {
     setSchedulePage(1); setScheduleSearch('');
     setRankingsPage(1); setRankingsSearch('');
     setLeaderboardPage(1); setLeaderboardSearch('');
-    setRewardsPage(1); setRedemptionsPage(1);
+    setBetPage(1); setBetSearch('');
+    setDepositHistoryPage(1); setDepositSearch('');
+    setRewardsPage(1); setRedemptionsPage(1); setRewardsSearch('');
   }, [activeTab, token]);
 
   // Load bets on mount để stats cards dùng dữ liệu thật
@@ -329,6 +331,9 @@ export function SpectatorDashboard() {
   const [rankingsSearch, setRankingsSearch] = useState('');
   const [leaderboardPage, setLeaderboardPage] = useState(1);
   const [leaderboardSearch, setLeaderboardSearch] = useState('');
+  const [betSearch, setBetSearch] = useState('');
+  const [depositSearch, setDepositSearch] = useState('');
+  const [rewardsSearch, setRewardsSearch] = useState('');
   const [myTransactions, setMyTransactions] = useState<Transaction[]>([]);
   const [loadingTransactions, setLoadingTransactions] = useState(false);
   const [rewards, setRewards] = useState<Reward[]>([]);
@@ -513,6 +518,84 @@ export function SpectatorDashboard() {
   };
 
   const topupTransactions = myTransactions.filter(t => t.type === 'topup');
+
+  const betTypeLabels: Record<string, string> = {
+    win: "Thắng (Hạng 1)",
+    place: "Hạng 2",
+    show: "Hạng 3",
+  };
+  const betStatusLabels: Record<string, string> = {
+    pending: "Chờ kết quả",
+    won: "Thắng",
+    lost: "Thua",
+    cancelled: "Đã hủy",
+    refunded: "Đã hoàn",
+  };
+
+  const filteredBets = myBets.filter((bet) => {
+    const q = betSearch.trim().toLowerCase();
+    if (!q) return true;
+    const race = typeof bet.raceId === "object" ? bet.raceId : null;
+    const horse = typeof bet.horseId === "object" ? bet.horseId : null;
+    return [
+      race?.name,
+      race?.grade,
+      horse?.name,
+      bet.betType,
+      betTypeLabels[bet.betType],
+      bet.status,
+      betStatusLabels[bet.status],
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(q);
+  });
+
+  const filteredTopups = topupTransactions.filter((tx) => {
+    const q = depositSearch.trim().toLowerCase();
+    if (!q) return true;
+    return [
+      tx._id,
+      tx.description,
+      String(tx.amount),
+      new Date(tx.createdAt).toLocaleString("vi-VN"),
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(q);
+  });
+
+  const filteredRewards = rewards.filter((reward) => {
+    const q = rewardsSearch.trim().toLowerCase();
+    if (!q) return true;
+    return [
+      reward.name,
+      reward.description,
+      reward.type,
+      reward.voucherType,
+      String(reward.coinsRequired),
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(q);
+  });
+
+  const filteredRedemptions = myRedemptions.filter((redemption) => {
+    const q = rewardsSearch.trim().toLowerCase();
+    if (!q) return true;
+    return [
+      redemption.rewardId?.name,
+      redemption.voucherCode,
+      redemption.rewardId?.type,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(q);
+  });
 
   const pendingBets = myBets.filter((b) => b.status === "pending").length;
   const wonBets = myBets.filter((b) => b.status === "won").length;
@@ -2112,9 +2195,21 @@ export function SpectatorDashboard() {
         {/* Deposit History Tab */}
         {activeTab === "deposit-history" && (
           <div>
-            <div className="mb-6">
-              <h2 className="font-serif text-3xl font-bold text-foreground mb-2">Lịch Sử Nạp</h2>
-              <p className="text-muted-foreground">Theo dõi các giao dịch nạp tiền của bạn</p>
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+              <div>
+                <h2 className="font-serif text-3xl font-bold text-foreground mb-2">Lịch Sử Nạp</h2>
+                <p className="text-muted-foreground">Theo dõi các giao dịch nạp tiền của bạn</p>
+              </div>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Tìm mã / mô tả / số coin..."
+                  value={depositSearch}
+                  onChange={(e) => { setDepositSearch(e.target.value); setDepositHistoryPage(1); }}
+                  className="pl-9 pr-3 py-2 text-sm bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary w-56"
+                />
+              </div>
             </div>
             {loadingTransactions ? (
               <div className="flex justify-center py-16">
@@ -2125,6 +2220,11 @@ export function SpectatorDashboard() {
                 <Coins className="w-12 h-12 mx-auto mb-4 opacity-40" />
                 <p className="font-semibold text-foreground mb-1">Chưa có giao dịch nạp tiền</p>
                 <p className="text-sm">Các lần nạp tiền sẽ xuất hiện ở đây</p>
+              </div>
+            ) : filteredTopups.length === 0 ? (
+              <div className="text-center py-16 text-muted-foreground">
+                <Search className="w-12 h-12 mx-auto mb-4 opacity-40" />
+                <p className="font-semibold text-foreground mb-1">Không tìm thấy giao dịch</p>
               </div>
             ) : (
               <div className="bg-card border border-border overflow-hidden">
@@ -2139,7 +2239,7 @@ export function SpectatorDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {topupTransactions
+                    {filteredTopups
                       .slice((depositHistoryPage - 1) * PAGE_SIZE, depositHistoryPage * PAGE_SIZE)
                       .map((tx) => (
                         <tr key={tx._id} className="border-t border-border hover:bg-muted/40 transition-colors">
@@ -2162,7 +2262,7 @@ export function SpectatorDashboard() {
             )}
             <Pagination
               page={depositHistoryPage}
-              totalPages={Math.ceil(topupTransactions.length / PAGE_SIZE)}
+              totalPages={Math.ceil(filteredTopups.length / PAGE_SIZE) || 1}
               onPageChange={setDepositHistoryPage}
             />
           </div>
@@ -2271,29 +2371,41 @@ export function SpectatorDashboard() {
                   Theo dõi các dự đoán của bạn
                 </p>
               </div>
-              {myBets.length > 0 && (
-                <div className="flex gap-6">
-                  <div className="text-right">
-                    <div className="text-sm text-muted-foreground">
-                      Thắng / Tổng
-                    </div>
-                    <div className="text-2xl font-bold text-foreground tabular-nums">
-                      {myBets.filter((b) => b.status === "won").length} /{" "}
-                      {myBets.length}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm text-muted-foreground">
-                      Tổng Tiền Thắng
-                    </div>
-                    <div className="text-2xl font-bold text-[#8F7318] tabular-nums">
-                      +{myBets
-                        .reduce((s, b) => s + (b.payoutAmount || 0), 0)
-                        .toLocaleString('vi-VN')} coins
-                    </div>
-                  </div>
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Tìm race / ngựa / trạng thái..."
+                    value={betSearch}
+                    onChange={(e) => { setBetSearch(e.target.value); setBetPage(1); }}
+                    className="pl-9 pr-3 py-2 text-sm bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary w-56"
+                  />
                 </div>
-              )}
+                {myBets.length > 0 && (
+                  <div className="flex gap-6">
+                    <div className="text-right">
+                      <div className="text-sm text-muted-foreground">
+                        Thắng / Tổng
+                      </div>
+                      <div className="text-2xl font-bold text-foreground tabular-nums">
+                        {myBets.filter((b) => b.status === "won").length} /{" "}
+                        {myBets.length}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm text-muted-foreground">
+                        Tổng Tiền Thắng
+                      </div>
+                      <div className="text-2xl font-bold text-[#8F7318] tabular-nums">
+                        +{myBets
+                          .reduce((s, b) => s + (b.payoutAmount || 0), 0)
+                          .toLocaleString('vi-VN')} coins
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {loadingBets ? (
@@ -2306,6 +2418,11 @@ export function SpectatorDashboard() {
                 <p className="text-muted-foreground">
                   Bạn chưa dự đoán nào. Vào tab Lịch Trình để dự đoán!
                 </p>
+              </div>
+            ) : filteredBets.length === 0 ? (
+              <div className="bg-card border border-border p-12 text-center">
+                <Search className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+                <p className="text-muted-foreground">Không tìm thấy dự đoán phù hợp</p>
               </div>
             ) : (
               <div className="bg-card border border-border overflow-hidden">
@@ -2341,7 +2458,7 @@ export function SpectatorDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {myBets.map((bet) => {
+                      {filteredBets.map((bet) => {
                         const statusMap: Record<
                           string,
                           { label: string; color: string }
@@ -2962,9 +3079,21 @@ export function SpectatorDashboard() {
         {/* Rewards Tab */}
         {activeTab === "rewards" && (
           <div className="space-y-8">
-            <div>
-              <h2 className="font-serif text-3xl font-bold text-foreground mb-2">Đổi Quà &amp; Voucher</h2>
-              <p className="text-muted-foreground">Sử dụng Xu hiện có trong ví dự đoán để đổi lấy các phần quà và mã giảm giá vô cùng giá trị</p>
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div>
+                <h2 className="font-serif text-3xl font-bold text-foreground mb-2">Đổi Quà &amp; Voucher</h2>
+                <p className="text-muted-foreground">Sử dụng Xu hiện có trong ví dự đoán để đổi lấy các phần quà và mã giảm giá vô cùng giá trị</p>
+              </div>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Tìm quà / voucher / mã..."
+                  value={rewardsSearch}
+                  onChange={(e) => setRewardsSearch(e.target.value)}
+                  className="pl-9 pr-3 py-2 text-sm bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary w-56"
+                />
+              </div>
             </div>
 
             {/* Balances */}
@@ -2982,9 +3111,13 @@ export function SpectatorDashboard() {
                   <div className="bg-card border border-border p-8 text-center text-muted-foreground">
                     Không tìm thấy phần quà nào khả dụng.
                   </div>
+                ) : filteredRewards.length === 0 ? (
+                  <div className="bg-card border border-border p-8 text-center text-muted-foreground">
+                    Không có phần quà khớp từ khóa tìm kiếm.
+                  </div>
                 ) : (
                   <div className="grid md:grid-cols-2 gap-4">
-                    {rewards.map((reward) => (
+                    {filteredRewards.map((reward) => (
                       <div key={reward._id} className="bg-card border border-border overflow-hidden flex flex-col justify-between hover:border-primary transition-all">
                         {reward.imageUrl && (
                           <div className="h-44 overflow-hidden bg-muted">
@@ -3062,9 +3195,13 @@ export function SpectatorDashboard() {
                   <div className="bg-card border border-border p-6 text-center text-muted-foreground text-sm">
                     Bạn chưa thực hiện giao dịch đổi quà nào.
                   </div>
+                ) : filteredRedemptions.length === 0 ? (
+                  <div className="bg-card border border-border p-6 text-center text-muted-foreground text-sm">
+                    Không có lịch sử đổi quà khớp từ khóa.
+                  </div>
                 ) : (
                   <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
-                    {myRedemptions.map((redemption) => {
+                    {filteredRedemptions.map((redemption) => {
                       const isPhysical = redemption.rewardId?.type === 'physical';
                       return (
                         <div key={redemption._id} className="bg-card border border-border p-4 space-y-3">

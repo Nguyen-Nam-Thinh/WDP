@@ -19,7 +19,9 @@ export interface AIPredictionResponse {
 
 export interface RaceResultEntry {
   _id: string;
-  position: number;
+  position: number | null;
+  provisionalPosition?: number;
+  disqualified?: boolean;
   horseId: { _id: string; name: string; breed?: string; currentGrade: string; primaryImageUrl?: string };
   jockeyId?: { _id: string; fullName: string; jockeyProfile?: { winCount: number; raceCount: number } } | null;
   finishTime: number;
@@ -47,6 +49,11 @@ export interface Race {
   distance: number;
   eligibility: RaceEligibility;
   status: "open" | "closed" | "pre_check" | "running" | "finished" | "cancelled";
+  stewardsReady?: boolean;
+  isOfficial?: boolean;
+  resultsConfirmedAt?: string | null;
+  resultsConfirmedBy?: string | null;
+  payoutSettledAt?: string | null;
 }
 
 const authHeader = (token?: string | null) =>

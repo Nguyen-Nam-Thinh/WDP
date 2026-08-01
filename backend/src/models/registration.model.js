@@ -1,8 +1,14 @@
 const mongoose = require('mongoose');
+const { PRE_CHECK_FAIL_CATEGORIES } = require('../config/constants');
 
 const preCheckResultSchema = new mongoose.Schema(
   {
     status: { type: String, enum: ['pending', 'passed', 'failed'], default: 'pending' },
+    category: {
+      type: String,
+      enum: [...PRE_CHECK_FAIL_CATEGORIES, null],
+      default: null,
+    },
     note: { type: String, default: '' },
     checkedAt: { type: Date, default: null },
   },
