@@ -1,15 +1,22 @@
 import { API_URL } from './auth';
 import { getApiErrorMessage } from '../utils/errorMessages';
 
+export type PreCheckFailCategory = 'veterinary' | 'jockey' | 'gear' | 'administrative';
+
 export interface Registration {
   _id: string;
-  raceId: { _id: string; name: string; grade: string; scheduledTime: string; status: string; tournamentId?: string };
+  raceId: { _id: string; name: string; grade: string; scheduledTime: string; status: string; tournamentId?: string; stewardsReady?: boolean };
   horseId: { _id: string; name: string; breed: string; gender: string; currentGrade: string; imageUrl?: string };
   ownerId: { _id: string; fullName: string; email: string };
   jockeyId?: { _id: string; fullName: string; email: string; jockeyProfile?: { experienceYears: number; weight: number } } | null;
   feePaid: number;
   status: 'active' | 'cancelled' | 'disqualified';
-  preCheckResult: { status: 'pending' | 'passed' | 'failed'; note: string; checkedAt?: string };
+  preCheckResult: {
+    status: 'pending' | 'passed' | 'failed';
+    category?: PreCheckFailCategory | null;
+    note: string;
+    checkedAt?: string;
+  };
   registeredAt: string;
   cancelledAt?: string;
   refundAmount: number;
@@ -81,7 +88,7 @@ export const registrationApi = {
   updatePreCheck: async (
     token: string,
     registrationId: string,
-    data: { status: 'passed' | 'failed'; note?: string },
+    data: { status: 'passed' | 'failed'; note?: string; category?: PreCheckFailCategory },
   ): Promise<Registration> => {
     const res = await fetch(`${API_URL}/registrations/${registrationId}/pre-check`, {
       method: 'PATCH',

@@ -269,12 +269,15 @@ async function getRaceHorses(raceId) {
 async function forceSimulateRace(raceId) {
   const { Registration } = require('../models/registration.model');
   const { runRaceSimulation } = require('./race-simulation.service');
+  const { assertPreRaceApprovedForStart } = require('./race-prerace-gate.helper');
 
   const race = await Race.findById(raceId);
   if (!race) throw new AppError(404, 'Không tìm thấy cuộc đua');
   if (race.status === 'finished' || race.status === 'cancelled') {
     throw new AppError(400, `Cuộc đua đã ở trạng thái ${race.status}`);
   }
+
+  await assertPreRaceApprovedForStart(raceId);
 
   // Auto-pass all active registrations still pending pre-check
   await Registration.updateMany(

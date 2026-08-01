@@ -74,10 +74,92 @@ async function removeIncident(req, res, next) {
   }
 }
 
+async function flagIncident(req, res, next) {
+  try {
+    const report = await refereeService.flagIncident(req.params.id, req.user._id, req.body);
+    sendSuccess(res, report, 201, 'Horse flagged');
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function ensureDraftReport(req, res, next) {
+  try {
+    const report = await refereeService.ensureDraftReport(req.user._id, req.body.raceId || req.params.raceId);
+    sendSuccess(res, report, 200, 'Report ready');
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function updateIncident(req, res, next) {
+  try {
+    const report = await refereeService.updateIncident(
+      req.params.id,
+      req.user._id,
+      req.params.incidentId,
+      req.body,
+    );
+    sendSuccess(res, report, 200, 'Incident updated');
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function resolveIncident(req, res, next) {
+  try {
+    const report = await refereeService.resolveIncident(
+      req.params.id,
+      req.user._id,
+      req.params.incidentId,
+      req.body,
+    );
+    sendSuccess(res, report, 200, 'Incident resolved');
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function confirmResults(req, res, next) {
+  try {
+    const race = await refereeService.confirmResults(req.params.raceId, req.user._id);
+    sendSuccess(res, race, 200, 'Results confirmed');
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function submitReport(req, res, next) {
   try {
     const report = await refereeService.submitReport(req.params.id, req.user._id);
     sendSuccess(res, report, 200, 'Report submitted');
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function submitPreRaceReport(req, res, next) {
+  try {
+    const report = await refereeService.submitPreRaceReport(req.params.id, req.user._id);
+    sendSuccess(res, report, 200, 'Pre-race report submitted');
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function approvePreRaceReport(req, res, next) {
+  try {
+    const report = await refereeService.approvePreRaceReport(req.params.id, req.user._id);
+    sendSuccess(res, report, 200, 'Pre-race report approved');
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function rejectPreRaceReport(req, res, next) {
+  try {
+    const report = await refereeService.rejectPreRaceReport(req.params.id, req.user._id, req.body.reason);
+    sendSuccess(res, report, 200, 'Pre-race report rejected');
   } catch (error) {
     next(error);
   }
@@ -97,6 +179,39 @@ async function downloadReportPdf(req, res, next) {
   }
 }
 
+async function listReportsAdmin(req, res, next) {
+  try {
+    const { page, limit, status, phase } = req.query;
+    const result = await refereeService.listReportsForAdmin({
+      page: page ? Number(page) : 1,
+      limit: limit ? Number(limit) : 10,
+      status,
+      phase,
+    });
+    sendSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function approveReport(req, res, next) {
+  try {
+    const report = await refereeService.approveReport(req.params.id, req.user._id);
+    sendSuccess(res, report, 200, 'Report approved');
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function rejectReport(req, res, next) {
+  try {
+    const report = await refereeService.rejectReport(req.params.id, req.user._id, req.body.reason);
+    sendSuccess(res, report, 200, 'Report rejected');
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   getAssignedRaces,
   createReport,
@@ -105,6 +220,17 @@ module.exports = {
   updateReport,
   addIncident,
   removeIncident,
+  flagIncident,
+  ensureDraftReport,
+  updateIncident,
+  resolveIncident,
+  confirmResults,
   submitReport,
+  submitPreRaceReport,
+  approvePreRaceReport,
+  rejectPreRaceReport,
   downloadReportPdf,
+  listReportsAdmin,
+  approveReport,
+  rejectReport,
 };

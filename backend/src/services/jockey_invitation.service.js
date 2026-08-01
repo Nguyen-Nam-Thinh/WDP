@@ -121,6 +121,9 @@ async function acceptInvitation(invitationId, jockeyId) {
   session.startTransaction();
 
   try {
+    const { assertJockeyNotSuspended } = require('./jockey-suspension.helper');
+    await assertJockeyNotSuspended(jockeyId);
+
     const invitation = await JockeyInvitation.findOne({ _id: invitationId, jockeyId }).session(session);
     if (!invitation) throw new AppError(404, 'Không tìm thấy lời mời');
     if (invitation.status !== 'pending') throw new AppError(409, `Không thể chấp nhận lời mời đang ở trạng thái '${invitation.status}'`);

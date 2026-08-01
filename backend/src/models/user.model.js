@@ -16,6 +16,8 @@ const jockeyProfileSchema = new Schema(
     },
     isAvailable: { type: Boolean, default: false },
     askingFeePerRace: { type: Number, default: 0, min: 0 },
+    /** Set when steward suspends jockey; block ride assignments while > now */
+    suspendedUntil: { type: Date, default: null },
   },
   { _id: false },
 );

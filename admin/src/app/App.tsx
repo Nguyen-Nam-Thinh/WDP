@@ -8,6 +8,7 @@ import TournamentManagement from './components/pages/TournamentManagement';
 import RaceManagement from './components/pages/RaceManagement';
 import RegistrationApproval from './components/pages/RegistrationApproval';
 import RefereeAssignment from './components/pages/RefereeAssignment';
+import RefereeReportReview from './components/pages/RefereeReportReview';
 import ResultsPublishing from './components/pages/ResultsPublishing';
 import BetManagement from './components/pages/BetManagement';
 import RewardManagement from './components/pages/RewardManagement';
@@ -63,6 +64,7 @@ export default function App() {
                 <Route path="/races" element={<RaceManagement />} />
                 <Route path="/registrations" element={<RegistrationApproval />} />
                 <Route path="/referees" element={<RefereeAssignment />} />
+                <Route path="/referee-reports" element={<RefereeReportReview />} />
                 <Route path="/results" element={<ResultsPublishing />} />
                 <Route path="/bets" element={<BetManagement />} />
                 <Route path="/rewards" element={<RewardManagement />} />

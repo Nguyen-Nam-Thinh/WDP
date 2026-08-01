@@ -19,6 +19,7 @@ export interface Race {
   };
   refereeId?: { _id: string; fullName: string; email: string } | null;
   status: 'open' | 'closed' | 'pre_check' | 'running' | 'finished' | 'cancelled';
+  preRaceApproved?: boolean;
   createdAt: string;
 }
 

@@ -28,6 +28,13 @@ const raceSchema = new mongoose.Schema(
       enum: ['open', 'closed', 'pre_check', 'running', 'finished', 'cancelled'],
       default: 'open',
     },
+    stewardsReady: { type: Boolean, default: false },
+    isOfficial: { type: Boolean, default: false },
+    /** True after Admin approves Pre-race Report — required before simulation */
+    preRaceApproved: { type: Boolean, default: false },
+    resultsConfirmedAt: { type: Date, default: null },
+    resultsConfirmedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    payoutSettledAt: { type: Date, default: null },
     aiPredictions: {
       generatedAt: { type: Date, default: null },
       predictions: [

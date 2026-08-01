@@ -38,6 +38,7 @@ const routeNameMap: Record<string, string> = {
   'races': 'Chặng đua',
   'registrations': 'Duyệt đăng ký',
   'referees': 'Trọng tài',
+  'referee-reports': 'Duyệt biên bản',
   'results': 'Kết quả',
   'bets': 'Cược',
   'rewards': 'Phần thưởng',

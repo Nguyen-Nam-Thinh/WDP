@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { Bell, ChevronLeft, ChevronRight, CheckCheck, Trophy, Coins, Mail, X } from "lucide-react";
 import { useWallet } from "../../hooks/useWallet";
@@ -31,6 +31,8 @@ const TYPE_ICON: Record<string, ReactNode> = {
   race_finished:       <Trophy className="w-4 h-4 text-muted-foreground" />,
   race_cancelled:      <X className="w-4 h-4 text-muted-foreground" />,
   horse_grade_upgrade: <Trophy className="w-4 h-4 text-[#8F7318]" />,
+  penalty_issued:      <Coins className="w-4 h-4 text-destructive" />,
+  results_official:    <Trophy className="w-4 h-4 text-[#8F7318]" />,
 };
 
 function timeAgo(iso: string) {
@@ -54,7 +56,15 @@ function getNotificationPath(n: Notification, role: string): string | null {
     case 'horse_grade_upgrade':
       return '/horse-owner/horses';
     case 'prize_received':
-      return '/horse-owner/results';
+    case 'results_official':
+      if (role === 'owner') return '/horse-owner/results';
+      if (role === 'jockey') return '/jockey/results';
+      if (role === 'referee') return '/referee/reports';
+      return data?.raceId ? `/predictions?raceId=${data.raceId}` : '/rankings';
+    case 'penalty_issued':
+      if (role === 'owner') return '/horse-owner/penalties?penalties=1';
+      if (role === 'jockey') return '/jockey/penalties?penalties=1';
+      return null;
     case 'race_cancelled':
       if (role === 'owner') return '/horse-owner/schedule';
       if (role === 'jockey') return '/jockey/schedule';
@@ -72,11 +82,21 @@ function getNotificationPath(n: Notification, role: string): string | null {
   }
 }
 
-function NotificationPanel({ token, role, onClose, onUnreadChange }: { token: string; role: string; onClose: () => void; onUnreadChange: (count: number | ((c: number) => number)) => void }) {
+function NotificationPanel({
+  token,
+  role,
+  onClose,
+  onUnreadChange,
+}: {
+  token: string;
+  role: string;
+  onClose: () => void;
+  onUnreadChange: (count: number | ((c: number) => number)) => void;
+}) {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
     notificationApi.getNotifications(token, { limit: 30 })
@@ -94,11 +114,9 @@ function NotificationPanel({ token, role, onClose, onUnreadChange }: { token: st
 
   const handleClickNotification = async (n: Notification) => {
     if (!n.isRead) await handleMarkRead(n._id);
+    onClose();
     const path = getNotificationPath(n, role);
-    if (path) {
-      navigate(path);
-      onClose();
-    }
+    if (path) navigate(path);
   };
 
   const handleMarkAll = async () => {
@@ -110,7 +128,6 @@ function NotificationPanel({ token, role, onClose, onUnreadChange }: { token: st
 
   return (
     <div className="absolute right-0 top-full mt-2 w-80 bg-card border border-border shadow-lg z-50 overflow-hidden">
-      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           <span className="font-semibold text-sm text-foreground">Thông Báo</span>
@@ -136,7 +153,6 @@ function NotificationPanel({ token, role, onClose, onUnreadChange }: { token: st
         </div>
       </div>
 
-      {/* List */}
       <div className="max-h-[400px] overflow-y-auto">
         {loading ? (
           <div className="flex justify-center py-8">
@@ -238,7 +254,6 @@ export function AppShell({ roleLabel, nav, children }: AppShellProps) {
           collapsed ? "w-14 px-2" : "w-52 px-3"
         }`}
       >
-        {/* Logo + collapse toggle */}
         <div className={`flex items-center mb-1 ${collapsed ? "justify-center" : "justify-between"}`}>
           {!collapsed && (
             <Link to="/" className="font-serif text-lg font-bold leading-none">

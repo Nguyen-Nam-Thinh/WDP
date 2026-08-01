@@ -145,7 +145,7 @@ async function getMyRaceResults(req, res, next) {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
-        .populate('raceId', 'name grade scheduledTime purse distance')
+        .populate('raceId', 'name grade scheduledTime purse distance status isOfficial payoutSettledAt')
         .populate('horseId', 'name breed currentGrade')
         .populate('jockeyId', 'fullName'),
       RaceResult.countDocuments({ horseId: { $in: horseIds } }),
