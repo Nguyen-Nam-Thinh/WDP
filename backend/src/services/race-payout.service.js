@@ -43,19 +43,59 @@ async function settleOfficialPayouts(raceId, outerSession) {
     if (session) resultsQuery = resultsQuery.session(session);
     const results = await resultsQuery;
 
+    if (results.length === 0) {
+      // All disqualified
+      race.status = 'cancelled';
+      race.payoutSettledAt = new Date();
+      await race.save({ session });
+
+      let dqQuery = RaceResult.find({ raceId, disqualified: true });
+      if (session) dqQuery = dqQuery.session(session);
+      const dqResults = await dqQuery;
+      for (const result of dqResults) {
+        await Horse.findByIdAndUpdate(result.horseId, { $inc: { raceCount: 1 } }, { session });
+      }
+
+      await settleBetsWithSession(race._id, {}, race.name, session);
+
+      if (ownSession) await session.commitTransaction();
+      return race;
+    }
+
+    const positionGroups = {};
+    for (const r of results) {
+      if (!r.position) continue;
+      if (!positionGroups[r.position]) positionGroups[r.position] = [];
+      positionGroups[r.position].push(r);
+    }
+
+    const groupPayouts = {};
+    for (const posStr of Object.keys(positionGroups)) {
+      const pos = parseInt(posStr, 10);
+      const count = positionGroups[pos].length;
+      let totalPrize = 0;
+      let totalPoints = 0;
+      for (let i = 0; i < count; i++) {
+        const virtualPos = pos + i;
+        if (virtualPos <= PRIZE_RATIO.length) {
+          totalPrize += Math.floor(race.purse * PRIZE_RATIO[virtualPos - 1]);
+        }
+        if (virtualPos <= (POINTS_BY_GRADE[race.grade]?.length ?? 0)) {
+          totalPoints += POINTS_BY_GRADE[race.grade][virtualPos - 1];
+        }
+      }
+      groupPayouts[pos] = {
+        prizeAmount: Math.floor(totalPrize / count),
+        pointsEarned: Math.floor(totalPoints / count),
+      };
+    }
+
     const positionMap = {};
 
     for (const result of results) {
       if (!result.position) continue;
 
-      const prizeAmount =
-        result.position <= PRIZE_RATIO.length
-          ? Math.floor(race.purse * PRIZE_RATIO[result.position - 1])
-          : 0;
-      const pointsEarned =
-        result.position <= (POINTS_BY_GRADE[race.grade]?.length ?? 0)
-          ? POINTS_BY_GRADE[race.grade][result.position - 1]
-          : 0;
+      const { prizeAmount, pointsEarned } = groupPayouts[result.position] || { prizeAmount: 0, pointsEarned: 0 };
 
       result.prizeAmount = prizeAmount;
       result.pointsEarned = pointsEarned;

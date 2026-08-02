@@ -50,7 +50,13 @@ async function getRaces({ page = 1, limit = 10, tournamentId, grade, status } = 
   const filter = {};
   if (tournamentId) filter.tournamentId = tournamentId;
   if (grade) filter.grade = grade;
-  if (status) filter.status = status;
+  if (status) {
+    if (status.includes(',')) {
+      filter.status = { $in: status.split(',') };
+    } else {
+      filter.status = status;
+    }
+  }
 
   const skip = (page - 1) * limit;
   const [races, total] = await Promise.all([

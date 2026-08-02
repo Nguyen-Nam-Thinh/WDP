@@ -310,7 +310,7 @@ async function runRaceSimulation(raceId) {
 
   // ── Add Gaussian noise and determine finish order ─────────────────────────
   const n = scored.length;
-  const ordered = scored
+  const orderedTemp = scored
     .map((e, idx) => {
       const isUnderdog = idx >= Math.floor(n * 0.5);
       const upsetNoise = isUnderdog && Math.random() < BET_ODDS_CONFIG.upsetChance
@@ -331,13 +331,23 @@ async function runRaceSimulation(raceId) {
 
       return {
         ...e,
-        position: idx + 1,
         finishTime,
         baseFactor,
         speedProfile,
         segmentBoosts,
       };
-    });
+    })
+    .sort((a, b) => a.finishTime - b.finishTime);
+
+  let currentPos = 1;
+  const ordered = orderedTemp.map((e, i, arr) => {
+    if (i > 0) {
+      if (e.finishTime - arr[i - 1].finishTime > 15) {
+        currentPos = i + 1;
+      }
+    }
+    return { ...e, position: currentPos };
+  });
 
   const raceDurationMs = calcRaceDurationMs(race.distance ?? 1000);
   const segmentEvents = buildSegmentEvents(ordered, raceDurationMs);

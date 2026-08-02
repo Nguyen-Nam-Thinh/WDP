@@ -20,7 +20,7 @@ function formatFinishTime(ms: number): string {
 }
 
 export function ResultsConfirmPanel({ token, races, loading, onConfirmed, readOnly }: Props) {
-  const finished = races.filter((r) => r.status === 'finished');
+  const finished = races.filter((r) => r.status === 'finished' || r.status === 'cancelled');
   const [selected, setSelected] = useState<any | null>(null);
   const [results, setResults] = useState<RaceResultEntry[]>([]);
   const [loadingResults, setLoadingResults] = useState(false);
@@ -157,7 +157,19 @@ export function ResultsConfirmPanel({ token, races, loading, onConfirmed, readOn
                           size="small"
                           sx={{ bgcolor: '#C9A227', color: '#23201A', fontWeight: 'bold', fontSize: '0.7rem' }}
                         />
-                        {!race.isOfficial && (
+                        {race.status === 'cancelled' && (
+                          <Chip
+                            label="Đã Hủy"
+                            size="small"
+                            sx={{
+                              bgcolor: 'rgba(239,68,68,0.15)',
+                              color: '#ef4444',
+                              border: '1px solid #ef4444',
+                              fontWeight: 'bold',
+                            }}
+                          />
+                        )}
+                        {race.status !== 'cancelled' && !race.isOfficial && (
                           <Chip
                             label="Tạm thời"
                             size="small"
@@ -232,24 +244,6 @@ export function ResultsConfirmPanel({ token, races, loading, onConfirmed, readOn
           <h2 className="font-serif text-3xl font-bold text-foreground mb-1">Tên cuộc đua: {selected.name}</h2>
           
         </div>
-        {!readOnly && (
-          <Button
-            variant="contained"
-            disabled={confirmed || confirming}
-            onClick={handleConfirm}
-            startIcon={<CheckCircle className="w-4 h-4" />}
-            sx={{
-              background: confirmed ? '#EDE7D8' : '#1F3D2B',
-              color: confirmed ? '#9ca3af' : '#fff',
-              textTransform: 'none',
-              fontWeight: 700,
-              '&:hover': { background: '#2d5640' },
-              '&.Mui-disabled': { background: '#EDE7D8', color: '#9ca3af' },
-            }}
-          >
-            {confirmed ? 'Đã xác nhận' : confirming ? 'Đang lưu…' : 'Xác nhận kết quả'}
-          </Button>
-        )}
       </div>
 
       {loadingResults ? (

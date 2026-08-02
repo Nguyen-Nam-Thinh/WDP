@@ -1014,7 +1014,8 @@ async function submitComplaint(raceId, userId, role, data) {
 }
 
 async function updateComplaint(reportId, complaintId, refereeId, updateData) {
-  const report = await RefereeReport.findOne({ _id: reportId, refereeId });
+  const report = await RefereeReport.findOne({ _id: reportId, refereeId })
+    .populate('complaints.submittedBy', 'fullName email');
   if (!report) throw new AppError(404, 'Biên bản không tìm thấy hoặc bạn không có quyền');
 
   const complaint = report.complaints.id(complaintId);
@@ -1033,8 +1034,10 @@ async function updateComplaint(reportId, complaintId, refereeId, updateData) {
     if (!race) throw new AppError(404, 'Không tìm thấy cuộc đua');
     if (race.status !== 'finished') throw new AppError(400, 'Chỉ DQ sau khi cuộc đua đã finished');
 
+    const targetHorseId = complaint.targetHorseId._id || complaint.targetHorseId;
+
     // Tìm kết quả của ngựa bị khiếu nại
-    const result = await RaceResult.findOne({ raceId: report.raceId, horseId: complaint.targetHorseId });
+    const result = await RaceResult.findOne({ raceId: report.raceId, horseId: targetHorseId });
     if (!result) throw new AppError(404, 'Không tìm thấy kết quả ngựa bị khiếu nại');
 
     // DQ ngựa
@@ -1043,15 +1046,15 @@ async function updateComplaint(reportId, complaintId, refereeId, updateData) {
 
     // Thêm incident vào báo cáo để ghi nhận
     report.incidents.push({
-      horseId: complaint.targetHorseId,
+      horseId: targetHorseId,
       type: 'other',
-      action: `Khiếu nại được duyệt: ${complaint.reason}`,
+      action: `Khiếu nại từ ${complaint.submittedBy?.fullName || complaint.role} được duyệt: ${complaint.reason}`,
       source: 'manual',
       status: 'resolved',
       flaggedAt: new Date(),
       resolution: {
         verdict: 'disqualified',
-        note: `Khiếu nại từ ${complaint.role} — ${complaint.reason}`,
+        note: `Khiếu nại từ ${complaint.submittedBy?.fullName || complaint.role} — ${complaint.reason}`,
         resolvedAt: new Date(),
       },
     });

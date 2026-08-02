@@ -2226,9 +2226,7 @@ export function SpectatorDashboard() {
                         <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">
                           Ngày
                         </th>
-                        <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">
-                          Loại Dự Đoán
-                        </th>
+
                         <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">
                           Ngựa
                         </th>
@@ -2300,11 +2298,7 @@ export function SpectatorDashboard() {
                                 "vi-VN",
                               )}
                             </td>
-                            <td className="px-5 py-4">
-                              <span className="px-2 py-1 bg-primary/10 text-primary text-xs font-medium">
-                                {betTypeLabel[bet.betType]}
-                              </span>
-                            </td>
+
                             <td className="px-5 py-4 text-foreground font-medium">
                               {horse?.name || "-"}
                             </td>

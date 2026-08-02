@@ -362,7 +362,7 @@ export default function ResultsPublishing() {
                                 !race.refereeId
                                   ? 'Chưa có trọng tài, không thể mô phỏng'
                                   : !race.preRaceApproved
-                                    ? 'Cần duyệt Pre-race Report trước khi chạy mô phỏng'
+                                    ? 'Cần duyệt Trước trận trước khi chạy mô phỏng'
                                     : ''
                               }
                               className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded transition shadow-sm border ${
@@ -378,7 +378,7 @@ export default function ResultsPublishing() {
                               {!race.refereeId ? (
                                 <>Chưa phân công TT</>
                               ) : !race.preRaceApproved ? (
-                                <>Chờ duyệt Pre-race</>
+                                <>Chờ duyệt trước trận</>
                               ) : race.status === 'running' ? (
                                 <><RefreshCw className="animate-spin" size={14} /> Đang chạy...</>
                               ) : isRunning ? (

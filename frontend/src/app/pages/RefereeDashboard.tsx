@@ -187,7 +187,8 @@ export function RefereeDashboard() {
   const [resolving, setResolving] = useState(false);
 
   // Complaint state
-  const [updatingComplaint, setUpdatingComplaint] = useState(false);
+  const [updatingComplaintId, setUpdatingComplaintId] = useState<string | null>(null);
+  const [editingComplaintId, setEditingComplaintId] = useState<string | null>(null);
   const [complaintNoteDraft, setComplaintNoteDraft] = useState<Record<string, string>>({});
 
   // ── Stats ──
@@ -518,7 +519,7 @@ export function RefereeDashboard() {
 
   const handleUpdateComplaint = async (complaintId: string, status: 'approved' | 'rejected') => {
     if (!token || !editReport) return;
-    setUpdatingComplaint(true);
+    setUpdatingComplaintId(complaintId);
     try {
       const note = complaintNoteDraft[complaintId] || '';
       await refereeApi.updateComplaint(token, editReport._id, complaintId, { status, refereeNote: note });
@@ -532,10 +533,11 @@ export function RefereeDashboard() {
         delete next[complaintId];
         return next;
       });
+      setEditingComplaintId(null);
     } catch (err: any) {
       toast.error(err.message);
     } finally {
-      setUpdatingComplaint(false);
+      setUpdatingComplaintId(null);
     }
   };
 
@@ -1054,11 +1056,6 @@ export function RefereeDashboard() {
                         )}
                       </div>
 
-                      <div className="rounded-xl border border-[#E3DCCB] bg-[#FBF8F1] px-4 py-3 text-sm text-[#5C564A] mb-5">
-                        Kiểm tra thực tế ngoài sân. Tại đây ghi <strong>Đạt</strong> hoặc <strong>Không Đạt</strong>.
-                        Có thể sửa lại kết quả khi cuộc đua còn ở trạng thái kiểm tra trước đua.
-                        Đổi nài / trang bị nhỏ → ghi ở <strong>Báo cáo trước trận</strong> (Đổi nài / Đổi trang bị).
-                      </div>
 
                       {currentReg.preCheckResult?.status === 'passed' && (
                         <div className="flex items-center justify-center gap-2 bg-emerald-500/10 border border-emerald-500/30 rounded-xl py-4 mb-3">
@@ -1500,9 +1497,7 @@ export function RefereeDashboard() {
                               </div>
                               <div>
                                 <Chip
-                                  label={comp.status === 'pending' ? 'Chờ duyệt' : comp.status === 'approved' ? 'Đã duyệt' : 'Từ chối'}
-                                  size="small"
-                                  sx={{
+                          sx={{
                                     bgcolor: comp.status === 'pending' ? '#fef3c7' : comp.status === 'approved' ? '#dcfce7' : '#fee2e2',
                                     color: comp.status === 'pending' ? '#d97706' : comp.status === 'approved' ? '#166534' : '#991b1b',
                                     fontWeight: 'bold',
@@ -1512,13 +1507,13 @@ export function RefereeDashboard() {
                               </div>
                             </div>
                             
-                            {comp.status === 'pending' && !readOnly && (
+                            {(comp.status === 'pending' || editingComplaintId === comp._id) && !readOnly && (
                               <div className="mt-2 pt-2 border-t border-[#E3DCCB]">
                                 <TextField
                                   fullWidth
                                   size="small"
                                   label="Ghi chú của trọng tài (tùy chọn)"
-                                  value={complaintNoteDraft[comp._id] || ''}
+                                  value={complaintNoteDraft[comp._id] ?? (comp.refereeNote || '')}
                                   onChange={(e) => setComplaintNoteDraft({ ...complaintNoteDraft, [comp._id]: e.target.value })}
                                   sx={{ mb: 1, '& .MuiInputLabel-root': { color: '#7A7468' }, '& .MuiOutlinedInput-root': { color: '#23201A', '& fieldset': { borderColor: '#C9C2B0' } } }}
                                 />
@@ -1527,7 +1522,7 @@ export function RefereeDashboard() {
                                     size="small"
                                     variant="contained"
                                     color="success"
-                                    disabled={updatingComplaint}
+                                    disabled={updatingComplaintId === comp._id}
                                     onClick={() => handleUpdateComplaint(comp._id, 'approved')}
                                     sx={{ textTransform: 'none', boxShadow: 'none' }}
                                   >
@@ -1537,18 +1532,35 @@ export function RefereeDashboard() {
                                     size="small"
                                     variant="outlined"
                                     color="error"
-                                    disabled={updatingComplaint}
+                                    disabled={updatingComplaintId === comp._id}
                                     onClick={() => handleUpdateComplaint(comp._id, 'rejected')}
                                     sx={{ textTransform: 'none' }}
                                   >
                                     Từ chối
                                   </Button>
+                                  {editingComplaintId === comp._id && (
+                                    <Button
+                                      size="small"
+                                      onClick={() => setEditingComplaintId(null)}
+                                      sx={{ textTransform: 'none', color: '#7A7468' }}
+                                    >
+                                      Hủy
+                                    </Button>
+                                  )}
                                 </div>
                               </div>
                             )}
-                            {comp.status !== 'pending' && comp.refereeNote && (
-                              <div className="mt-1 pt-1 border-t border-[#E3DCCB] text-[#5C564A]">
-                                <strong>Ghi chú TT:</strong> {comp.refereeNote}
+                            {comp.status !== 'pending' && editingComplaintId !== comp._id && (
+                              <div className="mt-1 pt-1 border-t border-[#E3DCCB] text-[#5C564A] flex justify-between items-center">
+                                <div><strong>Ghi chú TT:</strong> {comp.refereeNote || 'Không có'}</div>
+                                {!readOnly && (
+                                  <button
+                                    onClick={() => setEditingComplaintId(comp._id)}
+                                    className="text-xs text-blue-600 hover:underline"
+                                  >
+                                    Sửa
+                                  </button>
+                                )}
                               </div>
                             )}
                           </li>

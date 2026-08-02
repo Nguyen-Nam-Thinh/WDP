@@ -346,19 +346,25 @@ async function settleBetsWithSession(raceId, positionMap, raceName, session) {
   if (!pendingBets.length) return 0;
 
   // Tìm ngựa về nhất
-  const winnerHorseId = Object.keys(positionMap).find(
+  const winnerHorseIds = Object.keys(positionMap).filter(
     (hId) => positionMap[hId] === 1
   );
 
   const totalPool = pendingBets.reduce((sum, b) => sum + b.amount, 0);
   const payoutPool = Math.floor(totalPool * (1 - rake));
 
-  const winnerBets = winnerHorseId
-    ? pendingBets.filter((b) => b.horseId.toString() === winnerHorseId)
-    : [];
-  const amountOnWinner = winnerBets.reduce((sum, b) => sum + b.amount, 0);
+  const totalAmountOnWinners = winnerHorseIds.reduce((sum, hId) => {
+    const amount = pendingBets
+      .filter((b) => b.horseId.toString() === hId)
+      .reduce((s, b) => s + b.amount, 0);
+    return sum + amount;
+  }, 0);
 
-  if (amountOnWinner === 0) {
+  if (winnerHorseIds.length === 0 || totalAmountOnWinners === 0) {
+    const reason = winnerHorseIds.length === 0
+      ? `Hoàn tiền: toàn bộ ngựa thi đấu bị tước quyền trong cuộc đua ${raceName}`
+      : `Hoàn tiền: không ai cược vào ngựa thắng cuộc đua ${raceName}`;
+
     // Hoàn tiền tất cả
     for (const bet of pendingBets) {
       const wallet = await Wallet.findOne({ userId: bet.spectatorId }).session(session);
@@ -366,7 +372,7 @@ async function settleBetsWithSession(raceId, positionMap, raceName, session) {
         await walletService.creditWallet(
           wallet._id, bet.spectatorId, bet.amount,
           'bet_refund',
-          `Hoàn tiền: không ai cược vào ngựa thắng cuộc đua ${raceName}`,
+          reason,
           bet._id, 'Bet', session,
         );
       }
@@ -382,13 +388,25 @@ async function settleBetsWithSession(raceId, positionMap, raceName, session) {
     return pendingBets.length;
   }
 
-  const actualMultiplier = roundOdds(clamp(payoutPool / amountOnWinner, minMultiplier, maxMultiplier));
+  // Lọc ra các ngựa hạng 1 có người cược để chia quỹ
+  const validWinnerHorseIds = winnerHorseIds.filter(hId => {
+    return pendingBets.some(b => b.horseId.toString() === hId);
+  });
+  
+  const deadHeatFactor = validWinnerHorseIds.length;
+  const poolPerWinner = Math.floor(payoutPool / deadHeatFactor);
 
   for (const bet of pendingBets) {
-    const isWinner = winnerHorseId && bet.horseId.toString() === winnerHorseId;
+    const isWinner = validWinnerHorseIds.includes(bet.horseId.toString());
 
     if (isWinner) {
-      let payout = Math.floor((bet.amount / amountOnWinner) * payoutPool);
+      const winnerHorseId = bet.horseId.toString();
+      const amountOnThisWinner = pendingBets
+        .filter((b) => b.horseId.toString() === winnerHorseId)
+        .reduce((sum, b) => sum + b.amount, 0);
+        
+      const actualMultiplier = roundOdds(clamp(poolPerWinner / amountOnThisWinner, minMultiplier, maxMultiplier));
+      let payout = Math.floor((bet.amount / amountOnThisWinner) * poolPerWinner);
       
       if (bet.voucherId && bet.voucherId.rewardId && bet.voucherId.rewardId.voucherType === 'bet_multiplier') {
         const multiplier = bet.voucherId.rewardId.rewardMultiplier || 0;
@@ -400,7 +418,7 @@ async function settleBetsWithSession(raceId, positionMap, raceName, session) {
         await walletService.creditWallet(
           wallet._id, bet.spectatorId, payout,
           'bet_payout',
-          `Thắng dự đoán cuộc đua ${raceName} (x${actualMultiplier})`,
+          `Thắng dự đoán cuộc đua ${raceName} (x${actualMultiplier})${deadHeatFactor > 1 ? ' - Đồng hạng' : ''}`,
           bet._id, 'Bet', session,
         );
       }

@@ -81,7 +81,7 @@ const JOCKEY_NAV: NavItem[] = [
   { to: "/jockey", label: "Tổng Quan", icon: <Home /> },
   { to: "/jockey/invitations", label: "Lời Mời Đua", icon: <Clock /> },
   { to: "/jockey/schedule", label: "Lịch Đua", icon: <Calendar /> },
-  { to: "/jockey/results", label: "Kết Quả Quá Khứ", icon: <Trophy /> },
+  // { to: "/jockey/results", label: "Kết Quả Quá Khứ", icon: <Trophy /> },
   { to: "/jockey/race-results", label: "Kết Quả Cuộc Đua", icon: <Medal /> },
   { to: "/jockey/penalties", label: "Vé Phạt", icon: <Ticket /> },
 ];

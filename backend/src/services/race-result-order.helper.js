@@ -13,15 +13,30 @@ async function rebuildOfficialOrder(raceId, session) {
     .filter((r) => !r.disqualified)
     .sort((a, b) => (a.provisionalPosition || 0) - (b.provisionalPosition || 0));
 
-  let pos = 1;
-  for (const r of nonDq) {
-    r.position = pos++;
-    await r.save(session ? { session } : undefined);
+  let currentPos = 1;
+  let lastProvPos = null;
+
+  for (let i = 0; i < nonDq.length; i++) {
+    const r = nonDq[i];
+    if (i === 0) {
+      currentPos = 1;
+      r.position = currentPos;
+      lastProvPos = r.provisionalPosition;
+    } else {
+      if (r.provisionalPosition === lastProvPos) {
+        r.position = currentPos;
+      } else {
+        currentPos = i + 1;
+        r.position = currentPos;
+        lastProvPos = r.provisionalPosition;
+      }
+    }
+    await r.save(session ? { session } : {});
   }
 
   for (const r of results.filter((x) => x.disqualified)) {
     r.position = null;
-    await r.save(session ? { session } : undefined);
+    await r.save(session ? { session } : {});
   }
 
   return results;
