@@ -61,6 +61,7 @@ import { Home } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useWallet } from "../hooks/useWallet";
 import { PenaltiesPanel } from "./shared/PenaltiesPanel";
+import { RaceResultsView } from "./shared/RaceResultsView";
 import { invitationApi, jockeyApi, JockeyInvitation } from "../api/invitation";
 import { toast } from "sonner";
 import {
@@ -81,6 +82,7 @@ const JOCKEY_NAV: NavItem[] = [
   { to: "/jockey/invitations", label: "Lời Mời Đua", icon: <Clock /> },
   { to: "/jockey/schedule", label: "Lịch Đua", icon: <Calendar /> },
   { to: "/jockey/results", label: "Kết Quả Quá Khứ", icon: <Trophy /> },
+  { to: "/jockey/race-results", label: "Kết Quả Cuộc Đua", icon: <Medal /> },
   { to: "/jockey/penalties", label: "Vé Phạt", icon: <Ticket /> },
 ];
 
@@ -103,7 +105,9 @@ export function JockeyDashboard() {
       ? "schedule"
       : pathname === "/jockey/results"
         ? "results"
-        : pathname === "/jockey/invitations"
+        : pathname === "/jockey/race-results"
+          ? "race-results"
+          : pathname === "/jockey/invitations"
           ? "invitations"
           : pathname === "/jockey/penalties"
             ? "penalties"
@@ -1148,7 +1152,7 @@ export function JockeyDashboard() {
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
-                    placeholder="Tìm race / ngựa / chủ..."
+                    placeholder="Tìm cuộc đua / ngựa / chủ..."
                     value={scheduleSearch}
                     onChange={(e) => {
                       setScheduleSearch(e.target.value);
@@ -1539,7 +1543,7 @@ export function JockeyDashboard() {
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder="Tìm race / ngựa..."
+                  placeholder="Tìm cuộc đua / ngựa..."
                   value={resultsSearch}
                   onChange={(e) => setResultsSearch(e.target.value)}
                   className="bg-slate-900 border border-border rounded-lg pl-9 pr-4 py-2 text-foreground placeholder-slate-500 focus:outline-none focus:border-[#C9A227] text-sm w-56"
@@ -1639,6 +1643,11 @@ export function JockeyDashboard() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Content: Race Results View */}
+        {activeTab === "race-results" && token && (
+          <RaceResultsView token={token} />
         )}
 
         {/* Content: Penalties */}

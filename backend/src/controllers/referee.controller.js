@@ -212,6 +212,15 @@ async function rejectReport(req, res, next) {
   }
 }
 
+async function updateComplaint(req, res, next) {
+  try {
+    const complaint = await refereeService.updateComplaint(req.params.id, req.params.complaintId, req.user._id, req.body);
+    sendSuccess(res, complaint, 200, 'Complaint updated');
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   getAssignedRaces,
   createReport,
@@ -233,4 +242,5 @@ module.exports = {
   listReportsAdmin,
   approveReport,
   rejectReport,
+  updateComplaint,
 };

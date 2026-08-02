@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CheckCircle, Search, Trophy } from 'lucide-react';
-import { Button, Chip, CircularProgress } from '@mui/material';
+import { CheckCircle, Search, Trophy, AlertTriangle } from 'lucide-react';
+import { Button, Chip, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
 import { toast } from 'sonner';
 import { refereeApi } from '../../api/referee';
 import { raceApi, type RaceResultEntry } from '../../api/race';
@@ -10,6 +10,7 @@ interface Props {
   races: any[];
   loading: boolean;
   onConfirmed?: () => void;
+  readOnly?: boolean;
 }
 
 function formatFinishTime(ms: number): string {
@@ -18,13 +19,36 @@ function formatFinishTime(ms: number): string {
   return `${s.toFixed(2)}s`;
 }
 
-export function ResultsConfirmPanel({ token, races, loading, onConfirmed }: Props) {
+export function ResultsConfirmPanel({ token, races, loading, onConfirmed, readOnly }: Props) {
   const finished = races.filter((r) => r.status === 'finished');
   const [selected, setSelected] = useState<any | null>(null);
   const [results, setResults] = useState<RaceResultEntry[]>([]);
   const [loadingResults, setLoadingResults] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [search, setSearch] = useState('');
+
+  // Complaint state
+  const [complaintModalOpen, setComplaintModalOpen] = useState(false);
+  const [complaintTarget, setComplaintTarget] = useState<RaceResultEntry | null>(null);
+  const [complaintReason, setComplaintReason] = useState("");
+  const [submittingComplaint, setSubmittingComplaint] = useState(false);
+
+  const handleSubmitComplaint = async () => {
+    if (!selected || !complaintTarget) return;
+    if (!complaintReason.trim()) { toast.error("Vui lòng nhập lý do"); return; }
+    setSubmittingComplaint(true);
+    try {
+      await raceApi.submitComplaint(token, selected._id, { targetHorseId: complaintTarget.horseId._id, reason: complaintReason });
+      toast.success("Đã gửi khiếu nại thành công");
+      setComplaintModalOpen(false);
+      setComplaintReason("");
+      setComplaintTarget(null);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSubmittingComplaint(false);
+    }
+  };
 
   const filteredFinished = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -89,10 +113,10 @@ export function ResultsConfirmPanel({ token, races, loading, onConfirmed }: Prop
       <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div>
-            <h2 className="font-serif text-3xl font-bold text-foreground mb-2">Xác nhận kết quả</h2>
-            <p className="text-slate-400">
-              Xem bảng xếp hạng sau đua và xác nhận — không làm Official / không settle lại cược
-            </p>
+            <h2 className="font-serif text-3xl font-bold text-foreground mb-2">
+              {readOnly ? 'Kết quả cuộc đua' : 'Xác nhận kết quả'}
+            </h2>
+            
           </div>
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -201,38 +225,31 @@ export function ResultsConfirmPanel({ token, races, loading, onConfirmed }: Prop
         onClick={() => { setSelected(null); setResults([]); }}
         className="text-sm text-slate-400 hover:text-[#C9A227] mb-2"
       >
-        ← Danh sách finished
+        ← Danh sách 
       </button>
       <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
         <div>
-          <h2 className="font-serif text-3xl font-bold text-foreground mb-1">{selected.name}</h2>
-          <p className="text-sm text-slate-400">
-            {selected.isOfficial
-              ? 'Kết quả Official — purse/cược đã settle'
-              : 'Kết quả tạm thời — chưa phát tiền cho đến khi Admin duyệt biên bản'}
-          </p>
-          {!selected.isOfficial && (
-            <p className="text-xs text-slate-500 mt-1">
-              Sau xác nhận: mở Báo cáo → Inquiry/Resolve flags → Post-race (performance/vet) → Nộp.
-            </p>
-          )}
+          <h2 className="font-serif text-3xl font-bold text-foreground mb-1">Tên cuộc đua: {selected.name}</h2>
+          
         </div>
-        <Button
-          variant="contained"
-          disabled={confirmed || confirming}
-          onClick={handleConfirm}
-          startIcon={<CheckCircle className="w-4 h-4" />}
-          sx={{
-            background: confirmed ? '#EDE7D8' : '#1F3D2B',
-            color: confirmed ? '#9ca3af' : '#fff',
-            textTransform: 'none',
-            fontWeight: 700,
-            '&:hover': { background: '#2d5640' },
-            '&.Mui-disabled': { background: '#EDE7D8', color: '#9ca3af' },
-          }}
-        >
-          {confirmed ? 'Đã xác nhận' : confirming ? 'Đang lưu…' : 'Xác nhận kết quả'}
-        </Button>
+        {!readOnly && (
+          <Button
+            variant="contained"
+            disabled={confirmed || confirming}
+            onClick={handleConfirm}
+            startIcon={<CheckCircle className="w-4 h-4" />}
+            sx={{
+              background: confirmed ? '#EDE7D8' : '#1F3D2B',
+              color: confirmed ? '#9ca3af' : '#fff',
+              textTransform: 'none',
+              fontWeight: 700,
+              '&:hover': { background: '#2d5640' },
+              '&.Mui-disabled': { background: '#EDE7D8', color: '#9ca3af' },
+            }}
+          >
+            {confirmed ? 'Đã xác nhận' : confirming ? 'Đang lưu…' : 'Xác nhận kết quả'}
+          </Button>
+        )}
       </div>
 
       {loadingResults ? (
@@ -250,6 +267,9 @@ export function ResultsConfirmPanel({ token, races, loading, onConfirmed }: Prop
                 <th className="text-right px-4 py-3 text-sm text-slate-400">Thời gian</th>
                 <th className="text-right px-4 py-3 text-sm text-slate-400">Điểm</th>
                 <th className="text-right px-4 py-3 text-sm text-slate-400">Thưởng</th>
+                {readOnly && !selected.isOfficial && (
+                  <th className="text-center px-4 py-3 text-sm text-slate-400">Khiếu nại</th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -267,7 +287,7 @@ export function ResultsConfirmPanel({ token, races, loading, onConfirmed }: Prop
                   <td className="px-4 py-3 text-foreground font-medium">
                     {row.horseId?.name || '—'}
                     {row.disqualified && (
-                      <span className="ml-2 text-xs text-red-400">Disqualified</span>
+                      <span className="ml-2 text-xs text-red-400">Bị loại</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-slate-400 text-sm">
@@ -280,6 +300,17 @@ export function ResultsConfirmPanel({ token, races, loading, onConfirmed }: Prop
                   <td className="px-4 py-3 text-right text-sm text-[#C9A227]">
                     {row.prizeAmount?.toLocaleString('vi-VN')}
                   </td>
+                  {readOnly && !selected.isOfficial && (
+                    <td className="px-4 py-3 text-center">
+                      <button
+                        onClick={() => { setComplaintTarget(row); setComplaintModalOpen(true); }}
+                        className="text-slate-400 hover:text-red-400 transition-colors p-1"
+                        title="Khiếu nại ngựa này"
+                      >
+                        <AlertTriangle className="w-4 h-4 mx-auto" />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
               {results.length === 0 && (
@@ -293,6 +324,64 @@ export function ResultsConfirmPanel({ token, races, loading, onConfirmed }: Prop
           </table>
         </div>
       )}
+
+
+      {/* Complaint Modal */}
+      <Dialog
+        open={complaintModalOpen}
+        onClose={() => !submittingComplaint && setComplaintModalOpen(false)}
+        PaperProps={{ sx: { background: '#1e293b', color: '#f8fafc', borderRadius: '16px', minWidth: '400px' } }}
+      >
+        <DialogTitle sx={{ fontFamily: 'serif', fontSize: '1.5rem', fontWeight: 700, borderBottom: '1px solid #334155' }}>
+          Gửi khiếu nại
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <div className="mb-4 text-sm text-slate-300">
+            Khiếu nại ngựa: <strong className="text-[#C9A227]">{complaintTarget?.horseId?.name}</strong>
+          </div>
+          <TextField
+            fullWidth
+            multiline
+            rows={3}
+            label="Lý do khiếu nại"
+            value={complaintReason}
+            onChange={(e) => setComplaintReason(e.target.value)}
+            disabled={submittingComplaint}
+            sx={{
+              '& .MuiInputBase-root': { color: '#f8fafc' },
+              '& .MuiInputLabel-root': { color: '#94a3b8' },
+              '& .MuiOutlinedInput-notchedOutline': { borderColor: '#334155' },
+              '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#475569' },
+              '& .Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#C9A227' },
+              '& .Mui-focused.MuiInputLabel-root': { color: '#C9A227' },
+            }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ borderTop: '1px solid #334155', px: 3, py: 2 }}>
+          <Button
+            onClick={() => setComplaintModalOpen(false)}
+            sx={{ color: '#94a3b8', textTransform: 'none' }}
+            disabled={submittingComplaint}
+          >
+            Hủy
+          </Button>
+          <Button
+            onClick={handleSubmitComplaint}
+            variant="contained"
+            disabled={submittingComplaint}
+            sx={{
+              background: '#C9A227',
+              color: '#23201A',
+              fontWeight: 700,
+              textTransform: 'none',
+              '&:hover': { background: '#b38f22' },
+              '&.Mui-disabled': { background: '#475569', color: '#94a3b8' }
+            }}
+          >
+            {submittingComplaint ? 'Đang gửi...' : 'Gửi khiếu nại'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }

@@ -57,6 +57,7 @@ router.get('/:id/registrations', optionalAuthenticate, raceController.getRaceReg
 router.get('/:id/horses', optionalAuthenticate, raceController.getRaceHorses);
 router.get('/:id/betting-odds', optionalAuthenticate, raceController.getRaceBettingOdds);
 router.get('/:id/results', optionalAuthenticate, raceController.getRaceResults);
+router.post('/:id/complaints', authenticate, raceController.submitComplaint);
 router.get('/:id/ai-predictions', optionalAuthenticate, aiPredictionController.getRaceAIPredictions);
 
 // Các route thay đổi dữ liệu — bắt buộc auth

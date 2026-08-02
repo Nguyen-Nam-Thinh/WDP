@@ -60,6 +60,7 @@ import { Home } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useWallet } from "../hooks/useWallet";
 import { PenaltiesPanel } from "./shared/PenaltiesPanel";
+import { RaceResultsView } from "./shared/RaceResultsView";
 import { horseApi, Horse } from "../api/horse";
 import {
   userApi,
@@ -94,6 +95,7 @@ const OWNER_NAV: NavItem[] = [
   { to: "/horse-owner/jockeys", label: "Kỵ Sĩ", icon: <Users /> },
   { to: "/horse-owner/schedule", label: "Lịch Đua", icon: <Calendar /> },
   { to: "/horse-owner/results", label: "Thành Tích", icon: <TrendingUp /> },
+  { to: "/horse-owner/race-results", label: "Kết Quả Cuộc Đua", icon: <Medal /> },
   { to: "/horse-owner/wallet", label: "Ví Tiền", icon: <Wallet /> },
   { to: "/horse-owner/penalties", label: "Vé Phạt", icon: <Ticket /> },
 ];
@@ -174,8 +176,10 @@ export function HorseOwnerDashboard() {
         ? "schedule"
         : pathname === "/horse-owner/results"
           ? "results"
-          : pathname === "/horse-owner/wallet"
-            ? "wallet"
+          : pathname === "/horse-owner/race-results"
+            ? "race-results"
+            : pathname === "/horse-owner/wallet"
+              ? "wallet"
             : pathname === "/horse-owner/penalties"
               ? "penalties"
               : pathname === "/horse-owner/horses"
@@ -1570,7 +1574,7 @@ export function HorseOwnerDashboard() {
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder="Tìm kỵ sĩ / ngựa / race..."
+                  placeholder="Tìm nài / ngựa / cuộc đua..."
                   value={jockeySearch}
                   onChange={(e) => setJockeySearch(e.target.value)}
                   className="bg-slate-900 border border-border rounded-lg pl-9 pr-4 py-2 text-foreground placeholder-slate-500 focus:outline-none focus:border-[#C9A227] text-sm w-56"
@@ -1921,7 +1925,7 @@ export function HorseOwnerDashboard() {
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder="Tìm race / ngựa / kỵ sĩ..."
+                  placeholder="Tìm cuộc đua / ngựa / nài..."
                   value={scheduleSearch}
                   onChange={(e) => {
                     setScheduleSearch(e.target.value);
@@ -2375,7 +2379,7 @@ export function HorseOwnerDashboard() {
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
-                    placeholder="Tìm race / ngựa / kỵ sĩ..."
+                    placeholder="Tìm cuộc đua / ngựa / nài..."
                     value={resultsSearch}
                     onChange={(e) => setResultsSearch(e.target.value)}
                     className="bg-slate-900 border border-border rounded-lg pl-9 pr-4 py-2 text-foreground placeholder-slate-500 focus:outline-none focus:border-[#C9A227] text-sm w-56"
@@ -2498,6 +2502,11 @@ export function HorseOwnerDashboard() {
               )}
             </div>
           </div>
+        )}
+
+        {/* Content: Race Results View */}
+        {activeTab === "race-results" && token && (
+          <RaceResultsView token={token} />
         )}
 
         {/* Content: Wallet */}

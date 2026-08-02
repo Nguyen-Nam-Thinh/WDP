@@ -1,4 +1,5 @@
 import { API_URL } from './auth';
+import { fetchWithAuth } from '../utils/apiClient';
 import { getApiErrorMessage } from '../utils/errorMessages';
 import type { Race } from './race';
 
@@ -76,6 +77,17 @@ export interface PostRaceReport {
   vetOrders: VetOrder[];
 }
 
+export interface Complaint {
+  _id: string;
+  submittedBy: { _id: string; fullName: string };
+  role: 'owner' | 'jockey';
+  targetHorseId: string | any;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  refereeNote: string;
+  createdAt: string;
+}
+
 export interface RefereeReport {
   _id: string;
   raceId: {
@@ -94,6 +106,7 @@ export interface RefereeReport {
   };
   refereeId: { _id: string; fullName: string; email: string; refereeProfile?: { licenseNumber?: string; yearsOfService?: number } };
   incidents: Incident[];
+  complaints: Complaint[];
   preRaceReport: PreRaceReport;
   postRaceReport?: PostRaceReport;
   overallNotes: string;
@@ -340,5 +353,16 @@ export const refereeApi = {
     a.download = `referee-report-${reportId}.pdf`;
     a.click();
     URL.revokeObjectURL(url);
+  },
+
+  updateComplaint: async (token: string, reportId: string, complaintId: string, data: { status?: 'approved' | 'rejected'; refereeNote?: string }): Promise<Complaint> => {
+    const res = await fetchWithAuth(`${API_URL}/referee/reports/${reportId}/complaints/${complaintId}`, {
+      method: 'PATCH',
+      headers: { ...authHeader(token), 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
+    return json.data;
   },
 };

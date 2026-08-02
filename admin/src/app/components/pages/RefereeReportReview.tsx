@@ -189,10 +189,10 @@ export default function RefereeReportReview() {
     try {
       if (phase === 'prerace') {
         await refereeReportAdminApi.approvePreRace(selected._id);
-        toast.success('Đã duyệt Pre-race — có thể chạy mô phỏng');
+        toast.success('Đã duyệt trước trận - có thể chạy mô phỏng');
       } else {
         await refereeReportAdminApi.approve(selected._id);
-        toast.success('Đã duyệt Post-race — Official, chia tiền và gửi xử phạt');
+        toast.success('Đã duyệt sau trận — Official, chia tiền và gửi xử phạt');
       }
       setSelected(null);
       load();
@@ -254,11 +254,6 @@ export default function RefereeReportReview() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Duyệt biên bản trọng tài</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            {phase === 'prerace'
-              ? 'Duyệt Pre-race để mở khóa nút chạy mô phỏng.'
-              : 'Duyệt Post-race sẽ Official, chia purse/settle cược và gửi phiếu phạt/treo giò.'}
-          </p>
         </div>
         <button
           onClick={load}
@@ -276,7 +271,7 @@ export default function RefereeReportReview() {
             phase === 'prerace' ? 'bg-amber-500 text-white' : 'bg-white border border-slate-200 text-slate-700'
           }`}
         >
-          Pre-race chờ duyệt
+          Biên bản trước trận đấu
         </button>
         <button
           type="button"
@@ -285,7 +280,7 @@ export default function RefereeReportReview() {
             phase === 'postrace' ? 'bg-amber-500 text-white' : 'bg-white border border-slate-200 text-slate-700'
           }`}
         >
-          Post-race chờ duyệt
+          Biên bản sau trận đấu
         </button>
       </div>
 
@@ -295,7 +290,7 @@ export default function RefereeReportReview() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm race / trọng tài..."
+            placeholder="Tìm cuộc đua / trọng tài..."
             className="pl-9 pr-3 py-2 rounded-lg border border-slate-200 text-sm w-64"
           />
         </div>
@@ -347,9 +342,27 @@ export default function RefereeReportReview() {
                   <tr key={r._id} className="hover:bg-slate-50">
                     <td className="px-4 py-3">
                       <div className="font-medium text-slate-900">{(r.raceId as any)?.name}</div>
-                      <div className="text-xs text-slate-500">
-                        {(r.raceId as any)?.grade} · {(r.raceId as any)?.status}
-                        {(r.raceId as any)?.preRaceApproved ? ' · Pre OK' : ''}
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-700">
+                          {(r.raceId as any)?.grade || '—'}
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          {(() => {
+                            const st = (r.raceId as any)?.status;
+                            if (st === 'open') return 'Mở đăng ký';
+                            if (st === 'closed') return 'Đóng đăng ký';
+                            if (st === 'pre_check') return 'Kiểm tra';
+                            if (st === 'running') return 'Đang đua';
+                            if (st === 'finished') return 'Đã xong';
+                            if (st === 'cancelled') return 'Đã huỷ';
+                            return st || '—';
+                          })()}
+                        </span>
+                        {(r.raceId as any)?.preRaceApproved && (
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 flex items-center gap-1">
+                            <CheckCircle size={10} /> Đã duyệt Trước trận
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-slate-700">{(r.refereeId as any)?.fullName || '—'}</td>
@@ -406,15 +419,15 @@ export default function RefereeReportReview() {
           setSelected(null);
           setRejectOpen(false);
         }}
-        title={`${phase === 'prerace' ? 'Pre-race' : 'Post-race'} — ${(selected?.raceId as any)?.name || ''}`}
+        title={`Biên bản ${phase === 'prerace' ? 'trước trận' : 'sau trận'} — ${(selected?.raceId as any)?.name || ''}`}
       >
         {selected && (
           <div className="space-y-5">
             <Section title="Thông tin chung">
               <DetailRow label="Cuộc đua" value={(selected.raceId as any)?.name || '—'} />
               <DetailRow
-                label="Hạng / trạng thái"
-                value={`${(selected.raceId as any)?.grade || '—'} · ${(selected.raceId as any)?.status || '—'}`}
+                label="Hạng"
+                value={`${(selected.raceId as any)?.grade || '—'}`}
               />
               <DetailRow label="Trọng tài" value={(selected.refereeId as any)?.fullName || '—'} />
               <DetailRow
@@ -424,7 +437,7 @@ export default function RefereeReportReview() {
               {phase === 'prerace' ? (
                 <>
                   <DetailRow
-                    label="Pre-race"
+                    label="Trước trận"
                     value={STATUS_LABEL[selected.preRaceStatus || 'draft'] || selected.preRaceStatus}
                   />
                   <DetailRow label="Nộp lúc" value={formatDt(selected.preRaceSubmittedAt)} />
@@ -500,6 +513,42 @@ export default function RefereeReportReview() {
                   </p>
                 </Section>
 
+                <Section title={`Khiếu nại từ người tham gia (${selected.complaints?.length || 0})`}>
+                  {!selected.complaints?.length ? (
+                    <p className="text-sm italic text-slate-400">Không có khiếu nại</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {selected.complaints.map((c, i) => (
+                        <li key={c._id || i} className="rounded-lg border border-slate-200 p-3 text-sm">
+                          <div className="flex justify-between items-start">
+                            <div className="font-medium text-slate-900">
+                              Từ: {c.submittedBy?.fullName || c.submittedBy} ({c.role === 'owner' ? 'Chủ ngựa' : 'Nài ngựa'})
+                            </div>
+                            <span
+                              className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                c.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                c.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                'bg-yellow-100 text-yellow-700'
+                              }`}
+                            >
+                              {c.status === 'approved' ? 'Đã duyệt' : c.status === 'rejected' ? 'Từ chối' : 'Chờ duyệt'}
+                            </span>
+                          </div>
+                          <div className="text-slate-600 mt-1">Ngựa bị khiếu nại: {c.targetHorseId?.name || c.targetHorseId}</div>
+                          <div className="text-slate-700 mt-1 whitespace-pre-wrap">
+                            Lý do: {c.reason}
+                          </div>
+                          {c.refereeNote && (
+                            <div className="text-slate-700 mt-1">
+                              <strong>Ghi chú TT:</strong> {c.refereeNote}
+                            </div>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </Section>
+
                 <Section title={`Giải thích thành tích (${selected.postRaceReport?.performanceExplanations?.length || 0})`}>
                   {!selected.postRaceReport?.performanceExplanations?.length ? (
                     <p className="text-sm italic text-slate-400">Không có</p>
@@ -558,7 +607,7 @@ export default function RefereeReportReview() {
                         return (
                           <li key={inc._id} className="rounded-lg border border-slate-200 p-3 text-sm space-y-1.5">
                             <div className="font-semibold text-slate-900">
-                              Lỗi vi phạm: {typeLabel} - tên ngựa: {horseName || '—'}
+                              Lỗi vi phạm: {typeLabel} - Tên ngựa: {horseName || '—'}
                             </div>
                             <DetailRow label="Trạng thái" value={inc.status === 'resolved' ? 'Đã xử lý' : 'Nháp'} />
                             {inc.action ? <DetailRow label="Hành động" value={inc.action} /> : null}
@@ -612,20 +661,6 @@ export default function RefereeReportReview() {
                     </ul>
                   )}
                 </Section>
-
-                {(pr?.trackCondition || lateCount > 0) && (
-                  <Section title="Tham chiếu Pre-race">
-                    <DetailRow
-                      label="Track"
-                      value={
-                        pr?.trackCondition
-                          ? TRACK_LABEL[pr.trackCondition] || pr.trackCondition
-                          : 'Chưa có'
-                      }
-                    />
-                    <DetailRow label="Rút muộn" value={`${lateCount} trường hợp`} />
-                  </Section>
-                )}
               </>
             )}
 
@@ -636,7 +671,7 @@ export default function RefereeReportReview() {
                   onClick={handleApprove}
                   className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
                 >
-                  <CheckCircle size={16} /> Duyệt {phase === 'prerace' ? 'Pre-race' : 'Post-race'}
+                  <CheckCircle size={16} /> Duyệt {phase === 'prerace' ? 'trước trận' : 'sau trận'}
                 </button>
                 <button
                   disabled={acting}

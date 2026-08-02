@@ -2166,7 +2166,7 @@ export function SpectatorDashboard() {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                   <input
                     type="text"
-                    placeholder="Tìm race / ngựa / trạng thái..."
+                    placeholder="Tìm cuộc đua / ngựa / trạng thái..."
                     value={betSearch}
                     onChange={(e) => { setBetSearch(e.target.value); setBetPage(1); }}
                     className="pl-9 pr-3 py-2 text-sm bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary w-56"

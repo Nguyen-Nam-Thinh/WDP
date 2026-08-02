@@ -1,4 +1,5 @@
 const raceService = require('../services/race.service');
+const refereeService = require('../services/referee.service');
 const { sendSuccess } = require('../utils/response');
 
 async function createRace(req, res, next) {
@@ -121,8 +122,17 @@ async function getRaceBettingOdds(req, res, next) {
   }
 }
 
+async function submitComplaint(req, res, next) {
+  try {
+    const complaint = await refereeService.submitComplaint(req.params.id, req.user._id, req.user.role, req.body);
+    sendSuccess(res, complaint, 201, 'Complaint submitted successfully');
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   createRace, getRaces, getRaceById, updateRace,
   cancelRace, assignReferee, updateRaceStatus, getRaceRegistrations, getRaceHorses,
-  getRaceResults, forceSimulateRace, getRaceBettingOdds,
+  getRaceResults, forceSimulateRace, getRaceBettingOdds, submitComplaint,
 };

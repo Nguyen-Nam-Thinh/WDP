@@ -19,6 +19,8 @@ import {
   type UpdateRefereeReportPayload, type IncidentVerdict,
   type PerformanceExplanation, type VetOrder,
   type PostRaceVetOrderType,
+  type PreRaceReport,
+  type Complaint,
 } from '../api/referee';
 import { registrationApi, type Registration, type PreCheckFailCategory } from '../api/registration';
 import { raceApi } from '../api/race';
@@ -183,6 +185,10 @@ export function RefereeDashboard() {
     note: '',
   });
   const [resolving, setResolving] = useState(false);
+
+  // Complaint state
+  const [updatingComplaint, setUpdatingComplaint] = useState(false);
+  const [complaintNoteDraft, setComplaintNoteDraft] = useState<Record<string, string>>({});
 
   // ── Stats ──
   const stats = [
@@ -507,6 +513,29 @@ export function RefereeDashboard() {
       toast.error(err.message);
     } finally {
       setResolving(false);
+    }
+  };
+
+  const handleUpdateComplaint = async (complaintId: string, status: 'approved' | 'rejected') => {
+    if (!token || !editReport) return;
+    setUpdatingComplaint(true);
+    try {
+      const note = complaintNoteDraft[complaintId] || '';
+      await refereeApi.updateComplaint(token, editReport._id, complaintId, { status, refereeNote: note });
+      toast.success(status === 'approved' ? 'Đã duyệt khiếu nại (bạn có thể thêm xử phạt tương ứng)' : 'Đã từ chối khiếu nại');
+      loadReports();
+      const updatedReport = await refereeApi.getReportById(token, editReport._id);
+      setEditReport(updatedReport);
+      setActiveReport(updatedReport);
+      setComplaintNoteDraft((prev) => {
+        const next = { ...prev };
+        delete next[complaintId];
+        return next;
+      });
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setUpdatingComplaint(false);
     }
   };
 
@@ -1444,6 +1473,90 @@ export function RefereeDashboard() {
                         Thêm lệnh thú y
                       </Button>
                     </div>
+                  )}
+                </section>
+
+                <section>
+                  <h3 className="font-semibold text-[#23201A] mb-2">Khiếu nại từ người tham gia</h3>
+                  {editReport.complaints && editReport.complaints.length > 0 ? (
+                    <ul className="space-y-2 mb-3">
+                      {editReport.complaints.map((comp) => {
+                        const horseIdVal = typeof comp.targetHorseId === 'object' ? comp.targetHorseId?._id : comp.targetHorseId;
+                        const targetHorse = editRaceRegs.find((r) => String((r.horseId as any)?._id) === String(horseIdVal))?.horseId as any;
+                        const horseName = comp.targetHorseId?.name || targetHorse?.name || comp.targetHorseId;
+                        return (
+                          <li key={comp._id} className="flex flex-col gap-2 rounded-lg border border-[#E3DCCB] px-3 py-2 text-sm bg-white">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <div className="font-medium text-[#23201A]">
+                                  Người gửi: {comp.submittedBy?.fullName || comp.submittedBy} ({comp.role === 'owner' ? 'Chủ ngựa' : 'Nài ngựa'})
+                                </div>
+                                <div className="text-[#5C564A] mt-1">
+                                  <strong>Ngựa bị khiếu nại:</strong> {horseName}
+                                </div>
+                                <div className="text-[#5C564A] mt-1">
+                                  <strong>Lý do:</strong> {comp.reason}
+                                </div>
+                              </div>
+                              <div>
+                                <Chip
+                                  label={comp.status === 'pending' ? 'Chờ duyệt' : comp.status === 'approved' ? 'Đã duyệt' : 'Từ chối'}
+                                  size="small"
+                                  sx={{
+                                    bgcolor: comp.status === 'pending' ? '#fef3c7' : comp.status === 'approved' ? '#dcfce7' : '#fee2e2',
+                                    color: comp.status === 'pending' ? '#d97706' : comp.status === 'approved' ? '#166534' : '#991b1b',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.7rem'
+                                  }}
+                                />
+                              </div>
+                            </div>
+                            
+                            {comp.status === 'pending' && !readOnly && (
+                              <div className="mt-2 pt-2 border-t border-[#E3DCCB]">
+                                <TextField
+                                  fullWidth
+                                  size="small"
+                                  label="Ghi chú của trọng tài (tùy chọn)"
+                                  value={complaintNoteDraft[comp._id] || ''}
+                                  onChange={(e) => setComplaintNoteDraft({ ...complaintNoteDraft, [comp._id]: e.target.value })}
+                                  sx={{ mb: 1, '& .MuiInputLabel-root': { color: '#7A7468' }, '& .MuiOutlinedInput-root': { color: '#23201A', '& fieldset': { borderColor: '#C9C2B0' } } }}
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="small"
+                                    variant="contained"
+                                    color="success"
+                                    disabled={updatingComplaint}
+                                    onClick={() => handleUpdateComplaint(comp._id, 'approved')}
+                                    sx={{ textTransform: 'none', boxShadow: 'none' }}
+                                  >
+                                    Duyệt
+                                  </Button>
+                                  <Button
+                                    size="small"
+                                    variant="outlined"
+                                    color="error"
+                                    disabled={updatingComplaint}
+                                    onClick={() => handleUpdateComplaint(comp._id, 'rejected')}
+                                    sx={{ textTransform: 'none' }}
+                                  >
+                                    Từ chối
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                            {comp.status !== 'pending' && comp.refereeNote && (
+                              <div className="mt-1 pt-1 border-t border-[#E3DCCB] text-[#5C564A]">
+                                <strong>Ghi chú TT:</strong> {comp.refereeNote}
+                              </div>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : (
+                    <p className="text-sm italic text-[#7A7468] mb-3">Không có khiếu nại nào.</p>
                   )}
                 </section>
 

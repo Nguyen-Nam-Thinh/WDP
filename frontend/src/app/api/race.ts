@@ -149,4 +149,15 @@ export const raceApi = {
     if (!res.ok) throw new Error(getApiErrorMessage(json.message));
     return json.data;
   },
+
+  submitComplaint: async (token: string, raceId: string, data: { targetHorseId: string; reason: string }): Promise<any> => {
+    const res = await fetchWithAuth(`${API_URL}/races/${raceId}/complaints`, {
+      method: "POST",
+      headers: { ...authHeader(token), "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(getApiErrorMessage(json.message));
+    return json.data;
+  },
 };

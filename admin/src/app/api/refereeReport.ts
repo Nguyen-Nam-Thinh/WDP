@@ -88,6 +88,7 @@ export interface AdminRefereeReport {
     vetOrders?: AdminVetOrder[];
   };
   incidents: AdminIncident[];
+  complaints?: any[];
   createdAt: string;
 }
 

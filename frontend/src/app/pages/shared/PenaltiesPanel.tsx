@@ -81,7 +81,7 @@ export function PenaltiesPanel({ token, highlight, onPaid }: Props) {
 
   if (tickets.length === 0) {
     return (
-      <p className="text-sm text-slate-500">Không có phiếu phạt steward</p>
+      <p className="text-sm text-slate-500">Không có phiếu phạt</p>
     );
   }
 

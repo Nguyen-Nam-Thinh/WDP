@@ -584,6 +584,8 @@ async function listReportsForAdmin({ page = 1, limit = 10, status, phase } = {})
       .populate('submittedBy', 'fullName email')
       .populate('reviewedBy', 'fullName email')
       .populate('preRaceReviewedBy', 'fullName email')
+      .populate('complaints.submittedBy', 'fullName email')
+      .populate('complaints.targetHorseId', 'name')
       .sort(phase === 'prerace' ? { preRaceSubmittedAt: -1, createdAt: -1 } : { submittedAt: -1, createdAt: -1 })
       .skip(skip)
       .limit(limit),
@@ -983,7 +985,83 @@ function populateReport(report) {
     { path: 'reviewedBy', select: 'fullName email' },
     { path: 'preRaceReviewedBy', select: 'fullName email' },
     { path: 'incidents.horseId', select: 'name breed' },
+    { path: 'complaints.submittedBy', select: 'fullName email' },
+    { path: 'complaints.targetHorseId', select: 'name' },
   ]);
+}
+
+async function submitComplaint(raceId, userId, role, data) {
+  const race = await Race.findById(raceId);
+  if (!race) throw new AppError(404, 'Race not found');
+  if (race.status === 'official') throw new AppError(400, 'Không thể khiếu nại cuộc đua đã Official');
+
+  const report = await RefereeReport.findOne({ raceId });
+  if (!report) throw new AppError(404, 'Biên bản trọng tài chưa được tạo');
+
+  const { targetHorseId, reason } = data;
+  if (!targetHorseId || !reason) throw new AppError(400, 'Thiếu thông tin khiếu nại');
+
+  report.complaints.push({
+    submittedBy: userId,
+    role,
+    targetHorseId,
+    reason,
+    status: 'pending',
+  });
+
+  await report.save();
+  return report.complaints[report.complaints.length - 1];
+}
+
+async function updateComplaint(reportId, complaintId, refereeId, updateData) {
+  const report = await RefereeReport.findOne({ _id: reportId, refereeId });
+  if (!report) throw new AppError(404, 'Biên bản không tìm thấy hoặc bạn không có quyền');
+
+  const complaint = report.complaints.id(complaintId);
+  if (!complaint) throw new AppError(404, 'Khiếu nại không tồn tại');
+
+  const previousStatus = complaint.status;
+  if (updateData.status) complaint.status = updateData.status;
+  if (updateData.refereeNote !== undefined) complaint.refereeNote = updateData.refereeNote;
+
+  // Khi referee duyệt khiếu nại -> tự động DQ ngựa bị khiếu nại và cập nhật xếp hạng
+  if (updateData.status === 'approved' && previousStatus !== 'approved') {
+    const { RaceResult } = require('../models/race_result.model');
+    const { rebuildOfficialOrder } = require('./race-result-order.helper');
+
+    const race = await Race.findById(report.raceId);
+    if (!race) throw new AppError(404, 'Không tìm thấy cuộc đua');
+    if (race.status !== 'finished') throw new AppError(400, 'Chỉ DQ sau khi cuộc đua đã finished');
+
+    // Tìm kết quả của ngựa bị khiếu nại
+    const result = await RaceResult.findOne({ raceId: report.raceId, horseId: complaint.targetHorseId });
+    if (!result) throw new AppError(404, 'Không tìm thấy kết quả ngựa bị khiếu nại');
+
+    // DQ ngựa
+    result.disqualified = true;
+    await result.save();
+
+    // Thêm incident vào báo cáo để ghi nhận
+    report.incidents.push({
+      horseId: complaint.targetHorseId,
+      type: 'other',
+      action: `Khiếu nại được duyệt: ${complaint.reason}`,
+      source: 'manual',
+      status: 'resolved',
+      flaggedAt: new Date(),
+      resolution: {
+        verdict: 'disqualified',
+        note: `Khiếu nại từ ${complaint.role} — ${complaint.reason}`,
+        resolvedAt: new Date(),
+      },
+    });
+
+    // Rebuild xếp hạng chính thức
+    await rebuildOfficialOrder(report.raceId);
+  }
+
+  await report.save();
+  return populateReport(report);
 }
 
 module.exports = {
@@ -1007,4 +1085,6 @@ module.exports = {
   listReportsForAdmin,
   approveReport,
   rejectReport,
+  submitComplaint,
+  updateComplaint,
 };

@@ -128,6 +128,7 @@ router.patch('/reports/:id', authorize('referee'), validate(updateReportSchema),
 router.post('/reports/:id/submit-prerace', authorize('referee'), refereeController.submitPreRaceReport);
 router.post('/reports/:id/submit', authorize('referee'), refereeController.submitReport);
 router.get('/reports/:id/pdf', authorize('referee', 'admin'), refereeController.downloadReportPdf);
+router.patch('/reports/:id/complaints/:complaintId', authorize('referee'), refereeController.updateComplaint);
 
 // Admin review
 router.get('/admin/reports', authorize('admin'), refereeController.listReportsAdmin);

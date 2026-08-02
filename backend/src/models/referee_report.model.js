@@ -114,11 +114,25 @@ const incidentSchema = new mongoose.Schema(
   { _id: true },
 );
 
+const complaintSchema = new mongoose.Schema(
+  {
+    submittedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    role: { type: String, enum: ['owner', 'jockey'], required: true },
+    targetHorseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Horse', required: true },
+    reason: { type: String, required: true, trim: true },
+    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+    refereeNote: { type: String, trim: true, default: '' },
+    createdAt: { type: Date, default: Date.now },
+  },
+  { _id: true }
+);
+
 const refereeReportSchema = new mongoose.Schema(
   {
     raceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Race', required: true, unique: true },
     refereeId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     incidents: { type: [incidentSchema], default: [] },
+    complaints: { type: [complaintSchema], default: [] },
     preCheckSummary: { type: String, trim: true, default: '' }, // deprecated — lazy migrate
     preRaceReport: { type: preRaceReportSchema, default: () => ({}) },
     postRaceReport: { type: postRaceReportSchema, default: () => ({}) },
