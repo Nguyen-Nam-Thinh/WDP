@@ -8,7 +8,7 @@ const walletService = require('./wallet.service');
 const { AppError } = require('../middleware/error.middleware');
 const { REFUND_RATES, PRE_CHECK_FAIL_CATEGORIES } = require('../config/constants');
 const { clearPredictionCache } = require('./ai-prediction.service');
-const { appendLateScratching } = require('./referee-prerace.helper');
+const { appendLateScratching, removeLateScratching } = require('./referee-prerace.helper');
 
 function calcHorseAge(birthDate) {
   const now = new Date();
@@ -83,7 +83,7 @@ async function registerHorse(ownerId, { raceId, horseId, jockeyId }) {
     await walletService.debitWallet(
       wallet._id, ownerId, race.registrationFee,
       'registration_fee',
-      `Registration fee: ${race.name}`,
+      `Phí đăng ký: ${race.name}`,
       null, 'Race', session,
     );
 
@@ -270,15 +270,65 @@ async function updatePreCheck(registrationId, refereeId, { status, note, categor
   if (!race.refereeId || race.refereeId.toString() !== refereeId) {
     throw new AppError(403, 'Chỉ trọng tài được phân công mới có thể thực hiện kiểm tra');
   }
-  if (reg.status !== 'active') throw new AppError(400, `Đăng ký đã ở trạng thái ${reg.status}`);
+  if (!['active', 'disqualified'].includes(reg.status)) {
+    throw new AppError(400, `Đăng ký đã ở trạng thái ${reg.status}`);
+  }
 
   if (status === 'failed') {
     if (!category || !PRE_CHECK_FAIL_CATEGORIES.includes(category)) {
-      throw new AppError(400, 'Category is required when marking pre-check as failed');
+      throw new AppError(400, 'Cần chọn phân loại khi đánh Không Đạt');
     }
   }
 
+  const prevStatus = reg.preCheckResult?.status;
   const resolvedCategory = status === 'failed' ? category : null;
+
+  // failed → passed: khôi phục đăng ký + thu lại hoàn phí (nếu có)
+  if (status === 'passed' && (prevStatus === 'failed' || reg.status === 'disqualified')) {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+      const refundToClaw = reg.refundAmount || 0;
+      if (refundToClaw > 0) {
+        const wallet = await Wallet.findOne({ userId: reg.ownerId }).session(session);
+        if (!wallet) throw new AppError(404, 'Không tìm thấy ví');
+        if (wallet.balance < refundToClaw) {
+          throw new AppError(400, 'Số dư chủ ngựa không đủ để thu lại hoàn phí khi đổi sang Đạt');
+        }
+        await walletService.debitWallet(
+          wallet._id, reg.ownerId, refundToClaw,
+          'registration_fee',
+          `Thu lại hoàn phí: đổi Không Đạt → Đạt (${race.name})`,
+          reg._id, 'Registration', session,
+        );
+      }
+
+      reg.status = 'active';
+      reg.refundAmount = 0;
+      reg.preCheckResult = {
+        status: 'passed',
+        category: null,
+        note: note || '',
+        checkedAt: new Date(),
+      };
+      await reg.save({ session });
+
+      await removeLateScratching({ raceId: race._id, registrationId: reg._id }, session);
+      await maybeMarkStewardsReady(race._id, session);
+      await session.commitTransaction();
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+
+    return Registration.findById(registrationId)
+      .populate('raceId', 'name grade scheduledTime status stewardsReady')
+      .populate('horseId', 'name breed gender currentGrade')
+      .populate('ownerId', 'fullName email');
+  }
+
   reg.preCheckResult = {
     status,
     category: resolvedCategory,
@@ -293,13 +343,16 @@ async function updatePreCheck(registrationId, refereeId, { status, note, categor
       if (horse?.name) horseName = horse.name;
     }
 
-    const refundAmount = Math.floor(reg.feePaid * REFUND_RATES.disqualifyOwner);
+    const alreadyDq = reg.status === 'disqualified';
+    const refundAmount = alreadyDq
+      ? (reg.refundAmount || 0)
+      : Math.floor(reg.feePaid * REFUND_RATES.disqualifyOwner);
 
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-      if (refundAmount > 0) {
+      if (!alreadyDq && refundAmount > 0) {
         const wallet = await Wallet.findOne({ userId: reg.ownerId }).session(session);
         if (!wallet) throw new AppError(404, 'Không tìm thấy ví');
         await walletService.creditWallet(
@@ -311,7 +364,7 @@ async function updatePreCheck(registrationId, refereeId, { status, note, categor
       }
 
       reg.status = 'disqualified';
-      reg.refundAmount = refundAmount;
+      if (!alreadyDq) reg.refundAmount = refundAmount;
       await reg.save({ session });
 
       await appendLateScratching(

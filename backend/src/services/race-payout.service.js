@@ -71,7 +71,7 @@ async function settleOfficialPayouts(raceId, outerSession) {
               ownerId,
               prizeAmount,
               'prize_payout',
-              `Prize P${result.position}: ${race.name}`,
+              `Tiền thưởng hạng ${result.position}: ${race.name}`,
               race._id,
               'Race',
               session,

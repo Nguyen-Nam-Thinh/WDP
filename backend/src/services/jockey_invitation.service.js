@@ -141,24 +141,29 @@ async function acceptInvitation(invitationId, jockeyId) {
 
     // Wallet transaction nếu có phí
     if (agreedFee > 0) {
-      const [ownerWallet, jockeyWallet] = await Promise.all([
+      const [ownerWallet, jockeyWallet, horse, race] = await Promise.all([
         Wallet.findOne({ userId: invitation.ownerId }).session(session),
         Wallet.findOne({ userId: jockeyId }).session(session),
+        Horse.findById(invitation.horseId).select('name').session(session),
+        Race.findById(invitation.raceId).select('name').session(session),
       ]);
       if (!ownerWallet) throw new AppError(404, 'Không tìm thấy ví của chủ ngựa');
       if (!jockeyWallet) throw new AppError(404, 'Không tìm thấy ví của kỵ sĩ');
 
+      const horseName = horse?.name ?? 'ngựa';
+      const raceName = race?.name ?? 'cuộc đua';
+
       await walletService.debitWallet(
         ownerWallet._id, invitation.ownerId, agreedFee,
         'jockey_hire_fee',
-        `Phí thuê jockey cho race (invitation ${invitation._id})`,
+        `Phí thuê kỵ sĩ cho ngựa ${horseName} — ${raceName}`,
         invitation._id, 'JockeyInvitation',
         session,
       );
       await walletService.creditWallet(
         jockeyWallet._id, jockeyId, agreedFee,
         'jockey_hire_income',
-        `Thu nhập từ hợp đồng thuê (invitation ${invitation._id})`,
+        `Thu nhập thuê cưỡi ngựa ${horseName} — ${raceName}`,
         invitation._id, 'JockeyInvitation',
         session,
       );

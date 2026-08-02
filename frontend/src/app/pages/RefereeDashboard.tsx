@@ -17,7 +17,7 @@ import { useAuth } from '../hooks/useAuth';
 import {
   refereeApi, type RefereeReport, type Incident, type TrackCondition,
   type UpdateRefereeReportPayload, type IncidentVerdict,
-  type PerformanceExplanation, type VetOrder, type PenaltyReasonCode,
+  type PerformanceExplanation, type VetOrder,
   type PostRaceVetOrderType,
 } from '../api/referee';
 import { registrationApi, type Registration, type PreCheckFailCategory } from '../api/registration';
@@ -35,31 +35,23 @@ const INCIDENT_TYPES = [
 ];
 
 const FAIL_CATEGORIES: { value: PreCheckFailCategory; label: string }[] = [
-  { value: 'veterinary', label: 'VETERINARY — Thú y' },
-  { value: 'jockey', label: 'JOCKEY — Nài ngựa' },
-  { value: 'gear', label: 'GEAR — Trang bị' },
-  { value: 'administrative', label: 'ADMINISTRATIVE — Hành chính' },
+  { value: 'veterinary', label: 'Thú y' },
+  { value: 'jockey', label: 'Nài ngựa' },
+  { value: 'gear', label: 'Trang bị' },
+  { value: 'administrative', label: 'Hành chính' },
 ];
 
 const VERDICT_OPTIONS: { value: IncidentVerdict; label: string }[] = [
   { value: 'none', label: 'Không xử lý' },
   { value: 'warning', label: 'Cảnh cáo' },
   { value: 'fine', label: 'Phạt tiền' },
-  { value: 'disqualified', label: 'Disqualified' },
-];
-
-const REASON_CODES: { value: PenaltyReasonCode; label: string }[] = [
-  { value: 'interference', label: 'Interference / ép làn' },
-  { value: 'whip', label: 'Whip rules' },
-  { value: 'careless', label: 'Careless riding' },
-  { value: 'late', label: 'Late to parade / weigh-in' },
-  { value: 'other', label: 'Khác' },
+  { value: 'disqualified', label: 'Loại' },
 ];
 
 const VET_ORDER_TYPES: { value: PostRaceVetOrderType; label: string }[] = [
-  { value: 'blood', label: 'Máu (blood)' },
-  { value: 'urine', label: 'Nước tiểu (urine)' },
-  { value: 'endoscopy', label: 'Nội soi (endoscopy)' },
+  { value: 'blood', label: 'Máu' },
+  { value: 'urine', label: 'Nước tiểu' },
+  { value: 'endoscopy', label: 'Nội soi' },
   { value: 'clinical', label: 'Khám lâm sàng' },
 ];
 
@@ -74,12 +66,50 @@ const REPORT_STATUS_META: Record<string, { label: string; color: string; bg: str
 const isReportEditableStatus = (status?: string) => status === 'draft' || status === 'rejected';
 const isPreRaceEditableStatus = (status?: string) => status === 'draft' || status === 'rejected' || !status;
 
-const TRACK_OPTIONS: TrackCondition[] = ['Firm', 'Good', 'Soft', 'Heavy', 'Synthetic'];
+const TRACK_OPTIONS: { value: TrackCondition; label: string }[] = [
+  { value: 'Firm', label: 'Cứng' },
+  { value: 'Good', label: 'Tốt' },
+  { value: 'Soft', label: 'Mềm' },
+  { value: 'Heavy', label: 'Nặng' },
+  { value: 'Synthetic', label: 'Nhân tạo' },
+];
+
+const RACE_STATUS_VN: Record<string, string> = {
+  open: 'Đang mở',
+  closed: 'Đã đóng',
+  pre_check: 'Kiểm tra trước đua',
+  running: 'Đang chạy',
+  finished: 'Đã kết thúc',
+  cancelled: 'Đã hủy',
+};
+
+const EMPTY_NOTE = 'Chưa có';
+const NO_PENALTY = 'Không có';
+
+function incidentHorseName(inc: Incident, regs: Registration[] = []): string {
+  if (inc.horseId && typeof inc.horseId === 'object' && 'name' in inc.horseId) {
+    return (inc.horseId as { name: string }).name;
+  }
+  const hid = typeof inc.horseId === 'string' ? inc.horseId : (inc.horseId as any)?._id;
+  if (hid) {
+    const reg = regs.find((r) => {
+      const rh = r.horseId as any;
+      return rh?._id === hid || String(rh) === String(hid) || String(r.horseId) === String(hid);
+    });
+    if ((reg?.horseId as any)?.name) return (reg.horseId as any).name;
+  }
+  if (inc.registrationId) {
+    const rid = typeof inc.registrationId === 'string' ? inc.registrationId : (inc.registrationId as any)?._id;
+    const reg = regs.find((r) => r._id === rid);
+    if ((reg?.horseId as any)?.name) return (reg.horseId as any).name;
+  }
+  return 'Ngựa';
+}
 
 const REFEREE_NAV: NavItem[] = [
   { to: '/referee', label: 'Tổng Quan', icon: <Home /> },
   { to: '/referee/pre-check', label: 'Kiểm Tra Trước Đua', icon: <ClipboardCheck /> },
-  { to: '/referee/live', label: 'Live Flag', icon: <Flag /> },
+  { to: '/referee/live', label: 'Theo dõi trận đấu', icon: <Flag /> },
   { to: '/referee/results', label: 'Kết Quả', icon: <Award /> },
   { to: '/referee/reports', label: 'Báo Cáo Chính Thức', icon: <FileText /> },
 ];
@@ -146,20 +176,17 @@ export function RefereeDashboard() {
   const [resolveIncident, setResolveIncident] = useState<Incident | null>(null);
   const [resolveForm, setResolveForm] = useState({
     type: 'other' as Incident['type'],
-    description: '',
     action: '',
     verdict: 'none' as IncidentVerdict,
     fineAmount: '',
     fineTargetRole: 'owner' as 'owner' | 'jockey',
-    reasonCode: '' as PenaltyReasonCode | '',
-    suspensionDays: '',
     note: '',
   });
   const [resolving, setResolving] = useState(false);
 
   // ── Stats ──
   const stats = [
-    { label: 'Race Được Phân Công', value: String(assignedRaces.length), icon: ClipboardCheck, color: 'from-[#C9A227] to-[#b8960a]' },
+    { label: 'Cuộc Đua Được Phân Công', value: String(assignedRaces.length), icon: ClipboardCheck, color: 'from-[#C9A227] to-[#b8960a]' },
     { label: 'Chờ Kiểm Tra', value: String(assignedRaces.filter(r => r.status === 'pre_check').length), icon: Clock, color: 'from-amber-500 to-amber-700' },
     { label: 'Sự Cố Ghi Nhận', value: String(reports.reduce((s, r) => s + r.incidents.length, 0)), icon: AlertTriangle, color: 'from-red-500 to-red-700' },
     { label: 'Báo Cáo Chờ Duyệt', value: String(reports.filter(r => r.status === 'pending_approval' || r.status === 'submitted').length), icon: CheckCircle, color: 'from-indigo-500 to-indigo-700' },
@@ -255,7 +282,7 @@ export function RefereeDashboard() {
       );
       const allDone = updatedRegs.every(r => r.preCheckResult?.status === 'passed' || r.preCheckResult?.status === 'failed');
       if (allDone) {
-        toast.success('Pre-check xong — Pre-race Report nháp đã sẵn sàng');
+        toast.success('Kiểm tra xong — báo cáo trước trận nháp đã sẵn sàng');
       }
       const nextPending = updatedRegs.findIndex(
         (r, i) => i > selectedRegIdx && r.preCheckResult?.status === 'pending'
@@ -277,7 +304,7 @@ export function RefereeDashboard() {
 
   const confirmFailPreCheck = async () => {
     if (!failCategory) {
-      toast.error('Vui lòng chọn phân loại lỗi (Category)');
+      toast.error('Vui lòng chọn phân loại lỗi');
       return;
     }
     await handleSubmitPreCheck('failed', { category: failCategory, note: failNote });
@@ -289,11 +316,11 @@ export function RefereeDashboard() {
     try {
       const full = await refereeApi.getReportById(token, reportId);
       if (!full.preRaceReport?.trackCondition) {
-        toast.error('Vui lòng chọn Track Condition trước khi nộp Pre-race');
+        toast.error('Vui lòng chọn điều kiện mặt đường trước khi nộp báo cáo trước trận');
         return;
       }
       await refereeApi.submitPreRace(token, reportId);
-      toast.success('Đã nộp Pre-race Report — chờ Admin duyệt trước khi mô phỏng');
+      toast.success('Đã nộp báo cáo trước trận — chờ Admin duyệt');
       loadReports();
     } catch (err: any) {
       toast.error(err.message);
@@ -306,11 +333,11 @@ export function RefereeDashboard() {
       const full = await refereeApi.getReportById(token, reportId);
       const drafts = (full.incidents || []).filter((i) => i.status === 'draft');
       if (drafts.length > 0) {
-        toast.error(`Còn ${drafts.length} sự cố draft chưa resolve — không thể nộp`);
+        toast.error(`Còn ${drafts.length} sự cố chưa xử lý — không thể nộp`);
         return;
       }
       await refereeApi.submitReport(token, reportId);
-      toast.success('Đã nộp Post-race Report — chờ Admin duyệt Official');
+      toast.success('Đã nộp báo cáo sau trận — chờ Admin duyệt');
       loadReports();
     } catch (err: any) {
       toast.error(err.message);
@@ -410,7 +437,7 @@ export function RefereeDashboard() {
     setSavingReport(true);
     try {
       await refereeApi.updateReport(token, editReport._id, payload);
-      toast.success(editDialogPhase === 'prerace' ? 'Đã lưu Pre-race Report' : 'Đã lưu Post-race Report');
+      toast.success(editDialogPhase === 'prerace' ? 'Đã lưu báo cáo trước trận' : 'Đã lưu báo cáo sau trận');
       setEditReportDialog(false);
       loadReports();
     } catch (err: any) {
@@ -424,13 +451,10 @@ export function RefereeDashboard() {
     setResolveIncident(incident);
     setResolveForm({
       type: incident.type || 'other',
-      description: incident.description || '',
       action: incident.action || '',
       verdict: (incident.resolution?.verdict as IncidentVerdict) || 'none',
       fineAmount: incident.resolution?.fineAmount != null ? String(incident.resolution.fineAmount) : '',
       fineTargetRole: (incident.resolution?.fineTargetRole as 'owner' | 'jockey') || 'owner',
-      reasonCode: (incident.resolution?.reasonCode as PenaltyReasonCode) || '',
-      suspensionDays: incident.resolution?.suspensionDays != null ? String(incident.resolution.suspensionDays) : '',
       note: incident.resolution?.note || '',
     });
     setResolveDialog(true);
@@ -442,44 +466,43 @@ export function RefereeDashboard() {
     if (resolveForm.verdict === 'fine') {
       const amount = Number(resolveForm.fineAmount);
       if (!Number.isFinite(amount) || amount <= 0) {
-        toast.error('fineAmount phải > 0 khi phạt tiền');
+        toast.error('Số tiền phạt phải lớn hơn 0');
         return;
       }
       if (!resolveForm.fineTargetRole) {
-        toast.error('Chọn Owner hoặc Jockey chịu phạt');
+        toast.error('Chọn Chủ ngựa hoặc Nài chịu phạt');
         return;
       }
     }
     setResolving(true);
     try {
-      const suspensionDays = resolveForm.suspensionDays.trim()
-        ? Number(resolveForm.suspensionDays)
-        : null;
       const updated = await refereeApi.resolveIncident(token, reportCtx._id, resolveIncident._id, {
         type: resolveForm.type,
-        description: resolveForm.description || undefined,
         action: resolveForm.action,
         resolution: {
           verdict: resolveForm.verdict,
           fineAmount: resolveForm.verdict === 'fine' ? Number(resolveForm.fineAmount) : undefined,
           fineTargetRole: resolveForm.verdict === 'fine' ? resolveForm.fineTargetRole : undefined,
-          reasonCode: resolveForm.reasonCode || null,
-          suspensionDays: suspensionDays != null && Number.isFinite(suspensionDays) ? suspensionDays : null,
+          reasonCode: null,
+          suspensionDays: null,
           note: resolveForm.note || undefined,
         },
       });
-      setEditReport(updated);
+      const wasEdit = resolveIncident.status === 'resolved';
       setActiveReport(updated);
       setResolveDialog(false);
       setResolveIncident(null);
       toast.success(
-        resolveForm.verdict === 'disqualified'
-          ? 'Đã DQ — thứ hạng đã dồn lại (chưa phát tiền)'
-          : resolveForm.verdict === 'fine'
-            ? 'Đã tạo phiếu phạt — user tự nộp'
-            : 'Đã resolve incident',
+        wasEdit
+          ? 'Đã cập nhật xử phạt trong báo cáo sau trận'
+          : resolveForm.verdict === 'disqualified'
+            ? 'Đã loại — thứ hạng đã dồn lại (chưa phát tiền)'
+            : resolveForm.verdict === 'fine'
+              ? 'Đã ghi xử phạt — phiếu phạt/treo giò gửi khi Admin duyệt Official'
+              : 'Đã xử lý sự cố — đã lưu vào báo cáo sau trận',
       );
       loadReports();
+      await openEditReport(updated, 'postrace');
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -659,7 +682,7 @@ export function RefereeDashboard() {
                   {[
                     { label: 'Kiểm Tra Ngựa', icon: ClipboardCheck, to: '/referee/pre-check', badge: (assignedRaces.filter(r => r.status === 'pre_check').length || null) as number | null },
                     { label: 'Xem Báo Cáo', icon: FileText, to: '/referee/reports', badge: null as number | null },
-                    { label: 'Live Flag', icon: Flag, to: '/referee/live', badge: (assignedRaces.filter(r => r.status === 'running').length || null) as number | null },
+                    { label: 'Theo dõi trận đấu', icon: Flag, to: '/referee/live', badge: (assignedRaces.filter(r => r.status === 'running').length || null) as number | null },
                     { label: 'Xác nhận kết quả', icon: Award, to: '/referee/results', badge: (assignedRaces.filter(r => r.status === 'finished' && !r.resultsConfirmedAt).length || null) as number | null },
                     { label: 'Cuộc Đua Được Phân Công', icon: ClipboardCheck, to: '/referee/pre-check', badge: null as number | null },
                     { label: 'Ghi Nhận Sự Cố', icon: AlertTriangle, to: '/referee/reports', badge: (reports.filter(r => r.status === 'draft').length || null) as number | null },
@@ -743,7 +766,7 @@ export function RefereeDashboard() {
                               <div className="flex items-center gap-2 flex-wrap">
                                 <h3 className="font-serif text-xl font-bold text-foreground">{race.name}</h3>
                                 <Chip label={race.grade} size="small" sx={{ bgcolor: '#C9A227', color: '#23201A', fontWeight: 'bold', fontSize: '0.7rem' }} />
-                                <Chip label={race.status === 'pre_check' ? 'Cần Kiểm Tra' : race.status} size="small"
+                                <Chip label={race.status === 'pre_check' ? 'Cần Kiểm Tra' : (RACE_STATUS_VN[race.status] || race.status)} size="small"
                                   sx={{ bgcolor: isPrecheckable ? 'rgba(201,162,39,0.2)' : 'rgba(100,116,139,0.2)', color: isPrecheckable ? '#8F7318' : '#7A7468', border: `1px solid ${isPrecheckable ? '#C9A227' : '#475569'}`, fontWeight: 'bold' }} />
                               </div>
                               <div className="text-slate-400 text-sm mt-0.5">
@@ -824,7 +847,7 @@ export function RefereeDashboard() {
               <div className="bg-card rounded-2xl border border-border p-12 text-center">
                 <FileText className="w-12 h-12 text-slate-600 mx-auto mb-4" />
                 <p className="text-slate-400">
-                  {reportsPhase === 'prerace' ? 'Chưa có Pre-race Report' : 'Chưa có báo cáo sau trận (cần race finished)'}
+                  {reportsPhase === 'prerace' ? 'Chưa có báo cáo trước trận' : 'Chưa có báo cáo sau trận (cần cuộc đua đã kết thúc)'}
                 </p>
               </div>
             ) : (
@@ -859,7 +882,7 @@ export function RefereeDashboard() {
                           <td className="px-6 py-4">
                             <div className="text-foreground font-medium">{(report.raceId as any)?.name}</div>
                             <div className="text-slate-500 text-xs mt-0.5">
-                              {(report.raceId as any)?.grade} · {raceStatus}
+                              {(report.raceId as any)?.grade} · {RACE_STATUS_VN[raceStatus] || raceStatus}
                             </div>
                             {reportsPhase === 'prerace' && preStatus === 'rejected' && report.preRaceRejectReason && (
                               <div className="text-red-400 text-xs mt-1">Từ chối: {report.preRaceRejectReason}</div>
@@ -871,18 +894,9 @@ export function RefereeDashboard() {
                           <td className="px-6 py-4 text-slate-300 text-sm">{new Date(report.createdAt).toLocaleDateString('vi-VN')}</td>
                           {reportsPhase === 'postrace' && (
                             <td className="px-4 py-4 text-center">
-                              <button
-                                type="button"
-                                className={`font-bold underline-offset-2 hover:underline ${draftFlags > 0 ? 'text-amber-400' : 'text-slate-500'}`}
-                                onClick={() => {
-                                  setActiveReport(report);
-                                  setIncidentDialog(true);
-                                }}
-                                title="Xử lý sự cố Flag"
-                              >
+                              <span className={`font-bold ${draftFlags > 0 ? 'text-amber-400' : 'text-slate-500'}`}>
                                 {report.incidents.length}
-                                {draftFlags > 0 ? ` (${draftFlags} draft)` : ''}
-                              </button>
+                              </span>
                             </td>
                           )}
                           <td className="px-4 py-4">
@@ -897,6 +911,25 @@ export function RefereeDashboard() {
                                     sx={{ borderColor: '#C9C2B0', color: '#23201A', textTransform: 'none', fontSize: '0.75rem', '&:hover': { borderColor: '#C9A227', color: '#C9A227' } }}>
                                     Sửa
                                   </Button>
+                                  {reportsPhase === 'postrace' && draftFlags > 0 && (
+                                    <Button
+                                      size="small"
+                                      variant="outlined"
+                                      onClick={async () => {
+                                        try {
+                                          const full = await refereeApi.getReportById(token!, report._id);
+                                          setActiveReport(full);
+                                          setResolveIncident(null);
+                                          setIncidentDialog(true);
+                                        } catch (err: any) {
+                                          toast.error(err.message);
+                                        }
+                                      }}
+                                      sx={{ borderColor: '#8C2F1B', color: '#c45c45', textTransform: 'none', fontSize: '0.75rem', '&:hover': { bgcolor: 'rgba(140,47,27,0.08)' } }}
+                                    >
+                                      Xử lý Flag
+                                    </Button>
+                                  )}
                                   <Button
                                     size="small"
                                     variant="outlined"
@@ -959,7 +992,7 @@ export function RefereeDashboard() {
                     <div key={reg._id} onClick={() => setSelectedRegIdx(idx)}
                       className={`p-3 rounded-xl cursor-pointer border transition-all ${selectedRegIdx === idx ? 'bg-[#C9A227]/15 border-[#C9A227]/40' : 'bg-muted/40 border-transparent hover:bg-muted/40'}`}>
                       <div className="text-foreground font-semibold text-sm">{horse?.name || '-'}</div>
-                      <div className="text-slate-400 text-xs mt-0.5">{(reg.jockeyId as any)?.fullName || 'Chưa có jockey'}</div>
+                      <div className="text-slate-400 text-xs mt-0.5">{(reg.jockeyId as any)?.fullName || 'Chưa có nài'}</div>
                       {preStatus === 'passed' && <div className="flex items-center gap-1 mt-1.5 text-emerald-400 text-xs font-medium"><CheckCircle className="w-3 h-3" /> ĐẠT</div>}
                       {preStatus === 'failed' && <div className="flex items-center gap-1 mt-1.5 text-red-400 text-xs font-medium"><X className="w-3 h-3" /> KHÔNG ĐẠT</div>}
                       {preStatus === 'pending' && <div className="mt-1.5 text-xs text-slate-500">Chờ kiểm tra</div>}
@@ -993,42 +1026,59 @@ export function RefereeDashboard() {
                       </div>
 
                       <div className="rounded-xl border border-[#E3DCCB] bg-[#FBF8F1] px-4 py-3 text-sm text-[#5C564A] mb-5">
-                        Kiểm tra thực tế ngoài sân. Tại đây chỉ ghi <strong>Đạt</strong> hoặc <strong>Không Đạt</strong>.
-                        Đổi nài / trang bị nhỏ → ghi ở <strong>Báo cáo nháp</strong> (Rider Changes / Gear Changes), không ghi ở pre-check.
+                        Kiểm tra thực tế ngoài sân. Tại đây ghi <strong>Đạt</strong> hoặc <strong>Không Đạt</strong>.
+                        Có thể sửa lại kết quả khi cuộc đua còn ở trạng thái kiểm tra trước đua.
+                        Đổi nài / trang bị nhỏ → ghi ở <strong>Báo cáo trước trận</strong> (Đổi nài / Đổi trang bị).
                       </div>
 
-                      {currentReg.preCheckResult?.status === 'passed' ? (
-                        <div className="flex items-center justify-center gap-2 bg-emerald-500/10 border border-emerald-500/30 rounded-xl py-4">
+                      {currentReg.preCheckResult?.status === 'passed' && (
+                        <div className="flex items-center justify-center gap-2 bg-emerald-500/10 border border-emerald-500/30 rounded-xl py-4 mb-3">
                           <CheckCircle className="w-5 h-5 text-emerald-400" />
                           <span className="text-emerald-400 font-bold text-lg">ĐÃ ĐẠT</span>
                         </div>
-                      ) : currentReg.preCheckResult?.status === 'failed' ? (
-                        <div className="flex flex-col items-center justify-center gap-1 bg-red-500/10 border border-red-500/30 rounded-xl py-4">
+                      )}
+                      {currentReg.preCheckResult?.status === 'failed' && (
+                        <div className="flex flex-col items-center justify-center gap-1 bg-red-500/10 border border-red-500/30 rounded-xl py-4 mb-3">
                           <div className="flex items-center gap-2">
                             <AlertTriangle className="w-5 h-5 text-red-400" />
                             <span className="text-red-400 font-bold text-lg">KHÔNG ĐẠT — Ngựa bị loại</span>
                           </div>
                           {currentReg.preCheckResult?.category && (
                             <span className="text-xs text-red-300 uppercase tracking-wide">
-                              {currentReg.preCheckResult.category}
+                              {FAIL_CATEGORIES.find((c) => c.value === currentReg.preCheckResult?.category)?.label
+                                || currentReg.preCheckResult.category}
                               {currentReg.preCheckResult.note ? ` — ${currentReg.preCheckResult.note}` : ''}
                             </span>
                           )}
                         </div>
-                      ) : pending ? (
+                      )}
+
+                      {(pending
+                        || currentReg.preCheckResult?.status === 'passed'
+                        || currentReg.preCheckResult?.status === 'failed') && (
                         <div className="flex gap-3">
-                          <Button variant="contained" fullWidth startIcon={<CheckCircle />} disabled={submittingCheck}
+                          <Button
+                            variant="contained"
+                            fullWidth
+                            startIcon={<CheckCircle />}
+                            disabled={submittingCheck || currentReg.preCheckResult?.status === 'passed'}
                             sx={{ background: '#1F3D2B', textTransform: 'none', fontWeight: 700, py: 1.5, '&:hover': { background: '#172D20' } }}
-                            onClick={() => handleSubmitPreCheck('passed')}>
-                            {submittingCheck ? <CircularProgress size={20} sx={{ color: 'white' }} /> : 'Đạt'}
+                            onClick={() => handleSubmitPreCheck('passed')}
+                          >
+                            {submittingCheck ? <CircularProgress size={20} sx={{ color: 'white' }} /> : pending ? 'Đạt' : 'Đổi thành Đạt'}
                           </Button>
-                          <Button variant="outlined" fullWidth startIcon={<AlertTriangle />} disabled={submittingCheck}
+                          <Button
+                            variant="outlined"
+                            fullWidth
+                            startIcon={<AlertTriangle />}
+                            disabled={submittingCheck || currentReg.preCheckResult?.status === 'failed'}
                             sx={{ borderColor: '#B42318', color: '#B42318', textTransform: 'none', fontWeight: 700, py: 1.5, '&:hover': { backgroundColor: 'rgba(180,35,24,0.1)', borderColor: '#dc2626' } }}
-                            onClick={openFailDialog}>
-                            Không Đạt
+                            onClick={openFailDialog}
+                          >
+                            {pending ? 'Không Đạt' : 'Đổi thành Không Đạt'}
                           </Button>
                         </div>
-                      ) : null}
+                      )}
                     </>
                   );
                 })()}
@@ -1056,12 +1106,12 @@ export function RefereeDashboard() {
                     setPreCheckOpen(false);
                     navigate(`/referee/reports?reportId=${report._id}`);
                   } catch (err: any) {
-                    toast.error(err.message || 'Không mở được Pre-race Report');
+                    toast.error(err.message || 'Không mở được báo cáo trước trận');
                   }
                 }}
                 sx={{ borderColor: '#C9A227', color: '#8F7318', textTransform: 'none', ml: 1 }}
               >
-                Mở Pre-race Report
+                Mở báo cáo trước trận
               </Button>
             </div>
           )}
@@ -1122,15 +1172,15 @@ export function RefereeDashboard() {
         <DialogTitle sx={{ color: '#23201A', borderBottom: '1px solid #E3DCCB', pb: 2 }}>
           {editDialogPhase === 'prerace'
             ? ((editReport?.preRaceStatus || 'draft') === 'rejected'
-              ? 'Sửa Pre-race (bị từ chối)'
+              ? 'Sửa báo cáo trước trận (bị từ chối)'
               : isPreRaceEditableStatus(editReport?.preRaceStatus)
-                ? 'Chỉnh Sửa Pre-race Report'
-                : 'Xem Pre-race Report')
+                ? 'Chỉnh sửa báo cáo trước trận'
+                : 'Xem báo cáo trước trận')
             : (editReport?.status === 'rejected'
-              ? 'Sửa Post-race (bị từ chối)'
+              ? 'Sửa báo cáo sau trận (bị từ chối)'
               : isReportEditableStatus(editReport?.status)
-                ? 'Chỉnh Sửa Post-race Report'
-                : 'Xem Post-race Report')}
+                ? 'Chỉnh sửa báo cáo sau trận'
+                : 'Xem báo cáo sau trận')}
           {' — '}{(editReport?.raceId as any)?.name}
         </DialogTitle>
         <DialogContent sx={{ paddingTop: '20px !important', overflowY: 'auto' }}>
@@ -1142,36 +1192,38 @@ export function RefereeDashboard() {
               : !isReportEditableStatus(editReport.status) || raceStatus !== 'finished';
             const lateScratchings = editReport.preRaceReport?.lateScratchings || [];
             const lineSections = [
-              { title: '3. Rider Changes', lines: editRiderChanges, draftKey: 'rider' as const, setLines: setEditRiderChanges },
-              { title: '4. Gear Changes', lines: editGearChanges, draftKey: 'gear' as const, setLines: setEditGearChanges },
-              { title: '5. Vet Checks', lines: editVetChecks, draftKey: 'vet' as const, setLines: setEditVetChecks },
+              { title: '3. Đổi nài', lines: editRiderChanges, draftKey: 'rider' as const, setLines: setEditRiderChanges },
+              { title: '4. Đổi trang bị', lines: editGearChanges, draftKey: 'gear' as const, setLines: setEditGearChanges },
+              { title: '5. Kiểm tra thú y', lines: editVetChecks, draftKey: 'vet' as const, setLines: setEditVetChecks },
             ];
 
             return (
               <div className="space-y-5">
                 {editDialogPhase === 'prerace' && editReport.preRaceStatus === 'rejected' && editReport.preRaceRejectReason && (
                   <div className="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    <strong>Admin từ chối Pre-race:</strong> {editReport.preRaceRejectReason}
+                    <strong>Admin từ chối báo cáo trước trận:</strong> {editReport.preRaceRejectReason}
                   </div>
                 )}
                 {editDialogPhase === 'postrace' && editReport.status === 'rejected' && editReport.rejectReason && (
                   <div className="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    <strong>Admin từ chối Post-race:</strong> {editReport.rejectReason}
+                    <strong>Admin từ chối báo cáo sau trận:</strong> {editReport.rejectReason}
                   </div>
                 )}
 
                 {editDialogPhase === 'prerace' && (
                   <>
                 <section>
-                  <h3 className="font-semibold text-[#23201A] mb-3">1. Track Condition</h3>
+                  <h3 className="font-semibold text-[#23201A] mb-3">1. Điều kiện mặt đường</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormControl fullWidth disabled={readOnly}>
-                      <InputLabel sx={{ color: '#7A7468' }}>Track Condition *</InputLabel>
-                      <Select value={editTrack} displayEmpty label="Track Condition *"
+                      <InputLabel sx={{ color: '#7A7468' }}>Điều kiện mặt đường *</InputLabel>
+                      <Select value={editTrack} displayEmpty label="Điều kiện mặt đường *"
                         onChange={e => setEditTrack(e.target.value as TrackCondition | '')}
-                        renderValue={selected => selected || <span className="text-sm italic text-[#7A7468]">Nil</span>}
+                        renderValue={selected => selected
+                          ? (TRACK_OPTIONS.find((t) => t.value === selected)?.label || selected)
+                          : <span className="text-sm italic text-[#7A7468]">{EMPTY_NOTE}</span>}
                         sx={{ color: '#23201A', '& fieldset': { borderColor: '#C9C2B0' }, '& .MuiSelect-icon': { color: '#7A7468' } }}>
-                        {TRACK_OPTIONS.map(option => <MenuItem key={option} value={option}>{option}</MenuItem>)}
+                        {TRACK_OPTIONS.map(option => <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>)}
                       </Select>
                     </FormControl>
                     <TextField fullWidth label="Ghi chú mặt đường" value={editTrackNote} disabled={readOnly}
@@ -1181,12 +1233,12 @@ export function RefereeDashboard() {
                 </section>
 
                 <section>
-                  <h3 className="font-semibold text-[#23201A] mb-2">2. Late Scratchings</h3>
+                  <h3 className="font-semibold text-[#23201A] mb-2">2. Rút muộn (Late Scratchings)</h3>
                   {lateScratchings.length ? (
                     <ul className="list-disc pl-5 space-y-1 text-sm text-[#23201A]">
                       {lateScratchings.map(scratching => <li key={scratching._id}>{scratching.label}</li>)}
                     </ul>
-                  ) : <p className="text-sm italic text-[#7A7468]">Nil</p>}
+                  ) : <p className="text-sm italic text-[#7A7468]">{EMPTY_NOTE}</p>}
                 </section>
 
                 {lineSections.map(({ title, lines, draftKey, setLines }) => (
@@ -1206,7 +1258,7 @@ export function RefereeDashboard() {
                           </div>
                         ))}
                       </div>
-                    ) : <p className="text-sm italic text-[#7A7468] mb-3">Nil</p>}
+                    ) : <p className="text-sm italic text-[#7A7468] mb-3">{EMPTY_NOTE}</p>}
                     {!readOnly && (
                       <div className="flex gap-2">
                         <TextField fullWidth size="small" label="Thêm mục" value={editLineDraft[draftKey]}
@@ -1237,8 +1289,7 @@ export function RefereeDashboard() {
                 {editDialogPhase === 'postrace' && (
                   <>
                 <section className="border-t border-[#E3DCCB] pt-4">
-                  <h3 className="font-semibold text-[#23201A] mb-1">Post-race — Performance Explanations</h3>
-                  <p className="text-xs text-[#7A7468] mb-3">Giải trình phong độ (favorite chạy tệ, v.v.)</p>
+                  <h3 className="font-semibold text-[#23201A] mb-3">Giải trình phong độ</h3>
                   {editPerfExplanations.length ? (
                     <ul className="space-y-2 mb-3">
                       {editPerfExplanations.map((p, idx) => (
@@ -1246,9 +1297,9 @@ export function RefereeDashboard() {
                           <div>
                             <div className="font-medium text-[#23201A]">{p.label}</div>
                             <div className="text-xs text-[#7A7468]">
-                              Triệu tập: {(p.summonedRoles || []).join(', ') || '—'}
+                              Triệu tập: {(p.summonedRoles || []).map((r) => r === 'jockey' ? 'Nài' : 'Chủ ngựa').join(', ') || '—'}
                             </div>
-                            <div className="text-[#5C564A] mt-1">{p.explanation || 'Nil'}</div>
+                            <div className="text-[#5C564A] mt-1">{p.explanation || EMPTY_NOTE}</div>
                           </div>
                           {!readOnly && (
                             <Button size="small" color="error" sx={{ textTransform: 'none', minWidth: 0 }}
@@ -1259,7 +1310,7 @@ export function RefereeDashboard() {
                         </li>
                       ))}
                     </ul>
-                  ) : <p className="text-sm italic text-[#7A7468] mb-3">Nil</p>}
+                  ) : <p className="text-sm italic text-[#7A7468] mb-3">{EMPTY_NOTE}</p>}
                   {!readOnly && (
                     <div className="space-y-2 rounded-lg bg-[#F7F4EC] p-3">
                       <FormControl fullWidth size="small">
@@ -1279,12 +1330,12 @@ export function RefereeDashboard() {
                         <label className="flex items-center gap-1.5">
                           <input type="checkbox" checked={perfDraft.summonedJockey}
                             onChange={(e) => setPerfDraft((d) => ({ ...d, summonedJockey: e.target.checked }))} />
-                          Jockey
+                          Nài
                         </label>
                         <label className="flex items-center gap-1.5">
                           <input type="checkbox" checked={perfDraft.summonedOwner}
                             onChange={(e) => setPerfDraft((d) => ({ ...d, summonedOwner: e.target.checked }))} />
-                          Owner
+                          Chủ ngựa
                         </label>
                       </div>
                       <TextField fullWidth size="small" multiline minRows={2} label="Giải trình"
@@ -1305,7 +1356,7 @@ export function RefereeDashboard() {
                           setEditPerfExplanations((rows) => [...rows, {
                             registrationId: reg._id,
                             horseId: (reg.horseId as any)?._id || String(reg.horseId),
-                            label: (reg.horseId as any)?.name || 'Horse',
+                            label: (reg.horseId as any)?.name || 'Ngựa',
                             summonedRoles: roles,
                             explanation: perfDraft.explanation.trim(),
                             recordedAt: new Date().toISOString(),
@@ -1320,15 +1371,16 @@ export function RefereeDashboard() {
                 </section>
 
                 <section>
-                  <h3 className="font-semibold text-[#23201A] mb-1">Post-race — Vet Orders</h3>
-                  <p className="text-xs text-[#7A7468] mb-3">Lệnh kiểm tra y tế sau đua (không có kết quả lab)</p>
+                  <h3 className="font-semibold text-[#23201A] mb-3">Lệnh thú y</h3>
                   {editVetOrders.length ? (
                     <ul className="space-y-2 mb-3">
                       {editVetOrders.map((v, idx) => (
                         <li key={v._id || `${v.registrationId}-${idx}`} className="flex items-start justify-between gap-2 rounded-lg border border-[#E3DCCB] px-3 py-2 text-sm">
                           <div>
-                            <div className="font-medium text-[#23201A]">{v.label} — {v.orderType}</div>
-                            <div className="text-[#5C564A]">{v.note || 'Nil'}</div>
+                            <div className="font-medium text-[#23201A]">
+                              {v.label} — {VET_ORDER_TYPES.find((t) => t.value === v.orderType)?.label || v.orderType}
+                            </div>
+                            <div className="text-[#5C564A]">{v.note || EMPTY_NOTE}</div>
                           </div>
                           {!readOnly && (
                             <Button size="small" color="error" sx={{ textTransform: 'none', minWidth: 0 }}
@@ -1339,7 +1391,7 @@ export function RefereeDashboard() {
                         </li>
                       ))}
                     </ul>
-                  ) : <p className="text-sm italic text-[#7A7468] mb-3">Nil</p>}
+                  ) : <p className="text-sm italic text-[#7A7468] mb-3">{EMPTY_NOTE}</p>}
                   {!readOnly && (
                     <div className="space-y-2 rounded-lg bg-[#F7F4EC] p-3">
                       <FormControl fullWidth size="small">
@@ -1381,7 +1433,7 @@ export function RefereeDashboard() {
                           setEditVetOrders((rows) => [...rows, {
                             registrationId: reg._id,
                             horseId: (reg.horseId as any)?._id || String(reg.horseId),
-                            label: (reg.horseId as any)?.name || 'Horse',
+                            label: (reg.horseId as any)?.name || 'Ngựa',
                             orderType: vetDraft.orderType,
                             note: vetDraft.note.trim(),
                             orderedAt: new Date().toISOString(),
@@ -1389,10 +1441,57 @@ export function RefereeDashboard() {
                           setVetDraft({ registrationId: '', orderType: 'blood', note: '' });
                         }}
                       >
-                        Thêm lệnh vet
+                        Thêm lệnh thú y
                       </Button>
                     </div>
                   )}
+                </section>
+
+                <section>
+                  <h3 className="font-semibold text-[#23201A] mb-2">Xử phạt</h3>
+                  {(() => {
+                    const resolvedIncs = (editReport.incidents || []).filter((i) => i.status === 'resolved');
+                    if (resolvedIncs.length === 0) {
+                      return <p className="text-sm italic text-[#7A7468]">{NO_PENALTY}</p>;
+                    }
+                    return (
+                      <ul className="space-y-2">
+                        {resolvedIncs.map((inc) => {
+                          const horse = incidentHorseName(inc, editRaceRegs);
+                          const typeLabel = INCIDENT_TYPES.find((t) => t.value === inc.type)?.label || inc.type;
+                          const verdictLabel = VERDICT_OPTIONS.find((v) => v.value === inc.resolution?.verdict)?.label || '—';
+                          return (
+                            <li
+                              key={inc._id}
+                              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#E3DCCB] bg-white px-3 py-2.5 text-sm"
+                            >
+                              <div className="min-w-0">
+                                <div className="font-medium text-[#23201A]">
+                                  {horse} · {inc.source === 'live_flag' ? 'Cờ' : typeLabel} · {verdictLabel}
+                                </div>
+                                <div className="text-xs text-[#7A7468] mt-0.5">
+                                  {inc.resolution?.verdict === 'fine' && inc.resolution.fineAmount != null
+                                    ? `Phạt ${inc.resolution.fineAmount.toLocaleString('vi-VN')} coins`
+                                      + (inc.resolution.fineTargetRole === 'jockey' ? ' (nài)' : ' (chủ ngựa)')
+                                    : (inc.resolution?.note || typeLabel)}
+                                </div>
+                              </div>
+                              {!readOnly && (
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  onClick={() => openResolveIncident(inc)}
+                                  sx={{ borderColor: '#C9C2B0', color: '#23201A', textTransform: 'none', fontSize: '0.75rem' }}
+                                >
+                                  Sửa
+                                </Button>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    );
+                  })()}
                 </section>
 
                 <section>
@@ -1400,61 +1499,6 @@ export function RefereeDashboard() {
                   <TextField fullWidth multiline rows={4} value={editOverallNotes} disabled={readOnly}
                     onChange={e => setEditOverallNotes(e.target.value)} placeholder="Nhập ghi chú chung..."
                     sx={{ '& .MuiInputLabel-root': { color: '#7A7468' }, '& .MuiOutlinedInput-root': { color: '#23201A', '& fieldset': { borderColor: '#C9C2B0' } } }} />
-                </section>
-
-                <section>
-                  <h3 className="font-semibold text-[#23201A] mb-2">Incidents / Live Flags</h3>
-                  {(editReport.incidents || []).length === 0 ? (
-                    <p className="text-sm italic text-[#7A7468]">Nil</p>
-                  ) : (
-                    <ul className="space-y-2">
-                      {editReport.incidents.map((inc) => {
-                        const horse =
-                          inc.horseId && typeof inc.horseId === 'object' && 'name' in inc.horseId
-                            ? (inc.horseId as { name: string }).name
-                            : 'Ngựa';
-                        const isDraft = inc.status === 'draft';
-                        return (
-                          <li
-                            key={inc._id}
-                            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#E3DCCB] px-3 py-2 text-sm"
-                          >
-                            <div className="min-w-0">
-                              <div className="font-medium text-[#23201A]">
-                                {horse}
-                                {inc.source === 'live_flag' ? ' · Flag' : ` · ${inc.type}`}
-                                {isDraft ? ' · draft' : ' · resolved'}
-                              </div>
-                              <div className="text-xs text-[#7A7468] truncate">
-                                {inc.description}
-                                {inc.resolution?.verdict
-                                  ? ` · verdict: ${inc.resolution.verdict}${
-                                      inc.resolution.verdict === 'fine' && inc.resolution.fineAmount != null
-                                        ? ` (${inc.resolution.fineAmount})`
-                                        : ''
-                                    }${inc.resolution.reasonCode ? ` / ${inc.resolution.reasonCode}` : ''}${
-                                      inc.resolution.suspensionDays
-                                        ? ` / suspend ${inc.resolution.suspensionDays}d`
-                                        : ''
-                                    }`
-                                  : ''}
-                              </div>
-                            </div>
-                            {!readOnly && isDraft && (
-                              <Button
-                                size="small"
-                                variant="outlined"
-                                onClick={() => openResolveIncident(inc)}
-                                sx={{ borderColor: '#C9A227', color: '#8F7318', textTransform: 'none', fontSize: '0.75rem' }}
-                              >
-                                Xử lý
-                              </Button>
-                            )}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
                 </section>
                   </>
                 )}
@@ -1479,21 +1523,21 @@ export function RefereeDashboard() {
       {/* ── Resolve Incident Dialog ── */}
       <Dialog open={resolveDialog} onClose={() => setResolveDialog(false)} maxWidth="sm" fullWidth
         PaperProps={{ style: { backgroundColor: '#FFFFFF', border: '1px solid #E3DCCB', borderRadius: '16px' } }}>
-        <DialogTitle sx={{ color: '#23201A' }}>Xử lý sự cố Flag</DialogTitle>
+        <DialogTitle sx={{ color: '#23201A' }}>
+          {resolveIncident?.status === 'resolved' ? 'Sửa xử phạt Flag' : 'Xử lý sự cố Flag'}
+        </DialogTitle>
         <DialogContent>
           <div className="space-y-4 mt-4">
             {resolveIncident && (
               <div className="rounded-lg border border-[#E3DCCB] bg-[#F7F4EC] px-3 py-2 text-sm text-[#23201A]">
                 <div className="font-semibold">
-                  {(resolveIncident.horseId && typeof resolveIncident.horseId === 'object' && 'name' in resolveIncident.horseId)
-                    ? (resolveIncident.horseId as { name: string }).name
-                    : 'Ngựa'}
-                  {resolveIncident.source === 'live_flag' ? ' · Live Flag' : ''}
+                  {incidentHorseName(resolveIncident, editRaceRegs)}
+                  {resolveIncident.source === 'live_flag' ? ' · Cờ trực tiếp' : ''}
                 </div>
                 <div className="text-xs text-[#7A7468] mt-0.5">
                   {resolveIncident.flaggedAt
-                    ? `Flag lúc ${new Date(resolveIncident.flaggedAt).toLocaleString('vi-VN')}`
-                    : resolveIncident.description}
+                    ? `Gắn cờ lúc ${new Date(resolveIncident.flaggedAt).toLocaleString('vi-VN')}`
+                    : 'Gắn cờ trong cuộc đua'}
                   {resolveIncident.raceTimeMs != null ? ` · ${Math.round(resolveIncident.raceTimeMs / 1000)}s` : ''}
                 </div>
               </div>
@@ -1509,9 +1553,6 @@ export function RefereeDashboard() {
                 {INCIDENT_TYPES.map(t => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
               </Select>
             </FormControl>
-            <TextField fullWidth multiline rows={2} label="Mô tả" value={resolveForm.description}
-              onChange={e => setResolveForm(p => ({ ...p, description: e.target.value }))}
-              sx={{ '& .MuiInputLabel-root': { color: '#7A7468' }, '& .MuiOutlinedInput-root': { color: '#23201A', '& fieldset': { borderColor: '#C9C2B0' } } }} />
             <FormControl fullWidth>
               <InputLabel sx={{ color: '#7A7468' }}>Loại xử lý *</InputLabel>
               <Select
@@ -1523,25 +1564,9 @@ export function RefereeDashboard() {
                 {VERDICT_OPTIONS.map(v => <MenuItem key={v.value} value={v.value}>{v.label}</MenuItem>)}
               </Select>
             </FormControl>
-            <FormControl fullWidth>
-              <InputLabel sx={{ color: '#7A7468' }}>Reason code</InputLabel>
-              <Select
-                value={resolveForm.reasonCode}
-                label="Reason code"
-                onChange={(e) => setResolveForm((p) => ({ ...p, reasonCode: e.target.value as PenaltyReasonCode | '' }))}
-                sx={{ color: '#23201A', '& fieldset': { borderColor: '#C9C2B0' } }}
-              >
-                <MenuItem value="">—</MenuItem>
-                {REASON_CODES.map((r) => <MenuItem key={r.value} value={r.value}>{r.label}</MenuItem>)}
-              </Select>
-            </FormControl>
-            <TextField fullWidth type="number" label="Treo giò (ngày) — jockey" value={resolveForm.suspensionDays}
-              onChange={(e) => setResolveForm((p) => ({ ...p, suspensionDays: e.target.value }))}
-              sx={{ '& .MuiInputLabel-root': { color: '#7A7468' }, '& .MuiOutlinedInput-root': { color: '#23201A', '& fieldset': { borderColor: '#C9C2B0' } } }}
-            />
             {resolveForm.verdict === 'fine' && (
               <>
-                <TextField fullWidth type="number" label="Fine amount *" value={resolveForm.fineAmount}
+                <TextField fullWidth type="number" label="Số tiền phạt *" value={resolveForm.fineAmount}
                   onChange={e => setResolveForm(p => ({ ...p, fineAmount: e.target.value }))}
                   sx={{ '& .MuiInputLabel-root': { color: '#7A7468' }, '& .MuiOutlinedInput-root': { color: '#23201A', '& fieldset': { borderColor: '#C9C2B0' } } }} />
                 <FormControl fullWidth required>
@@ -1552,8 +1577,8 @@ export function RefereeDashboard() {
                     onChange={e => setResolveForm(p => ({ ...p, fineTargetRole: e.target.value as 'owner' | 'jockey' }))}
                     sx={{ color: '#23201A', '& fieldset': { borderColor: '#C9C2B0' }, '& .MuiSelect-icon': { color: '#7A7468' } }}
                   >
-                    <MenuItem value="owner">Owner (chủ ngựa)</MenuItem>
-                    <MenuItem value="jockey">Jockey (nài)</MenuItem>
+                    <MenuItem value="owner">Chủ ngựa</MenuItem>
+                    <MenuItem value="jockey">Nài</MenuItem>
                   </Select>
                 </FormControl>
               </>
@@ -1567,60 +1592,57 @@ export function RefereeDashboard() {
           <Button onClick={() => setResolveDialog(false)} sx={{ color: '#7A7468', textTransform: 'none' }}>Hủy</Button>
           <Button variant="contained" onClick={handleResolveIncident} disabled={resolving}
             sx={{ background: '#1F3D2B', color: 'white', textTransform: 'none', fontWeight: 700, '&:hover': { background: '#2d5640' } }}>
-            {resolving ? <CircularProgress size={20} sx={{ color: 'white' }} /> : 'Lưu xử lý'}
+            {resolving ? <CircularProgress size={20} sx={{ color: 'white' }} /> : 'Lưu'}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* ── Sự cố: chọn ngựa Flag ── */}
+      {/* ── Sự cố: chọn Flag (giống form báo cáo sau trận) ── */}
       <Dialog open={incidentDialog} onClose={() => setIncidentDialog(false)} maxWidth="sm" fullWidth
         PaperProps={{ style: { backgroundColor: '#FFFFFF', border: '1px solid #E3DCCB', borderRadius: '16px' } }}>
-        <DialogTitle sx={{ color: '#23201A' }}>Sự cố Flag — {(activeReport?.raceId as any)?.name}</DialogTitle>
+        <DialogTitle sx={{ color: '#23201A' }}>Xử lý sự cố Flag — {(activeReport?.raceId as any)?.name}</DialogTitle>
         <DialogContent>
-          <div className="space-y-4 mt-4">
-            <p className="text-sm text-[#7A7468]">Chọn ngựa đã bị Flag (draft) để ghi loại vi phạm và xử lý.</p>
-            <FormControl fullWidth>
-              <InputLabel sx={{ color: '#7A7468' }}>Ngựa bị Flag</InputLabel>
-              <Select
-                label="Ngựa bị Flag"
-                value={resolveIncident?._id || ''}
-                displayEmpty
-                onChange={(e) => {
-                  const inc = (activeReport?.incidents || []).find((i) => i._id === e.target.value);
-                  if (inc) {
-                    setIncidentDialog(false);
-                    openResolveIncident(inc);
-                    if (activeReport) {
-                      setEditReport(activeReport);
-                      setEditDialogPhase('postrace');
-                    }
-                  }
-                }}
-                sx={{ color: '#23201A', '& fieldset': { borderColor: '#C9C2B0' }, '& .MuiSelect-icon': { color: '#7A7468' } }}
-              >
-                {(activeReport?.incidents || []).filter((i) => i.status === 'draft').length === 0 ? (
-                  <MenuItem disabled value="">Không có Flag draft</MenuItem>
-                ) : (
-                  (activeReport?.incidents || []).filter((i) => i.status === 'draft').map((inc) => {
-                    const horse =
-                      inc.horseId && typeof inc.horseId === 'object' && 'name' in inc.horseId
-                        ? (inc.horseId as { name: string }).name
-                        : 'Ngựa';
-                    return (
-                      <MenuItem key={inc._id} value={inc._id}>
-                        {horse}
-                        {inc.source === 'live_flag' ? ' · Flag' : ''}
-                        {inc.flaggedAt ? ` · ${new Date(inc.flaggedAt).toLocaleTimeString('vi-VN')}` : ''}
-                      </MenuItem>
-                    );
-                  })
-                )}
-              </Select>
-            </FormControl>
-            {(activeReport?.incidents || []).filter((i) => i.status === 'resolved').length > 0 && (
-              <div className="text-xs text-[#7A7468]">
-                Đã resolve: {(activeReport?.incidents || []).filter((i) => i.status === 'resolved').length} sự cố
-              </div>
+          <div className="space-y-3 mt-4">
+            <p className="text-sm text-[#7A7468]">Chọn cờ cần xử lý — sau khi lưu sẽ ghi vào báo cáo sau trận.</p>
+            {(activeReport?.incidents || []).filter((i) => i.status === 'draft' || !i.status).length === 0 ? (
+              <p className="text-sm italic text-[#7A7468]">{EMPTY_NOTE}</p>
+            ) : (
+              <ul className="space-y-2">
+                {(activeReport?.incidents || []).filter((i) => i.status === 'draft' || !i.status).map((inc) => {
+                  const horse = incidentHorseName(inc, editRaceRegs);
+                  return (
+                    <li
+                      key={inc._id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#E3DCCB] bg-white px-3 py-2.5 text-sm"
+                    >
+                      <div className="min-w-0">
+                        <div className="font-medium text-[#23201A]">
+                          {horse} · Cờ · Chưa xử lý
+                        </div>
+                        <div className="text-xs text-[#7A7468] mt-0.5">
+                          Gắn cờ trong cuộc đua
+                          {inc.flaggedAt ? ` · ${new Date(inc.flaggedAt).toLocaleTimeString('vi-VN')}` : ''}
+                        </div>
+                      </div>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => {
+                          setIncidentDialog(false);
+                          openResolveIncident(inc);
+                          if (activeReport) {
+                            setEditReport(activeReport);
+                            setEditDialogPhase('postrace');
+                          }
+                        }}
+                        sx={{ borderColor: '#C9A227', color: '#8F7318', textTransform: 'none', fontSize: '0.75rem' }}
+                      >
+                        Xử lý
+                      </Button>
+                    </li>
+                  );
+                })}
+              </ul>
             )}
           </div>
         </DialogContent>

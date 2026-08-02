@@ -80,6 +80,22 @@ async function appendLateScratching(
   await report.save(session ? { session } : undefined);
 }
 
+async function removeLateScratching({ raceId, registrationId }, session) {
+  const query = RefereeReport.findOne({ raceId });
+  if (session) query.session(session);
+  const report = await query;
+  if (!report?.preRaceReport?.lateScratchings?.length) return;
+
+  const regIdStr = registrationId.toString();
+  const before = report.preRaceReport.lateScratchings.length;
+  report.preRaceReport.lateScratchings = report.preRaceReport.lateScratchings.filter(
+    (s) => !(s.registrationId && s.registrationId.toString() === regIdStr),
+  );
+  if (report.preRaceReport.lateScratchings.length !== before) {
+    await report.save(session ? { session } : undefined);
+  }
+}
+
 /** Create draft report if missing (pre-check complete / live flag). */
 async function ensureDraftReportForRace(raceId, refereeId, session) {
   let query = RefereeReport.findOne({ raceId });
@@ -100,5 +116,6 @@ module.exports = {
   migratePreCheckSummary,
   migrateSubmittedStatus,
   appendLateScratching,
+  removeLateScratching,
   ensureDraftReportForRace,
 };

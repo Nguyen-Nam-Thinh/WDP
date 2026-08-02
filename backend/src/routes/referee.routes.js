@@ -5,8 +5,6 @@ const { authenticate, authorize } = require('../middleware/auth.middleware');
 const { validate } = require('../middleware/validate.middleware');
 const {
   PRE_RACE_TRACK_CONDITIONS,
-  INQUIRY_STATEMENT_ROLES,
-  INQUIRY_FAULT_PARTIES,
   PENALTY_REASON_CODES,
   POST_RACE_VET_ORDER_TYPES,
 } = require('../config/constants');
@@ -27,17 +25,6 @@ const createReportSchema = z.object({
 });
 
 const trackEnum = asEnum(PRE_RACE_TRACK_CONDITIONS);
-
-const inquirySchema = z.object({
-  statements: z.array(z.object({
-    role: asEnum(INQUIRY_STATEMENT_ROLES),
-    name: z.string().max(200).optional(),
-    text: z.string().max(2000).optional(),
-  })).max(20).optional(),
-  cameraAngles: z.array(z.string().max(100)).max(20).optional(),
-  faultParty: asEnum(INQUIRY_FAULT_PARTIES).nullable().optional(),
-  conclusion: z.string().max(2000).optional(),
-}).optional();
 
 const performanceExplanationSchema = z.object({
   registrationId: z.string().min(1),
@@ -78,7 +65,6 @@ const updateReportSchema = z.object({
 const incidentSchema = z.object({
   registrationId: z.string().min(1).optional(),
   type: z.enum(['interference', 'doping', 'equipment_violation', 'jockey_violation', 'other']),
-  description: z.string().min(1).max(1000),
   action: z.string().max(500).optional(),
 });
 
@@ -98,19 +84,15 @@ const rejectReportSchema = z.object({
 
 const updateIncidentSchema = z.object({
   type: z.enum(['interference', 'doping', 'equipment_violation', 'jockey_violation', 'other']).optional(),
-  description: z.string().min(1).max(1000).optional(),
   action: z.string().max(500).optional(),
-  inquiry: inquirySchema,
 }).refine(
-  (d) => d.type !== undefined || d.description !== undefined || d.action !== undefined || d.inquiry !== undefined,
+  (d) => d.type !== undefined || d.action !== undefined,
   { message: 'At least one field required' },
 );
 
 const resolveIncidentSchema = z.object({
   type: z.enum(['interference', 'doping', 'equipment_violation', 'jockey_violation', 'other']).optional(),
-  description: z.string().min(1).max(1000).optional(),
   action: z.string().max(500).optional(),
-  inquiry: inquirySchema,
   resolution: z.object({
     verdict: z.enum(['none', 'warning', 'fine', 'disqualified']),
     fineAmount: z.number().positive().optional(),

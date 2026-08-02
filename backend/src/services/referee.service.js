@@ -213,7 +213,6 @@ async function flagIncident(reportId, refereeId, { registrationId, horseId, race
     registrationId: reg._id,
     horseId: reg.horseId,
     type: 'other',
-    description: 'Flagged during race',
     action: '',
     source: 'live_flag',
     status: 'draft',
@@ -267,24 +266,12 @@ async function updateIncident(reportId, refereeId, incidentId, body = {}) {
   const incident = report.incidents.id(incidentId);
   if (!incident) throw new AppError(404, 'Không tìm thấy sự cố');
 
-  const { type, description, action, inquiry } = body;
+  const { type, action } = body;
   if (type !== undefined) incident.type = type;
-  if (description !== undefined) incident.description = description;
   if (action !== undefined) incident.action = action;
-  if (inquiry && typeof inquiry === 'object') {
-    applyInquiryFields(incident, inquiry);
-  }
 
   await report.save();
   return populateReport(report);
-}
-
-function applyInquiryFields(incident, inquiry) {
-  if (!incident.inquiry) incident.inquiry = { statements: [], cameraAngles: [], faultParty: null, conclusion: '' };
-  if (inquiry.statements !== undefined) incident.inquiry.statements = inquiry.statements;
-  if (inquiry.cameraAngles !== undefined) incident.inquiry.cameraAngles = inquiry.cameraAngles;
-  if (inquiry.faultParty !== undefined) incident.inquiry.faultParty = inquiry.faultParty;
-  if (inquiry.conclusion !== undefined) incident.inquiry.conclusion = inquiry.conclusion;
 }
 
 async function resolveRegistrationForIncident(report, incident) {
@@ -305,7 +292,7 @@ async function resolveIncident(reportId, refereeId, incidentId, body = {}) {
   const incident = report.incidents.id(incidentId);
   if (!incident) throw new AppError(404, 'Không tìm thấy sự cố');
 
-  const { type, description, action, resolution, inquiry } = body;
+  const { type, action, resolution } = body;
   if (!resolution || !resolution.verdict) {
     throw new AppError(400, 'resolution.verdict là bắt buộc');
   }
@@ -332,11 +319,9 @@ async function resolveIncident(reportId, refereeId, incidentId, body = {}) {
   if (!race) throw new AppError(404, 'Không tìm thấy cuộc đua');
 
   if (type !== undefined) incident.type = type;
-  if (description !== undefined) incident.description = description;
   if (action !== undefined) incident.action = action;
-  if (inquiry && typeof inquiry === 'object') {
-    applyInquiryFields(incident, inquiry);
-  }
+
+  const previousVerdict = incident.resolution?.verdict;
 
   const reg = await resolveRegistrationForIncident(report, incident);
 
@@ -367,25 +352,7 @@ async function resolveIncident(reportId, refereeId, incidentId, body = {}) {
     incident.status = 'resolved';
     await report.save();
 
-    const { createFineTicket } = require('./penalty.service');
-    await createFineTicket({
-      userId: targetUserId,
-      raceId: report.raceId,
-      reportId: report._id,
-      incidentId: incident._id,
-      registrationId: reg._id,
-      horseId: reg.horseId,
-      amount,
-      note: resolution.note || '',
-      createdBy: refereeId,
-      status: 'open',
-    });
-
-    if (suspensionDays > 0) {
-      const jockeyId = role === 'jockey' ? targetUserId : reg.jockeyId;
-      if (jockeyId) await applyJockeySuspension(jockeyId, suspensionDays);
-    }
-
+    // Phiếu phạt + treo giò chỉ phát hành khi Admin duyệt báo cáo sau trận
     return populateReport(report);
   }
 
@@ -402,7 +369,7 @@ async function resolveIncident(reportId, refereeId, incidentId, body = {}) {
   incident.status = 'resolved';
   await report.save();
 
-  if (resolution.verdict === 'disqualified') {
+  if (resolution.verdict === 'disqualified' && previousVerdict !== 'disqualified') {
     if (race.status !== 'finished') {
       throw new AppError(400, 'Chỉ DQ sau khi cuộc đua đã finished');
     }
@@ -422,12 +389,7 @@ async function resolveIncident(reportId, refereeId, incidentId, body = {}) {
     await rebuildOfficialOrder(report.raceId);
   }
 
-  if (suspensionDays > 0) {
-    const jockeyId = reg?.jockeyId;
-    if (!jockeyId) throw new AppError(400, 'Không thể treo giò — sự cố chưa gắn jockey');
-    await applyJockeySuspension(jockeyId, suspensionDays);
-  }
-
+  // Treo giò chỉ áp dụng khi Admin duyệt Official
   return populateReport(report);
 }
 
@@ -666,6 +628,13 @@ async function approveReport(reportId, adminId) {
     session.endSession();
   }
 
+  // Phát hành phiếu phạt + treo giò sau khi Official (idempotent theo incidentId)
+  try {
+    await issuePenaltiesAfterOfficialApproval(report, adminId);
+  } catch (err) {
+    console.error('[approveReport] issue penalties failed:', err.message);
+  }
+
   try {
     const { notifyOfficialSettlement } = require('./official-notify.service');
     await notifyOfficialSettlement(report.raceId, report.refereeId);
@@ -674,6 +643,47 @@ async function approveReport(reportId, adminId) {
   }
 
   return populateReport(await RefereeReport.findById(reportId));
+}
+
+/** Tạo phiếu phạt / treo giò từ resolution đã lưu — chỉ gọi khi Admin duyệt Official */
+async function issuePenaltiesAfterOfficialApproval(report, adminId) {
+  const { createFineTicket } = require('./penalty.service');
+  const { PenaltyTicket } = require('../models/penalty_ticket.model');
+
+  for (const incident of report.incidents || []) {
+    if (incident.status !== 'resolved' || !incident.resolution) continue;
+    const res = incident.resolution;
+
+    if (res.verdict === 'fine' && res.fineAmount > 0 && res.fineTargetUserId) {
+      const existing = await PenaltyTicket.findOne({ incidentId: incident._id });
+      if (!existing) {
+        const reg = await resolveRegistrationForIncident(report, incident);
+        await createFineTicket({
+          userId: res.fineTargetUserId,
+          raceId: report.raceId,
+          reportId: report._id,
+          incidentId: incident._id,
+          registrationId: reg?._id || incident.registrationId || null,
+          horseId: reg?.horseId || incident.horseId || null,
+          amount: res.fineAmount,
+          note: res.note || '',
+          createdBy: adminId,
+          status: 'open',
+        });
+      }
+    }
+
+    if (res.suspensionDays > 0) {
+      const reg = await resolveRegistrationForIncident(report, incident);
+      let jockeyId = reg?.jockeyId || null;
+      if (res.fineTargetRole === 'jockey' && res.fineTargetUserId) {
+        jockeyId = res.fineTargetUserId;
+      }
+      if (jockeyId) {
+        await applyJockeySuspension(jockeyId, res.suspensionDays);
+      }
+    }
+  }
 }
 
 async function rejectReport(reportId, adminId, reason) {
@@ -889,7 +899,7 @@ async function generateReportPdf(reportId, userId, role) {
 
     // ── Incidents ──
     doc.fillColor(primaryColor).fontSize(13).font('Helvetica-Bold')
-      .text(`INCIDENTS / INQUIRIES (${report.incidents.length})`);
+      .text(`INCIDENTS / PENALTIES (${report.incidents.length})`);
     doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).strokeColor(accentColor).lineWidth(2).stroke();
     doc.moveDown(0.4);
 
@@ -909,31 +919,9 @@ async function generateReportPdf(reportId, userId, role) {
         doc.fillColor(mutedColor).text('   Recorded:', { continued: true });
         doc.fillColor(primaryColor).text(' ' + new Date(incident.recordedAt).toLocaleString('en-GB'));
 
-        doc.fillColor(mutedColor).text('Description:', 54, doc.y, { continued: true, width: 80 });
-        doc.fillColor(primaryColor).text(' ' + incident.description, { width: doc.page.width - 140 });
-
         if (incident.action) {
           doc.fillColor(mutedColor).text('Action taken:', 54, doc.y, { continued: true, width: 80 });
           doc.fillColor(primaryColor).text(' ' + incident.action);
-        }
-
-        const inq = incident.inquiry || {};
-        if ((inq.statements || []).length || (inq.cameraAngles || []).length || inq.conclusion || inq.faultParty) {
-          doc.fillColor(mutedColor).text('Inquiry:', 54, doc.y);
-          if ((inq.cameraAngles || []).length) {
-            doc.fillColor(primaryColor).text(`  Cameras: ${inq.cameraAngles.join(', ')}`);
-          }
-          if (inq.faultParty) {
-            doc.fillColor(primaryColor).text(`  Fault: ${inq.faultParty}`);
-          }
-          (inq.statements || []).forEach((s) => {
-            doc.fillColor(primaryColor).text(`  [${s.role}] ${s.name || ''}: ${s.text || ''}`, {
-              width: doc.page.width - 120,
-            });
-          });
-          if (inq.conclusion) {
-            doc.fillColor(primaryColor).text(`  Conclusion: ${inq.conclusion}`, { width: doc.page.width - 120 });
-          }
         }
 
         const res = incident.resolution || {};

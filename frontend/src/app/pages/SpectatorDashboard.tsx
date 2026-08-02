@@ -22,11 +22,7 @@ import {
   Home,
   XCircle,
   Clock,
-  Shield,
   Building2,
-  CreditCard,
-  Smartphone,
-  Bitcoin,
   Copy,
   Search,
   HelpCircle,
@@ -316,7 +312,6 @@ export function SpectatorDashboard() {
   useEffect(() => {
     if (token) loadMyBets();
   }, [token]);
-  const [depositMethod, setDepositMethod] = useState("bank");
   const [depositAmountInput, setDepositAmountInput] = useState("");
   const [betPage, setBetPage] = useState(1);
   const [depositHistoryPage, setDepositHistoryPage] = useState(1);
@@ -717,7 +712,7 @@ export function SpectatorDashboard() {
       const placed = await betApi.place(token, payload);
       const displayMult = placed.estimatedMultiplier ?? estimatedMultiplier;
       toast.success(
-        `Dự đoán thành công! Odds ước tính: x${displayMult} — Sẽ nhận được sau khi race kết thúc`,
+        `Dự đoán thành công! Hệ số ước tính: x${displayMult} — Sẽ nhận được sau khi cuộc đua kết thúc`,
       );
       // Cập nhật myBets ngay lập tức (không cần refresh trang)
       const newBet: Bet = {
@@ -1712,20 +1707,12 @@ export function SpectatorDashboard() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 px-3 py-1.5">
-                      <Shield className="w-3.5 h-3.5 text-primary" />
-                      <span className="text-primary text-xs font-semibold">
-                        Bảo Mật SSL
-                      </span>
+                  <div className="text-right">
+                    <div className="text-xs text-muted-foreground">
+                      Số Dư Hiện Tại
                     </div>
-                    <div className="text-right">
-                      <div className="text-xs text-muted-foreground">
-                        Số Dư Hiện Tại
-                      </div>
-                      <div className="text-[#8F7318] font-bold text-lg tabular-nums">
-                        {walletBalance ?? "..."}
-                      </div>
+                    <div className="text-[#8F7318] font-bold text-lg tabular-nums">
+                      {walletBalance ?? "..."}
                     </div>
                   </div>
                 </div>
@@ -1771,81 +1758,31 @@ export function SpectatorDashboard() {
                     <h3 className="font-serif text-foreground font-bold mb-4">
                       Chọn phương thức nạp tiền
                     </h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        {
-                          id: "bank",
-                          icon: Building2,
-                          label: "Chuyển Khoản Ngân Hàng",
-                          sub: "Vietcombank, Techcombank, MB Bank...",
-                          time: "5-30 phút",
-                          color: "text-primary",
-                          limit: "Tối thiểu: $10",
-                        },
-                        {
-                          id: "card",
-                          icon: CreditCard,
-                          label: "Thẻ Tín Dụng / Ghi Nợ",
-                          sub: "Visa, Mastercard, JCB",
-                          time: "1-5 phút",
-                          color: "text-secondary",
-                          limit: "Tối thiểu: $20",
-                        },
-                        {
-                          id: "ewallet",
-                          icon: Smartphone,
-                          label: "Ví Điện Tử",
-                          sub: "MoMo, ZaloPay, VNPay",
-                          time: "Tức thì",
-                          color: "text-secondary",
-                          limit: "Tối thiểu: $5",
-                        },
-                        {
-                          id: "crypto",
-                          icon: Bitcoin,
-                          label: "Tiền Điện Tử",
-                          sub: "USDT (TRC20), BTC, ETH",
-                          time: "10-30 phút",
-                          color: "text-[#8F7318]",
-                          limit: "Tối thiểu: $50",
-                        },
-                      ].map((method) => (
-                        <button
-                          type="button"
-                          key={method.id}
-                          onClick={() => setDepositMethod(method.id)}
-                          className={`relative p-4 border-2 text-left transition-all hover:scale-[1.02] ${depositMethod === method.id ? "bg-primary/5 border-primary" : "bg-background border-border hover:border-muted-foreground/40"}`}
-                        >
-                          {depositMethod === method.id && (
-                            <div className="absolute top-3 right-3 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                              <CheckCircle className="w-3 h-3 text-primary-foreground" />
-                            </div>
-                          )}
-                          <method.icon
-                            className={`w-8 h-8 mb-3 ${method.color}`}
-                          />
-                          <div className="text-foreground font-semibold text-sm mb-1">
-                            {method.label}
-                          </div>
-                          <div className="text-muted-foreground text-xs mb-2">
-                            {method.sub}
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-primary font-medium">
-                              ⚡ {method.time}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {method.limit}
-                            </span>
-                          </div>
-                        </button>
-                      ))}
+                    <div className="relative p-4 border-2 text-left bg-primary/5 border-primary">
+                      <div className="absolute top-3 right-3 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                        <CheckCircle className="w-3 h-3 text-primary-foreground" />
+                      </div>
+                      <Building2 className="w-8 h-8 mb-3 text-primary" />
+                      <div className="text-foreground font-semibold text-sm mb-1">
+                        Chuyển Khoản Ngân Hàng
+                      </div>
+                      <div className="text-muted-foreground text-xs mb-2">
+                        Vietcombank, Techcombank, MB Bank...
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-primary font-medium">
+                          ⚡ 5-30 phút
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          Tối thiểu: $10
+                        </span>
+                      </div>
                     </div>
                     <div className="bg-primary/5 border border-primary/20 p-4 flex gap-3">
                       <AlertCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                       <div className="text-sm text-foreground">
                         <span className="font-semibold">Hướng Dẫn: </span>
-                        Chọn phương thức nạp phù hợp với bạn. Tất cả giao dịch
+                        Nạp tiền qua chuyển khoản ngân hàng. Tất cả giao dịch
                         đều được mã hóa và bảo mật. Nếu cần hỗ trợ, liên hệ 24/7
                         qua chat trực tiếp.
                       </div>
@@ -1857,25 +1794,11 @@ export function SpectatorDashboard() {
                   <div className="p-6 space-y-5">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="w-10 h-10 bg-gold/15 flex items-center justify-center">
-                        {depositMethod === "bank" && (
-                          <Building2 className="w-5 h-5 text-primary" />
-                        )}
-                        {depositMethod === "card" && (
-                          <CreditCard className="w-5 h-5 text-secondary" />
-                        )}
-                        {depositMethod === "ewallet" && (
-                          <Smartphone className="w-5 h-5 text-secondary" />
-                        )}
-                        {depositMethod === "crypto" && (
-                          <Bitcoin className="w-5 h-5 text-[#8F7318]" />
-                        )}
+                        <Building2 className="w-5 h-5 text-primary" />
                       </div>
                       <div>
                         <div className="text-foreground font-bold">
-                          {depositMethod === "bank" && "Chuyển Khoản Ngân Hàng"}
-                          {depositMethod === "card" && "Thẻ Tín Dụng / Ghi Nợ"}
-                          {depositMethod === "ewallet" && "Ví Điện Tử"}
-                          {depositMethod === "crypto" && "Tiền Điện Tử (USDT)"}
+                          Chuyển Khoản Ngân Hàng
                         </div>
                         <div className="text-muted-foreground text-sm">
                           Điền thông tin nạp tiền bên dưới
@@ -1915,139 +1838,6 @@ export function SpectatorDashboard() {
                         ))}
                       </div>
                     </div>
-                    {depositMethod === "bank" && (
-                      <div className="bg-background border border-border p-5 space-y-4">
-                        <div className="flex items-center justify-between mb-1">
-                          <h4 className="text-foreground font-semibold flex items-center gap-2">
-                            <Building2 className="w-4 h-4 text-primary" /> Thông
-                            Tin Tài Khoản
-                          </h4>
-                          <span className="text-xs bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full">
-                            Đang Hoạt Động
-                          </span>
-                        </div>
-                        {[
-                          { label: "Ngân Hàng", value: "Vietcombank (VCB)" },
-                          {
-                            label: "Số Tài Khoản",
-                            value: "1020 4857 2934 8800",
-                            copy: true,
-                          },
-                          {
-                            label: "Chủ Tài Khoản",
-                            value: "CONG TY TNHH RACING VN",
-                          },
-                          { label: "Chi Nhánh", value: "TP. Hồ Chí Minh" },
-                          {
-                            label: "Nội Dung CK",
-                            value: `NAP ${(user?.fullName ?? "USER").replace(/ /g, "").toUpperCase()} ${depositAmountInput || "___"} coins`,
-                            copy: true,
-                          },
-                        ].map((item, i) => (
-                          <div
-                            key={i}
-                            className="flex items-center justify-between py-2 border-b border-border last:border-0"
-                          >
-                            <span className="text-muted-foreground text-sm">
-                              {item.label}
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-foreground font-medium text-sm">
-                                {item.value}
-                              </span>
-                              {item.copy && (
-                                <button
-                                  type="button"
-                                  className="p-1 hover:bg-muted rounded transition-colors"
-                                  title="Sao chép"
-                                >
-                                  <Copy className="w-3.5 h-3.5 text-muted-foreground hover:text-primary" />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {depositMethod === "ewallet" && (
-                      <div className="bg-background border border-border p-5">
-                        <h4 className="text-foreground font-semibold mb-4 flex items-center gap-2">
-                          <Smartphone className="w-4 h-4 text-secondary" /> Chọn
-                          Ví Điện Tử
-                        </h4>
-                        <div className="grid grid-cols-3 gap-3 mb-4">
-                          {["MoMo", "ZaloPay", "VNPay"].map((w) => (
-                            <button
-                              type="button"
-                              key={w}
-                              className="bg-card hover:bg-primary/5 border border-border hover:border-primary py-3 text-foreground text-sm font-medium transition-all"
-                            >
-                              {w}
-                            </button>
-                          ))}
-                        </div>
-                        <div className="bg-muted/40 p-4 text-center">
-                          <div className="w-24 h-24 bg-white border border-border mx-auto mb-3 flex items-center justify-center">
-                            <div className="text-foreground text-xs font-mono text-center">
-                              QR Code
-                              <br />
-                              Preview
-                            </div>
-                          </div>
-                          <p className="text-muted-foreground text-xs">
-                            Mở app ví và quét mã QR hoặc nhập số điện thoại:{" "}
-                            <span className="text-foreground font-semibold">
-                              0909.888.777
-                            </span>
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                    {depositMethod === "crypto" && (
-                      <div className="bg-background border border-border p-5 space-y-3">
-                        <h4 className="text-foreground font-semibold flex items-center gap-2">
-                          <Bitcoin className="w-4 h-4 text-[#8F7318]" /> Địa Chỉ
-                          Nạp USDT (TRC20)
-                        </h4>
-                        <div className="bg-muted/40 border border-border p-4 flex items-center justify-between gap-2">
-                          <span className="text-primary font-mono text-xs break-all">
-                            TRX7YmK9...4xPQm8NvL2sW
-                          </span>
-                          <button
-                            type="button"
-                            className="p-1.5 hover:bg-muted flex-shrink-0"
-                          >
-                            <Copy className="w-4 h-4 text-muted-foreground hover:text-primary" />
-                          </button>
-                        </div>
-                        <div className="bg-gold/10 border border-gold/40 p-3 text-xs text-[#8F7318]">
-                          ⚠️ Chỉ gửi <strong>USDT TRC20</strong>. Gửi sai mạng
-                          sẽ mất tiền vĩnh viễn. Tối thiểu 50.000 coins.
-                        </div>
-                      </div>
-                    )}
-                    {depositMethod === "card" && (
-                      <div className="bg-background border border-border p-5 space-y-4">
-                        <h4 className="text-foreground font-semibold flex items-center gap-2">
-                          <CreditCard className="w-4 h-4 text-secondary" />{" "}
-                          Thông Tin Thẻ
-                        </h4>
-                        {[
-                          "Số Thẻ (16 chữ số)",
-                          "Tên Chủ Thẻ",
-                          "Ngày Hết Hạn (MM/YY)",
-                          "Mã CVV",
-                        ].map((ph, i) => (
-                          <div key={i} className="relative">
-                            <input
-                              type={i === 3 ? "password" : "text"}
-                              placeholder={ph}
-                              className="w-full bg-card border border-border px-4 py-3 text-foreground placeholder-muted-foreground/60 focus:outline-none focus:border-primary transition-all text-sm"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    )}
                     <div className="bg-gold/5 border border-gold/30 p-4">
                       <div className="flex gap-3">
                         <AlertCircle className="w-5 h-5 text-[#8F7318] flex-shrink-0 mt-0.5" />
@@ -3332,9 +3122,8 @@ export function SpectatorDashboard() {
                             <thead>
                               <tr className="bg-muted/50 text-muted-foreground">
                                 <th className="text-left px-3 py-2 font-medium">Ngựa</th>
-                                <th className="text-right px-2 py-2 font-medium">Odds Ước Tính</th>
-                                <th className="text-right px-2 py-2 font-medium">Pool</th>
-                                <th className="text-right px-2 py-2 font-medium">Tỷ Trọng</th>
+                                <th className="text-right px-2 py-2 font-medium">Hệ Số Ước Tính</th>
+                                <th className="text-right px-2 py-2 font-medium">Quỹ Cược</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -3355,17 +3144,13 @@ export function SpectatorDashboard() {
                                       <td className="px-2 py-2 text-right tabular-nums text-muted-foreground">
                                         {horse.poolAmount.toLocaleString("vi-VN")} <span className="text-[10px] opacity-70">coins</span>
                                       </td>
-                                      <td className="px-2 py-2 text-right tabular-nums text-muted-foreground">
-                                        {horse.poolShare}%
-                                      </td>
                                     </tr>
                                   );
                                 })}
                             </tbody>
                           </table>
-                          <div className="px-3 py-2 bg-muted/30 border-t border-border text-[11px] text-muted-foreground flex justify-between">
-                            <span>Tổng pool: <strong className="text-[#8F7318]">{raceBettingOdds.totalPool.toLocaleString('vi-VN')} coins</strong></span>
-                            <span>Sau rake 10%: <strong>{raceBettingOdds.payoutPool?.toLocaleString('vi-VN') ?? '—'} coins</strong></span>
+                          <div className="px-3 py-2 bg-muted/30 border-t border-border text-[11px] text-muted-foreground">
+                            <span>Tổng quỹ cược: <strong className="text-[#8F7318]">{raceBettingOdds.totalPool.toLocaleString('vi-VN')} coins</strong></span>
                           </div>
                         </div>
                       )}
@@ -3526,8 +3311,8 @@ export function SpectatorDashboard() {
                           </span>
                         </div>
                         <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>Odds ước tính: ~{currentMultiplier}x</span>
-                          <span>⚠️ Odds thực tính sau khi race kết thúc</span>
+                          <span>Hệ số ước tính: ~{currentMultiplier}x</span>
+                          <span>⚠️ Hệ số thực tính sau khi cuộc đua kết thúc</span>
                         </div>
                       </>
                     );
@@ -3849,7 +3634,7 @@ export function SpectatorDashboard() {
                         </div>
                         <div className="mt-1 flex items-center gap-2">
                           <span className="text-xs text-[#8F7318] bg-gold/10 px-2 py-0.5 rounded font-bold border border-gold/30">
-                            {bet.multiplier > 0 ? `x${bet.multiplier} (parimutuel)` : 'Odds tính sau race'}
+                            {bet.multiplier > 0 ? `x${bet.multiplier} (parimutuel)` : 'Hệ số tính sau cuộc đua'}
                           </span>
                         </div>
                       </div>

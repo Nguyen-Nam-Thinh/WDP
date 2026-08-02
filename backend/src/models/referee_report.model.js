@@ -2,8 +2,6 @@ const mongoose = require('mongoose');
 const {
   PRE_RACE_TRACK_CONDITIONS,
   PRE_CHECK_FAIL_CATEGORIES,
-  INQUIRY_STATEMENT_ROLES,
-  INQUIRY_FAULT_PARTIES,
   PENALTY_REASON_CODES,
   POST_RACE_VET_ORDER_TYPES,
 } = require('../config/constants');
@@ -79,15 +77,6 @@ const postRaceReportSchema = new mongoose.Schema(
   { _id: false },
 );
 
-const inquiryStatementSchema = new mongoose.Schema(
-  {
-    role: { type: String, enum: INQUIRY_STATEMENT_ROLES, required: true },
-    name: { type: String, trim: true, default: '' },
-    text: { type: String, trim: true, default: '' },
-  },
-  { _id: false },
-);
-
 const incidentSchema = new mongoose.Schema(
   {
     registrationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Registration', default: null },
@@ -97,23 +86,12 @@ const incidentSchema = new mongoose.Schema(
       enum: ['interference', 'doping', 'equipment_violation', 'jockey_violation', 'other'],
       required: true,
     },
-    description: { type: String, required: true, trim: true },
     action: { type: String, trim: true, default: '' },
     recordedAt: { type: Date, default: Date.now },
     source: { type: String, enum: ['manual', 'live_flag'], default: 'manual' },
     status: { type: String, enum: ['draft', 'resolved'], default: 'resolved' },
     raceTimeMs: { type: Number, default: null },
     flaggedAt: { type: Date, default: null },
-    inquiry: {
-      statements: { type: [inquiryStatementSchema], default: [] },
-      cameraAngles: { type: [String], default: [] },
-      faultParty: {
-        type: String,
-        enum: [...INQUIRY_FAULT_PARTIES, null],
-        default: null,
-      },
-      conclusion: { type: String, trim: true, default: '' },
-    },
     resolution: {
       verdict: {
         type: String,

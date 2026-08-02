@@ -130,7 +130,7 @@ async function cancelRace(raceId) {
           await walletService.creditWallet(
             wallet._id, reg.ownerId, refundAmount,
             'registration_refund',
-            `Refund: race cancelled (${race.name})`,
+            `Hoàn tiền: cuộc đua bị hủy (${race.name})`,
             reg._id, 'Registration', session,
           );
         }

@@ -36,7 +36,7 @@ async function payPenalty(ticketId, userId) {
       userId,
       ticket.amount,
       'penalty_payment',
-      `Nộp phạt steward — ticket ${ticket._id}`,
+      `Nộp phạt steward`,
       ticket._id,
       'PenaltyTicket',
       session,

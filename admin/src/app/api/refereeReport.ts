@@ -2,6 +2,55 @@ import { apiRequest } from './client';
 
 export type RefereeReportStatus = 'draft' | 'pending_approval' | 'rejected' | 'approved' | 'submitted';
 
+export interface AdminLateScratching {
+  _id?: string;
+  label: string;
+  category?: string;
+  note?: string;
+  scratchedAt?: string;
+}
+
+export interface AdminPerformanceExplanation {
+  _id?: string;
+  label: string;
+  explanation?: string;
+  summonedRoles?: string[];
+  recordedAt?: string;
+}
+
+export interface AdminVetOrder {
+  _id?: string;
+  label: string;
+  orderType: string;
+  note?: string;
+  orderedAt?: string;
+}
+
+export interface AdminIncidentResolution {
+  verdict?: 'none' | 'warning' | 'fine' | 'disqualified' | null;
+  fineAmount?: number | null;
+  fineTargetRole?: 'owner' | 'jockey' | null;
+  fineTargetUserId?: string | null;
+  reasonCode?: string | null;
+  suspensionDays?: number | null;
+  note?: string;
+  resolvedAt?: string | null;
+}
+
+export interface AdminIncident {
+  _id: string;
+  type: string;
+  action?: string;
+  recordedAt: string;
+  status?: string;
+  source?: string;
+  raceTimeMs?: number | null;
+  flaggedAt?: string | null;
+  horseId?: string | { _id: string; name?: string } | null;
+  registrationId?: string | null;
+  resolution?: AdminIncidentResolution;
+}
+
 export interface AdminRefereeReport {
   _id: string;
   raceId: {
@@ -29,25 +78,16 @@ export interface AdminRefereeReport {
   preRaceReport?: {
     trackCondition?: string;
     trackConditionNote?: string;
-    lateScratchings?: { label: string; category?: string; note?: string }[];
+    lateScratchings?: AdminLateScratching[];
     riderChanges?: string[];
     gearChanges?: string[];
     vetChecks?: string[];
   };
   postRaceReport?: {
-    performanceExplanations?: { label: string; explanation?: string; summonedRoles?: string[] }[];
-    vetOrders?: { label: string; orderType: string; note?: string }[];
+    performanceExplanations?: AdminPerformanceExplanation[];
+    vetOrders?: AdminVetOrder[];
   };
-  incidents: {
-    _id: string;
-    type: string;
-    description: string;
-    action?: string;
-    recordedAt: string;
-    status?: string;
-    source?: string;
-    resolution?: { verdict?: string; fineAmount?: number; note?: string };
-  }[];
+  incidents: AdminIncident[];
   createdAt: string;
 }
 

@@ -51,6 +51,35 @@ async function getTransactionHistory(userId, page, limit) {
     Transaction.find({ userId }).sort({ createdAt: -1 }).skip(skip).limit(limit),
     Transaction.countDocuments({ userId }),
   ]);
+
+  const hireTxs = transactions.filter(
+    (tx) =>
+      (tx.type === 'jockey_hire_fee' || tx.type === 'jockey_hire_income')
+      && tx.relatedId
+      && /invitation/i.test(tx.description || ''),
+  );
+
+  if (hireTxs.length > 0) {
+    const { JockeyInvitation } = require('../models/jockey_invitation.model');
+    const ids = [...new Set(hireTxs.map((tx) => String(tx.relatedId)))];
+    const invitations = await JockeyInvitation.find({ _id: { $in: ids } })
+      .populate('horseId', 'name')
+      .populate('raceId', 'name')
+      .lean();
+    const invMap = new Map(invitations.map((inv) => [String(inv._id), inv]));
+
+    for (const tx of hireTxs) {
+      const inv = invMap.get(String(tx.relatedId));
+      const horseName = inv?.horseId?.name;
+      if (!horseName) continue;
+      const raceName = inv?.raceId?.name;
+      const suffix = raceName ? ` — ${raceName}` : '';
+      tx.description = tx.type === 'jockey_hire_fee'
+        ? `Phí thuê kỵ sĩ cho ngựa ${horseName}${suffix}`
+        : `Thu nhập thuê cưỡi ngựa ${horseName}${suffix}`;
+    }
+  }
+
   return { transactions, total, page, limit };
 }
 

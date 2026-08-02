@@ -2,37 +2,20 @@ import { API_URL } from './auth';
 import { getApiErrorMessage } from '../utils/errorMessages';
 import type { Race } from './race';
 
-export type InquiryStatementRole = 'jockey' | 'owner' | 'witness';
-export type InquiryFaultParty = 'subject' | 'other' | 'both' | 'none';
 export type PenaltyReasonCode = 'interference' | 'whip' | 'careless' | 'late' | 'other';
 export type PostRaceVetOrderType = 'blood' | 'urine' | 'endoscopy' | 'clinical';
-
-export interface InquiryStatement {
-  role: InquiryStatementRole;
-  name?: string;
-  text?: string;
-}
-
-export interface IncidentInquiry {
-  statements?: InquiryStatement[];
-  cameraAngles?: string[];
-  faultParty?: InquiryFaultParty | null;
-  conclusion?: string;
-}
 
 export interface Incident {
   _id: string;
   registrationId?: string;
   horseId?: { _id: string; name: string; breed: string } | string | null;
   type: 'interference' | 'doping' | 'equipment_violation' | 'jockey_violation' | 'other';
-  description: string;
   action?: string;
   recordedAt: string;
   source?: 'manual' | 'live_flag';
   status?: 'draft' | 'resolved';
   raceTimeMs?: number | null;
   flaggedAt?: string | null;
-  inquiry?: IncidentInquiry | null;
   resolution?: {
     verdict: 'none' | 'warning' | 'fine' | 'disqualified' | null;
     fineAmount?: number | null;
@@ -220,7 +203,7 @@ export const refereeApi = {
   addIncident: async (
     token: string,
     reportId: string,
-    data: { type: Incident['type']; description: string; action?: string; registrationId?: string },
+    data: { type: Incident['type']; action?: string; registrationId?: string },
   ): Promise<RefereeReport> => {
     const res = await fetch(`${API_URL}/referee/reports/${reportId}/incidents`, {
       method: 'POST',
@@ -264,9 +247,7 @@ export const refereeApi = {
     incidentId: string,
     data: {
       type?: Incident['type'];
-      description?: string;
       action?: string;
-      inquiry?: IncidentInquiry;
     },
   ): Promise<RefereeReport> => {
     const res = await fetch(`${API_URL}/referee/reports/${reportId}/incidents/${incidentId}`, {
@@ -285,9 +266,7 @@ export const refereeApi = {
     incidentId: string,
     data: {
       type?: Incident['type'];
-      description?: string;
       action?: string;
-      inquiry?: IncidentInquiry;
       resolution: {
         verdict: IncidentVerdict;
         fineAmount?: number;

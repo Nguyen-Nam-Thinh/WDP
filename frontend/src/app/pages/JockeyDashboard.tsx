@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Pagination } from '../components/Pagination';
-import { useNavigate, useLocation } from 'react-router';
+import { useState, useEffect, useMemo } from "react";
+import { Pagination } from "../components/Pagination";
+import { useNavigate, useLocation } from "react-router";
 import {
   Medal,
   Calendar,
@@ -28,61 +28,90 @@ import {
   Coins,
   Search,
   Ticket,
-} from 'lucide-react';
-import { 
-  Button, Chip, Dialog, DialogTitle, DialogContent, DialogActions,
-  Avatar, LinearProgress, Box, Typography, TextField,
-} from '@mui/material';
+} from "lucide-react";
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, RadarChart
-} from 'recharts';
-import { AppShell, type NavItem } from '../components/layout/AppShell';
-import { Home } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
-import { useWallet } from '../hooks/useWallet';
-import { PenaltiesPanel } from './shared/PenaltiesPanel';
-import { invitationApi, jockeyApi, JockeyInvitation } from '../api/invitation';
-import { toast } from 'sonner';
-import { userApi, type JockeyOverview, type MonthlyStatPoint } from '../api/user';
+  Button,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Avatar,
+  LinearProgress,
+  Box,
+  Typography,
+  TextField,
+} from "@mui/material";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  RadarChart,
+} from "recharts";
+import { AppShell, type NavItem } from "../components/layout/AppShell";
+import { Home } from "lucide-react";
+import { useAuth } from "../hooks/useAuth";
+import { useWallet } from "../hooks/useWallet";
+import { PenaltiesPanel } from "./shared/PenaltiesPanel";
+import { invitationApi, jockeyApi, JockeyInvitation } from "../api/invitation";
+import { toast } from "sonner";
+import {
+  userApi,
+  type JockeyOverview,
+  type MonthlyStatPoint,
+} from "../api/user";
 
 const GRADE_COLORS: Record<string, string> = {
-  Maiden: '#7A7468',
-  G3: '#3b82f6',
-  G2: '#8b5cf6',
-  G1: '#C9A227',
+  Maiden: "#7A7468",
+  G3: "#3b82f6",
+  G2: "#8b5cf6",
+  G1: "#C9A227",
 };
 
 const JOCKEY_NAV: NavItem[] = [
-  { to: '/jockey', label: 'Tổng Quan', icon: <Home /> },
-  { to: '/jockey/invitations', label: 'Lời Mời Đua', icon: <Clock /> },
-  { to: '/jockey/schedule', label: 'Lịch Đua', icon: <Calendar /> },
-  { to: '/jockey/results', label: 'Kết Quả Quá Khứ', icon: <Trophy /> },
-  { to: '/jockey/penalties', label: 'Vé Phạt', icon: <Ticket /> },
+  { to: "/jockey", label: "Tổng Quan", icon: <Home /> },
+  { to: "/jockey/invitations", label: "Lời Mời Đua", icon: <Clock /> },
+  { to: "/jockey/schedule", label: "Lịch Đua", icon: <Calendar /> },
+  { to: "/jockey/results", label: "Kết Quả Quá Khứ", icon: <Trophy /> },
+  { to: "/jockey/penalties", label: "Vé Phạt", icon: <Ticket /> },
 ];
 
 export function JockeyDashboard() {
   const navigate = useNavigate();
   const { user, token } = useAuth();
   const { pathname, search } = useLocation();
-  const highlightPenalties = pathname === '/jockey/penalties'
-    && new URLSearchParams(search).get('penalties') === '1';
+  const highlightPenalties =
+    pathname === "/jockey/penalties" &&
+    new URLSearchParams(search).get("penalties") === "1";
   const { formatted: walletBalance } = useWallet();
 
   useEffect(() => {
     if (!user) {
-      navigate('/');
+      navigate("/");
     }
   }, [user, navigate]);
-  const activeTab = pathname === '/jockey/schedule' ? 'schedule'
-    : pathname === '/jockey/results' ? 'results'
-    : pathname === '/jockey/invitations' ? 'invitations'
-    : pathname === '/jockey/penalties' ? 'penalties'
-    : 'overview';
+  const activeTab =
+    pathname === "/jockey/schedule"
+      ? "schedule"
+      : pathname === "/jockey/results"
+        ? "results"
+        : pathname === "/jockey/invitations"
+          ? "invitations"
+          : pathname === "/jockey/penalties"
+            ? "penalties"
+            : "overview";
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [horseInfoOpen, setHorseInfoOpen] = useState(false);
   const [selectedHorse, setSelectedHorse] = useState<any>(null);
-  const [viewHorseActiveImage, setViewHorseActiveImage] = useState<string>('');
+  const [viewHorseActiveImage, setViewHorseActiveImage] = useState<string>("");
 
   // Invitations — real API
   const [invitations, setInvitations] = useState<JockeyInvitation[]>([]);
@@ -113,36 +142,52 @@ export function JockeyDashboard() {
       setOverview(ov as unknown as JockeyOverview);
       setMonthlyStats(ms.monthly);
     } catch (err: any) {
-      toast.error(err.message || 'Không thể tải dữ liệu tổng quan');
+      toast.error(err.message || "Không thể tải dữ liệu tổng quan");
     } finally {
       setLoadingOverview(false);
     }
   };
 
-  const handleUpdateAvailability = async (newAvailable: boolean, fee?: string) => {
+  const handleUpdateAvailability = async (
+    newAvailable: boolean,
+    fee?: string,
+  ) => {
     if (!token) return;
     setUpdatingAvailability(true);
     try {
       const feeNum = parseFloat(fee ?? askingFee) || 0;
-      await jockeyApi.updateAvailability(token, { isAvailable: newAvailable, askingFeePerRace: feeNum });
+      await jockeyApi.updateAvailability(token, {
+        isAvailable: newAvailable,
+        askingFeePerRace: feeNum,
+      });
       setIsAvailable(newAvailable);
-      toast.success(newAvailable ? 'Bạn đã hiển thị trên diễn đàn thuê' : 'Bạn đã ẩn khỏi diễn đàn thuê');
+      toast.success(
+        newAvailable
+          ? "Bạn đã hiển thị trên diễn đàn thuê"
+          : "Bạn đã ẩn khỏi diễn đàn thuê",
+      );
     } catch (err: any) {
-      toast.error(err.message || 'Không thể cập nhật trạng thái');
+      toast.error(err.message || "Không thể cập nhật trạng thái");
     } finally {
       setUpdatingAvailability(false);
     }
   };
 
-  const [scheduleSubTab, setScheduleSubTab] = useState<'accepted' | 'rejected'>('accepted');
-  const [scheduleSearch, setScheduleSearch] = useState('');
-  const [resultsSearch, setResultsSearch] = useState('');
+  const [scheduleSubTab, setScheduleSubTab] = useState<"accepted" | "rejected">(
+    "accepted",
+  );
+  const [scheduleSearch, setScheduleSearch] = useState("");
+  const [resultsSearch, setResultsSearch] = useState("");
 
-  const [acceptedInvitations, setAcceptedInvitations] = useState<JockeyInvitation[]>([]);
+  const [acceptedInvitations, setAcceptedInvitations] = useState<
+    JockeyInvitation[]
+  >([]);
   const [loadingSchedule, setLoadingSchedule] = useState(false);
   const [acceptedPage, setAcceptedPage] = useState(1);
 
-  const [rejectedInvitations, setRejectedInvitations] = useState<JockeyInvitation[]>([]);
+  const [rejectedInvitations, setRejectedInvitations] = useState<
+    JockeyInvitation[]
+  >([]);
   const [loadingRejected, setLoadingRejected] = useState(false);
   const [rejectedPage, setRejectedPage] = useState(1);
 
@@ -150,10 +195,13 @@ export function JockeyDashboard() {
     if (!token) return;
     setLoadingInvitations(true);
     try {
-      const result = await invitationApi.getInvitations(token, { status: 'pending', limit: 50 });
+      const result = await invitationApi.getInvitations(token, {
+        status: "pending",
+        limit: 50,
+      });
       setInvitations(result.invitations);
     } catch (err: any) {
-      toast.error(err.message || 'Không thể tải danh sách lời mời');
+      toast.error(err.message || "Không thể tải danh sách lời mời");
     } finally {
       setLoadingInvitations(false);
     }
@@ -163,10 +211,13 @@ export function JockeyDashboard() {
     if (!token) return;
     setLoadingSchedule(true);
     try {
-      const result = await invitationApi.getInvitations(token, { status: 'accepted', limit: 100 });
+      const result = await invitationApi.getInvitations(token, {
+        status: "accepted",
+        limit: 100,
+      });
       setAcceptedInvitations(result.invitations);
     } catch (err: any) {
-      toast.error(err.message || 'Không thể tải lịch đua');
+      toast.error(err.message || "Không thể tải lịch đua");
     } finally {
       setLoadingSchedule(false);
     }
@@ -176,10 +227,13 @@ export function JockeyDashboard() {
     if (!token) return;
     setLoadingRejected(true);
     try {
-      const result = await invitationApi.getInvitations(token, { status: 'rejected', limit: 100 });
+      const result = await invitationApi.getInvitations(token, {
+        status: "rejected",
+        limit: 100,
+      });
       setRejectedInvitations(result.invitations);
     } catch (err: any) {
-      toast.error(err.message || 'Không thể tải lời mời đã từ chối');
+      toast.error(err.message || "Không thể tải lời mời đã từ chối");
     } finally {
       setLoadingRejected(false);
     }
@@ -190,11 +244,11 @@ export function JockeyDashboard() {
   }, [token]);
 
   useEffect(() => {
-    if (activeTab === 'overview') loadOverviewData();
+    if (activeTab === "overview") loadOverviewData();
   }, [activeTab, token]);
 
   useEffect(() => {
-    if (activeTab === 'schedule') {
+    if (activeTab === "schedule") {
       loadSchedule();
       loadRejected();
     }
@@ -205,11 +259,11 @@ export function JockeyDashboard() {
     setProcessingId(invitationId);
     try {
       await invitationApi.acceptInvitation(token, invitationId);
-      toast.success('Đã chấp nhận lời mời');
+      toast.success("Đã chấp nhận lời mời");
       setInvitations((prev) => prev.filter((i) => i._id !== invitationId));
       loadSchedule();
     } catch (err: any) {
-      toast.error(err.message || 'Không thể chấp nhận lời mời');
+      toast.error(err.message || "Không thể chấp nhận lời mời");
     } finally {
       setProcessingId(null);
     }
@@ -220,10 +274,10 @@ export function JockeyDashboard() {
     setProcessingId(invitationId);
     try {
       await invitationApi.rejectInvitation(token, invitationId);
-      toast.success('Đã từ chối lời mời');
+      toast.success("Đã từ chối lời mời");
       setInvitations((prev) => prev.filter((i) => i._id !== invitationId));
     } catch (err: any) {
-      toast.error(err.message || 'Không thể từ chối lời mời');
+      toast.error(err.message || "Không thể từ chối lời mời");
     } finally {
       setProcessingId(null);
     }
@@ -238,12 +292,16 @@ export function JockeyDashboard() {
     const owner = inv.ownerId;
     const hay = [
       race?.name,
-      race?.tournamentId && typeof race.tournamentId === 'object' ? (race.tournamentId as any).name : '',
+      race?.tournamentId && typeof race.tournamentId === "object"
+        ? (race.tournamentId as any).name
+        : "",
       race?.grade,
       race?.status,
-      horse && typeof horse === 'object' ? horse.name : '',
-      owner && typeof owner === 'object' ? owner.fullName : '',
-    ].join(' ').toLowerCase();
+      horse && typeof horse === "object" ? horse.name : "",
+      owner && typeof owner === "object" ? owner.fullName : "",
+    ]
+      .join(" ")
+      .toLowerCase();
     return hay.includes(q);
   };
 
@@ -258,84 +316,154 @@ export function JockeyDashboard() {
   }, [rejectedInvitations, scheduleSearch]);
 
   const pagedAccepted = useMemo(
-    () => filteredAccepted.slice((acceptedPage - 1) * JOCKEY_PAGE_SIZE, acceptedPage * JOCKEY_PAGE_SIZE),
+    () =>
+      filteredAccepted.slice(
+        (acceptedPage - 1) * JOCKEY_PAGE_SIZE,
+        acceptedPage * JOCKEY_PAGE_SIZE,
+      ),
     [filteredAccepted, acceptedPage],
   );
-  const acceptedTotalPages = Math.ceil(filteredAccepted.length / JOCKEY_PAGE_SIZE) || 1;
+  const acceptedTotalPages =
+    Math.ceil(filteredAccepted.length / JOCKEY_PAGE_SIZE) || 1;
   const pagedRejected = useMemo(
-    () => filteredRejected.slice((rejectedPage - 1) * JOCKEY_PAGE_SIZE, rejectedPage * JOCKEY_PAGE_SIZE),
+    () =>
+      filteredRejected.slice(
+        (rejectedPage - 1) * JOCKEY_PAGE_SIZE,
+        rejectedPage * JOCKEY_PAGE_SIZE,
+      ),
     [filteredRejected, rejectedPage],
   );
-  const rejectedTotalPages = Math.ceil(filteredRejected.length / JOCKEY_PAGE_SIZE) || 1;
+  const rejectedTotalPages =
+    Math.ceil(filteredRejected.length / JOCKEY_PAGE_SIZE) || 1;
 
   const recentResults = [
-    { race: 'Spring Classic', date: '2026-05-15', horse: 'Thunder Strike', position: 1, prize: '$5,000', points: 100, violations: 0 },
-    { race: 'Victory Cup', date: '2026-05-10', horse: 'Storm Runner', position: 2, prize: '$3,000', points: 75, violations: 0 },
-    { race: 'Elite Championship', date: '2026-05-05', horse: 'Wild Fire', position: 1, prize: '$5,000', points: 100, violations: 1 },
-    { race: 'Grand Prix', date: '2026-04-28', horse: 'Thunder Strike', position: 3, prize: '$2,000', points: 50, violations: 0 },
+    {
+      race: "Spring Classic",
+      date: "2026-05-15",
+      horse: "Thunder Strike",
+      position: 1,
+      prize: "$5,000",
+      points: 100,
+      violations: 0,
+    },
+    {
+      race: "Victory Cup",
+      date: "2026-05-10",
+      horse: "Storm Runner",
+      position: 2,
+      prize: "$3,000",
+      points: 75,
+      violations: 0,
+    },
+    {
+      race: "Elite Championship",
+      date: "2026-05-05",
+      horse: "Wild Fire",
+      position: 1,
+      prize: "$5,000",
+      points: 100,
+      violations: 1,
+    },
+    {
+      race: "Grand Prix",
+      date: "2026-04-28",
+      horse: "Thunder Strike",
+      position: 3,
+      prize: "$2,000",
+      points: 50,
+      violations: 0,
+    },
   ];
 
   const filteredResults = useMemo(() => {
     const q = resultsSearch.trim().toLowerCase();
     if (!q) return recentResults;
     return recentResults.filter((r) =>
-      [r.race, r.horse, r.date, String(r.position)].join(' ').toLowerCase().includes(q),
+      [r.race, r.horse, r.date, String(r.position)]
+        .join(" ")
+        .toLowerCase()
+        .includes(q),
     );
   }, [resultsSearch]);
 
   const performanceData = [
-    { month: 'Jan', winRate: 35, finishes: 8 },
-    { month: 'Feb', winRate: 38, finishes: 10 },
-    { month: 'Mar', winRate: 42, finishes: 12 },
-    { month: 'Apr', winRate: 45, finishes: 15 },
-    { month: 'May', winRate: 48, finishes: 14 },
+    { month: "Jan", winRate: 35, finishes: 8 },
+    { month: "Feb", winRate: 38, finishes: 10 },
+    { month: "Mar", winRate: 42, finishes: 12 },
+    { month: "Apr", winRate: 45, finishes: 15 },
+    { month: "May", winRate: 48, finishes: 14 },
   ];
 
   const radarData = [
-    { subject: 'Tốc Độ Nước Rút', A: 90, fullMark: 100 },
-    { subject: 'Sức Bền', A: 85, fullMark: 100 },
-    { subject: 'Điều Khiển Roi', A: 88, fullMark: 100 },
-    { subject: 'Qua Cua', A: 92, fullMark: 100 },
-    { subject: 'An Toàn', A: 95, fullMark: 100 },
-    { subject: 'Chiến Thuật', A: 80, fullMark: 100 },
+    { subject: "Tốc Độ Nước Rút", A: 90, fullMark: 100 },
+    { subject: "Sức Bền", A: 85, fullMark: 100 },
+    { subject: "Điều Khiển Roi", A: 88, fullMark: 100 },
+    { subject: "Qua Cua", A: 92, fullMark: 100 },
+    { subject: "An Toàn", A: 95, fullMark: 100 },
+    { subject: "Chiến Thuật", A: 80, fullMark: 100 },
   ];
 
   const stats = [
-    { label: 'Tổng Số Cuộc Đua', value: '145', icon: Calendar, color: 'from-[#C9A227] to-[#8F7318]' },
-    { label: 'Chiến Thắng Sự Nghiệp', value: '58', icon: Trophy, color: 'from-[#C9A227] to-[#B08D1E]' },
-    { label: 'Tỷ Lệ Thắng', value: '40%', icon: TrendingUp, color: 'from-teal-400 to-teal-600' },
-    { label: 'Tổng Thu Nhập', value: '$89K', icon: Wallet, color: 'from-[#B08D1E] to-[#8F7318]' },
+    {
+      label: "Tổng Số Cuộc Đua",
+      value: "145",
+      icon: Calendar,
+      color: "from-[#C9A227] to-[#8F7318]",
+    },
+    {
+      label: "Chiến Thắng Sự Nghiệp",
+      value: "58",
+      icon: Trophy,
+      color: "from-[#C9A227] to-[#B08D1E]",
+    },
+    {
+      label: "Tỷ Lệ Thắng",
+      value: "40%",
+      icon: TrendingUp,
+      color: "from-teal-400 to-teal-600",
+    },
+    {
+      label: "Tổng Thu Nhập",
+      value: "$89K",
+      icon: Wallet,
+      color: "from-[#B08D1E] to-[#8F7318]",
+    },
   ];
 
   const horseData = {
-    name: 'Thunder Strike',
-    breed: 'Thoroughbred',
+    name: "Thunder Strike",
+    breed: "Thoroughbred",
     age: 4,
-    weight: '520 kg',
-    grade: 'G1',
+    weight: "520 kg",
+    grade: "G1",
     totalWins: 12,
     points: 1500,
     compatibility: 85,
-    recentForm: [1, 2, 1, 1, 3]
+    recentForm: [1, 2, 1, 1, 3],
   };
 
   const handleViewHorse = (horse: any) => {
     setSelectedHorse(horse);
     const images: string[] = horse.imageUrls?.length
       ? horse.imageUrls
-      : horse.primaryImageUrl ? [horse.primaryImageUrl] : [];
-    setViewHorseActiveImage(images[0] ?? '');
+      : horse.primaryImageUrl
+        ? [horse.primaryImageUrl]
+        : [];
+    setViewHorseActiveImage(images[0] ?? "");
     setHorseInfoOpen(true);
   };
 
   function LinearProgressWithLabel(props: any) {
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <Box sx={{ width: '100%', mr: 1 }}>
+      <Box sx={{ display: "flex", alignItems: "center" }}>
+        <Box sx={{ width: "100%", mr: 1 }}>
           <LinearProgress variant="determinate" {...props} />
         </Box>
         <Box sx={{ minWidth: 35 }}>
-          <Typography variant="body2" sx={{ color: '#23201A', fontWeight: 'bold' }}>{`${Math.round(props.value)}%`}</Typography>
+          <Typography
+            variant="body2"
+            sx={{ color: "#23201A", fontWeight: "bold" }}
+          >{`${Math.round(props.value)}%`}</Typography>
         </Box>
       </Box>
     );
@@ -345,7 +473,7 @@ export function JockeyDashboard() {
     <AppShell roleLabel="JOCKEY" nav={JOCKEY_NAV}>
       <div className="max-w-7xl mx-auto">
         {/* Overview */}
-        {activeTab === 'overview' && (
+        {activeTab === "overview" && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             {loadingOverview ? (
               <div className="flex items-center justify-center py-16 text-muted-foreground">
@@ -356,11 +484,13 @@ export function JockeyDashboard() {
               <>
                 {(() => {
                   const until = (user as any)?.jockeyProfile?.suspendedUntil;
-                  if (!until || new Date(until).getTime() <= Date.now()) return null;
+                  if (!until || new Date(until).getTime() <= Date.now())
+                    return null;
                   return (
                     <div className="mb-6 border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
-                      <strong>Đang bị treo giò steward</strong>
-                      {' '}đến {new Date(until).toLocaleString('vi-VN')}. Không thể nhận lời mời / được gán race mới trong thời gian này.
+                      <strong>Đang bị treo giò steward</strong> đến{" "}
+                      {new Date(until).toLocaleString("vi-VN")}. Không thể nhận
+                      lời mời / được gán race mới trong thời gian này.
                     </div>
                   );
                 })()}
@@ -368,18 +498,47 @@ export function JockeyDashboard() {
                 {/* Stat cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                   {[
-                    { label: 'Tổng Cuộc Đua', value: String(overview?.totalRaces ?? 0), icon: Calendar, color: 'from-[#1F3D2B] to-[#172D20]' },
-                    { label: 'Chiến Thắng', value: String(overview?.totalWins ?? 0), icon: Trophy, color: 'from-[#C9A227] to-[#8F7318]' },
-                    { label: 'Tỷ Lệ Thắng', value: `${overview?.totalRaces ? Math.round(((overview?.totalWins ?? 0) / overview.totalRaces) * 100) : 0}%`, icon: TrendingUp, color: 'from-[#8C2F1B] to-[#6B1F10]' },
-                    { label: 'Số Dư Ví', value: `${(overview?.walletBalance ?? 0).toLocaleString('vi-VN')} coins`, icon: Wallet, color: 'from-[#C9A227] to-[#B08D1E]' },
+                    {
+                      label: "Tổng Cuộc Đua",
+                      value: String(overview?.totalRaces ?? 0),
+                      icon: Calendar,
+                      color: "from-[#1F3D2B] to-[#172D20]",
+                    },
+                    {
+                      label: "Chiến Thắng",
+                      value: String(overview?.totalWins ?? 0),
+                      icon: Trophy,
+                      color: "from-[#C9A227] to-[#8F7318]",
+                    },
+                    {
+                      label: "Tỷ Lệ Thắng",
+                      value: `${overview?.totalRaces ? Math.round(((overview?.totalWins ?? 0) / overview.totalRaces) * 100) : 0}%`,
+                      icon: TrendingUp,
+                      color: "from-[#8C2F1B] to-[#6B1F10]",
+                    },
+                    {
+                      label: "Số Dư Ví",
+                      value: `${(overview?.walletBalance ?? 0).toLocaleString("vi-VN")} coins`,
+                      icon: Wallet,
+                      color: "from-[#C9A227] to-[#B08D1E]",
+                    },
                   ].map((s, i) => (
-                    <div key={i} className="bg-card border border-border p-5 hover:-translate-y-0.5 transition-transform">
+                    <div
+                      key={i}
+                      className="bg-card border border-border p-5 hover:-translate-y-0.5 transition-transform"
+                    >
                       <div className="flex items-start justify-between">
                         <div>
-                          <div className="text-xs text-muted-foreground font-medium mb-1 uppercase tracking-wide">{s.label}</div>
-                          <div className="font-serif text-3xl font-bold text-foreground">{s.value}</div>
+                          <div className="text-xs text-muted-foreground font-medium mb-1 uppercase tracking-wide">
+                            {s.label}
+                          </div>
+                          <div className="font-serif text-3xl font-bold text-foreground">
+                            {s.value}
+                          </div>
                         </div>
-                        <div className={`w-10 h-10 bg-gradient-to-br ${s.color} flex items-center justify-center shadow-sm flex-shrink-0`}>
+                        <div
+                          className={`w-10 h-10 bg-gradient-to-br ${s.color} flex items-center justify-center shadow-sm flex-shrink-0`}
+                        >
                           <s.icon className="w-5 h-5 text-white" />
                         </div>
                       </div>
@@ -388,15 +547,25 @@ export function JockeyDashboard() {
                 </div>
 
                 {/* Forum availability banner */}
-                <div className={`mb-6 border p-4 flex flex-col sm:flex-row sm:items-center gap-4 transition-colors ${isAvailable ? 'bg-green-500/5 border-green-500/30' : 'bg-card border-border'}`}>
+                <div
+                  className={`mb-6 border p-4 flex flex-col sm:flex-row sm:items-center gap-4 transition-colors ${isAvailable ? "bg-green-500/5 border-green-500/30" : "bg-card border-border"}`}
+                >
                   <div className="flex items-center gap-3 flex-1">
-                    <div className={`w-10 h-10 flex items-center justify-center shrink-0 ${isAvailable ? 'bg-green-500/10' : 'bg-muted'}`}>
-                      <Target className={`w-5 h-5 ${isAvailable ? 'text-green-400' : 'text-muted-foreground'}`} />
+                    <div
+                      className={`w-10 h-10 flex items-center justify-center shrink-0 ${isAvailable ? "bg-green-500/10" : "bg-muted"}`}
+                    >
+                      <Target
+                        className={`w-5 h-5 ${isAvailable ? "text-green-400" : "text-muted-foreground"}`}
+                      />
                     </div>
                     <div className="min-w-0">
-                      <div className="font-semibold text-foreground text-sm">Trạng Thái Diễn Đàn Thuê</div>
+                      <div className="font-semibold text-foreground text-sm">
+                        Trạng Thái Diễn Đàn Thuê
+                      </div>
                       <div className="text-xs text-muted-foreground">
-                        {isAvailable ? 'Bạn đang hiển thị trên diễn đàn — Chủ Ngựa có thể tìm và gửi lời mời cho bạn' : 'Bạn đang ẩn — không ai thấy bạn trong diễn đàn thuê'}
+                        {isAvailable
+                          ? "Bạn đang hiển thị trên diễn đàn — Chủ Ngựa có thể tìm và gửi lời mời cho bạn"
+                          : "Bạn đang ẩn — không ai thấy bạn trong diễn đàn thuê"}
                       </div>
                     </div>
                   </div>
@@ -408,16 +577,29 @@ export function JockeyDashboard() {
                         type="number"
                         value={askingFee}
                         onChange={(e) => setAskingFee(e.target.value)}
-                        onBlur={() => { if (isAvailable) handleUpdateAvailability(true, askingFee); }}
+                        onBlur={() => {
+                          if (isAvailable)
+                            handleUpdateAvailability(true, askingFee);
+                        }}
                         sx={{
                           width: 190,
-                          '& .MuiOutlinedInput-root': { borderRadius: 0, fontSize: '0.8rem', color: '#23201A',
-                            '& fieldset': { borderColor: '#C9C2B0' },
-                            '&:hover fieldset': { borderColor: '#C9A227' },
-                            '&.Mui-focused fieldset': { borderColor: '#C9A227' },
+                          "& .MuiOutlinedInput-root": {
+                            borderRadius: 0,
+                            fontSize: "0.8rem",
+                            color: "#23201A",
+                            "& fieldset": { borderColor: "#C9C2B0" },
+                            "&:hover fieldset": { borderColor: "#C9A227" },
+                            "&.Mui-focused fieldset": {
+                              borderColor: "#C9A227",
+                            },
                           },
-                          '& .MuiInputLabel-root': { fontSize: '0.75rem', color: '#7A7468' },
-                          '& .MuiInputLabel-root.Mui-focused': { color: '#C9A227' },
+                          "& .MuiInputLabel-root": {
+                            fontSize: "0.75rem",
+                            color: "#7A7468",
+                          },
+                          "& .MuiInputLabel-root.Mui-focused": {
+                            color: "#C9A227",
+                          },
                         }}
                         inputProps={{ min: 0, step: 10000 }}
                       />
@@ -428,17 +610,26 @@ export function JockeyDashboard() {
                       disabled={updatingAvailability}
                       onClick={() => handleUpdateAvailability(!isAvailable)}
                       sx={{
-                        background: isAvailable ? '#1F3D2B' : '#C9A227',
-                        color: isAvailable ? '#4ade80' : '#23201A',
-                        textTransform: 'none',
+                        background: isAvailable ? "#1F3D2B" : "#C9A227",
+                        color: isAvailable ? "#4ade80" : "#23201A",
+                        textTransform: "none",
                         fontWeight: 700,
                         borderRadius: 0,
                         px: 3,
-                        '&:hover': { background: isAvailable ? '#162D1F' : '#B08D1E' },
-                        '&.Mui-disabled': { background: '#E3DCCB', color: '#7A7468' },
+                        "&:hover": {
+                          background: isAvailable ? "#162D1F" : "#B08D1E",
+                        },
+                        "&.Mui-disabled": {
+                          background: "#E3DCCB",
+                          color: "#7A7468",
+                        },
                       }}
                     >
-                      {updatingAvailability ? 'Đang lưu...' : isAvailable ? '● Đang sẵn sàng' : '○ Bật sẵn sàng'}
+                      {updatingAvailability
+                        ? "Đang lưu..."
+                        : isAvailable
+                          ? "● Đang sẵn sàng"
+                          : "○ Bật sẵn sàng"}
                     </Button>
                   </div>
                 </div>
@@ -446,58 +637,142 @@ export function JockeyDashboard() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                   {/* Monthly chart */}
                   <div className="bg-card border border-border p-5">
-                    <h3 className="font-serif text-base font-bold text-foreground mb-4">Thành Tích 6 Tháng Gần Đây</h3>
+                    <h3 className="font-serif text-base font-bold text-foreground mb-4">
+                      Thành Tích 6 Tháng Gần Đây
+                    </h3>
                     {monthlyStats.length > 0 ? (
                       <ResponsiveContainer width="100%" height={180}>
-                        <AreaChart data={monthlyStats} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                        <AreaChart
+                          data={monthlyStats}
+                          margin={{ top: 5, right: 10, left: -20, bottom: 0 }}
+                        >
                           <defs>
-                            <linearGradient id="jWins" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#C9A227" stopOpacity={0.35} />
-                              <stop offset="95%" stopColor="#C9A227" stopOpacity={0} />
+                            <linearGradient
+                              id="jWins"
+                              x1="0"
+                              y1="0"
+                              x2="0"
+                              y2="1"
+                            >
+                              <stop
+                                offset="5%"
+                                stopColor="#C9A227"
+                                stopOpacity={0.35}
+                              />
+                              <stop
+                                offset="95%"
+                                stopColor="#C9A227"
+                                stopOpacity={0}
+                              />
                             </linearGradient>
-                            <linearGradient id="jRaces" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#1F3D2B" stopOpacity={0.35} />
-                              <stop offset="95%" stopColor="#1F3D2B" stopOpacity={0} />
+                            <linearGradient
+                              id="jRaces"
+                              x1="0"
+                              y1="0"
+                              x2="0"
+                              y2="1"
+                            >
+                              <stop
+                                offset="5%"
+                                stopColor="#1F3D2B"
+                                stopOpacity={0.35}
+                              />
+                              <stop
+                                offset="95%"
+                                stopColor="#1F3D2B"
+                                stopOpacity={0}
+                              />
                             </linearGradient>
                           </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#E3DCCB" />
-                          <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#7A7468' }} />
-                          <YAxis tick={{ fontSize: 11, fill: '#7A7468' }} allowDecimals={false} />
-                          <Tooltip contentStyle={{ background: '#fff', border: '1px solid #E3DCCB', borderRadius: 0, fontSize: 12 }} />
-                          <Area type="monotone" dataKey="wins" name="Thắng" stroke="#C9A227" fill="url(#jWins)" strokeWidth={2} />
-                          <Area type="monotone" dataKey="races" name="Tổng Đua" stroke="#1F3D2B" fill="url(#jRaces)" strokeWidth={2} />
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke="#E3DCCB"
+                          />
+                          <XAxis
+                            dataKey="month"
+                            tick={{ fontSize: 11, fill: "#7A7468" }}
+                          />
+                          <YAxis
+                            tick={{ fontSize: 11, fill: "#7A7468" }}
+                            allowDecimals={false}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              background: "#fff",
+                              border: "1px solid #E3DCCB",
+                              borderRadius: 0,
+                              fontSize: 12,
+                            }}
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="wins"
+                            name="Thắng"
+                            stroke="#C9A227"
+                            fill="url(#jWins)"
+                            strokeWidth={2}
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="races"
+                            name="Tổng Đua"
+                            stroke="#1F3D2B"
+                            fill="url(#jRaces)"
+                            strokeWidth={2}
+                          />
                         </AreaChart>
                       </ResponsiveContainer>
                     ) : (
-                      <div className="flex items-center justify-center h-[180px] text-muted-foreground text-sm">Chưa có dữ liệu thống kê</div>
+                      <div className="flex items-center justify-center h-[180px] text-muted-foreground text-sm">
+                        Chưa có dữ liệu thống kê
+                      </div>
                     )}
                   </div>
 
                   {/* Upcoming confirmed races */}
                   <div className="bg-card border border-border p-5">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-serif text-base font-bold text-foreground">Cuộc Đua Sắp Tới</h3>
-                      <span className="text-xs text-muted-foreground">{(overview?.upcomingRaces ?? []).length} cuộc đua đã xác nhận</span>
+                      <h3 className="font-serif text-base font-bold text-foreground">
+                        Cuộc Đua Sắp Tới
+                      </h3>
+                      <span className="text-xs text-muted-foreground">
+                        {(overview?.upcomingRaces ?? []).length} cuộc đua đã xác
+                        nhận
+                      </span>
                     </div>
                     {(overview?.upcomingRaces ?? []).length > 0 ? (
                       <div className="space-y-2">
-                        {(overview!.upcomingRaces as any[]).slice(0, 4).map((inv: any, i: number) => {
-                          const race = inv.raceId;
-                          const horse = inv.horseId;
-                          if (!race) return null;
-                          return (
-                            <div key={i} className="flex items-center gap-3 p-3 border border-border hover:bg-muted/40 transition-colors">
-                              <div className="w-8 h-8 bg-[#C9A227]/10 border border-[#C9A227]/30 flex items-center justify-center flex-shrink-0">
-                                <Flame className="w-4 h-4 text-[#C9A227]" />
+                        {(overview!.upcomingRaces as any[])
+                          .slice(0, 4)
+                          .map((inv: any, i: number) => {
+                            const race = inv.raceId;
+                            const horse = inv.horseId;
+                            if (!race) return null;
+                            return (
+                              <div
+                                key={i}
+                                className="flex items-center gap-3 p-3 border border-border hover:bg-muted/40 transition-colors"
+                              >
+                                <div className="w-8 h-8 bg-[#C9A227]/10 border border-[#C9A227]/30 flex items-center justify-center flex-shrink-0">
+                                  <Flame className="w-4 h-4 text-[#C9A227]" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-semibold text-foreground truncate">
+                                    {race.name}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {horse?.name} ·{" "}
+                                    {new Date(
+                                      race.scheduledTime,
+                                    ).toLocaleDateString("vi-VN")}
+                                  </div>
+                                </div>
+                                <span className="text-xs font-bold text-[#C9A227] px-2 py-0.5 bg-[#C9A227]/10 border border-[#C9A227]/20 flex-shrink-0">
+                                  {race.grade}
+                                </span>
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="text-sm font-semibold text-foreground truncate">{race.name}</div>
-                                <div className="text-xs text-muted-foreground">{horse?.name} · {new Date(race.scheduledTime).toLocaleDateString('vi-VN')}</div>
-                              </div>
-                              <span className="text-xs font-bold text-[#C9A227] px-2 py-0.5 bg-[#C9A227]/10 border border-[#C9A227]/20 flex-shrink-0">{race.grade}</span>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
                       </div>
                     ) : (
                       <div className="flex flex-col items-center justify-center h-[140px] text-muted-foreground text-sm gap-2">
@@ -512,9 +787,13 @@ export function JockeyDashboard() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="bg-card border border-border p-5">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-serif text-base font-bold text-foreground">Lời Mời Chờ Xử Lý</h3>
+                      <h3 className="font-serif text-base font-bold text-foreground">
+                        Lời Mời Chờ Xử Lý
+                      </h3>
                       {invitations.length > 0 && (
-                        <span className="text-xs font-bold text-white bg-[#8C2F1B] px-2 py-0.5">{invitations.length}</span>
+                        <span className="text-xs font-bold text-white bg-[#8C2F1B] px-2 py-0.5">
+                          {invitations.length}
+                        </span>
                       )}
                     </div>
                     {invitations.length > 0 ? (
@@ -524,19 +803,28 @@ export function JockeyDashboard() {
                           const race = inv.raceId;
                           if (!horse || !race) return null;
                           return (
-                            <div key={i} className="flex items-center gap-3 p-2.5 border border-border hover:bg-muted/40 transition-colors">
+                            <div
+                              key={i}
+                              className="flex items-center gap-3 p-2.5 border border-border hover:bg-muted/40 transition-colors"
+                            >
                               <div className="w-7 h-7 bg-[#8C2F1B]/10 border border-[#8C2F1B]/30 flex items-center justify-center flex-shrink-0">
                                 <Star className="w-3.5 h-3.5 text-[#8C2F1B]" />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="text-sm font-medium text-foreground truncate">{horse.name}</div>
-                                <div className="text-xs text-muted-foreground truncate">{race.name} · {race.grade}</div>
+                                <div className="text-sm font-medium text-foreground truncate">
+                                  {horse.name}
+                                </div>
+                                <div className="text-xs text-muted-foreground truncate">
+                                  {race.name} · {race.grade}
+                                </div>
                               </div>
                             </div>
                           );
                         })}
                         {invitations.length > 3 && (
-                          <p className="text-xs text-muted-foreground text-center pt-1">+{invitations.length - 3} lời mời khác</p>
+                          <p className="text-xs text-muted-foreground text-center pt-1">
+                            +{invitations.length - 3} lời mời khác
+                          </p>
                         )}
                       </div>
                     ) : (
@@ -548,22 +836,53 @@ export function JockeyDashboard() {
                   </div>
 
                   <div className="lg:col-span-2 bg-card border border-border p-5">
-                    <h3 className="font-serif text-base font-bold text-foreground mb-4">Thao Tác Nhanh</h3>
+                    <h3 className="font-serif text-base font-bold text-foreground mb-4">
+                      Thao Tác Nhanh
+                    </h3>
                     <div className="grid grid-cols-2 gap-3">
                       {[
-                        { label: 'Xem Lời Mời', icon: Clock, to: '/jockey/invitations' as string | null, badge: (invitations.length || null) as number | null },
-                        { label: 'Lịch Đua', icon: Calendar, to: '/jockey/schedule' as string | null, badge: null as number | null },
-                        { label: 'Kết Quả', icon: Trophy, to: '/jockey/results' as string | null, badge: null as number | null },
-                        { label: 'Vé Phạt', icon: Ticket, to: '/jockey/penalties' as string | null, badge: null as number | null },
+                        {
+                          label: "Xem Lời Mời",
+                          icon: Clock,
+                          to: "/jockey/invitations" as string | null,
+                          badge: (invitations.length || null) as number | null,
+                        },
+                        {
+                          label: "Lịch Đua",
+                          icon: Calendar,
+                          to: "/jockey/schedule" as string | null,
+                          badge: null as number | null,
+                        },
+                        {
+                          label: "Kết Quả",
+                          icon: Trophy,
+                          to: "/jockey/results" as string | null,
+                          badge: null as number | null,
+                        },
+                        {
+                          label: "Vé Phạt",
+                          icon: Ticket,
+                          to: "/jockey/penalties" as string | null,
+                          badge: null as number | null,
+                        },
                       ].map((action, i) => (
-                        <button key={i} onClick={() => { if (action.to) navigate(action.to); }}
-                          className="flex items-center gap-3 p-4 border border-border hover:border-[#C9A227]/40 hover:bg-muted/40 transition-all text-left group">
+                        <button
+                          key={i}
+                          onClick={() => {
+                            if (action.to) navigate(action.to);
+                          }}
+                          className="flex items-center gap-3 p-4 border border-border hover:border-[#C9A227]/40 hover:bg-muted/40 transition-all text-left group"
+                        >
                           <div className="w-9 h-9 bg-[#C9A227]/10 border border-[#C9A227]/20 flex items-center justify-center group-hover:bg-[#C9A227]/20 transition-colors flex-shrink-0">
                             <action.icon className="w-4 h-4 text-[#C9A227]" />
                           </div>
-                          <span className="text-sm font-medium text-foreground flex-1">{action.label}</span>
+                          <span className="text-sm font-medium text-foreground flex-1">
+                            {action.label}
+                          </span>
                           {action.badge ? (
-                            <span className="text-xs font-bold text-white bg-[#8C2F1B] px-1.5 py-0.5">{action.badge}</span>
+                            <span className="text-xs font-bold text-white bg-[#8C2F1B] px-1.5 py-0.5">
+                              {action.badge}
+                            </span>
                           ) : null}
                         </button>
                       ))}
@@ -576,12 +895,16 @@ export function JockeyDashboard() {
         )}
 
         {/* Content: Ride Offers (Invitations) */}
-        {activeTab === 'invitations' && (
+        {activeTab === "invitations" && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="font-serif text-2xl font-bold text-foreground mb-1">Lời Mời Đua Đang Chờ</h2>
-                <p className="text-slate-400 text-sm">Xem xét điều khoản hợp đồng và chấp nhận lời mời từ Chủ Ngựa</p>
+                <h2 className="font-serif text-2xl font-bold text-foreground mb-1">
+                  Lời Mời Đua Đang Chờ
+                </h2>
+                <p className="text-slate-400 text-sm">
+                  Xem xét điều khoản hợp đồng và chấp nhận lời mời từ Chủ Ngựa
+                </p>
               </div>
             </div>
 
@@ -592,7 +915,7 @@ export function JockeyDashboard() {
               </div>
             ) : invitations.length > 0 ? (
               <div className="space-y-5">
-                {invitations.map(invitation => {
+                {invitations.map((invitation) => {
                   const horse = invitation.horseId;
                   const owner = invitation.ownerId;
                   const race = invitation.raceId;
@@ -600,50 +923,103 @@ export function JockeyDashboard() {
                   const scheduledDate = new Date(race.scheduledTime);
                   const isProcessing = processingId === invitation._id;
                   return (
-                    <div key={invitation._id} className="bg-slate-900/80 backdrop-blur-md border border-border rounded-2xl p-6 hover:border-[#C9A227]/50 transition-all group">
+                    <div
+                      key={invitation._id}
+                      className="bg-slate-900/80 backdrop-blur-md border border-border rounded-2xl p-6 hover:border-[#C9A227]/50 transition-all group"
+                    >
                       <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
                         <div className="flex-1">
                           {/* Header */}
                           <div className="flex items-center justify-between mb-5 border-b border-border pb-5">
                             <div className="flex items-center gap-4">
                               <div className="w-14 h-14 bg-slate-800 rounded-2xl flex items-center justify-center border border-border group-hover:border-[#C9A227]/50 transition-colors overflow-hidden">
-                                {horse.primaryImageUrl
-                                  ? <img src={horse.primaryImageUrl} alt={horse.name} className="w-full h-full object-cover" />
-                                  : <Star className="w-7 h-7 text-[#C9A227]" />}
+                                {horse.primaryImageUrl ? (
+                                  <img
+                                    src={horse.primaryImageUrl}
+                                    alt={horse.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <Star className="w-7 h-7 text-[#C9A227]" />
+                                )}
                               </div>
                               <div>
                                 <div className="flex items-center gap-2 mb-1">
-                                  <h3 className="font-serif text-xl font-bold text-foreground">{horse.name}</h3>
-                                  <Chip label={horse.currentGrade} size="small" sx={{ height: '22px', fontSize: '0.7rem', bgcolor: '#C9A227', color: 'white', fontWeight: 'bold' }} />
+                                  <h3 className="font-serif text-xl font-bold text-foreground">
+                                    {horse.name}
+                                  </h3>
+                                  <Chip
+                                    label={horse.currentGrade}
+                                    size="small"
+                                    sx={{
+                                      height: "22px",
+                                      fontSize: "0.7rem",
+                                      bgcolor: "#C9A227",
+                                      color: "white",
+                                      fontWeight: "bold",
+                                    }}
+                                  />
                                 </div>
-                                <div className="text-sm text-slate-400">Được mời bởi <span className="text-[#C9A227] font-medium">{owner.fullName}</span></div>
+                                <div className="text-sm text-slate-400">
+                                  Được mời bởi{" "}
+                                  <span className="text-[#C9A227] font-medium">
+                                    {owner.fullName}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                             {/* Race grade badge */}
                             <div className="text-right hidden sm:block bg-[#C9A227]/10 border border-[#C9A227]/20 px-4 py-2 rounded-xl">
-                              <div className="text-[#C9A227] font-bold text-lg">{race.grade}</div>
-                              <div className="text-[10px] text-[#C9A227]/70 uppercase font-bold tracking-wider">{race.name}</div>
+                              <div className="text-[#C9A227] font-bold text-lg">
+                                {race.grade}
+                              </div>
+                              <div className="text-[10px] text-[#C9A227]/70 uppercase font-bold tracking-wider">
+                                {race.name}
+                              </div>
                             </div>
                           </div>
 
                           {/* Info grid */}
                           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm mb-5">
                             <div className="bg-slate-950/50 p-3 rounded-xl border border-border">
-                              <div className="text-slate-500 text-xs uppercase font-bold mb-1 flex items-center gap-1"><Trophy className="w-3 h-3"/> Giải Đấu</div>
-                              <div className="text-foreground font-medium truncate">{race.tournamentId?.name ?? '—'}</div>
+                              <div className="text-slate-500 text-xs uppercase font-bold mb-1 flex items-center gap-1">
+                                <Trophy className="w-3 h-3" /> Giải Đấu
+                              </div>
+                              <div className="text-foreground font-medium truncate">
+                                {race.tournamentId?.name ?? "—"}
+                              </div>
                             </div>
                             <div className="bg-slate-950/50 p-3 rounded-xl border border-border">
-                              <div className="text-slate-500 text-xs uppercase font-bold mb-1 flex items-center gap-1"><Calendar className="w-3 h-3"/> Ngày Đua</div>
-                              <div className="text-foreground font-medium">{scheduledDate.toLocaleDateString('vi-VN')}</div>
+                              <div className="text-slate-500 text-xs uppercase font-bold mb-1 flex items-center gap-1">
+                                <Calendar className="w-3 h-3" /> Ngày Đua
+                              </div>
+                              <div className="text-foreground font-medium">
+                                {scheduledDate.toLocaleDateString("vi-VN")}
+                              </div>
                             </div>
                             <div className="bg-slate-950/50 p-3 rounded-xl border border-border">
-                              <div className="text-slate-500 text-xs uppercase font-bold mb-1 flex items-center gap-1"><Clock className="w-3 h-3"/> Giờ Đua</div>
-                              <div className="text-foreground font-medium">{scheduledDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
+                              <div className="text-slate-500 text-xs uppercase font-bold mb-1 flex items-center gap-1">
+                                <Clock className="w-3 h-3" /> Giờ Đua
+                              </div>
+                              <div className="text-foreground font-medium">
+                                {scheduledDate.toLocaleTimeString("vi-VN", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </div>
                             </div>
-                            <div className={`p-3 rounded-xl border ${(invitation.agreedFee ?? 0) > 0 ? 'bg-[#C9A227]/5 border-[#C9A227]/30' : 'bg-slate-950/50 border-border'}`}>
-                              <div className="text-slate-500 text-xs uppercase font-bold mb-1 flex items-center gap-1"><Wallet className="w-3 h-3"/> Phí Thuê</div>
-                              <div className={`font-bold ${(invitation.agreedFee ?? 0) > 0 ? 'text-[#C9A227]' : 'text-slate-400'}`}>
-                                {(invitation.agreedFee ?? 0) > 0 ? `${(invitation.agreedFee).toLocaleString('vi-VN')} coins` : 'Miễn phí'}
+                            <div
+                              className={`p-3 rounded-xl border ${(invitation.agreedFee ?? 0) > 0 ? "bg-[#C9A227]/5 border-[#C9A227]/30" : "bg-slate-950/50 border-border"}`}
+                            >
+                              <div className="text-slate-500 text-xs uppercase font-bold mb-1 flex items-center gap-1">
+                                <Wallet className="w-3 h-3" /> Phí Thuê
+                              </div>
+                              <div
+                                className={`font-bold ${(invitation.agreedFee ?? 0) > 0 ? "text-[#C9A227]" : "text-slate-400"}`}
+                              >
+                                {(invitation.agreedFee ?? 0) > 0
+                                  ? `${invitation.agreedFee.toLocaleString("vi-VN")} coins`
+                                  : "Miễn phí"}
                               </div>
                             </div>
                             <div className="flex items-center justify-center">
@@ -652,8 +1028,15 @@ export function JockeyDashboard() {
                                 variant="outlined"
                                 onClick={() => handleViewHorse(horse)}
                                 sx={{
-                                  borderColor: 'rgba(255,222,66,0.3)', color: '#C9A227', textTransform: 'none', height: '100%', borderRadius: '12px',
-                                  '&:hover': { borderColor: '#C9A227', background: 'rgba(255,222,66,0.05)' }
+                                  borderColor: "rgba(255,222,66,0.3)",
+                                  color: "#C9A227",
+                                  textTransform: "none",
+                                  height: "100%",
+                                  borderRadius: "12px",
+                                  "&:hover": {
+                                    borderColor: "#C9A227",
+                                    background: "rgba(255,222,66,0.05)",
+                                  },
                                 }}
                               >
                                 Hồ Sơ Ngựa
@@ -665,8 +1048,12 @@ export function JockeyDashboard() {
                           {invitation.message && (
                             <div className="bg-slate-950/80 p-4 rounded-xl border border-border mb-6 relative overflow-hidden">
                               <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#C9A227]"></div>
-                              <div className="text-xs text-slate-500 uppercase font-bold mb-1">Lời Nhắn Từ Chủ Ngựa</div>
-                              <p className="text-slate-300 italic text-sm">"{invitation.message}"</p>
+                              <div className="text-xs text-slate-500 uppercase font-bold mb-1">
+                                Lời Nhắn Từ Chủ Ngựa
+                              </div>
+                              <p className="text-slate-300 italic text-sm">
+                                "{invitation.message}"
+                              </p>
                             </div>
                           )}
 
@@ -678,12 +1065,21 @@ export function JockeyDashboard() {
                               startIcon={<CheckCircle className="w-5 h-5" />}
                               onClick={() => handleAccept(invitation._id)}
                               sx={{
-                                background: '#C9A227', color: '#23201A', textTransform: 'none', fontWeight: 700, px: 4, py: 1.5, borderRadius: '10px',
-                                '&:hover': { background: '#B08D1E' },
-                                '&.Mui-disabled': { background: '#334155', color: '#7A7468' },
+                                background: "#C9A227",
+                                color: "#23201A",
+                                textTransform: "none",
+                                fontWeight: 700,
+                                px: 4,
+                                py: 1.5,
+                                borderRadius: "10px",
+                                "&:hover": { background: "#B08D1E" },
+                                "&.Mui-disabled": {
+                                  background: "#334155",
+                                  color: "#7A7468",
+                                },
                               }}
                             >
-                              {isProcessing ? 'Đang xử lý...' : 'Chấp Nhận'}
+                              {isProcessing ? "Đang xử lý..." : "Chấp Nhận"}
                             </Button>
                             <Button
                               variant="outlined"
@@ -691,9 +1087,21 @@ export function JockeyDashboard() {
                               startIcon={<XCircle className="w-5 h-5" />}
                               onClick={() => handleReject(invitation._id)}
                               sx={{
-                                borderColor: 'rgba(244,63,94,0.3)', color: '#f43f5e', textTransform: 'none', fontWeight: 600, px: 4, py: 1.5, borderRadius: '10px',
-                                '&:hover': { borderColor: '#f43f5e', backgroundColor: 'rgba(244,63,94,0.1)' },
-                                '&.Mui-disabled': { borderColor: 'rgba(35,32,26,0.04)', color: '#475569' },
+                                borderColor: "rgba(244,63,94,0.3)",
+                                color: "#f43f5e",
+                                textTransform: "none",
+                                fontWeight: 600,
+                                px: 4,
+                                py: 1.5,
+                                borderRadius: "10px",
+                                "&:hover": {
+                                  borderColor: "#f43f5e",
+                                  backgroundColor: "rgba(244,63,94,0.1)",
+                                },
+                                "&.Mui-disabled": {
+                                  borderColor: "rgba(35,32,26,0.04)",
+                                  color: "#475569",
+                                },
                               }}
                             >
                               Từ Chối
@@ -710,21 +1118,30 @@ export function JockeyDashboard() {
                 <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-border">
                   <Clock className="w-10 h-10 text-slate-500" />
                 </div>
-                <h3 className="font-serif text-xl font-bold text-foreground mb-2">Không có lời mời đang chờ</h3>
-                <p className="text-slate-400 max-w-md mx-auto">Khi Chủ Ngựa mời bạn cưỡi ngựa của họ, các điều khoản hợp đồng sẽ xuất hiện tại đây.</p>
+                <h3 className="font-serif text-xl font-bold text-foreground mb-2">
+                  Không có lời mời đang chờ
+                </h3>
+                <p className="text-slate-400 max-w-md mx-auto">
+                  Khi Chủ Ngựa mời bạn cưỡi ngựa của họ, các điều khoản hợp đồng
+                  sẽ xuất hiện tại đây.
+                </p>
               </div>
             )}
           </div>
         )}
 
         {/* Content: Schedule + Rejected (merged) */}
-        {activeTab === 'schedule' && (
+        {activeTab === "schedule" && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Header + sub-tab toggle */}
             <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
               <div>
-                <h2 className="font-serif text-2xl font-bold text-foreground mb-1">Lịch Đua</h2>
-                <p className="text-slate-400 text-sm">Quản lý lịch đua và lời mời đã từ chối</p>
+                <h2 className="font-serif text-2xl font-bold text-foreground mb-1">
+                  Lịch Đua
+                </h2>
+                <p className="text-slate-400 text-sm">
+                  Quản lý lịch đua và lời mời đã từ chối
+                </p>
               </div>
               <div className="flex items-center gap-2">
                 <div className="relative">
@@ -742,7 +1159,10 @@ export function JockeyDashboard() {
                   />
                 </div>
                 <button
-                  onClick={() => { loadSchedule(); loadRejected(); }}
+                  onClick={() => {
+                    loadSchedule();
+                    loadRejected();
+                  }}
                   className="text-slate-400 hover:text-[#C9A227] transition-colors p-2 rounded-lg hover:bg-muted"
                 >
                   <Activity className="w-5 h-5" />
@@ -753,33 +1173,37 @@ export function JockeyDashboard() {
             {/* Sub-tab buttons */}
             <div className="flex gap-2 mb-6 bg-slate-900/60 p-1.5 rounded-xl border border-border w-fit">
               <button
-                onClick={() => setScheduleSubTab('accepted')}
+                onClick={() => setScheduleSubTab("accepted")}
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-                  scheduleSubTab === 'accepted'
-                    ? 'bg-[#C9A227] text-slate-950 shadow-sm'
-                    : 'text-slate-400 hover:text-foreground'
+                  scheduleSubTab === "accepted"
+                    ? "bg-[#C9A227] text-slate-950 shadow-sm"
+                    : "text-slate-400 hover:text-foreground"
                 }`}
               >
                 <CheckCircle className="w-4 h-4" />
                 Đã Xác Nhận
                 {acceptedInvitations.length > 0 && (
-                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${scheduleSubTab === 'accepted' ? 'bg-slate-900/40 text-slate-950' : 'bg-[#C9A227]/20 text-[#C9A227]'}`}>
+                  <span
+                    className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${scheduleSubTab === "accepted" ? "bg-slate-900/40 text-slate-950" : "bg-[#C9A227]/20 text-[#C9A227]"}`}
+                  >
                     {acceptedInvitations.length}
                   </span>
                 )}
               </button>
               <button
-                onClick={() => setScheduleSubTab('rejected')}
+                onClick={() => setScheduleSubTab("rejected")}
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-                  scheduleSubTab === 'rejected'
-                    ? 'bg-red-500/20 text-red-400 shadow-sm border border-red-500/30'
-                    : 'text-slate-400 hover:text-foreground'
+                  scheduleSubTab === "rejected"
+                    ? "bg-red-500/20 text-red-400 shadow-sm border border-red-500/30"
+                    : "text-slate-400 hover:text-foreground"
                 }`}
               >
                 <Ban className="w-4 h-4" />
                 Đã Từ Chối
                 {rejectedInvitations.length > 0 && (
-                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${scheduleSubTab === 'rejected' ? 'bg-red-500/20 text-red-400' : 'bg-red-500/10 text-red-400'}`}>
+                  <span
+                    className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${scheduleSubTab === "rejected" ? "bg-red-500/20 text-red-400" : "bg-red-500/10 text-red-400"}`}
+                  >
                     {rejectedInvitations.length}
                   </span>
                 )}
@@ -787,8 +1211,8 @@ export function JockeyDashboard() {
             </div>
 
             {/* Sub-tab: Accepted */}
-            {scheduleSubTab === 'accepted' && (
-              loadingSchedule ? (
+            {scheduleSubTab === "accepted" &&
+              (loadingSchedule ? (
                 <div className="flex items-center justify-center py-16 text-slate-400">
                   <div className="w-6 h-6 border-2 border-[#C9A227]/30 border-t-[#C9A227] rounded-full animate-spin mr-3" />
                   Đang tải lịch đua...
@@ -797,107 +1221,192 @@ export function JockeyDashboard() {
                 filteredAccepted.length === 0 ? (
                   <div className="bg-slate-900/60 border border-border rounded-2xl p-16 text-center backdrop-blur-md">
                     <Search className="w-10 h-10 text-slate-500 mx-auto mb-4" />
-                    <h3 className="font-serif text-xl font-bold text-foreground mb-2">Không tìm thấy</h3>
-                    <p className="text-slate-400 max-w-md mx-auto">Không có lịch đua khớp với từ khóa.</p>
+                    <h3 className="font-serif text-xl font-bold text-foreground mb-2">
+                      Không tìm thấy
+                    </h3>
+                    <p className="text-slate-400 max-w-md mx-auto">
+                      Không có lịch đua khớp với từ khóa.
+                    </p>
                   </div>
                 ) : (
-                <div className="space-y-4">
-                  {pagedAccepted.map(inv => {
-                    const race = inv.raceId;
-                    const horse = inv.horseId;
-                    const owner = inv.ownerId;
-                    if (!race || !horse || !owner) return null;
-                    const scheduledDate = new Date(race.scheduledTime);
-                    const raceStatus = race.status ?? 'open';
-                    const isUpcoming = scheduledDate > new Date();
+                  <div className="space-y-4">
+                    {pagedAccepted.map((inv) => {
+                      const race = inv.raceId;
+                      const horse = inv.horseId;
+                      const owner = inv.ownerId;
+                      if (!race || !horse || !owner) return null;
+                      const scheduledDate = new Date(race.scheduledTime);
+                      const raceStatus = race.status ?? "open";
+                      const isUpcoming = scheduledDate > new Date();
 
-                    const raceStatusLabel: Record<string, string> = {
-                      open: 'Đang Mở', closed: 'Đã Đóng', pre_check: 'Kiểm Tra',
-                      running: 'Đang Chạy', finished: 'Đã Kết Thúc', cancelled: 'Đã Hủy',
-                    };
-                    const raceStatusColor: Record<string, string> = {
-                      open: '#1F3D2B', closed: '#C9A227', pre_check: '#8b5cf6',
-                      running: '#3b82f6', finished: '#7A7468', cancelled: '#f43f5e',
-                    };
+                      const raceStatusLabel: Record<string, string> = {
+                        open: "Đang Mở",
+                        closed: "Đã Đóng",
+                        pre_check: "Kiểm Tra",
+                        running: "Đang Chạy",
+                        finished: "Đã Kết Thúc",
+                        cancelled: "Đã Hủy",
+                      };
+                      const raceStatusColor: Record<string, string> = {
+                        open: "#1F3D2B",
+                        closed: "#C9A227",
+                        pre_check: "#8b5cf6",
+                        running: "#3b82f6",
+                        finished: "#7A7468",
+                        cancelled: "#f43f5e",
+                      };
 
-                    return (
-                      <div key={inv._id} className="bg-slate-900/80 backdrop-blur-md border border-border rounded-2xl p-6 hover:border-[#C9A227]/30 transition-all">
-                        <div className="flex flex-col md:flex-row md:items-start gap-6">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-4 mb-5 border-b border-border pb-4">
-                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${isUpcoming ? 'bg-[#C9A227]/10 border-[#C9A227]/30 text-[#C9A227]' : 'bg-slate-700/50 border-border text-slate-400'}`}>
-                                <Flame className="w-6 h-6" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h3 className="font-serif text-xl font-bold text-foreground mb-1 truncate">{race.tournamentId?.name ?? race.name}</h3>
-                                <div className="text-slate-400 text-sm flex items-center gap-2 flex-wrap">
-                                  <span className="font-medium text-slate-300">
-                                    {scheduledDate.toLocaleDateString('vi-VN')} • {scheduledDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                                  </span>
-                                  <span className="text-[#C9A227] font-medium">{race.name}</span>
-                                </div>
-                              </div>
-                              <Chip
-                                label={raceStatusLabel[raceStatus] ?? raceStatus}
-                                size="small"
-                                sx={{
-                                  ml: 'auto', height: '24px', fontWeight: 'bold', flexShrink: 0,
-                                  backgroundColor: `${raceStatusColor[raceStatus] ?? '#7A7468'}22`,
-                                  color: raceStatusColor[raceStatus] ?? '#7A7468',
-                                  border: `1px solid ${raceStatusColor[raceStatus] ?? '#7A7468'}55`,
-                                }}
-                              />
-                            </div>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-950/50 p-4 rounded-xl border border-border">
-                              <div>
-                                <div className="text-slate-500 text-xs uppercase font-bold mb-1">Ngựa</div>
-                                <div className="text-foreground font-medium flex items-center gap-2">
-                                  {horse.name}
-                                  <Chip label={horse.currentGrade} size="small" sx={{ height: '16px', fontSize: '0.6rem', bgcolor: GRADE_COLORS[horse.currentGrade] ?? '#475569', color: 'white', fontWeight: 'bold' }} />
-                                </div>
-                              </div>
-                              <div>
-                                <div className="text-slate-500 text-xs uppercase font-bold mb-1">Chủ Ngựa</div>
-                                <div className="text-foreground font-medium">{owner.fullName}</div>
-                              </div>
-                              <div>
-                                <div className="text-slate-500 text-xs uppercase font-bold mb-1">Hạng Đua</div>
-                                <div className="font-bold" style={{ color: GRADE_COLORS[race.grade] ?? '#7A7468' }}>{race.grade}</div>
-                              </div>
-                              <div className="flex items-center justify-end">
-                                <Button
-                                  size="small"
-                                  variant="text"
-                                  onClick={() => handleViewHorse(horse)}
-                                  endIcon={<ChevronRight className="w-4 h-4" />}
-                                  sx={{ color: '#C9A227', textTransform: 'none', fontWeight: 600, '&:hover': { background: 'rgba(255,222,66,0.1)' } }}
+                      return (
+                        <div
+                          key={inv._id}
+                          className="bg-slate-900/80 backdrop-blur-md border border-border rounded-2xl p-6 hover:border-[#C9A227]/30 transition-all"
+                        >
+                          <div className="flex flex-col md:flex-row md:items-start gap-6">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-4 mb-5 border-b border-border pb-4">
+                                <div
+                                  className={`w-12 h-12 rounded-xl flex items-center justify-center border ${isUpcoming ? "bg-[#C9A227]/10 border-[#C9A227]/30 text-[#C9A227]" : "bg-slate-700/50 border-border text-slate-400"}`}
                                 >
-                                  Chi Tiết Ngựa
-                                </Button>
+                                  <Flame className="w-6 h-6" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="font-serif text-xl font-bold text-foreground mb-1 truncate">
+                                    {race.tournamentId?.name ?? race.name}
+                                  </h3>
+                                  <div className="text-slate-400 text-sm">
+                                    Thời gian thi đấu:{" "}
+                                    <span className="font-medium text-slate-300">
+                                      {scheduledDate.toLocaleDateString(
+                                        "vi-VN",
+                                      )}{" "}
+                                      •{" "}
+                                      {scheduledDate.toLocaleTimeString(
+                                        "vi-VN",
+                                        {
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        },
+                                      )}
+                                    </span>
+                                    {" — "}
+                                    Cuộc đua:{" "}
+                                    <span className="text-[#C9A227] font-medium">
+                                      {race.name}
+                                    </span>
+                                  </div>
+                                </div>
+                                <Chip
+                                  label={
+                                    raceStatusLabel[raceStatus] ?? raceStatus
+                                  }
+                                  size="small"
+                                  sx={{
+                                    ml: "auto",
+                                    height: "24px",
+                                    fontWeight: "bold",
+                                    flexShrink: 0,
+                                    backgroundColor: `${raceStatusColor[raceStatus] ?? "#7A7468"}22`,
+                                    color:
+                                      raceStatusColor[raceStatus] ?? "#7A7468",
+                                    border: `1px solid ${raceStatusColor[raceStatus] ?? "#7A7468"}55`,
+                                  }}
+                                />
+                              </div>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-950/50 p-4 rounded-xl border border-border">
+                                <div>
+                                  <div className="text-slate-500 text-xs uppercase font-bold mb-1">
+                                    Ngựa
+                                  </div>
+                                  <div className="text-foreground font-medium flex items-center gap-2">
+                                    {horse.name}
+                                    <Chip
+                                      label={horse.currentGrade}
+                                      size="small"
+                                      sx={{
+                                        height: "16px",
+                                        fontSize: "0.6rem",
+                                        bgcolor:
+                                          GRADE_COLORS[horse.currentGrade] ??
+                                          "#475569",
+                                        color: "white",
+                                        fontWeight: "bold",
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-slate-500 text-xs uppercase font-bold mb-1">
+                                    Chủ Ngựa
+                                  </div>
+                                  <div className="text-foreground font-medium">
+                                    {owner.fullName}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-slate-500 text-xs uppercase font-bold mb-1">
+                                    Hạng Đua
+                                  </div>
+                                  <div
+                                    className="font-bold"
+                                    style={{
+                                      color:
+                                        GRADE_COLORS[race.grade] ?? "#7A7468",
+                                    }}
+                                  >
+                                    {race.grade}
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-end">
+                                  <Button
+                                    size="small"
+                                    variant="text"
+                                    onClick={() => handleViewHorse(horse)}
+                                    endIcon={
+                                      <ChevronRight className="w-4 h-4" />
+                                    }
+                                    sx={{
+                                      color: "#C9A227",
+                                      textTransform: "none",
+                                      fontWeight: 600,
+                                      "&:hover": {
+                                        background: "rgba(255,222,66,0.1)",
+                                      },
+                                    }}
+                                  >
+                                    Chi Tiết Ngựa
+                                  </Button>
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                  <Pagination page={acceptedPage} totalPages={acceptedTotalPages} onPageChange={setAcceptedPage} />
-                </div>
+                      );
+                    })}
+                    <Pagination
+                      page={acceptedPage}
+                      totalPages={acceptedTotalPages}
+                      onPageChange={setAcceptedPage}
+                    />
+                  </div>
                 )
               ) : (
                 <div className="bg-slate-900/60 border border-border rounded-2xl p-16 text-center backdrop-blur-md">
                   <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-border">
                     <Calendar className="w-10 h-10 text-slate-500" />
                   </div>
-                  <h3 className="font-serif text-xl font-bold text-foreground mb-2">Chưa có lịch đua</h3>
-                  <p className="text-slate-400 max-w-md mx-auto">Chấp nhận lời mời từ Chủ Ngựa để thấy lịch đua xuất hiện tại đây.</p>
+                  <h3 className="font-serif text-xl font-bold text-foreground mb-2">
+                    Chưa có lịch đua
+                  </h3>
+                  <p className="text-slate-400 max-w-md mx-auto">
+                    Chấp nhận lời mời từ Chủ Ngựa để thấy lịch đua xuất hiện tại
+                    đây.
+                  </p>
                 </div>
-              )
-            )}
+              ))}
 
             {/* Sub-tab: Rejected */}
-            {scheduleSubTab === 'rejected' && (
-              loadingRejected ? (
+            {scheduleSubTab === "rejected" &&
+              (loadingRejected ? (
                 <div className="flex items-center justify-center py-16 text-slate-400">
                   <div className="w-6 h-6 border-2 border-[#C9A227]/30 border-t-[#C9A227] rounded-full animate-spin mr-3" />
                   Đang tải...
@@ -906,69 +1415,126 @@ export function JockeyDashboard() {
                 filteredRejected.length === 0 ? (
                   <div className="bg-slate-900/60 border border-border rounded-2xl p-16 text-center backdrop-blur-md">
                     <Search className="w-10 h-10 text-slate-500 mx-auto mb-4" />
-                    <h3 className="font-serif text-xl font-bold text-foreground mb-2">Không tìm thấy</h3>
-                    <p className="text-slate-400 max-w-md mx-auto">Không có lời mời từ chối khớp với từ khóa.</p>
+                    <h3 className="font-serif text-xl font-bold text-foreground mb-2">
+                      Không tìm thấy
+                    </h3>
+                    <p className="text-slate-400 max-w-md mx-auto">
+                      Không có lời mời từ chối khớp với từ khóa.
+                    </p>
                   </div>
                 ) : (
-                <div className="space-y-4">
-                  {pagedRejected.map(inv => {
-                    const horse = inv.horseId;
-                    const owner = inv.ownerId;
-                    const race = inv.raceId;
-                    if (!race || !horse || !owner) return null;
-                    const scheduledDate = new Date(race.scheduledTime);
-                    return (
-                      <div key={inv._id} className="bg-slate-900/80 backdrop-blur-md border border-red-900/20 rounded-2xl p-6">
-                        <div className="flex items-start gap-4">
-                          <div className="w-12 h-12 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                            <XCircle className="w-6 h-6 text-red-400" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <h3 className="font-serif text-lg font-bold text-foreground">{horse.name}</h3>
-                              <Chip label={horse.currentGrade} size="small" sx={{ height: '18px', fontSize: '0.65rem', bgcolor: GRADE_COLORS[horse.currentGrade] ?? '#475569', color: 'white', fontWeight: 'bold' }} />
-                              <span className="text-slate-500 text-sm">từ <span className="text-slate-300">{owner.fullName}</span></span>
+                  <div className="space-y-4">
+                    {pagedRejected.map((inv) => {
+                      const horse = inv.horseId;
+                      const owner = inv.ownerId;
+                      const race = inv.raceId;
+                      if (!race || !horse || !owner) return null;
+                      const scheduledDate = new Date(race.scheduledTime);
+                      return (
+                        <div
+                          key={inv._id}
+                          className="bg-slate-900/80 backdrop-blur-md border border-red-900/20 rounded-2xl p-6"
+                        >
+                          <div className="flex items-start gap-4">
+                            <div className="w-12 h-12 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                              <XCircle className="w-6 h-6 text-red-400" />
                             </div>
-                            <div className="text-slate-400 text-sm flex items-center gap-3 flex-wrap mb-3">
-                              <span className="flex items-center gap-1"><Trophy className="w-3 h-3 text-[#C9A227]" /> {race.tournamentId?.name ?? '—'}</span>
-                              <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {scheduledDate.toLocaleDateString('vi-VN')}</span>
-                              <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {scheduledDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
-                              <span className="font-medium" style={{ color: GRADE_COLORS[race.grade] ?? '#7A7468' }}>{race.grade} — {race.name}</span>
-                            </div>
-                            {inv.rejectionNote && (
-                              <div className="bg-slate-950/60 border border-red-900/20 rounded-lg px-3 py-2 text-sm text-slate-400 italic">
-                                Lý do: "{inv.rejectionNote}"
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <h3 className="font-serif text-lg font-bold text-foreground">
+                                  {horse.name}
+                                </h3>
+                                <Chip
+                                  label={horse.currentGrade}
+                                  size="small"
+                                  sx={{
+                                    height: "18px",
+                                    fontSize: "0.65rem",
+                                    bgcolor:
+                                      GRADE_COLORS[horse.currentGrade] ??
+                                      "#475569",
+                                    color: "white",
+                                    fontWeight: "bold",
+                                  }}
+                                />
+                                <span className="text-slate-500 text-sm">
+                                  từ{" "}
+                                  <span className="text-slate-300">
+                                    {owner.fullName}
+                                  </span>
+                                </span>
                               </div>
-                            )}
-                          </div>
-                          <div className="text-xs text-slate-600 whitespace-nowrap flex-shrink-0">
-                            {new Date(inv.createdAt ?? '').toLocaleDateString('vi-VN')}
+                              <div className="text-slate-400 text-sm flex items-center gap-3 flex-wrap mb-3">
+                                <span className="flex items-center gap-1">
+                                  <Trophy className="w-3 h-3 text-[#C9A227]" />{" "}
+                                  {race.tournamentId?.name ?? "—"}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />{" "}
+                                  {scheduledDate.toLocaleDateString("vi-VN")}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />{" "}
+                                  {scheduledDate.toLocaleTimeString("vi-VN", {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </span>
+                                <span
+                                  className="font-medium"
+                                  style={{
+                                    color:
+                                      GRADE_COLORS[race.grade] ?? "#7A7468",
+                                  }}
+                                >
+                                  {race.grade} — {race.name}
+                                </span>
+                              </div>
+                              {inv.rejectionNote && (
+                                <div className="bg-slate-950/60 border border-red-900/20 rounded-lg px-3 py-2 text-sm text-slate-400 italic">
+                                  Lý do: "{inv.rejectionNote}"
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-xs text-slate-600 whitespace-nowrap flex-shrink-0">
+                              {new Date(inv.createdAt ?? "").toLocaleDateString(
+                                "vi-VN",
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                  <Pagination page={rejectedPage} totalPages={rejectedTotalPages} onPageChange={setRejectedPage} />
-                </div>
+                      );
+                    })}
+                    <Pagination
+                      page={rejectedPage}
+                      totalPages={rejectedTotalPages}
+                      onPageChange={setRejectedPage}
+                    />
+                  </div>
                 )
               ) : (
                 <div className="bg-slate-900/60 border border-border rounded-2xl p-16 text-center backdrop-blur-md">
                   <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-border">
                     <Ban className="w-10 h-10 text-slate-500" />
                   </div>
-                  <h3 className="font-serif text-xl font-bold text-foreground mb-2">Chưa từ chối lời mời nào</h3>
-                  <p className="text-slate-400 max-w-md mx-auto">Các lời mời bạn từ chối sẽ được lưu lại tại đây.</p>
+                  <h3 className="font-serif text-xl font-bold text-foreground mb-2">
+                    Chưa từ chối lời mời nào
+                  </h3>
+                  <p className="text-slate-400 max-w-md mx-auto">
+                    Các lời mời bạn từ chối sẽ được lưu lại tại đây.
+                  </p>
                 </div>
-              )
-            )}
+              ))}
           </div>
         )}
 
         {/* Content: Results */}
-        {activeTab === 'results' && (
+        {activeTab === "results" && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-              <h2 className="font-serif text-2xl font-bold text-foreground">Kết Quả Đua Đã Xác Minh</h2>
+              <h2 className="font-serif text-2xl font-bold text-foreground">
+                Kết Quả Đua Đã Xác Minh
+              </h2>
               <div className="relative">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
@@ -986,50 +1552,88 @@ export function JockeyDashboard() {
                 <table className="w-full">
                   <thead className="bg-slate-950/80 border-b border-border">
                     <tr>
-                      <th className="text-left px-6 py-4 text-xs uppercase tracking-wider font-bold text-slate-500">Sự Kiện & Ngày</th>
-                      <th className="text-left px-6 py-4 text-xs uppercase tracking-wider font-bold text-slate-500">Ngựa</th>
-                      <th className="text-left px-6 py-4 text-xs uppercase tracking-wider font-bold text-slate-500">Vị Trí</th>
-                      <th className="text-left px-6 py-4 text-xs uppercase tracking-wider font-bold text-slate-500">Thu Nhập</th>
-                      <th className="text-left px-6 py-4 text-xs uppercase tracking-wider font-bold text-slate-500">Điểm Xếp Hạng</th>
-                      <th className="text-left px-6 py-4 text-xs uppercase tracking-wider font-bold text-slate-500">Vi Phạm</th>
+                      <th className="text-left px-6 py-4 text-xs uppercase tracking-wider font-bold text-slate-500">
+                        Sự Kiện & Ngày
+                      </th>
+                      <th className="text-left px-6 py-4 text-xs uppercase tracking-wider font-bold text-slate-500">
+                        Ngựa
+                      </th>
+                      <th className="text-left px-6 py-4 text-xs uppercase tracking-wider font-bold text-slate-500">
+                        Vị Trí
+                      </th>
+                      <th className="text-left px-6 py-4 text-xs uppercase tracking-wider font-bold text-slate-500">
+                        Thu Nhập
+                      </th>
+                      <th className="text-left px-6 py-4 text-xs uppercase tracking-wider font-bold text-slate-500">
+                        Điểm Xếp Hạng
+                      </th>
+                      <th className="text-left px-6 py-4 text-xs uppercase tracking-wider font-bold text-slate-500">
+                        Vi Phạm
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
                     {filteredResults.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
+                        <td
+                          colSpan={6}
+                          className="px-6 py-12 text-center text-slate-400"
+                        >
                           Không tìm thấy kết quả phù hợp
                         </td>
                       </tr>
-                    ) : filteredResults.map((result, idx) => (
-                      <tr key={idx} className="hover:bg-muted transition-colors group">
-                        <td className="px-6 py-4">
-                          <div className="text-foreground font-bold">{result.race}</div>
-                          <div className="text-xs text-slate-400 mt-1">{result.date}</div>
-                        </td>
-                        <td className="px-6 py-4 text-slate-300 font-medium">{result.horse}</td>
-                        <td className="px-6 py-4">
-                          <div className={`inline-flex items-center justify-center w-8 h-8 rounded-lg font-bold text-sm border
-                            ${result.position === 1 ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 
-                              result.position === 2 ? 'bg-slate-300/10 text-slate-300 border-slate-400/30' : 
-                              'bg-orange-700/20 text-orange-400 border-orange-700/30'}`}
-                          >
-                            {result.position}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-[#C9A227] font-bold">{result.prize}</td>
-                        <td className="px-6 py-4 text-teal-400 font-bold">+{result.points}</td>
-                        <td className="px-6 py-4">
-                          {result.violations > 0 ? (
-                            <span className="flex items-center gap-1 text-red-400 text-xs font-bold bg-red-400/10 px-2 py-1 rounded-md w-fit border border-red-400/20">
-                              <ShieldAlert className="w-3 h-3" /> {result.violations}
-                            </span>
-                          ) : (
-                            <span className="text-slate-500 text-sm font-medium">Sạch</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                    ) : (
+                      filteredResults.map((result, idx) => (
+                        <tr
+                          key={idx}
+                          className="hover:bg-muted transition-colors group"
+                        >
+                          <td className="px-6 py-4">
+                            <div className="text-foreground font-bold">
+                              {result.race}
+                            </div>
+                            <div className="text-xs text-slate-400 mt-1">
+                              {result.date}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-slate-300 font-medium">
+                            {result.horse}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div
+                              className={`inline-flex items-center justify-center w-8 h-8 rounded-lg font-bold text-sm border
+                            ${
+                              result.position === 1
+                                ? "bg-amber-500/20 text-amber-400 border-amber-500/30"
+                                : result.position === 2
+                                  ? "bg-slate-300/10 text-slate-300 border-slate-400/30"
+                                  : "bg-orange-700/20 text-orange-400 border-orange-700/30"
+                            }`}
+                            >
+                              {result.position}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-[#C9A227] font-bold">
+                            {result.prize}
+                          </td>
+                          <td className="px-6 py-4 text-teal-400 font-bold">
+                            +{result.points}
+                          </td>
+                          <td className="px-6 py-4">
+                            {result.violations > 0 ? (
+                              <span className="flex items-center gap-1 text-red-400 text-xs font-bold bg-red-400/10 px-2 py-1 rounded-md w-fit border border-red-400/20">
+                                <ShieldAlert className="w-3 h-3" />{" "}
+                                {result.violations}
+                              </span>
+                            ) : (
+                              <span className="text-slate-500 text-sm font-medium">
+                                Sạch
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -1038,36 +1642,55 @@ export function JockeyDashboard() {
         )}
 
         {/* Content: Penalties */}
-        {activeTab === 'penalties' && (
+        {activeTab === "penalties" && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="mb-6">
-              <h2 className="font-serif text-2xl font-bold text-foreground mb-1">Vé Phạt</h2>
-              <p className="text-slate-400 text-sm">Phiếu phạt steward — nộp bằng số dư ví</p>
+              <h2 className="font-serif text-2xl font-bold text-foreground mb-1">
+                Vé Phạt
+              </h2>
             </div>
             <div className="bg-card border border-border rounded-2xl p-5">
               <PenaltiesPanel token={token} highlight={highlightPenalties} />
             </div>
           </div>
         )}
-
-
       </div>
 
       {/* Horse Info Dialog */}
-      <Dialog 
-        open={horseInfoOpen} 
-        onClose={() => setHorseInfoOpen(false)} 
-        maxWidth="sm" 
+      <Dialog
+        open={horseInfoOpen}
+        onClose={() => setHorseInfoOpen(false)}
+        maxWidth="sm"
         fullWidth
-        PaperProps={{ style: { backgroundColor: '#FFFFFF', border: '1px solid #E3DCCB', borderRadius: '16px', backgroundImage: 'linear-gradient(to bottom right, rgba(16,185,129,0.05), transparent)' } }}
+        PaperProps={{
+          style: {
+            backgroundColor: "#FFFFFF",
+            border: "1px solid #E3DCCB",
+            borderRadius: "16px",
+            backgroundImage:
+              "linear-gradient(to bottom right, rgba(16,185,129,0.05), transparent)",
+          },
+        }}
       >
-        <DialogTitle sx={{ color: '#23201A', borderBottom: '1px solid #E3DCCB', pb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <DialogTitle
+          sx={{
+            color: "#23201A",
+            borderBottom: "1px solid #E3DCCB",
+            pb: 2,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
           Thông Tin Chi Tiết Ngựa
-          <button onClick={() => setHorseInfoOpen(false)} className="text-slate-400 hover:text-foreground transition-colors">
+          <button
+            onClick={() => setHorseInfoOpen(false)}
+            className="text-slate-400 hover:text-foreground transition-colors"
+          >
             <X className="w-5 h-5" />
           </button>
         </DialogTitle>
-        <DialogContent sx={{ paddingTop: '24px !important' }}>
+        <DialogContent sx={{ paddingTop: "24px !important" }}>
           {selectedHorse && (
             <div className="space-y-6">
               {/* Image */}
@@ -1075,8 +1698,19 @@ export function JockeyDashboard() {
                 <div className="w-full max-w-sm aspect-[4/3] rounded-xl border-2 border-slate-700 overflow-hidden mb-4 bg-slate-900 flex items-center justify-center relative shadow-lg">
                   {viewHorseActiveImage ? (
                     <>
-                      <div className="absolute inset-0 opacity-40 blur-xl scale-110" style={{ backgroundImage: `url(${viewHorseActiveImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
-                      <img src={viewHorseActiveImage} alt={selectedHorse.name} className="relative z-10 w-full h-full object-contain drop-shadow-2xl" />
+                      <div
+                        className="absolute inset-0 opacity-40 blur-xl scale-110"
+                        style={{
+                          backgroundImage: `url(${viewHorseActiveImage})`,
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
+                        }}
+                      />
+                      <img
+                        src={viewHorseActiveImage}
+                        alt={selectedHorse.name}
+                        className="relative z-10 w-full h-full object-contain drop-shadow-2xl"
+                      />
                     </>
                   ) : (
                     <ImageIcon className="relative z-10 w-16 h-16 text-slate-600" />
@@ -1086,29 +1720,59 @@ export function JockeyDashboard() {
                 {(() => {
                   const images: string[] = selectedHorse.imageUrls?.length
                     ? selectedHorse.imageUrls
-                    : selectedHorse.primaryImageUrl ? [selectedHorse.primaryImageUrl] : [];
+                    : selectedHorse.primaryImageUrl
+                      ? [selectedHorse.primaryImageUrl]
+                      : [];
                   if (images.length <= 1) return null;
                   return (
                     <div className="flex gap-3 mb-4 overflow-x-auto max-w-full pb-2 justify-center">
                       {images.map((imgUrl: string, idx: number) => (
-                        <button key={idx} onClick={() => setViewHorseActiveImage(imgUrl)}
-                          className={`w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${viewHorseActiveImage === imgUrl ? 'border-[#C9A227] scale-105' : 'border-transparent opacity-50 hover:opacity-100 hover:scale-105'}`}>
-                          <img src={imgUrl} alt="thumbnail" className="w-full h-full object-cover bg-slate-800" />
+                        <button
+                          key={idx}
+                          onClick={() => setViewHorseActiveImage(imgUrl)}
+                          className={`w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${viewHorseActiveImage === imgUrl ? "border-[#C9A227] scale-105" : "border-transparent opacity-50 hover:opacity-100 hover:scale-105"}`}
+                        >
+                          <img
+                            src={imgUrl}
+                            alt="thumbnail"
+                            className="w-full h-full object-cover bg-slate-800"
+                          />
                         </button>
                       ))}
                     </div>
                   );
                 })()}
 
-                <h3 className="font-serif text-2xl font-bold text-foreground text-center">{selectedHorse.name}</h3>
+                <h3 className="font-serif text-2xl font-bold text-foreground text-center">
+                  {selectedHorse.name}
+                </h3>
                 <div className="flex items-center gap-2 mt-2">
                   {selectedHorse.isActive !== undefined && (
-                    <Chip label={selectedHorse.isActive ? 'Hoạt Động' : 'Không Hoạt Động'} size="small"
-                      sx={{ backgroundColor: selectedHorse.isActive ? '#1F3D2B' : '#7A7468', color: 'white', fontWeight: 500 }} />
+                    <Chip
+                      label={
+                        selectedHorse.isActive ? "Hoạt Động" : "Không Hoạt Động"
+                      }
+                      size="small"
+                      sx={{
+                        backgroundColor: selectedHorse.isActive
+                          ? "#1F3D2B"
+                          : "#7A7468",
+                        color: "white",
+                        fontWeight: 500,
+                      }}
+                    />
                   )}
                   {selectedHorse.currentGrade && (
-                    <Chip label={selectedHorse.currentGrade} size="small"
-                      sx={{ backgroundColor: GRADE_COLORS[selectedHorse.currentGrade] ?? '#C9A227', color: 'white', fontWeight: 600 }} />
+                    <Chip
+                      label={selectedHorse.currentGrade}
+                      size="small"
+                      sx={{
+                        backgroundColor:
+                          GRADE_COLORS[selectedHorse.currentGrade] ?? "#C9A227",
+                        color: "white",
+                        fontWeight: 600,
+                      }}
+                    />
                   )}
                 </div>
               </div>
@@ -1116,23 +1780,97 @@ export function JockeyDashboard() {
               {/* Stats */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
-                  <h4 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider">Thể Chất</h4>
+                  <h4 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider">
+                    Thể Chất
+                  </h4>
                   <ul className="space-y-2 text-sm">
-                    <li className="flex justify-between"><span className="text-slate-500">Giới tính:</span> <span className="text-foreground font-medium">{selectedHorse.gender === 'male' ? 'Đực' : selectedHorse.gender === 'female' ? 'Cái' : '—'}</span></li>
-                    <li className="flex justify-between"><span className="text-slate-500">Giống:</span> <span className="text-foreground font-medium">{selectedHorse.breed || '—'}</span></li>
-                    <li className="flex justify-between"><span className="text-slate-500">Màu sắc:</span> <span className="text-foreground font-medium">{selectedHorse.color || '—'}</span></li>
-                    <li className="flex justify-between"><span className="text-slate-500">Cân nặng:</span> <span className="text-foreground font-medium">{selectedHorse.weight ? `${selectedHorse.weight} kg` : '—'}</span></li>
-                    <li className="flex justify-between"><span className="text-slate-500">Ngày sinh:</span> <span className="text-foreground font-medium">{selectedHorse.birthDate ? new Date(selectedHorse.birthDate).toLocaleDateString('vi-VN') : '—'}</span></li>
+                    <li className="flex justify-between">
+                      <span className="text-slate-500">Giới tính:</span>{" "}
+                      <span className="text-foreground font-medium">
+                        {selectedHorse.gender === "male"
+                          ? "Đực"
+                          : selectedHorse.gender === "female"
+                            ? "Cái"
+                            : "—"}
+                      </span>
+                    </li>
+                    <li className="flex justify-between">
+                      <span className="text-slate-500">Giống:</span>{" "}
+                      <span className="text-foreground font-medium">
+                        {selectedHorse.breed || "—"}
+                      </span>
+                    </li>
+                    <li className="flex justify-between">
+                      <span className="text-slate-500">Màu sắc:</span>{" "}
+                      <span className="text-foreground font-medium">
+                        {selectedHorse.color || "—"}
+                      </span>
+                    </li>
+                    <li className="flex justify-between">
+                      <span className="text-slate-500">Cân nặng:</span>{" "}
+                      <span className="text-foreground font-medium">
+                        {selectedHorse.weight
+                          ? `${selectedHorse.weight} kg`
+                          : "—"}
+                      </span>
+                    </li>
+                    <li className="flex justify-between">
+                      <span className="text-slate-500">Ngày sinh:</span>{" "}
+                      <span className="text-foreground font-medium">
+                        {selectedHorse.birthDate
+                          ? new Date(
+                              selectedHorse.birthDate,
+                            ).toLocaleDateString("vi-VN")
+                          : "—"}
+                      </span>
+                    </li>
                   </ul>
                 </div>
                 <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
-                  <h4 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider">Sự Nghiệp</h4>
+                  <h4 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider">
+                    Sự Nghiệp
+                  </h4>
                   <ul className="space-y-2 text-sm">
-                    <li className="flex justify-between"><span className="text-slate-500">Tổng số trận:</span> <span className="text-foreground font-medium">{selectedHorse.raceCount ?? 0} trận</span></li>
-                    <li className="flex justify-between"><span className="text-slate-500">Số trận thắng:</span> <span className="text-[#C9A227] font-bold">{selectedHorse.winCount ?? 0} trận</span></li>
-                    <li className="flex justify-between"><span className="text-slate-500">Tỷ lệ thắng:</span> <span className="text-foreground font-medium">{selectedHorse.raceCount > 0 ? Math.round((selectedHorse.winCount / selectedHorse.raceCount) * 100) : 0}%</span></li>
-                    <li className="flex justify-between"><span className="text-slate-500">Tổng điểm:</span> <span className="text-emerald-400 font-bold">{selectedHorse.totalPoints ?? 0} pts</span></li>
-                    <li className="flex justify-between"><span className="text-slate-500">Tiền thưởng:</span> <span className="text-[#1F3D2B] font-bold">{(selectedHorse.totalEarnings ?? 0).toLocaleString('vi-VN')} coins</span></li>
+                    <li className="flex justify-between">
+                      <span className="text-slate-500">Tổng số trận:</span>{" "}
+                      <span className="text-foreground font-medium">
+                        {selectedHorse.raceCount ?? 0} trận
+                      </span>
+                    </li>
+                    <li className="flex justify-between">
+                      <span className="text-slate-500">Số trận thắng:</span>{" "}
+                      <span className="text-[#C9A227] font-bold">
+                        {selectedHorse.winCount ?? 0} trận
+                      </span>
+                    </li>
+                    <li className="flex justify-between">
+                      <span className="text-slate-500">Tỷ lệ thắng:</span>{" "}
+                      <span className="text-foreground font-medium">
+                        {selectedHorse.raceCount > 0
+                          ? Math.round(
+                              (selectedHorse.winCount /
+                                selectedHorse.raceCount) *
+                                100,
+                            )
+                          : 0}
+                        %
+                      </span>
+                    </li>
+                    <li className="flex justify-between">
+                      <span className="text-slate-500">Tổng điểm:</span>{" "}
+                      <span className="text-emerald-400 font-bold">
+                        {selectedHorse.totalPoints ?? 0} pts
+                      </span>
+                    </li>
+                    <li className="flex justify-between">
+                      <span className="text-slate-500">Tiền thưởng:</span>{" "}
+                      <span className="text-[#1F3D2B] font-bold">
+                        {(selectedHorse.totalEarnings ?? 0).toLocaleString(
+                          "vi-VN",
+                        )}{" "}
+                        coins
+                      </span>
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -1145,13 +1883,23 @@ export function JockeyDashboard() {
                   </h4>
                   <div className="space-y-3">
                     {selectedHorse.violations.map((v: any, i: number) => (
-                      <div key={i} className="text-sm border-l-2 border-red-500/50 pl-3">
-                        <div className="text-foreground font-medium">{v.name}</div>
+                      <div
+                        key={i}
+                        className="text-sm border-l-2 border-red-500/50 pl-3"
+                      >
+                        <div className="text-foreground font-medium">
+                          {v.name}
+                        </div>
                         <div className="text-slate-400 text-xs mt-1">
                           {v.handling && `Xử lý: ${v.handling}`}
-                          {v.penaltyDate && ` • Phạt: ${new Date(v.penaltyDate).toLocaleDateString('vi-VN')}`}
+                          {v.penaltyDate &&
+                            ` • Phạt: ${new Date(v.penaltyDate).toLocaleDateString("vi-VN")}`}
                         </div>
-                        {v.note && <div className="text-slate-500 text-xs italic mt-1">Ghi chú: {v.note}</div>}
+                        {v.note && (
+                          <div className="text-slate-500 text-xs italic mt-1">
+                            Ghi chú: {v.note}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1160,8 +1908,13 @@ export function JockeyDashboard() {
             </div>
           )}
         </DialogContent>
-        <DialogActions sx={{ borderTop: '1px solid #E3DCCB', padding: '16px 24px' }}>
-          <Button onClick={() => setHorseInfoOpen(false)} sx={{ color: '#7A7468', textTransform: 'none', fontWeight: 600 }}>
+        <DialogActions
+          sx={{ borderTop: "1px solid #E3DCCB", padding: "16px 24px" }}
+        >
+          <Button
+            onClick={() => setHorseInfoOpen(false)}
+            sx={{ color: "#7A7468", textTransform: "none", fontWeight: 600 }}
+          >
             Đóng
           </Button>
         </DialogActions>
