@@ -140,7 +140,7 @@ const AUTH_FEATURES = [
     icon: Trophy,
     color: "#7A7468",
     label: "Kết quả cuộc đua",
-    desc: "Xem bảng xếp hạng và thông tin ngựa/kỵ sĩ sau mỗi race",
+    desc: "Xem bảng xếp hạng và thông tin ngựa/nài ngựa sau mỗi race",
   },
 ];
 
@@ -371,7 +371,7 @@ function ResultsBoard({ token }: { token: string | null }) {
         <div className="overflow-hidden border border-border bg-card">
           <div className="grid grid-cols-12 gap-2 px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground bg-muted/50">
             <div className="col-span-1 text-center">Hạng</div>
-            <div className="col-span-5">Ngựa / Kỵ Sĩ</div>
+            <div className="col-span-5">Ngựa / Nài Ngựa</div>
             <div className="col-span-2 text-center">Thời Gian</div>
             <div className="col-span-2 text-center">Điểm</div>
             <div className="col-span-2 text-right">Giải Thưởng</div>
@@ -1020,7 +1020,7 @@ export function PredictionsPage() {
                                       <div className="text-xs text-muted-foreground">
                                         {h.jockeyName
                                           ? `🏇 ${h.jockeyName}`
-                                          : "Chưa có kỵ sĩ"}
+                                          : "Chưa có nài ngựa"}
                                         {h.jockeyExperience
                                           ? ` · ${h.jockeyExperience}năm KN`
                                           : ""}
@@ -1103,7 +1103,7 @@ export function PredictionsPage() {
                             Ngựa số {selectedHorse.gateNumber || (selectedHorseIdx !== null ? selectedHorseIdx + 1 : "")} — {selectedHorse.horseName}
                           </div>
                           <div className="text-xs text-muted-foreground mt-0.5">
-                            {selectedHorse.jockeyName ?? "Chưa có kỵ sĩ"}
+                            {selectedHorse.jockeyName ?? "Chưa có nài ngựa"}
                           </div>
                         </div>
                       ) : (

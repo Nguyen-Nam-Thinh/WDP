@@ -33,7 +33,7 @@ const TRACK_LABEL: Record<string, string> = {
 
 const FAIL_CATEGORY_LABEL: Record<string, string> = {
   veterinary: 'Thú y',
-  jockey: 'Kỵ sĩ',
+  jockey: 'Nài ngựa',
   gear: 'Trang bị',
   administrative: 'Hành chính',
 };
@@ -42,7 +42,7 @@ const INCIDENT_TYPE_LABEL: Record<string, string> = {
   interference: 'Cản trở',
   doping: 'Doping',
   equipment_violation: 'Vi phạm trang bị',
-  jockey_violation: 'Vi phạm kỵ sĩ',
+  jockey_violation: 'Vi phạm nài ngựa',
   other: 'Khác',
 };
 
@@ -70,7 +70,7 @@ const VET_ORDER_LABEL: Record<string, string> = {
 
 const ROLE_LABEL: Record<string, string> = {
   owner: 'Chủ ngựa',
-  jockey: 'Kỵ sĩ',
+  jockey: 'Nài ngựa',
 };
 
 function emptyText(value?: string | null) {
@@ -493,7 +493,7 @@ export default function RefereeReportReview() {
                   )}
                 </Section>
 
-                <Section title="Đổi kỵ sĩ">
+                <Section title="Đổi nài ngựa">
                   <StringList items={pr?.riderChanges} />
                 </Section>
                 <Section title="Đổi trang bị">

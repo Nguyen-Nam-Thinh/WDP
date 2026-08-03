@@ -40,7 +40,7 @@ import {
 
 const ROLE_LABELS: Record<string, string> = {
   owner: "Chủ Ngựa",
-  jockey: "Kỵ Sĩ",
+  jockey: "Nài Ngựa",
   referee: "Trọng Tài",
   spectator: "Khán Giả",
   admin: "Quản Trị Viên",

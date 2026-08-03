@@ -112,17 +112,7 @@ export default function Header(props: {
         <div className="flex items-center gap-4 md:gap-6">
           
           {/* Global Search */}
-          <div className="hidden md:flex relative group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
-            <input 
-              type="text" 
-              placeholder="Tìm kiếm..." 
-              className="pl-9 pr-4 py-1.5 w-64 bg-slate-50 border border-slate-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition"
-            />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-               <span className="text-[10px] text-slate-400 font-semibold px-1.5 py-0.5 rounded border border-slate-200 bg-white">⌘K</span>
-            </div>
-          </div>
+          
 
           <div className="h-6 w-px bg-slate-200 hidden md:block"></div>
 

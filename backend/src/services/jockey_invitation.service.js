@@ -17,10 +17,10 @@ async function createInvitation(ownerId, { jockeyId, horseId, raceId, agreedFee 
   ]);
 
   if (!horse) throw new AppError(404, 'Không tìm thấy ngựa hoặc bạn không có quyền truy cập');
-  if (!jockey) throw new AppError(404, 'Không tìm thấy kỵ sĩ');
+  if (!jockey) throw new AppError(404, 'Không tìm thấy nài ngựa');
   if (!race) throw new AppError(404, 'Không tìm thấy cuộc đua');
   if (['running', 'finished', 'cancelled'].includes(race.status)) {
-    throw new AppError(409, 'Không thể mời kỵ sĩ cho cuộc đua đã bắt đầu hoặc kết thúc');
+    throw new AppError(409, 'Không thể mời nài ngựa cho cuộc đua đã bắt đầu hoặc kết thúc');
   }
 
   const allowedGrades = race.eligibility?.allowedGrades ?? [];
@@ -35,7 +35,7 @@ async function createInvitation(ownerId, { jockeyId, horseId, raceId, agreedFee 
     status: { $in: ['pending', 'accepted'] },
   });
   if (doubleBook) {
-    throw new AppError(409, 'Kỵ sĩ đã có lời mời chờ xử lý hoặc đã chấp nhận cho cuộc đua này');
+    throw new AppError(409, 'Nài ngựa đã có lời mời chờ xử lý hoặc đã chấp nhận cho cuộc đua này');
   }
 
   const existing = await JockeyInvitation.findOne({
@@ -45,7 +45,7 @@ async function createInvitation(ownerId, { jockeyId, horseId, raceId, agreedFee 
     status: { $in: ['pending', 'accepted'] },
   });
   if (existing) {
-    throw new AppError(409, 'Đã tồn tại lời mời cho bộ kỵ sĩ-ngựa-cuộc đua này');
+    throw new AppError(409, 'Đã tồn tại lời mời cho bộ nài ngựa-ngựa-cuộc đua này');
   }
 
   const invitation = await JockeyInvitation.create({
@@ -148,7 +148,7 @@ async function acceptInvitation(invitationId, jockeyId) {
         Race.findById(invitation.raceId).select('name').session(session),
       ]);
       if (!ownerWallet) throw new AppError(404, 'Không tìm thấy ví của chủ ngựa');
-      if (!jockeyWallet) throw new AppError(404, 'Không tìm thấy ví của kỵ sĩ');
+      if (!jockeyWallet) throw new AppError(404, 'Không tìm thấy ví của nài ngựa');
 
       const horseName = horse?.name ?? 'ngựa';
       const raceName = race?.name ?? 'cuộc đua';
@@ -156,7 +156,7 @@ async function acceptInvitation(invitationId, jockeyId) {
       await walletService.debitWallet(
         ownerWallet._id, invitation.ownerId, agreedFee,
         'jockey_hire_fee',
-        `Phí thuê kỵ sĩ cho ngựa ${horseName} — ${raceName}`,
+        `Phí thuê nài ngựa cho ngựa ${horseName} — ${raceName}`,
         invitation._id, 'JockeyInvitation',
         session,
       );

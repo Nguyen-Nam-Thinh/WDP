@@ -92,7 +92,7 @@ const OWNER_NAV: NavItem[] = [
     label: "Ngựa Của Tôi",
     icon: <span className="text-base leading-none">🐎</span>,
   },
-  { to: "/horse-owner/jockeys", label: "Kỵ Sĩ", icon: <Users /> },
+  { to: "/horse-owner/jockeys", label: "Nài Ngựa", icon: <Users /> },
   { to: "/horse-owner/schedule", label: "Lịch Đua", icon: <Calendar /> },
   { to: "/horse-owner/results", label: "Thành Tích", icon: <TrendingUp /> },
   { to: "/horse-owner/race-results", label: "Kết Quả Cuộc Đua", icon: <Medal /> },
@@ -108,8 +108,8 @@ const TX_TYPE_LABEL: Record<string, string> = {
   bet_placed: "Dự Đoán",
   bet_payout: "Thắng Dự Đoán",
   bet_refund: "Hoàn Dự Đoán",
-  jockey_hire_fee: "Phí Thuê Kỵ Sĩ",
-  jockey_hire_income: "Thu Nhập Thuê Kỵ Sĩ",
+  jockey_hire_fee: "Phí Thuê Nài Ngựa",
+  jockey_hire_income: "Thu Nhập Thuê Nài Ngựa",
   reward_redeem: "Đổi Quà",
   penalty_payment: "Nộp Phạt",
 };
@@ -136,7 +136,7 @@ function formatTxDescription(tx: {
   );
   if (hireLegacy || tx.type === "jockey_hire_fee") {
     if (/invitation/i.test(desc) && !/ngựa/i.test(desc)) {
-      return "Phí thuê kỵ sĩ cho ngựa";
+      return "Phí thuê nài ngựa cho ngựa";
     }
   }
 
@@ -324,7 +324,7 @@ export function HorseOwnerDashboard() {
       const result = await userApi.getJockeys(token);
       setJockeys(result.jockeys);
     } catch (err: any) {
-      toast.error(err.message || "Không thể tải danh sách kỵ sĩ");
+      toast.error(err.message || "Không thể tải danh sách nài ngựa");
     } finally {
       setLoadingJockeys(false);
     }
@@ -1035,7 +1035,7 @@ export function HorseOwnerDashboard() {
       color: "from-blue-500 to-blue-700",
     },
     {
-      label: "Kỵ Sĩ Hoạt Động",
+      label: "Nài Ngựa Hoạt Động",
       value: "1",
       icon: Users,
       color: "from-purple-500 to-purple-700",
@@ -1564,10 +1564,10 @@ export function HorseOwnerDashboard() {
             <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
               <div>
                 <h2 className="font-serif text-3xl font-bold text-foreground mb-2">
-                  Thuê Kỵ Sĩ
+                  Thuê Nài Ngựa
                 </h2>
                 <p className="text-slate-400">
-                  Diễn đàn tìm và thuê kỵ sĩ cho race của bạn
+                  Diễn đàn tìm và thuê nài ngựa cho race của bạn
                 </p>
               </div>
               <div className="relative">
@@ -1602,7 +1602,7 @@ export function HorseOwnerDashboard() {
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <p className="text-sm text-muted-foreground">
-                    Kỵ sĩ đang tìm kiếm hợp đồng — nhấn{" "}
+                    Nài ngựa đang tìm kiếm hợp đồng — nhấn{" "}
                     <span className="text-[#C9A227] font-medium">Thuê</span> để
                     gửi lời mời
                   </p>
@@ -1621,17 +1621,17 @@ export function HorseOwnerDashboard() {
                   <div className="text-center py-20 text-muted-foreground border border-dashed border-border">
                     <Users className="w-12 h-12 mx-auto mb-4 opacity-30" />
                     <p className="font-semibold text-foreground mb-1">
-                      Chưa có kỵ sĩ nào sẵn sàng
+                      Chưa có nài ngựa nào sẵn sàng
                     </p>
                     <p className="text-sm">
-                      Các kỵ sĩ bật trạng thái sẵn sàng sẽ xuất hiện ở đây
+                      Các nài ngựa bật trạng thái sẵn sàng sẽ xuất hiện ở đây
                     </p>
                   </div>
                 ) : filteredForumJockeys.length === 0 ? (
                   <div className="text-center py-20 text-muted-foreground border border-dashed border-border">
                     <Search className="w-12 h-12 mx-auto mb-4 opacity-30" />
                     <p className="font-semibold text-foreground mb-1">
-                      Không tìm thấy kỵ sĩ
+                      Không tìm thấy nài ngựa
                     </p>
                   </div>
                 ) : (
@@ -1770,7 +1770,7 @@ export function HorseOwnerDashboard() {
                       Chưa có lời mời nào
                     </p>
                     <p className="text-sm">
-                      Vào "Diễn Đàn Thuê" để tìm kỵ sĩ và gửi lời mời
+                      Vào "Diễn Đàn Thuê" để tìm nài ngựa và gửi lời mời
                     </p>
                   </div>
                 ) : filteredOwnerInvitations.length === 0 ? (
@@ -2096,7 +2096,7 @@ export function HorseOwnerDashboard() {
                                     </div>
                                     <div>
                                       <div className="text-slate-500 text-xs mb-1">
-                                        Kỵ Sĩ
+                                        Nài Ngựa
                                       </div>
                                       <div
                                         className={`font-medium flex items-center gap-1 ${jockey ? "text-foreground" : "text-slate-500 italic"}`}
@@ -3938,7 +3938,7 @@ export function HorseOwnerDashboard() {
                       "&:hover": { background: "#B08D1E" },
                     }}
                   >
-                    Thuê kỵ sĩ này
+                    Thuê nài ngựa này
                   </Button>
                 </DialogActions>
               </>
@@ -4018,15 +4018,15 @@ export function HorseOwnerDashboard() {
 
             return (
               <div className="space-y-4">
-                {/* 1. Dropdown cuộc đua cần kỵ sĩ */}
+                {/* 1. Dropdown cuộc đua cần nài ngựa */}
                 <FormControl
                   fullWidth
                   sx={darkSelect}
                   disabled={loadingInviteRegs}
                 >
-                  <InputLabel>Cuộc đua cần kỵ sĩ</InputLabel>
+                  <InputLabel>Cuộc đua cần nài ngựa</InputLabel>
                   <Select
-                    label="Cuộc đua cần kỵ sĩ"
+                    label="Cuộc đua cần nài ngựa"
                     value={selectedInviteReg?._id ?? ""}
                     onChange={(e) => {
                       const reg =
@@ -4050,7 +4050,7 @@ export function HorseOwnerDashboard() {
                       </MenuItem>
                     ) : inviteRegs.length === 0 ? (
                       <MenuItem disabled value="">
-                        Không có cuộc đua nào cần kỵ sĩ
+                        Không có cuộc đua nào cần nài ngựa
                       </MenuItem>
                     ) : (
                       inviteRegs.map((reg) => {
@@ -4078,7 +4078,7 @@ export function HorseOwnerDashboard() {
                 <TextField
                   fullWidth
                   type="number"
-                  label="Phí thuê kỵ sĩ (coins)"
+                  label="Phí thuê nài ngựa (coins)"
                   value={inviteForm.agreedFee}
                   onChange={(e) =>
                     setInviteForm((p) => ({ ...p, agreedFee: e.target.value }))
@@ -4086,7 +4086,7 @@ export function HorseOwnerDashboard() {
                   inputProps={{ min: 0, step: 10000 }}
                   helperText={
                     (invitingJockey as any)?.jockeyProfile?.askingFeePerRace > 0
-                      ? `Kỵ sĩ đề xuất: ${Number((invitingJockey as any).jockeyProfile.askingFeePerRace).toLocaleString("vi-VN")} coins`
+                      ? `Nài ngựa đề xuất: ${Number((invitingJockey as any).jockeyProfile.askingFeePerRace).toLocaleString("vi-VN")} coins`
                       : "Nhập 0 nếu miễn phí"
                   }
                   sx={{

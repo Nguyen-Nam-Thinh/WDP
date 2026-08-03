@@ -25,6 +25,7 @@ export interface Race {
   _id: string;
   tournamentId: string | { _id: string; name: string };
   name: string;
+  address: string;
   grade: RaceGrade;
   maxCapacity: number;
   purse: number;

@@ -63,13 +63,13 @@ async function registerHorse(ownerId, { raceId, horseId, jockeyId }) {
   // Jockey validation (if provided)
   if (jockeyId) {
     const jockey = await User.findOne({ _id: jockeyId, role: 'jockey', isActive: true });
-    if (!jockey) throw new AppError(404, 'Không tìm thấy kỵ sĩ');
+    if (!jockey) throw new AppError(404, 'Không tìm thấy nài ngựa');
     const { assertJockeyNotSuspended } = require('./jockey-suspension.helper');
     await assertJockeyNotSuspended(jockeyId);
 
     // Jockey can only ride 1 horse per race
     const jockeyConflict = await Registration.findOne({ raceId, jockeyId, status: 'active' });
-    if (jockeyConflict) throw new AppError(409, 'Kỵ sĩ đã được phân công cho ngựa khác trong cuộc đua này');
+    if (jockeyConflict) throw new AppError(409, 'Nài ngựa đã được phân công cho ngựa khác trong cuộc đua này');
   }
 
   const session = await mongoose.startSession();
@@ -150,16 +150,16 @@ async function getRegistrationById(registrationId, userId, role) {
 async function assignJockey(registrationId, ownerId, jockeyId) {
   const reg = await Registration.findOne({ _id: registrationId, ownerId });
   if (!reg) throw new AppError(404, 'Không tìm thấy đăng ký hoặc bạn không có quyền truy cập');
-  if (reg.status !== 'active') throw new AppError(400, `Không thể phân công kỵ sĩ cho đăng ký có trạng thái '${reg.status}'`);
+  if (reg.status !== 'active') throw new AppError(400, `Không thể phân công nài ngựa cho đăng ký có trạng thái '${reg.status}'`);
 
   const race = await Race.findById(reg.raceId);
   if (!race) throw new AppError(404, 'Không tìm thấy cuộc đua');
   if (['running', 'finished', 'cancelled'].includes(race.status)) {
-    throw new AppError(400, `Không thể phân công kỵ sĩ khi cuộc đua đang ở trạng thái '${race.status}'`);
+    throw new AppError(400, `Không thể phân công nài ngựa khi cuộc đua đang ở trạng thái '${race.status}'`);
   }
 
   const jockey = await User.findOne({ _id: jockeyId, role: 'jockey', isActive: true });
-  if (!jockey) throw new AppError(404, 'Không tìm thấy kỵ sĩ');
+  if (!jockey) throw new AppError(404, 'Không tìm thấy nài ngựa');
 
   const { assertJockeyNotSuspended } = require('./jockey-suspension.helper');
   await assertJockeyNotSuspended(jockeyId);
@@ -171,7 +171,7 @@ async function assignJockey(registrationId, ownerId, jockeyId) {
     status: 'active',
     _id: { $ne: registrationId },
   });
-  if (conflict) throw new AppError(409, 'Kỵ sĩ đã được phân công cho ngựa khác trong cuộc đua này');
+  if (conflict) throw new AppError(409, 'Nài ngựa đã được phân công cho ngựa khác trong cuộc đua này');
 
   reg.jockeyId = jockeyId;
   await reg.save();

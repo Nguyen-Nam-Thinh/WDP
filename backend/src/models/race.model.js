@@ -14,6 +14,7 @@ const raceSchema = new mongoose.Schema(
   {
     tournamentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tournament', required: true },
     name: { type: String, required: true, trim: true, maxlength: 200 },
+    address: { type: String, required: true, trim: true, maxlength: 500 },
     grade: { type: String, enum: ['Maiden', 'G3', 'G2', 'G1'], required: true },
     maxCapacity: { type: Number, required: true, min: 1 },
     purse: { type: Number, required: true, min: 0 },

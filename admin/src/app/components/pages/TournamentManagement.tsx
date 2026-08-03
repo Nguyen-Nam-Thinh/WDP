@@ -178,7 +178,7 @@ function TournamentDialog({ open, editing, onClose, onSaved }: any) {
 
 // ── Race Form Dialog ───────────────────────────────────────────────────────────
 const emptyRace = {
-  tournamentId: '', name: '', grade: 'Maiden',
+  tournamentId: '', name: '', address: '', grade: 'Maiden',
   maxCapacity: 12, purse: 0, registrationFee: 0,
   scheduledTime: '', cutoffTime: '', distance: 1600,
 };
@@ -193,6 +193,7 @@ function RaceDialog({ open, editing, tournaments, onClose, onSaved }: any) {
       setForm({
         tournamentId: tid,
         name: editing.name,
+        address: editing.address || '',
         grade: editing.grade,
         maxCapacity: editing.maxCapacity,
         purse: editing.purse,
@@ -221,7 +222,7 @@ function RaceDialog({ open, editing, tournaments, onClose, onSaved }: any) {
   })();
 
   const handleSave = async () => {
-    if (!form.tournamentId || !form.name || !form.scheduledTime || !form.cutoffTime) {
+    if (!form.tournamentId || !form.name || !form.address || !form.scheduledTime || !form.cutoffTime) {
       toast.error('Vui lòng điền đầy đủ thông tin bắt buộc');
       return;
     }
@@ -271,6 +272,10 @@ function RaceDialog({ open, editing, tournaments, onClose, onSaved }: any) {
           <div className="col-span-1 sm:col-span-2">
             <label className="mb-1.5 block text-sm font-semibold text-slate-700">Tên chặng đua <span className="text-red-500">*</span></label>
             <input type="text" value={form.name} onChange={e => setF('name', e.target.value)} placeholder="Ví dụ: Chặng 1 - Khởi Động" className="w-full rounded-md border border-slate-300 bg-white py-2 px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
+          </div>
+          <div className="col-span-1 sm:col-span-2">
+            <label className="mb-1.5 block text-sm font-semibold text-slate-700">Địa điểm tổ chức <span className="text-red-500">*</span></label>
+            <input type="text" value={form.address} onChange={e => setF('address', e.target.value)} placeholder="Ví dụ: Trường đua A, Thành phố B" className="w-full rounded-md border border-slate-300 bg-white py-2 px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
           </div>
         </div>
       </div>
@@ -760,6 +765,7 @@ export default function TournamentManagement() {
                     <tr>
                       <th className="px-5 py-3 font-semibold text-slate-600 border-b border-slate-200">Tên Chặng</th>
                       <th className="px-5 py-3 font-semibold text-slate-600 border-b border-slate-200">Thuộc Giải</th>
+                      <th className="px-5 py-3 font-semibold text-slate-600 border-b border-slate-200">Địa điểm</th>
                       <th className="px-5 py-3 font-semibold text-slate-600 border-b border-slate-200">Hạng / Cự ly</th>
                       <th className="px-5 py-3 font-semibold text-slate-600 border-b border-slate-200">Lịch trình</th>
                       <th className="px-5 py-3 font-semibold text-slate-600 border-b border-slate-200 text-center">Trạng thái</th>
@@ -768,9 +774,9 @@ export default function TournamentManagement() {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {loadingR ? (
-                       <tr><td colSpan={6} className="text-center py-10"><RefreshCw className="animate-spin text-slate-400 mx-auto" size={24} /></td></tr>
+                       <tr><td colSpan={7} className="text-center py-10"><RefreshCw className="animate-spin text-slate-400 mx-auto" size={24} /></td></tr>
                     ) : pagedRaces.length === 0 ? (
-                       <tr><td colSpan={6} className="text-center py-12 text-slate-500">Không tìm thấy chặng đua phù hợp.</td></tr>
+                       <tr><td colSpan={7} className="text-center py-12 text-slate-500">Không tìm thấy chặng đua phù hợp.</td></tr>
                     ) : pagedRaces.map(r => {
                       const tName = typeof r.tournamentId === 'object' ? r.tournamentId.name : '-';
                       const canChangeStatus = ['open', 'closed'].includes(r.status);
@@ -781,6 +787,7 @@ export default function TournamentManagement() {
                         <tr key={r._id} className="hover:bg-slate-50/50 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-300 group bg-white cursor-pointer">
                           <td className="px-5 py-4 font-semibold text-slate-900 text-[13px]">{r.name}</td>
                           <td className="px-5 py-4 text-slate-600 text-[13px]">{tName}</td>
+                          <td className="px-5 py-4 text-slate-600 text-[13px]">{r.address || '-'}</td>
                           <td className="px-5 py-4 text-slate-600 text-[13px]">
                              <span className="font-bold">{r.grade}</span> <span className="text-slate-400 mx-1">|</span> {r.distance}m
                           </td>

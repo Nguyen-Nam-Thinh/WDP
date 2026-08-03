@@ -139,7 +139,7 @@ export function LandingPage() {
               Quản Lý Đua Ngựa Chuyên Nghiệp
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Xây dựng cho chủ ngựa, kỵ sĩ, trọng tài và khán giả. Một hệ sinh thái hoàn chỉnh được hỗ trợ bởi công nghệ hiện đại.
+              Xây dựng cho chủ ngựa, nài ngựa, trọng tài và khán giả. Một hệ sinh thái hoàn chỉnh được hỗ trợ bởi công nghệ hiện đại.
             </p>
           </motion.div>
 
@@ -161,7 +161,7 @@ export function LandingPage() {
             <div className="flex">
               {[
                 { src: "https://images.unsplash.com/photo-1760041870925-0a6ed8220ce4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080", title: "Cơ Sở Vật Chất Đẳng Cấp Thế Giới", sub: "Đua Ngựa Chuyên Nghiệp" },
-                { src: "https://images.unsplash.com/photo-1546700990-7b6416f2d90c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080", title: "Kỵ Sĩ Hàng Đầu", sub: "Vận Động Viên Ưu Tú" },
+                { src: "https://images.unsplash.com/photo-1546700990-7b6416f2d90c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080", title: "Nài Ngựa Hàng Đầu", sub: "Vận Động Viên Ưu Tú" },
                 { src: "https://images.unsplash.com/photo-1613085411234-9c83af5562d8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080", title: "Đường Đua Rực Lửa", sub: "Trải Nghiệm Trực Tiếp" },
                 { src: "https://images.unsplash.com/photo-1766170449400-be0022117c24?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1920", title: "Giải Đấu Toàn Cầu", sub: "Sự Kiện Thường Niên" }
               ].map((img, i) => (
@@ -347,7 +347,7 @@ export function LandingPage() {
             <p className="text-xl text-[#F7F3EA]/90 mb-10 max-w-2xl mx-auto leading-relaxed">
               Tham gia cùng{' '}
               <span className="text-gold font-bold">{loadingStats ? '...' : formatCount(stats?.totalSpectators ?? 0)}</span>{' '}
-              khán giả, kỵ sĩ và chủ ngựa đã sử dụng The Paddock để quản lý và trải nghiệm đua ngựa chưa từng có.
+              khán giả, nài ngựa và chủ ngựa đã sử dụng The Paddock để quản lý và trải nghiệm đua ngựa chưa từng có.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -386,7 +386,7 @@ export function LandingPage() {
               <h4 className="font-serif text-foreground font-bold mb-4">Nền Tảng</h4>
               <ul className="space-y-3 text-sm text-muted-foreground">
                 <li><a href="#" className="hover:text-secondary transition-colors">Chủ Ngựa</a></li>
-                <li><a href="#" className="hover:text-secondary transition-colors">Kỵ Sĩ</a></li>
+                <li><a href="#" className="hover:text-secondary transition-colors">Nài Ngựa</a></li>
                 <li><a href="#" className="hover:text-secondary transition-colors">Trọng Tài</a></li>
                 <li><a href="#" className="hover:text-secondary transition-colors">Khán Giả</a></li>
               </ul>

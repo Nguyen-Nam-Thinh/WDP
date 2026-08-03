@@ -83,16 +83,16 @@ function buildReasonFromStats(horse, jockey, formFactor, fieldStats) {
   }
 
   if (!jp || (jp.raceCount === 0 && jp.experienceYears === 0)) {
-    parts.push('chưa có kỵ sĩ phân công');
+    parts.push('chưa có nài ngựa phân công');
   } else if (jWinRate >= 40 && jp.raceCount >= 10) {
-    parts.push(`kỵ sĩ đỉnh cao: ${jWinRate}% win rate, ${jp.experienceYears} năm KN`);
+    parts.push(`nài ngựa đỉnh cao: ${jWinRate}% win rate, ${jp.experienceYears} năm KN`);
   } else if (jp.style && jp.style !== 'balanced') {
     const styleLabel = jp.style === 'aggressive' ? 'bứt phá sớm' : 'nước rút cuối';
-    parts.push(`kỵ sĩ ${jp.experienceYears} năm KN, phong cách ${styleLabel}`);
+    parts.push(`nài ngựa ${jp.experienceYears} năm KN, phong cách ${styleLabel}`);
   } else if (jp.experienceYears >= 8) {
-    parts.push(`kỵ sĩ lão luyện ${jp.experienceYears} năm kinh nghiệm`);
+    parts.push(`nài ngựa lão luyện ${jp.experienceYears} năm kinh nghiệm`);
   } else if (jp.experienceYears > 0) {
-    parts.push(`kỵ sĩ ${jp.experienceYears} năm kinh nghiệm`);
+    parts.push(`nài ngựa ${jp.experienceYears} năm kinh nghiệm`);
   }
 
   return parts.slice(0, 2).join('; ');
@@ -201,13 +201,13 @@ Xét các yếu tố theo trọng số:
 1. Win rate của ngựa (30%) — quan trọng nhất
 2. Điểm tích lũy & grade (25%) — thể hiện đẳng cấp
 3. Phong độ gần đây / recentForm (15%) — xu hướng hiện tại
-4. Kinh nghiệm và win rate kỵ sĩ (20%) — ảnh hưởng đáng kể
-5. Phong cách cưỡi (ridingStyle) của kỵ sĩ (10%) — aggressive dẫn đầu sớm, conservative bứt phá cuối
+4. Kinh nghiệm và win rate nài ngựa (20%) — ảnh hưởng đáng kể
+5. Phong cách cưỡi (ridingStyle) của nài ngựa (10%) — aggressive dẫn đầu sớm, conservative bứt phá cuối
 
 Lưu ý:
-- Ngựa có winRate cao + kỵ sĩ giỏi + recentForm xuất sắc → ứng viên hàng đầu
+- Ngựa có winRate cao + nài ngựa giỏi + recentForm xuất sắc → ứng viên hàng đầu
 - Ngựa mới (0 races) → unpredictable, thường xếp giữa/cuối
-- Kỵ sĩ null → bất lợi so với ngựa có kỵ sĩ kinh nghiệm
+- Nài ngựa null → bất lợi so với ngựa có nài ngựa kinh nghiệm
 - Grade cao hơn race grade → lợi thế rõ ràng
 - recentForm "kém" dù winRate cao → cảnh báo ngựa đang mất phong độ
 

@@ -1307,7 +1307,7 @@ export function SpectatorDashboard() {
                               {race.name}
                             </h3>
                             <p className="text-sm text-muted-foreground">
-                              {race.distance}m •{" "}
+                              {race.address && <>{race.address} • </>}{race.distance}m •{" "}
                               {new Date(race.scheduledTime).toLocaleTimeString(
                                 "vi-VN",
                                 { hour: "2-digit", minute: "2-digit" },
@@ -2424,7 +2424,7 @@ export function SpectatorDashboard() {
                               : "text-muted-foreground hover:text-foreground"
                               }`}
                           >
-                            {t === "horses" ? "🐎 Ngựa" : t === "jockeys" ? "🏇 Kỵ Sĩ" : "👑 Chủ Ngựa"}
+                            {t === "horses" ? "🐎 Ngựa" : t === "jockeys" ? "🏇 Nài Ngựa" : "👑 Chủ Ngựa"}
                           </button>
                         ))}
                       </div>
@@ -2528,7 +2528,7 @@ export function SpectatorDashboard() {
                                   Hạng
                                 </th>
                                 <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">
-                                  Kỵ Sĩ
+                                  Nài Ngựa
                                 </th>
                                 <th className="text-left px-5 py-4 text-sm font-semibold text-muted-foreground">
                                   Kinh Nghiệm

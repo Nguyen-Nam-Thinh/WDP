@@ -99,10 +99,10 @@ async function addRegularJockey(horseId, ownerId, jockeyId) {
   if (!horse) throw new AppError(404, 'Không tìm thấy ngựa hoặc bạn không có quyền truy cập');
 
   const jockey = await User.findOne({ _id: jockeyId, role: 'jockey', isActive: true });
-  if (!jockey) throw new AppError(404, 'Không tìm thấy kỵ sĩ');
+  if (!jockey) throw new AppError(404, 'Không tìm thấy nài ngựa');
 
   if (horse.regularJockeys.some((id) => id.toString() === jockeyId)) {
-    throw new AppError(409, 'Kỵ sĩ đã là kỵ sĩ ruột của ngựa này');
+    throw new AppError(409, 'Nài ngựa đã là nài ngựa ruột của ngựa này');
   }
 
   horse.regularJockeys.push(new mongoose.Types.ObjectId(jockeyId));
@@ -117,7 +117,7 @@ async function removeRegularJockey(horseId, ownerId, jockeyId) {
   const before = horse.regularJockeys.length;
   horse.regularJockeys = horse.regularJockeys.filter((id) => id.toString() !== jockeyId);
   if (horse.regularJockeys.length === before)
-    throw new AppError(404, 'Kỵ sĩ không có trong danh sách kỵ sĩ ruột');
+    throw new AppError(404, 'Nài ngựa không có trong danh sách nài ngựa ruột');
 
   await horse.save();
   return horse;

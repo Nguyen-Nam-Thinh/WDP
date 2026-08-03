@@ -12,7 +12,7 @@ const ALLOWED_MANUAL_TRANSITIONS = {
 
 async function createRace(adminId, body) {
   const {
-    tournamentId, name, grade, maxCapacity, purse, registrationFee,
+    tournamentId, name, address, grade, maxCapacity, purse, registrationFee,
     scheduledTime, cutoffTime, distance, eligibility,
   } = body;
 
@@ -33,6 +33,7 @@ async function createRace(adminId, body) {
   const race = await Race.create({
     tournamentId,
     name,
+    address,
     grade,
     maxCapacity,
     purse,

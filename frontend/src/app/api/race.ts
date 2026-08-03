@@ -40,6 +40,7 @@ export interface Race {
   _id: string;
   tournamentId: string;
   name: string;
+  address: string;
   grade: "Maiden" | "G3" | "G2" | "G1";
   maxCapacity: number;
   purse: number;

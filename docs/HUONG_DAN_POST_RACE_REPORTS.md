@@ -255,10 +255,10 @@ function isJockeySuspended(jockeyDoc) {
 
 async function assertJockeyNotSuspended(jockeyId) {
   const jockey = await User.findOne({ _id: jockeyId, role: 'jockey' }).select('fullName jockeyProfile');
-  if (!jockey) throw new AppError(404, 'Không tìm thấy kỵ sĩ');
+  if (!jockey) throw new AppError(404, 'Không tìm thấy nài ngựa');
   if (isJockeySuspended(jockey)) {
     const until = new Date(jockey.jockeyProfile.suspendedUntil).toLocaleString('vi-VN');
-    throw new AppError(400, `Kỵ sĩ đang bị treo giò đến ${until}`);
+    throw new AppError(400, `Nài ngựa đang bị treo giò đến ${until}`);
   }
   return jockey;
 }
@@ -268,7 +268,7 @@ async function applyJockeySuspension(jockeyId, suspensionDays) {
   if (!Number.isFinite(days) || days <= 0) return null;
 
   const jockey = await User.findOne({ _id: jockeyId, role: 'jockey' });
-  if (!jockey) throw new AppError(404, 'Không tìm thấy kỵ sĩ để treo giò');
+  if (!jockey) throw new AppError(404, 'Không tìm thấy nài ngựa để treo giò');
 
   if (!jockey.jockeyProfile) jockey.jockeyProfile = {};
   const candidate = new Date(Date.now() + days * 24 * 60 * 60 * 1000);

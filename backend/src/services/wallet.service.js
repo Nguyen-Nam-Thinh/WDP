@@ -75,7 +75,7 @@ async function getTransactionHistory(userId, page, limit) {
       const raceName = inv?.raceId?.name;
       const suffix = raceName ? ` — ${raceName}` : '';
       tx.description = tx.type === 'jockey_hire_fee'
-        ? `Phí thuê kỵ sĩ cho ngựa ${horseName}${suffix}`
+        ? `Phí thuê nài ngựa cho ngựa ${horseName}${suffix}`
         : `Thu nhập thuê cưỡi ngựa ${horseName}${suffix}`;
     }
   }

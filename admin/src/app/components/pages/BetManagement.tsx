@@ -206,13 +206,13 @@ export default function BetManagement() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <button
+          {/* <button
             onClick={openSettleDialog}
             className="inline-flex items-center gap-2 rounded-md bg-blue-600 py-2 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition"
           >
             <DollarSign size={16} />
             Quyết toán
-          </button>
+          </button> */}
           <button
             onClick={() => { loadBets(); loadStats(); }}
             disabled={loading}
@@ -238,7 +238,7 @@ export default function BetManagement() {
           <p className="text-2xl font-bold text-slate-900 mb-1">
             {loadingStats ? <span className="text-slate-300 text-xl animate-pulse">...</span> : stats.total.toLocaleString('vi-VN')}
           </p>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tổng Số Cược</p>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tổng Số Dự Đoán</p>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -253,7 +253,7 @@ export default function BetManagement() {
           <p className="text-2xl font-bold text-slate-900 mb-1">
             {loadingStats ? <span className="text-slate-300 text-xl animate-pulse">...</span> : `${stats.totalAmount.toLocaleString('vi-VN')} $`}
           </p>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tổng Tiền Cược</p>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tổng Tiền Dự Đoán</p>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">

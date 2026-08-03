@@ -4,6 +4,7 @@ export interface Race {
   _id: string;
   tournamentId: { _id: string; name: string; status: string } | string;
   name: string;
+  address: string;
   grade: 'Maiden' | 'G3' | 'G2' | 'G1';
   maxCapacity: number;
   purse: number;
@@ -33,6 +34,7 @@ export interface RaceListResponse {
 export interface CreateRaceData {
   tournamentId: string;
   name: string;
+  address: string;
   grade: string;
   maxCapacity: number;
   purse: number;

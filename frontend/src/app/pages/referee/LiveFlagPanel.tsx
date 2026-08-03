@@ -55,7 +55,7 @@ const INCIDENT_TYPE_LABEL: Record<string, string> = {
   interference: 'Cản trở',
   doping: 'Doping',
   equipment_violation: 'Vi phạm thiết bị',
-  jockey_violation: 'Vi phạm kỵ sĩ',
+  jockey_violation: 'Vi phạm nài ngựa',
   other: 'Khác',
 };
 

@@ -20,6 +20,7 @@ const eligibilitySchema = z.object({
 const createRaceSchema = z.object({
   tournamentId: z.string().min(1),
   name: z.string().min(1).max(200),
+  address: z.string().min(1).max(500),
   grade: gradeEnum,
   maxCapacity: z.number().int().min(1),
   purse: z.number().min(0),
@@ -32,6 +33,7 @@ const createRaceSchema = z.object({
 
 const updateRaceSchema = z.object({
   name: z.string().min(1).max(200).optional(),
+  address: z.string().min(1).max(500).optional(),
   grade: gradeEnum.optional(),
   maxCapacity: z.number().int().min(1).optional(),
   purse: z.number().min(0).optional(),

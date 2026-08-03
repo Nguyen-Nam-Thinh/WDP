@@ -32,7 +32,7 @@ const INCIDENT_TYPES = [
   { value: 'interference', label: 'Cản trở' },
   { value: 'doping', label: 'Doping' },
   { value: 'equipment_violation', label: 'Vi phạm thiết bị' },
-  { value: 'jockey_violation', label: 'Vi phạm kỵ sĩ' },
+  { value: 'jockey_violation', label: 'Vi phạm nài ngựa' },
   { value: 'other', label: 'Khác' },
 ];
 
@@ -1047,7 +1047,7 @@ export function RefereeDashboard() {
                         </div>
                         {jockey && (
                           <div className="bg-blue-500/8 border border-blue-500/20 rounded-xl p-3 text-sm">
-                            <div className="text-blue-400 font-bold uppercase text-xs mb-2">Kỵ Sĩ</div>
+                            <div className="text-blue-400 font-bold uppercase text-xs mb-2">Nài Ngựa</div>
                             <div className="text-foreground font-medium">{jockey.fullName}</div>
                             {jockey.jockeyProfile && (
                               <div className="text-slate-400 text-xs mt-1">{jockey.jockeyProfile.experienceYears} năm KN · {jockey.jockeyProfile.weight} kg</div>

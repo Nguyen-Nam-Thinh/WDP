@@ -201,7 +201,7 @@ export function RankingsPage() {
       <div className="sticky top-[64px] z-30 bg-background/95 backdrop-blur-sm border-b border-border py-4 px-6">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center gap-4">
           <div className="flex bg-card p-1 border border-border">
-            {([['horses', 'Ngựa Đua', Zap], ['jockeys', 'Kỵ Sĩ', Users], ['owners', 'Chủ Ngựa', Award], ['races', 'Kết Quả Race', Flag]] as const).map(([key, label, Icon]) => (
+            {([['horses', 'Ngựa Đua', Zap], ['jockeys', 'Nài Ngựa', Users], ['owners', 'Chủ Ngựa', Award], ['races', 'Kết Quả Race', Flag]] as const).map(([key, label, Icon]) => (
               <button
                 type="button"
                 key={key}
@@ -346,7 +346,7 @@ export function RankingsPage() {
                             <tr className="border-b border-border bg-muted/70 backdrop-blur-sm">
                               <th className="text-left px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider w-20">Vị Trí</th>
                               <th className="text-left px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Ngựa</th>
-                              <th className="text-left px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Kỵ Sĩ</th>
+                              <th className="text-left px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nài Ngựa</th>
                               <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Thời Gian</th>
                               <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Điểm</th>
                               <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Thưởng</th>
@@ -455,7 +455,7 @@ export function RankingsPage() {
 
             {/* Full Table */}
             {currentList.length === 0 ? (
-              <EmptyState label={`Không có dữ liệu ${tab === 'horses' ? 'ngựa' : tab === 'jockeys' ? 'kỵ sĩ' : 'chủ ngựa'}`} />
+              <EmptyState label={`Không có dữ liệu ${tab === 'horses' ? 'ngựa' : tab === 'jockeys' ? 'nài ngựa' : 'chủ ngựa'}`} />
             ) : (
               <div className="bg-card border border-border overflow-hidden">
                 <div className="overflow-x-auto">
@@ -464,7 +464,7 @@ export function RankingsPage() {
                       <tr className="border-b border-border bg-muted/50">
                         <th className="text-left px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider w-16">Hạng</th>
                         <th className="text-left px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                          {tab === 'horses' ? 'Ngựa' : tab === 'jockeys' ? 'Kỵ Sĩ' : 'Chủ Ngựa'}
+                          {tab === 'horses' ? 'Ngựa' : tab === 'jockeys' ? 'Nài Ngựa' : 'Chủ Ngựa'}
                         </th>
                         <th className="text-center px-4 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Thắng</th>
                         <th className="text-center px-4 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Số Đua</th>

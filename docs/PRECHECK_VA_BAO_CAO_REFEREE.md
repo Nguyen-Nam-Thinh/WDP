@@ -51,7 +51,7 @@ open → closed → pre_check → running → finished
 1. **Tư Cách & Giấy Tờ**: passport, vaccination, grade_eligible, ownership
 2. **Kiểm Tra Sức Khỏe**: no_lameness, vital_signs, coat_condition, eyes_clear, breathing
 3. **Kiểm Tra Doping**: sample_collected, no_prohibited, vet_clearance
-4. **Thiết Bị & Kỵ Sĩ**: saddle_weight, bit_check, jockey_license, jockey_weight, silks
+4. **Thiết Bị & Nài Ngựa**: saddle_weight, bit_check, jockey_license, jockey_weight, silks
 
 ### A5. Báo cáo chính thức
 
@@ -1336,13 +1336,13 @@ const checkCategories = [
       { key: 'vet_clearance', label: 'Bác sĩ thú y đã ký giấy thông qua' },
     ]
   },
-  { key: 'equipment', title: 'Thiết Bị & Kỵ Sĩ', icon: Scale, color: 'orange',
+  { key: 'equipment', title: 'Thiết Bị & Nài Ngựa', icon: Scale, color: 'orange',
     items: [
       { key: 'saddle_weight', label: 'Tổng trọng lượng yên cương đúng quy định' },
       { key: 'bit_check', label: 'Hàm thiếc hợp lệ theo quy định chủng loại' },
-      { key: 'jockey_license', label: 'Giấy phép kỵ sĩ còn hiệu lực' },
-      { key: 'jockey_weight', label: 'Cân nặng kỵ sĩ + thiết bị đạt chuẩn' },
-      { key: 'silks', label: 'Màu áo kỵ sĩ khớp với đăng ký chủ ngựa' },
+      { key: 'jockey_license', label: 'Giấy phép nài ngựa còn hiệu lực' },
+      { key: 'jockey_weight', label: 'Cân nặng nài ngựa + thiết bị đạt chuẩn' },
+      { key: 'silks', label: 'Màu áo nài ngựa khớp với đăng ký chủ ngựa' },
     ]
   },
 ];
@@ -1351,7 +1351,7 @@ const INCIDENT_TYPES = [
   { value: 'interference', label: 'Cản trở' },
   { value: 'doping', label: 'Doping' },
   { value: 'equipment_violation', label: 'Vi phạm thiết bị' },
-  { value: 'jockey_violation', label: 'Vi phạm kỵ sĩ' },
+  { value: 'jockey_violation', label: 'Vi phạm nài ngựa' },
   { value: 'other', label: 'Khác' },
 ];
 
@@ -1942,7 +1942,7 @@ export function RefereeDashboard() {
                         </div>
                         {jockey && (
                           <div className="bg-blue-500/8 border border-blue-500/20 rounded-xl p-3 text-sm">
-                            <div className="text-blue-400 font-bold uppercase text-xs mb-2">Kỵ Sĩ</div>
+                            <div className="text-blue-400 font-bold uppercase text-xs mb-2">Nài Ngựa</div>
                             <div className="text-foreground font-medium">{jockey.fullName}</div>
                             {jockey.jockeyProfile && (
                               <div className="text-slate-400 text-xs mt-1">{jockey.jockeyProfile.experienceYears} năm KN · {jockey.jockeyProfile.weight} kg</div>

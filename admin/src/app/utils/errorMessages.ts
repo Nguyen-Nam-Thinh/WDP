@@ -16,7 +16,7 @@ const ERROR_MAP: Record<string, string> = {
   // Resources
   'User not found': 'Không tìm thấy thông tin người dùng',
   'Horse not found': 'Không tìm thấy thông tin ngựa',
-  'Jockey not found': 'Không tìm thấy thông tin kỵ sĩ',
+  'Jockey not found': 'Không tìm thấy thông tin nài ngựa',
   'Race not found': 'Không tìm thấy thông tin cuộc đua',
   'Tournament not found': 'Không tìm thấy thông tin giải đấu',
   'Registration not found': 'Không tìm thấy thông tin đăng ký',
@@ -26,7 +26,7 @@ const ERROR_MAP: Record<string, string> = {
   'Validation failed': 'Dữ liệu không hợp lệ, vui lòng kiểm tra lại',
   'Registration already exists': 'Ngựa này đã được đăng ký vào cuộc đua',
   'Race is not open for registration': 'Cuộc đua không còn nhận đăng ký',
-  'Jockey already assigned': 'Kỵ sĩ này đã được phân công cho cuộc đua',
+  'Jockey already assigned': 'Nài ngựa này đã được phân công cho cuộc đua',
   'Race already has a referee': 'Cuộc đua đã có trọng tài được phân công',
   // Upload
   'Upload failed': 'Tải file thất bại, vui lòng thử lại',
