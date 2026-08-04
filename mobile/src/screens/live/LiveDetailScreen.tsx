@@ -94,17 +94,30 @@ export function LiveDetailScreen() {
   // Handle visual effects when finished (win notifications)
   const isFinished = phase === 'finished' || race?.status === 'finished';
   const displayResults = dbResults.length > 0 ? dbResults : socketResults;
-  const showPodium = isFinished && displayResults.length > 0;
+  const sortedDisplayResults = React.useMemo(() => {
+    return [...displayResults].sort((a, b) => {
+      if (a.disqualified && !b.disqualified) return 1;
+      if (!a.disqualified && b.disqualified) return -1;
+      if (a.position === null || a.position === undefined) return 1;
+      if (b.position === null || b.position === undefined) return -1;
+      return a.position - b.position;
+    });
+  }, [displayResults]);
+
+  const podiumResults = React.useMemo(() => {
+    return sortedDisplayResults.filter(r => !r.disqualified && r.position !== null && r.position !== undefined);
+  }, [sortedDisplayResults]);
+  const showPodium = isFinished && race?.isOfficial && podiumResults.length > 0;
   const hasBets = myBets.length > 0;
 
   useEffect(() => {
-    if (isFinished && displayResults.length > 0 && hasBets) {
+    if (isFinished && race?.isOfficial && sortedDisplayResults.length > 0 && hasBets) {
       // Check if user won
       const pendingBets = myBets.filter((b) => b.status === 'pending');
       if (pendingBets.length === 0) return; // already processed or loaded as finished
 
       const wonBet = pendingBets.find((b) => {
-        const result = displayResults.find((r) => (r.horseId?._id || r.horseId) === (b.horseId?._id || b.horseId));
+        const result = sortedDisplayResults.find((r) => (r.horseId?._id || r.horseId) === (b.horseId?._id || b.horseId));
         if (!result) return false;
         // Parimutuel: chỉ ngựa về nhất mới thắng
         return result.position === 1;
@@ -114,12 +127,12 @@ export function LiveDetailScreen() {
         Alert.alert('🎉 CHÚC MỪNG!', `Bạn đã dự đoán chính xác cho chú ngựa! Hãy kiểm tra ví để xem tiền thưởng.`);
       }
     }
-  }, [isFinished, dbResults, socketResults]);
+  }, [isFinished, race?.isOfficial, sortedDisplayResults]);
 
   // Map horses for RaceTrack component
   const trackHorses = (() => {
-    if (isFinished && displayResults.length > 0) {
-      return displayResults.map((r, i) => {
+    if (isFinished && sortedDisplayResults.length > 0) {
+      return sortedDisplayResults.map((r, i) => {
         const horseId = r.horseId?._id || r.horseId;
         const horseName = typeof r.horseId === 'object' ? r.horseId.name : (r.horseName || 'Ngựa');
         return {
@@ -127,7 +140,7 @@ export function LiveDetailScreen() {
           horseName: horseName,
           progressPct: 100,
           colorIdx: i,
-          currentRank: r.position,
+          currentRank: r.disqualified ? (i + 1) : (r.position ?? (i + 1)),
           isMyBet: myBets.some(b => {
             const bid = b.horseId?._id || b.horseId;
             return bid === horseId;
@@ -241,12 +254,12 @@ export function LiveDetailScreen() {
             <Text style={styles.sectionTitle}>🏆 Kết Quả Chung Cuộc</Text>
             <View style={styles.podiumRow}>
               {/* 2nd Place */}
-              {displayResults[1] && (
+              {podiumResults[1] && (
                 <View style={styles.podiumCol}>
                   <Text style={styles.podiumHorseName} numberOfLines={1}>
-                    {typeof displayResults[1].horseId === 'object' ? displayResults[1].horseId.name : (displayResults[1].horseName || 'Ngựa')}
+                    {typeof podiumResults[1].horseId === 'object' ? podiumResults[1].horseId.name : (podiumResults[1].horseName || 'Ngựa')}
                   </Text>
-                  <Text style={styles.podiumPrize}>+{displayResults[1].prizeAmount?.toLocaleString() ?? 0} xu</Text>
+                  <Text style={styles.podiumPrize}>+{podiumResults[1].prizeAmount?.toLocaleString() ?? 0} xu</Text>
                   <View style={[styles.podiumBlock, styles.podiumSilver]}>
                     <Text style={styles.podiumRankText}>2</Text>
                     <Text style={styles.podiumLabel}>HẠNG 2</Text>
@@ -255,14 +268,14 @@ export function LiveDetailScreen() {
               )}
 
               {/* 1st Place */}
-              {displayResults[0] && (
+              {podiumResults[0] && (
                 <View style={[styles.podiumCol, { marginTop: -16 }]}>
                   <Ionicons name="trophy" size={24} color={colors.gold} style={{ marginBottom: 4 }} />
                   <Text style={[styles.podiumHorseName, { fontWeight: 'bold' }]} numberOfLines={1}>
-                    {typeof displayResults[0].horseId === 'object' ? displayResults[0].horseId.name : (displayResults[0].horseName || 'Ngựa')}
+                    {typeof podiumResults[0].horseId === 'object' ? podiumResults[0].horseId.name : (podiumResults[0].horseName || 'Ngựa')}
                   </Text>
                   <Text style={[styles.podiumPrize, { color: colors.gold, fontWeight: 'bold' }]}>
-                    +{displayResults[0].prizeAmount?.toLocaleString() ?? 0} xu
+                    +{podiumResults[0].prizeAmount?.toLocaleString() ?? 0} xu
                   </Text>
                   <View style={[styles.podiumBlock, styles.podiumGold]}>
                     <Text style={styles.podiumRankText}>1</Text>
@@ -272,12 +285,12 @@ export function LiveDetailScreen() {
               )}
 
               {/* 3rd Place */}
-              {displayResults[2] && (
+              {podiumResults[2] && (
                 <View style={styles.podiumCol}>
                   <Text style={styles.podiumHorseName} numberOfLines={1}>
-                    {typeof displayResults[2].horseId === 'object' ? displayResults[2].horseId.name : (displayResults[2].horseName || 'Ngựa')}
+                    {typeof podiumResults[2].horseId === 'object' ? podiumResults[2].horseId.name : (podiumResults[2].horseName || 'Ngựa')}
                   </Text>
-                  <Text style={styles.podiumPrize}>+{displayResults[2].prizeAmount?.toLocaleString() ?? 0} xu</Text>
+                  <Text style={styles.podiumPrize}>+{podiumResults[2].prizeAmount?.toLocaleString() ?? 0} xu</Text>
                   <View style={[styles.podiumBlock, styles.podiumBronze]}>
                     <Text style={styles.podiumRankText}>3</Text>
                     <Text style={styles.podiumLabel}>HẠNG 3</Text>
@@ -285,6 +298,16 @@ export function LiveDetailScreen() {
                 </View>
               )}
             </View>
+          </View>
+        )}
+
+        {isFinished && !race?.isOfficial && (
+          <View style={styles.pendingCard}>
+            <Ionicons name="time-outline" size={28} color={colors.gold} />
+            <Text style={styles.pendingTitle}>Cuộc đua đã kết thúc!</Text>
+            <Text style={styles.pendingText}>
+              Quá trình mô phỏng đã hoàn thành. Kết quả hiện tại là tạm thời và đang chờ Ban Trọng tài & Admin phê duyệt chính thức trước khi công bố kết quả chung cuộc và trả thưởng.
+            </Text>
           </View>
         )}
 
@@ -318,9 +341,9 @@ export function LiveDetailScreen() {
                 );
               })}
             </View>
-          ) : isFinished && displayResults.length > 0 ? (
+          ) : isFinished && sortedDisplayResults.length > 0 ? (
             <View style={styles.leaderboardList}>
-              {displayResults.map((r) => {
+              {sortedDisplayResults.map((r) => {
                 const rHorseId = r.horseId?._id || r.horseId;
                 const rHorseName = typeof r.horseId === 'object' ? r.horseId.name : (r.horseName || 'Ngựa');
                 const isMyHorse = myBets.some((b) => (b.horseId?._id || b.horseId) === rHorseId);
@@ -328,17 +351,37 @@ export function LiveDetailScreen() {
                   <View key={rHorseId} style={[styles.leaderboardRow, isMyHorse && styles.rowMyBet]}>
                     <View style={[
                       styles.rankBox,
-                      r.position === 1 ? styles.rank1 : r.position === 2 ? styles.rank2 : r.position === 3 ? styles.rank3 : styles.rankDefault
+                      r.disqualified
+                        ? styles.rankDQ
+                        : r.position === 1
+                          ? styles.rank1
+                          : r.position === 2
+                            ? styles.rank2
+                            : r.position === 3
+                              ? styles.rank3
+                              : styles.rankDefault
                     ]}>
-                      <Text style={[styles.rankText, r.position <= 3 && { color: '#FFF' }]}>{r.position}</Text>
+                      <Text style={[styles.rankText, (r.disqualified || r.position <= 3) && { color: '#FFF' }]}>
+                        {r.disqualified ? 'DQ' : (r.position ?? '—')}
+                      </Text>
                     </View>
                     <Text style={styles.rowHorseEmoji}>🐎</Text>
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={[styles.rowHorseName, isMyHorse && { fontWeight: 'bold', color: colors.secondary }]} numberOfLines={1}>
-                        {rHorseName}
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={[styles.rowHorseName, isMyHorse && { fontWeight: 'bold', color: colors.secondary }]} numberOfLines={1}>
+                          {rHorseName}
+                        </Text>
+                        {r.disqualified && (
+                          <View style={styles.dqBadge}>
+                            <Text style={styles.dqBadgeText}>BỊ LOẠI</Text>
+                          </View>
+                        )}
+                      </View>
                       {r.jockeyId?.fullName || r.jockeyName ? (
                         <Text style={styles.rowJockeyName}>{r.jockeyId?.fullName || r.jockeyName}</Text>
+                      ) : null}
+                      {r.disqualified && r.dqReason ? (
+                        <Text style={styles.dqReasonText}>⚠️ Lý do: {r.dqReason}</Text>
                       ) : null}
                     </View>
                     {isMyHorse && <Text style={[styles.starHighlight, { marginRight: spacing.sm }]}>★</Text>}
@@ -407,8 +450,8 @@ export function LiveDetailScreen() {
               // Parimutuel: chỉ ngựa về nhất mới thắng
               const betWon = pos !== undefined && pos === 1;
 
-              const betStatus = bet.status === 'refunded' ? 'REFUND' : bet.status === 'cancelled' ? 'CANCELLED' : isFinished ? (betWon ? 'THẮNG' : 'THUA') : 'ĐANG CHỜ';
-              const betStatusColor = bet.status === 'refunded' ? colors.warning : bet.status === 'cancelled' ? colors.textMuted : betWon ? colors.success : colors.danger;
+              const betStatus = bet.status === 'refunded' ? 'REFUND' : bet.status === 'cancelled' ? 'CANCELLED' : (isFinished && race?.isOfficial) ? (betWon ? 'THẮNG' : 'THUA') : 'ĐANG CHỜ';
+              const betStatusColor = bet.status === 'refunded' ? colors.warning : bet.status === 'cancelled' ? colors.textMuted : (isFinished && race?.isOfficial) ? (betWon ? colors.success : colors.danger) : colors.warning;
 
               return (
                 <View key={bet._id} style={styles.betItem}>
@@ -505,6 +548,10 @@ const styles = StyleSheet.create({
   rank1: { backgroundColor: '#C9A227' },
   rank2: { backgroundColor: '#7A7468' },
   rank3: { backgroundColor: '#8C2F1B' },
+  rankDQ: { backgroundColor: '#ef4444' },
+  dqBadge: { backgroundColor: '#fee2e2', paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm, borderWidth: 1, borderColor: '#fca5a5' },
+  dqBadgeText: { fontSize: 8, color: '#ef4444', fontWeight: fontWeight.bold },
+  dqReasonText: { fontSize: 9, color: '#ef4444', fontWeight: 'bold', marginTop: 2 },
   finishTimeText: { fontSize: 10, color: colors.textSubtle, fontFamily: 'monospace' },
   prizeAmountText: { fontSize: 10, color: colors.gold, fontWeight: fontWeight.bold, marginTop: 2 },
 
@@ -530,4 +577,25 @@ const styles = StyleSheet.create({
   betBottom: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
   betMeta: { fontSize: fontSize.xs, color: colors.textSubtle },
   betAmount: { fontSize: fontSize.xs, color: colors.textMuted },
+  pendingCard: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  pendingTitle: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+    fontFamily: 'serif',
+  },
+  pendingText: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
 });

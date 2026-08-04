@@ -27,6 +27,7 @@ export interface RaceResultEntry {
   finishTime: number;
   prizeAmount: number;
   pointsEarned: number;
+  dqReason?: string;
 }
 
 export interface RaceEligibility {
@@ -63,11 +64,12 @@ const authHeader = (token?: string | null) =>
 export const raceApi = {
   getRaces: async (
     token: string | null | undefined,
-    params: { tournamentId?: string; status?: string; page?: number; limit?: number },
+    params: { tournamentId?: string; status?: string; page?: number; limit?: number; isOfficial?: boolean },
   ): Promise<{ races: Race[]; total: number }> => {
     const query = new URLSearchParams();
     if (params.tournamentId) query.append("tournamentId", params.tournamentId);
     if (params.status) query.append("status", params.status);
+    if (params.isOfficial !== undefined) query.append("isOfficial", String(params.isOfficial));
     query.append("page", String(params.page ?? 1));
     query.append("limit", String(params.limit ?? 50));
 

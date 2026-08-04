@@ -13,6 +13,7 @@ import {
   Flag,
   Users,
   Zap,
+  AlertCircle,
 } from "lucide-react";
 import { Chip } from "@mui/material";
 import { toast } from "sonner";
@@ -40,9 +41,10 @@ const GRADE_COLORS: Record<string, string> = {
   Maiden: "#7A7468",
 };
 
-function positionBadge(pos: number) {
+function positionBadge(pos: number | null) {
   const base =
     "w-10 h-10 flex items-center justify-center font-bold text-sm shrink-0";
+  if (pos === null) return `${base} bg-red-500/20 text-red-500`;
   if (pos === 1) return `${base} bg-gold text-foreground`;
   if (pos === 2) return `${base} bg-[#9A937F] text-white`;
   if (pos === 3) return `${base} bg-[#A85C32] text-white`;
@@ -295,9 +297,7 @@ export function LiveRacePage() {
           const p = r.position;
           return (
             b.horseId._id === r.horseId &&
-            ((b.betType === "win" && p === 1) ||
-              (b.betType === "place" && p <= 2) ||
-              (b.betType === "show" && p <= 3))
+            p === 1
           );
         }),
     );
@@ -332,7 +332,7 @@ export function LiveRacePage() {
 
   // displayResults must be declared BEFORE trackHorses (used inside it)
   const displayResults: Array<{
-    position: number;
+    position: number | null;
     horseName: string;
     jockeyName: string | null;
     prizeAmount: number;
@@ -371,7 +371,7 @@ export function LiveRacePage() {
         horseName: r.horseName,
         progressPct: 100,
         colorIdx: assignColor(r.horseId, i),
-        currentRank: r.position,
+        currentRank: r.position ?? undefined,
         isMyBet: myBetHorseIds.has(r.horseId),
       }));
     }
@@ -685,7 +685,23 @@ export function LiveRacePage() {
         {/* ════════════════════════════════════════════════════════════
             PHASE: finished — podium + full results
         ════════════════════════════════════════════════════════════ */}
-        {phase === "finished" && displayResults.length > 0 && (
+        {phase === "finished" && !race?.isOfficial && (
+          <div className="bg-card border border-gold/20 p-8 text-center space-y-4 rounded-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="w-16 h-16 bg-gold/10 rounded-full flex items-center justify-center mx-auto text-[#C9A227]">
+              <Clock className="w-8 h-8 animate-pulse" />
+            </div>
+            <h2 className="font-serif text-2xl font-bold text-foreground">Cuộc đua đã kết thúc!</h2>
+            <p className="text-muted-foreground max-w-md mx-auto text-sm">
+              Quá trình mô phỏng đã hoàn thành. Kết quả hiện tại là tạm thời và đang chờ Ban Trọng tài & Admin phê duyệt chính thức trước khi công bố và quyết toán các khoản dự đoán.
+            </p>
+            <div className="inline-flex items-center gap-2 bg-gold/10 border border-gold/30 rounded-full px-4 py-1.5 text-[#8F7318] text-xs font-semibold">
+              <AlertCircle className="w-3.5 h-3.5" />
+              <span>Chờ duyệt báo cáo để cập nhật kết quả chung cuộc</span>
+            </div>
+          </div>
+        )}
+
+        {phase === "finished" && race?.isOfficial && displayResults.length > 0 && (
           <div className="space-y-5">
             {/* Podium */}
             <div className="bg-card border border-border p-5">
@@ -707,7 +723,7 @@ export function LiveRacePage() {
                   Kết quả chung cuộc
                 </h3>
               </div>
-              <Podium results={displayResults} />
+              <Podium results={displayResults.filter((r): r is typeof r & { position: number } => r.position !== null)} />
             </div>
 
             {/* Full results table */}
@@ -724,11 +740,7 @@ export function LiveRacePage() {
                   const color = HORSE_COLORS[colorIdx % HORSE_COLORS.length];
                   const isMyHorse = myBetHorseIds.has(r.horseId);
                   const myBet = myBets.find((b) => b.horseId._id === r.horseId);
-                  const betWon =
-                    myBet &&
-                    ((myBet.betType === "win" && r.position === 1) ||
-                      (myBet.betType === "place" && r.position <= 2) ||
-                      (myBet.betType === "show" && r.position <= 3));
+                  const betWon = myBet && r.position === 1;
 
                   return (
                     <div
@@ -736,7 +748,7 @@ export function LiveRacePage() {
                       className={`flex items-center gap-3 px-5 py-3.5 ${isMyHorse ? "bg-gold/5" : "hover:bg-muted/40"} transition-colors`}
                     >
                       <div className={positionBadge(r.position)}>
-                        {r.position}
+                        {r.position ?? 'DQ'}
                       </div>
                       <div
                         className="w-3 h-3 rounded-full shrink-0"
@@ -808,11 +820,7 @@ export function LiveRacePage() {
                       (r) => r.horseId === bet.horseId._id,
                     );
                     const pos = result?.position;
-                    const won =
-                      pos !== undefined &&
-                      ((bet.betType === "win" && pos === 1) ||
-                        (bet.betType === "place" && pos <= 2) ||
-                        (bet.betType === "show" && pos <= 3));
+                    const won = pos !== undefined && pos === 1;
                     return (
                       <div
                         key={bet._id}
@@ -828,11 +836,7 @@ export function LiveRacePage() {
                             {bet.horseId.name}
                           </div>
                           <div className="text-muted-foreground text-xs">
-                            {bet.betType === "win"
-                              ? "Thắng"
-                              : bet.betType === "place"
-                                ? "Hạng 2"
-                                : "Hạng 3"}{" "}
+                            Dự đoán{" "}
                             — {bet.amount.toLocaleString('vi-VN')} coins × {bet.multiplier}x
                           </div>
                         </div>
@@ -899,11 +903,7 @@ export function LiveRacePage() {
                       {bet.horseId.name}
                     </div>
                     <div className="text-muted-foreground text-xs">
-                      {bet.betType === "win"
-                        ? "Thắng"
-                        : bet.betType === "place"
-                          ? "Hạng 2"
-                          : "Hạng 3"}{" "}
+                      Dự đoán{" "}
                       · {bet.amount.toLocaleString('vi-VN')} coins
                     </div>
                   </div>

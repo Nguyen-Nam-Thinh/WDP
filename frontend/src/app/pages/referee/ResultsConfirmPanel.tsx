@@ -20,7 +20,13 @@ function formatFinishTime(ms: number): string {
 }
 
 export function ResultsConfirmPanel({ token, races, loading, onConfirmed, readOnly }: Props) {
-  const finished = races.filter((r) => r.status === 'finished' || r.status === 'cancelled');
+  const finished = races.filter((r) => {
+    if (r.status === 'cancelled') return true;
+    if (r.status === 'finished') {
+      return readOnly ? !!r.isOfficial : true;
+    }
+    return false;
+  });
   const [selected, setSelected] = useState<any | null>(null);
   const [results, setResults] = useState<RaceResultEntry[]>([]);
   const [loadingResults, setLoadingResults] = useState(false);

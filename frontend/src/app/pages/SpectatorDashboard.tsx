@@ -76,6 +76,7 @@ import {
 import { userApi, type SpectatorOverview, type Transaction } from "../api/user";
 import { rewardApi, type Reward, type Redemption } from "../api/reward";
 import { toast } from "sonner";
+import { RaceResultsView } from "./shared/RaceResultsView";
 
 const getRemainingTimeText = (scheduledTime: string | Date): string => {
   const diffMs = new Date(scheduledTime).getTime() - new Date().getTime();
@@ -98,6 +99,7 @@ const SPECTATOR_NAV: NavItem[] = [
   { to: "/spectator/live", label: "Đang Trực Tiếp", icon: <Play /> },
   { to: "/spectator/schedule", label: "Lịch Trình", icon: <Calendar /> },
   { to: "/spectator/predictions", label: "Dự Đoán Của Tôi", icon: <Target /> },
+  { to: "/spectator/results", label: "Kết Quả Đua", icon: <Medal /> },
   { to: "/spectator/rankings", label: "Bảng Xếp Hạng", icon: <Trophy /> },
   { to: "/spectator/leaderboard", label: "Bảng Dẫn Đầu", icon: <Award /> },
   // { to: "/spectator/bet-history", label: "Lịch Sử Dự Đoán", icon: <History /> },
@@ -163,7 +165,9 @@ export function SpectatorDashboard() {
                       ? "deposit-history"
                       : pathname === "/spectator/rewards"
                         ? "rewards"
-                        : "overview";
+                        : pathname === "/spectator/results"
+                          ? "results"
+                          : "overview";
   const [predictionModalOpen, setPredictionModalOpen] = useState(false);
   const [tournamentDetailsModalOpen, setTournamentDetailsModalOpen] =
     useState(false);
@@ -536,8 +540,7 @@ export function SpectatorDashboard() {
       race?.name,
       race?.grade,
       horse?.name,
-      bet.betType,
-      betTypeLabels[bet.betType],
+
       bet.status,
       betStatusLabels[bet.status],
     ]
@@ -1012,11 +1015,7 @@ export function SpectatorDashboard() {
                             };
                             const st =
                               statusMap[bet.status] ?? statusMap.pending;
-                            const betTypeLabel: Record<string, string> = {
-                              win: "Win",
-                              place: "Place",
-                              show: "Show",
-                            };
+
                             return (
                               <div
                                 key={bet._id ?? i}
@@ -1027,8 +1026,7 @@ export function SpectatorDashboard() {
                                     {race?.name ?? "—"}
                                   </div>
                                   <div className="text-xs text-muted-foreground">
-                                    {horse?.name ?? "—"} ·{" "}
-                                    {betTypeLabel[bet.betType] ?? bet.betType}
+                                    {horse?.name ?? "—"}
                                   </div>
                                 </div>
                                 <div className="text-right shrink-0 ml-4">
@@ -2113,13 +2111,13 @@ export function SpectatorDashboard() {
                         refunded:  { label: 'Đã Hoàn', bg: '#EDE7D8', color: '#7A7468' },
                       };
                       const st = statusMap[bet.status] ?? statusMap.pending;
-                      const betTypeLabel: Record<string, string> = { win: 'Thắng (Hạng 1)', place: 'Về Nhì (Hạng 2)', show: 'Về Ba (Hạng 3)' };
+
                       return (
                         <tr key={bet._id} className="border-t border-border hover:bg-muted/40 transition-colors">
                           <td className="px-6 py-4 text-foreground font-medium">{bet.raceId?.name ?? '—'}</td>
                           <td className="px-6 py-4 text-foreground">{new Date(bet.createdAt).toLocaleDateString('vi-VN')}</td>
                           <td className="px-6 py-4">
-                            <div className="text-primary text-xs font-medium mb-1">{betTypeLabel[bet.betType] ?? bet.betType}</div>
+                            
                             <div className="text-foreground">{bet.horseId?.name ?? '—'}</div>
                           </td>
                           <td className="px-6 py-4 text-foreground tabular-nums">{bet.amount?.toLocaleString('vi-VN')} coins</td>
@@ -3005,7 +3003,7 @@ export function SpectatorDashboard() {
                             <button
                               type="button"
                               onClick={() => {
-                                navigator.clipboard.writeText(redemption.voucherCode);
+                                navigator.clipboard.writeText(redemption.voucherCode || "");
                                 setCopiedVoucherId(redemption._id);
                                 setTimeout(() => setCopiedVoucherId(null), 1500);
                               }}
@@ -3040,6 +3038,13 @@ export function SpectatorDashboard() {
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Results Tab */}
+        {activeTab === "results" && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <RaceResultsView token={token!} />
           </div>
         )}
       </div>
@@ -3566,7 +3571,7 @@ export function SpectatorDashboard() {
                 <button
                   type="button"
                   onClick={() => {
-                    navigator.clipboard.writeText(redeemResult.redemption!.voucherCode);
+                    navigator.clipboard.writeText(redeemResult.redemption!.voucherCode || "");
                     setCopiedVoucherId(redeemResult.redemption!._id);
                     setTimeout(() => setCopiedVoucherId(null), 1500);
                   }}

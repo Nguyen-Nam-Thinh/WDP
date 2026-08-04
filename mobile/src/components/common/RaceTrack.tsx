@@ -28,48 +28,138 @@ function LanesTrack({
   raceName?: string;
   distance?: number;
 }) {
+  // Check if race is finished (all horses at 100%)
+  const isFinished = horses.length > 0 && horses.every(h => h.progressPct >= 100);
+
+  // For finished races: render sorted by rank directly (no animation needed)
+  const finishedHorses = React.useMemo(() => {
+    if (!isFinished) return [];
+    return [...horses].sort((a, b) => {
+      const ra = (a.currentRank !== null && a.currentRank !== undefined) ? a.currentRank : 9999;
+      const rb = (b.currentRank !== null && b.currentRank !== undefined) ? b.currentRank : 9999;
+      return ra - rb;
+    });
+  }, [isFinished, horses]);
+
+  // For live races: stable order by horseId to anchor the animation system
   const stableHorses = React.useMemo(() => {
+    if (isFinished) return [];
     return [...horses].sort((a, b) => a.horseId.localeCompare(b.horseId));
-  }, [horses.length]);
+  }, [isFinished, horses.length]);
 
   const animatedTopsRef = React.useRef<Record<string, Animated.Value>>({});
   const lastTargetsRef = React.useRef<Record<string, number>>({});
 
-  // Initialize animated values for stable positions
+  // Initialize animated values for live race rows
   stableHorses.forEach((horse, index) => {
     if (!animatedTopsRef.current[horse.horseId]) {
-      const currentRank = horse.currentRank ?? (index + 1);
+      const currentRank = (horse.currentRank !== null && horse.currentRank !== undefined) ? horse.currentRank : (index + 1);
       const initialTranslate = (currentRank - 1 - index) * ROW_HEIGHT;
       animatedTopsRef.current[horse.horseId] = new Animated.Value(initialTranslate);
       lastTargetsRef.current[horse.horseId] = initialTranslate;
     }
   });
 
-  // Animate translations smoothly on rank changes
+  // Animate translations smoothly on rank changes (live only)
   React.useEffect(() => {
+    if (isFinished) return;
     stableHorses.forEach((horse, index) => {
       const latestHorse = horses.find(h => h.horseId === horse.horseId);
       if (!latestHorse) return;
 
-      const currentRank = latestHorse.currentRank ?? (index + 1);
+      const currentRank = (latestHorse.currentRank !== null && latestHorse.currentRank !== undefined) ? latestHorse.currentRank : (index + 1);
       const targetTranslate = (currentRank - 1 - index) * ROW_HEIGHT;
 
       if (lastTargetsRef.current[horse.horseId] !== targetTranslate) {
         lastTargetsRef.current[horse.horseId] = targetTranslate;
-        
         const anim = animatedTopsRef.current[horse.horseId];
         if (anim) {
           Animated.timing(anim, {
             toValue: targetTranslate,
-            duration: 1200, // Slow, pleasant slide transition
+            duration: 1200,
             useNativeDriver: true,
           }).start();
         }
       }
     });
-  }, [horses, stableHorses]);
+  }, [horses, stableHorses, isFinished]);
 
   const rankColors: Record<number, string> = { 1: '#C9A227', 2: '#7A7468', 3: '#8C2F1B' };
+
+  const renderHorseRow = (latestHorse: TrackHorse, key: string, animTranslateY?: Animated.Value) => {
+    const color = HORSE_COLORS[latestHorse.colorIdx % HORSE_COLORS.length];
+    const rank = latestHorse.currentRank;
+    const isTop3 = rank !== undefined && rank !== null && rank <= 3;
+    const rankColor = (rank && rankColors[rank]) ? rankColors[rank] : color;
+    const pct = Math.max(0, Math.min(100, latestHorse.progressPct));
+    const isDQ = rank === null || rank === undefined;
+
+    return (
+      <Animated.View
+        key={key}
+        style={[
+          laneStyles.row,
+          latestHorse.isMyBet && laneStyles.rowMyBet,
+          isTop3 && laneStyles.rowTop3,
+          animTranslateY ? { transform: [{ translateY: animTranslateY }] } : undefined,
+        ]}
+      >
+        {/* Rank badge */}
+        <View
+          style={[
+            laneStyles.rankBadge,
+            isDQ
+              ? { borderColor: '#ef4444', backgroundColor: '#fee2e2' }
+              : {
+                  borderColor: isTop3 ? rankColor : colors.border,
+                  backgroundColor: isTop3 ? rankColor + '22' : 'rgba(0,0,0,0.03)',
+                },
+          ]}
+        >
+          <Text style={[laneStyles.rankText, { color: isDQ ? '#ef4444' : isTop3 ? rankColor : colors.textSubtle }]}>
+            {isDQ ? 'DQ' : (rank ?? '?')}
+          </Text>
+        </View>
+
+        {/* Name */}
+        <View style={laneStyles.nameContainer}>
+          <Text style={laneStyles.horseEmoji}>🐎</Text>
+          <Text
+            style={[
+              laneStyles.horseName,
+              latestHorse.isMyBet
+                ? { color: colors.secondary, fontWeight: 'bold' }
+                : isTop3
+                  ? { color: colors.text }
+                  : { color: isDQ ? colors.textMuted : colors.textMuted },
+            ]}
+            numberOfLines={1}
+          >
+            {latestHorse.isMyBet ? '★ ' : ''}{latestHorse.horseName ?? 'Ngựa'}
+          </Text>
+        </View>
+
+        {/* Progress bar */}
+        <View style={laneStyles.progressBarWrapper}>
+          <View style={laneStyles.progressBarBg}>
+            <View
+              style={[
+                laneStyles.progressBarFill,
+                { width: `${pct}%`, backgroundColor: isDQ ? '#ef4444' : color },
+              ]}
+            >
+              <Text style={laneStyles.progressEmoji}>🐎</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Progress % */}
+        <Text style={[laneStyles.pctText, isTop3 && { color: rankColor }]}>
+          {pct.toFixed(0)}%
+        </Text>
+      </Animated.View>
+    );
+  };
 
   return (
     <View style={laneStyles.container}>
@@ -85,81 +175,15 @@ function LanesTrack({
 
       {/* Lane rows */}
       <View style={laneStyles.list}>
-        {stableHorses.map((horse) => {
-          const latestHorse = horses.find(h => h.horseId === horse.horseId) || horse;
-          const color = HORSE_COLORS[latestHorse.colorIdx % HORSE_COLORS.length];
-          const rank = latestHorse.currentRank;
-          const isTop3 = rank !== undefined && rank <= 3;
-          const rankColor = rank ? (rankColors[rank] ?? color) : color;
-          const pct = Math.max(0, Math.min(100, latestHorse.progressPct));
-          const animTranslateY = animatedTopsRef.current[horse.horseId];
-
-          return (
-            <Animated.View
-              key={horse.horseId}
-              style={[
-                laneStyles.row,
-                latestHorse.isMyBet && laneStyles.rowMyBet,
-                isTop3 && laneStyles.rowTop3,
-                {
-                  transform: [{ translateY: animTranslateY }],
-                }
-              ]}
-            >
-              {/* Rank badge */}
-              <View
-                style={[
-                  laneStyles.rankBadge,
-                  {
-                    borderColor: isTop3 ? rankColor : colors.border,
-                    backgroundColor: isTop3 ? rankColor + '22' : 'rgba(0,0,0,0.03)'
-                  }
-                ]}
-              >
-                <Text style={[laneStyles.rankText, { color: isTop3 ? rankColor : colors.textSubtle }]}>
-                  {rank ?? '?'}
-                </Text>
-              </View>
-
-              {/* Name */}
-              <View style={laneStyles.nameContainer}>
-                <Text style={laneStyles.horseEmoji}>🐎</Text>
-                <Text
-                  style={[
-                    laneStyles.horseName,
-                    horse.isMyBet ? { color: colors.secondary, fontWeight: 'bold' } : isTop3 ? { color: colors.text } : { color: colors.textMuted }
-                  ]}
-                  numberOfLines={1}
-                >
-                  {horse.isMyBet ? '★ ' : ''}{latestHorse.horseName ?? 'Ngựa'}
-                </Text>
-              </View>
-
-              {/* Progress bar */}
-              <View style={laneStyles.progressBarWrapper}>
-                <View style={laneStyles.progressBarBg}>
-                  <View
-                    style={[
-                      laneStyles.progressBarFill,
-                      {
-                        width: `${pct}%`,
-                        backgroundColor: color,
-                      }
-                    ]}
-                  >
-                    {/* Floating emoji indicator */}
-                    <Text style={laneStyles.progressEmoji}>🐎</Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* Progress % */}
-              <Text style={[laneStyles.pctText, isTop3 && { color: rankColor }]}>
-                {pct.toFixed(0)}%
-              </Text>
-            </Animated.View>
-          );
-        })}
+        {isFinished
+          ? // Finished: render directly in rank order, no animations
+            finishedHorses.map(horse => renderHorseRow(horse, horse.horseId))
+          : // Live: use stable order + translateY animation
+            stableHorses.map(horse => {
+              const latestHorse = horses.find(h => h.horseId === horse.horseId) || horse;
+              const animTranslateY = animatedTopsRef.current[horse.horseId];
+              return renderHorseRow(latestHorse, horse.horseId, animTranslateY);
+            })}
       </View>
     </View>
   );

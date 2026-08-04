@@ -47,7 +47,7 @@ async function createRace(adminId, body) {
   return race.populate('tournamentId', 'name status');
 }
 
-async function getRaces({ page = 1, limit = 10, tournamentId, grade, status } = {}) {
+async function getRaces({ page = 1, limit = 10, tournamentId, grade, status, isOfficial } = {}) {
   const filter = {};
   if (tournamentId) filter.tournamentId = tournamentId;
   if (grade) filter.grade = grade;
@@ -57,6 +57,9 @@ async function getRaces({ page = 1, limit = 10, tournamentId, grade, status } = 
     } else {
       filter.status = status;
     }
+  }
+  if (isOfficial !== undefined) {
+    filter.isOfficial = isOfficial === 'true' || isOfficial === true;
   }
 
   const skip = (page - 1) * limit;
@@ -308,12 +311,33 @@ async function getRaceResults(raceId) {
   if (!race) throw new AppError(404, 'Không tìm thấy cuộc đua');
 
   const { RaceResult } = require('../models/race_result.model');
-  const results = await RaceResult.find({ raceId })
-    .populate('horseId', 'name breed currentGrade primaryImageUrl')
-    .populate('jockeyId', 'fullName jockeyProfile')
-    .sort({ position: 1 });
+  const { RefereeReport } = require('../models/referee_report.model');
 
-  return { race, results };
+  const [results, report] = await Promise.all([
+    RaceResult.find({ raceId })
+      .populate('horseId', 'name breed currentGrade primaryImageUrl')
+      .populate('jockeyId', 'fullName jockeyProfile')
+      .sort({ position: 1 }),
+    RefereeReport.findOne({ raceId }).lean()
+  ]);
+
+  const leanResults = results.map(r => {
+    const obj = r.toObject();
+    if (obj.disqualified && report && report.incidents) {
+      const inc = report.incidents.find(i => 
+        i.horseId && i.horseId.toString() === obj.horseId._id.toString() &&
+        i.resolution && i.resolution.verdict === 'disqualified'
+      );
+      if (inc) {
+        obj.dqReason = inc.resolution.note || 'Vi phạm quy định thi đấu';
+      } else {
+        obj.dqReason = 'Vi phạm quy định thi đấu';
+      }
+    }
+    return obj;
+  });
+
+  return { race, results: leanResults };
 }
 
 module.exports = {

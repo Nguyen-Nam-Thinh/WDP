@@ -13,13 +13,14 @@ async function createRace(req, res, next) {
 
 async function getRaces(req, res, next) {
   try {
-    const { page, limit, tournamentId, grade, status } = req.query;
+    const { page, limit, tournamentId, grade, status, isOfficial } = req.query;
     const result = await raceService.getRaces({
       page: page ? Number(page) : 1,
       limit: limit ? Number(limit) : 10,
       tournamentId,
       grade,
       status,
+      isOfficial,
     });
     sendSuccess(res, result);
   } catch (error) {

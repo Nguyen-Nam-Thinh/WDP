@@ -81,6 +81,7 @@ function RaceCard({ race }: { race: Race }) {
 }
 
 export function HomeScreen() {
+  const navigation = useNavigation<any>();
   const [races, setRaces] = useState<Race[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -119,9 +120,19 @@ export function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.headerRow}>
-        <Text style={styles.pageTitle}>🏇 Giải Đấu</Text>
-        <Text style={styles.pageSubtitle}>{races.length} cuộc đua</Text>
+      <View style={[styles.headerRow, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+        <View>
+          <Text style={styles.pageTitle}>🏇 Giải Đấu</Text>
+          <Text style={styles.pageSubtitle}>{races.length} cuộc đua</Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Results')}
+          style={styles.resultsBtn}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="trophy-outline" size={18} color={colors.gold} />
+          <Text style={styles.resultsBtnText}>Kết quả</Text>
+        </TouchableOpacity>
       </View>
 
       <FlatList
@@ -168,6 +179,22 @@ const styles = StyleSheet.create({
   infoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: 2 },
   infoItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   infoLabel: { fontSize: fontSize.xs, color: colors.textMuted },
+  resultsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.full,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  resultsBtnText: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+  },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80, gap: spacing.md },
   emptyText: { color: colors.textMuted, fontSize: fontSize.md },
 });

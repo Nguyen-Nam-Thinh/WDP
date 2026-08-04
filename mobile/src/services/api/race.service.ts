@@ -6,12 +6,14 @@ export const raceService = {
     status?: string;
     page?: number;
     limit?: number;
+    isOfficial?: boolean;
   } = {}): Promise<RaceListResponse> => {
     const q = new URLSearchParams({
       page: String(params.page ?? 1),
       limit: String(params.limit ?? 20),
     });
     if (params.status) q.append('status', params.status);
+    if (params.isOfficial !== undefined) q.append('isOfficial', String(params.isOfficial));
     const res = await apiClient.get(`/races?${q}`);
     return res.data.data;
   },

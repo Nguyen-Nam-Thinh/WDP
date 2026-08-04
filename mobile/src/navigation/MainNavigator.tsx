@@ -10,9 +10,15 @@ import { ChangePasswordScreen } from '../screens/profile/ChangePasswordScreen';
 import { RewardsScreen } from '../screens/profile/RewardsScreen';
 import { DepositScreen } from '../screens/wallet/DepositScreen';
 import { LiveDetailScreen } from '../screens/live/LiveDetailScreen';
+import { ResultsScreen } from '../screens/results/ResultsScreen';
 import { colors } from '../constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+export type HomeStackParamList = {
+  HomeList: undefined;
+  Results: undefined;
+};
 
 export type MainTabParamList = {
   Home: undefined;
@@ -39,9 +45,19 @@ export type WalletStackParamList = {
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
+const HomeStack = createNativeStackNavigator<HomeStackParamList>();
 const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
 const LiveStack = createNativeStackNavigator<LiveStackParamList>();
 const WalletStack = createNativeStackNavigator<WalletStackParamList>();
+
+function HomeStackNavigator() {
+  return (
+    <HomeStack.Navigator screenOptions={{ headerShown: false }}>
+      <HomeStack.Screen name="HomeList" component={HomeScreen} />
+      <HomeStack.Screen name="Results" component={ResultsScreen} />
+    </HomeStack.Navigator>
+  );
+}
 
 function ProfileStackNavigator() {
   return (
@@ -103,7 +119,7 @@ export function MainNavigator() {
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Giải Đấu' }} />
+      <Tab.Screen name="Home" component={HomeStackNavigator} options={{ title: 'Giải Đấu' }} />
       <Tab.Screen name="Bet" component={BetScreen} options={{ title: 'Dự Đoán' }} />
       <Tab.Screen
         name="LiveTab"
