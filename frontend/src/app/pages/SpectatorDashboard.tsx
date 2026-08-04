@@ -1114,18 +1114,7 @@ export function SpectatorDashboard() {
                     className="pl-9 pr-3 py-2 text-sm bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary w-48"
                   />
                 </div>
-                <FormControl size="small" sx={{ minWidth: 150 }}>
-                  <Select
-                    value={tournamentFilter}
-                    onChange={(e) => { setTournamentFilter(e.target.value); setTournamentPage(1); }}
-                    sx={lightSelectSx}
-                  >
-                    <MenuItem key="all" value="all">Tất Cả Trạng Thái</MenuItem>
-                    <MenuItem key="ongoing" value="ongoing">Đang Diễn Ra</MenuItem>
-                    <MenuItem key="upcoming" value="upcoming">Sắp Diễn Ra</MenuItem>
-                    <MenuItem key="finished" value="finished">Đã Kết Thúc</MenuItem>
-                  </Select>
-                </FormControl>
+
               </div>
             </div>
 

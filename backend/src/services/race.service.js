@@ -335,6 +335,11 @@ async function getRaceResults(raceId) {
       }
     }
     return obj;
+  }).sort((a, b) => {
+    if (a.position === null && b.position === null) return 0;
+    if (a.position === null) return 1;
+    if (b.position === null) return -1;
+    return a.position - b.position;
   });
 
   return { race, results: leanResults };

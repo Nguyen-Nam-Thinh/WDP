@@ -357,20 +357,36 @@ export function RankingsPage() {
                               <tr key={entry._id} className="border-b border-border hover:bg-muted/40 transition-colors">
                                 <td className="px-6 py-4">
                                   <div className="flex items-center gap-2">
-                                    {POSITION_MEDAL[entry.position] ? (
+                                    {entry.disqualified ? (
+                                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full text-xs bg-rose-500/10 text-rose-500 border border-rose-500/30 font-extrabold">DQ</span>
+                                    ) : POSITION_MEDAL[entry.position] ? (
                                       <span className="text-xl">{POSITION_MEDAL[entry.position]}</span>
                                     ) : (
                                       <span className={`text-base font-bold tabular-nums ${POSITION_STYLE[entry.position] ?? 'text-foreground'}`}>
-                                        #{entry.position}
+                                        #{entry.position || '—'}
                                       </span>
                                     )}
                                   </div>
                                 </td>
                                 <td className="px-6 py-4">
-                                  <div className="font-semibold text-foreground">{entry.horseName}</div>
-                                  <span className={`text-[10px] font-bold px-1.5 py-0.5 uppercase tracking-wider ${GRADE_BADGE[entry.horseGrade]?.cls ?? 'border border-muted-foreground text-muted-foreground'}`}>
-                                    {entry.horseGrade}
-                                  </span>
+                                  <div className="font-semibold text-foreground flex items-center gap-2">
+                                    {entry.horseName}
+                                    {entry.disqualified && (
+                                      <span className="bg-rose-500/10 text-rose-500 border border-rose-500/20 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide">
+                                        Bị loại
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 uppercase tracking-wider ${GRADE_BADGE[entry.horseGrade]?.cls ?? 'border border-muted-foreground text-muted-foreground'}`}>
+                                      {entry.horseGrade}
+                                    </span>
+                                  </div>
+                                  {entry.disqualified && entry.dqReason && (
+                                    <div className="text-[11px] text-rose-500 font-medium mt-1">
+                                      Lý do: {entry.dqReason}
+                                    </div>
+                                  )}
                                 </td>
                                 <td className="px-6 py-4 text-sm text-muted-foreground">{entry.jockeyName}</td>
                                 <td className="px-4 py-4 text-center font-mono text-sm text-foreground tabular-nums">

@@ -252,14 +252,14 @@ export function RaceResultsView({ token }: { token: string }) {
                             
                             <div className="flex items-end justify-center gap-3 max-w-xl mx-auto pt-6 pb-2">
                               {/* 2ND PLACE (SILVER) */}
-                              {detail.results[1] && (
+                              {detail.results.find(r => r.position === 2) && (
                                 <div className="flex flex-col items-center w-1/3">
                                   <div className="text-center mb-2 px-1">
-                                    <span className="text-xs font-bold text-foreground block truncate max-w-[110px]" title={detail.results[1].horseId.name}>
-                                      {detail.results[1].horseId.name}
+                                    <span className="text-xs font-bold text-foreground block truncate max-w-[110px]" title={detail.results.find(r => r.position === 2)!.horseId.name}>
+                                      {detail.results.find(r => r.position === 2)!.horseId.name}
                                     </span>
                                     <span className="text-[10px] text-muted-foreground block truncate max-w-[100px]">
-                                      {detail.results[1].jockeyId?.fullName || 'N/A'}
+                                      {detail.results.find(r => r.position === 2)!.jockeyId?.fullName || 'N/A'}
                                     </span>
                                   </div>
                                   <div className="w-full bg-slate-400/20 border-t border-x border-slate-400/30 rounded-t-lg h-24 flex flex-col justify-between items-center py-3 shadow-inner">
@@ -272,43 +272,43 @@ export function RaceResultsView({ token }: { token: string }) {
                               )}
 
                               {/* 1ST PLACE (GOLD) */}
-                              {detail.results[0] && (
+                              {detail.results.find(r => r.position === 1) && (
                                 <div className="flex flex-col items-center w-1/3">
                                   <Trophy className="w-6 h-6 text-gold mb-1 animate-bounce" />
                                   <div className="text-center mb-2 px-1">
-                                    <span className="text-sm font-extrabold text-foreground block truncate max-w-[120px]" title={detail.results[0].horseId.name}>
-                                      {detail.results[0].horseId.name}
+                                    <span className="text-sm font-extrabold text-foreground block truncate max-w-[120px]" title={detail.results.find(r => r.position === 1)!.horseId.name}>
+                                      {detail.results.find(r => r.position === 1)!.horseId.name}
                                     </span>
                                     <span className="text-[10px] text-muted-foreground block truncate max-w-[100px]">
-                                      {detail.results[0].jockeyId?.fullName || 'N/A'}
+                                      {detail.results.find(r => r.position === 1)!.jockeyId?.fullName || 'N/A'}
                                     </span>
                                   </div>
-                                  <div className="w-full bg-amber-500/20 border-t-2 border-x border-amber-500/35 rounded-t-lg h-32 flex flex-col justify-between items-center py-4 shadow-inner relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 w-16 h-16 bg-white/5 rotate-45 translate-x-6 -translate-y-6" />
-                                    <div className="w-10 h-10 bg-gold rounded-full flex items-center justify-center font-bold text-slate-900 text-base shadow-md">
+                                  <div className="w-full bg-amber-500/20 border-t border-x border-amber-500/30 rounded-t-lg h-32 flex flex-col justify-between items-center py-3 shadow-[inset_0_4px_12px_rgba(251,191,36,0.15)] relative">
+                                    <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-amber-400/50 to-transparent" />
+                                    <div className="w-10 h-10 bg-gold rounded-full flex items-center justify-center font-black text-white text-base shadow-lg ring-4 ring-amber-500/20">
                                       1
                                     </div>
-                                    <span className="text-[10px] font-extrabold tracking-widest text-[#8F7318] uppercase">VÔ ĐỊCH</span>
+                                    <span className="text-[10px] font-black tracking-widest text-[#8F7318] uppercase">VÔ ĐỊCH</span>
                                   </div>
                                 </div>
                               )}
 
                               {/* 3RD PLACE (BRONZE) */}
-                              {detail.results[2] && (
+                              {detail.results.find(r => r.position === 3) && (
                                 <div className="flex flex-col items-center w-1/3">
                                   <div className="text-center mb-2 px-1">
-                                    <span className="text-xs font-bold text-foreground block truncate max-w-[110px]" title={detail.results[2].horseId.name}>
-                                      {detail.results[2].horseId.name}
+                                    <span className="text-xs font-bold text-foreground block truncate max-w-[110px]" title={detail.results.find(r => r.position === 3)!.horseId.name}>
+                                      {detail.results.find(r => r.position === 3)!.horseId.name}
                                     </span>
                                     <span className="text-[10px] text-muted-foreground block truncate max-w-[100px]">
-                                      {detail.results[2].jockeyId?.fullName || 'N/A'}
+                                      {detail.results.find(r => r.position === 3)!.jockeyId?.fullName || 'N/A'}
                                     </span>
                                   </div>
-                                  <div className="w-full bg-orange-600/10 border-t border-x border-orange-600/25 rounded-t-lg h-20 flex flex-col justify-between items-center py-2.5 shadow-inner">
-                                    <div className="w-7 h-7 bg-orange-700/60 rounded-full flex items-center justify-center font-bold text-orange-100 text-xs shadow">
+                                  <div className="w-full bg-orange-700/10 border-t border-x border-orange-700/20 rounded-t-lg h-20 flex flex-col justify-between items-center py-3 shadow-inner">
+                                    <div className="w-8 h-8 bg-orange-800/20 rounded-full flex items-center justify-center font-bold text-orange-700 text-sm shadow">
                                       3
                                     </div>
-                                    <span className="text-[9px] font-extrabold tracking-wide text-orange-600 uppercase">HẠNG BA</span>
+                                    <span className="text-[9px] font-extrabold tracking-wide text-orange-700 uppercase">HẠNG BA</span>
                                   </div>
                                 </div>
                               )}

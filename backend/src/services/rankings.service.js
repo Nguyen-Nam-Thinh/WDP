@@ -149,13 +149,20 @@ async function getRaceResults(raceId) {
   return results.map((r) => ({
     _id: r._id,
     position: r.position,
+    disqualified: r.disqualified,
+    dqReason: r.dqReason,
     horseName: r.horseId?.name || 'N/A',
     horseGrade: r.horseId?.currentGrade || 'N/A',
     jockeyName: r.jockeyId?.fullName || 'Chưa có',
     finishTime: r.finishTime,
     prizeAmount: r.prizeAmount,
     pointsEarned: r.pointsEarned,
-  }));
+  })).sort((a, b) => {
+    if (a.position === null && b.position === null) return 0;
+    if (a.position === null) return 1;
+    if (b.position === null) return -1;
+    return a.position - b.position;
+  });
 }
 
 module.exports = { getHorseRankings, getJockeyRankings, getOwnerRankings, getSpectatorLeaderboard, getFinishedRaces, getRaceResults };

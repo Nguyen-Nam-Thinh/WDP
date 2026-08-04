@@ -290,12 +290,12 @@ export function TournamentsPage() {
               <Trophy className="w-4 h-4 text-primary" />
               <span className="text-sm font-semibold text-primary uppercase tracking-wider">Giải Đấu</span>
             </div>
-            {liveCount > 0 && (
+            {/* {liveCount > 0 && (
               <div className="inline-flex items-center gap-2 px-4 py-2 border border-secondary/30 rounded-full">
                 <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse" />
                 <span className="text-sm font-bold text-secondary">{liveCount} đang diễn ra</span>
               </div>
-            )}
+            )} */}
           </div>
           <h1 className="font-serif text-5xl md:text-6xl font-bold text-foreground mb-4 tracking-tight">
             Các Giải Đấu<br />
@@ -310,14 +310,7 @@ export function TournamentsPage() {
       {/* Sticky filter bar */}
       <div className="sticky top-[64px] z-30 bg-background/95 backdrop-blur-sm border-b border-border py-4 px-6">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center gap-4">
-          <div className="flex bg-card p-1 border border-border gap-1 flex-wrap">
-            {STATUS_FILTERS.map(f => (
-              <button type="button" key={f.value} onClick={() => setSelectedStatus(f.value)}
-                className={`px-4 py-2 text-xs font-bold transition-all whitespace-nowrap ${selectedStatus === f.value ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
-                {f.label}
-              </button>
-            ))}
-          </div>
+
           <div className="relative flex-1 max-w-sm ml-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input type="text" placeholder="Tìm giải đấu..." value={searchQuery}
@@ -347,7 +340,7 @@ export function TournamentsPage() {
           </div>
         ) : (
           <>
-            <p className="text-sm text-muted-foreground mb-6">{filtered.length} giải đấu</p>
+
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filtered.map(t => (
                 <TournamentCard key={t._id} t={t} onClick={() => setDetailTournament(t)} />

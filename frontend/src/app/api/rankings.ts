@@ -49,6 +49,8 @@ export interface FinishedRace {
 export interface RaceResultEntry {
   _id: string;
   position: number;
+  disqualified?: boolean;
+  dqReason?: string;
   horseName: string;
   horseGrade: string;
   jockeyName: string;
