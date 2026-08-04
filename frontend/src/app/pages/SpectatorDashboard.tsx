@@ -2162,13 +2162,13 @@ export function SpectatorDashboard() {
                 {myBets.length > 0 && (
                   <div className="flex gap-6">
                     <div className="text-right">
-                      <div className="text-sm text-muted-foreground">
+                      {/* <div className="text-sm text-muted-foreground">
                         Thắng / Tổng
                       </div>
                       <div className="text-2xl font-bold text-foreground tabular-nums">
                         {myBets.filter((b) => b.status === "won").length} /{" "}
                         {myBets.length}
-                      </div>
+                      </div> */}
                     </div>
                     <div className="text-right">
                       <div className="text-sm text-muted-foreground">
