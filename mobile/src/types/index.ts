@@ -35,6 +35,9 @@ export interface Race {
   distance: number;
   status: RaceStatus;
   refereeId?: string;
+  isOfficial?: boolean;
+  resultsConfirmedAt?: string | null;
+  payoutSettledAt?: string | null;
   eligibility?: {
     allowedGrades?: RaceGrade[];
     minPoints?: number;

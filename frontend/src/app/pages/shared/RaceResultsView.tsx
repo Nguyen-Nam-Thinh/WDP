@@ -38,9 +38,11 @@ export function RaceResultsView({ token }: { token: string }) {
     try {
       // Fetch both finished and cancelled races
       const res = await raceApi.getRaces(token, { status: 'finished,cancelled', limit: 100 });
-      // Only show official finished races or cancelled races
+      // Show all finished races (results available) and cancelled races.
+      // isOfficial is only set true after payout is settled, so do NOT filter by it —
+      // races that have finished but not yet settled would be invisible otherwise.
       const officialRaces = (res.races || []).filter(
-        (r) => r.isOfficial === true || r.status === 'cancelled'
+        (r) => r.status === 'finished' || r.status === 'cancelled'
       );
       setRaces(officialRaces);
     } catch (err: any) {
@@ -196,6 +198,18 @@ export function RaceResultsView({ token }: { token: string }) {
                           Đã Hủy
                         </span>
                       )}
+                      {race.status === 'finished' && (
+                        race.isOfficial
+                          ? (
+                            <span className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/25 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3" /> Chung Cuộc
+                            </span>
+                          ) : (
+                            <span className="bg-amber-500/10 text-amber-500 border border-amber-500/25 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide flex items-center gap-1">
+                              <Clock className="w-3 h-3" /> Tạm Thời
+                            </span>
+                          )
+                      )}
                     </div>
 
                     <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
@@ -215,10 +229,14 @@ export function RaceResultsView({ token }: { token: string }) {
 
                   <div className="flex items-center gap-3 shrink-0 ml-auto md:ml-0">
                     <div className="text-xs text-right hidden md:block">
-                      <span className="text-muted-foreground block">Trạng thái</span>
-                      <span className={`font-semibold ${race.status === 'cancelled' ? 'text-rose-500' : 'text-primary'}`}>
-                        {race.status === 'cancelled' ? 'Hủy bỏ' : 'Hoàn tất'}
-                      </span>
+                      <span className="text-muted-foreground block">Kết quả</span>
+                      {race.status === 'cancelled' ? (
+                        <span className="font-semibold text-rose-500">Hủy bỏ</span>
+                      ) : race.isOfficial ? (
+                        <span className="font-semibold text-emerald-500">Chính Thức</span>
+                      ) : (
+                        <span className="font-semibold text-amber-500">Chờ Duyệt</span>
+                      )}
                     </div>
                     <div className="p-2 hover:bg-muted rounded transition-colors text-muted-foreground">
                       {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
@@ -243,11 +261,32 @@ export function RaceResultsView({ token }: { token: string }) {
                       </div>
                     ) : (
                       <>
+                        {/* Provisional / Official banner */}
+                        {!race.isOfficial ? (
+                          <div className="flex items-start gap-3 bg-amber-500/5 border border-amber-500/25 px-4 py-3 rounded-lg">
+                            <Clock className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                            <div>
+                              <p className="text-sm font-semibold text-amber-500">Kết quả tạm thời — chưa phải kết quả chung cuộc</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                Báo cáo của trọng tài đang chờ Admin duyệt. Kết quả và tiền thưởng sẽ được xác nhận chính thức sau khi Admin phê duyệt.
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-3 bg-emerald-500/5 border border-emerald-500/25 px-4 py-3 rounded-lg">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                            <p className="text-sm font-semibold text-emerald-500">Kết quả chung cuộc — đã được Admin xác nhận chính thức</p>
+                          </div>
+                        )}
+
                         {/* 1. Stunning Podium Display */}
                         {detail.results.length > 0 && (
                           <div className="bg-card border border-border p-6 rounded-lg shadow-sm">
                             <h4 className="font-serif text-base font-bold text-foreground text-center mb-6 flex items-center justify-center gap-1.5">
-                              <Sparkles className="w-4 h-4 text-gold animate-pulse" /> BỤC VINH QUANG TRẬN ĐẤU
+                              {race.isOfficial
+                                ? <><Sparkles className="w-4 h-4 text-gold animate-pulse" /> BỤC VINH QUANG CHUNG CUỘC</>
+                                : <><Clock className="w-4 h-4 text-amber-500" /> XẾP HẠNG TẠM THỜI</>
+                              }
                             </h4>
                             
                             <div className="flex items-end justify-center gap-3 max-w-xl mx-auto pt-6 pb-2">
