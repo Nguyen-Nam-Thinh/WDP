@@ -70,4 +70,35 @@ async function createFineTicket(payload, session) {
   return ticket;
 }
 
-module.exports = { listMyPenalties, payPenalty, createFineTicket };
+async function listAllPenalties({ page = 1, limit = 20, status, raceId }) {
+  const query = {};
+  if (status) query.status = status;
+  if (raceId) query.raceId = raceId;
+
+  const [total, sumResult] = await Promise.all([
+    PenaltyTicket.countDocuments(query),
+    PenaltyTicket.aggregate([
+      { $match: query },
+      { $group: { _id: null, totalAmount: { $sum: '$amount' } } }
+    ])
+  ]);
+  const totalAmount = sumResult[0]?.totalAmount || 0;
+
+  const tickets = await PenaltyTicket.find(query)
+    .populate('userId', 'fullName email')
+    .populate('raceId', 'name grade scheduledTime status isOfficial')
+    .populate('horseId', 'name currentGrade')
+    .sort({ createdAt: -1 })
+    .skip((page - 1) * limit)
+    .limit(limit);
+
+  return {
+    tickets,
+    total,
+    totalAmount,
+    page: parseInt(page, 10),
+    totalPages: Math.ceil(total / limit),
+  };
+}
+
+module.exports = { listMyPenalties, payPenalty, createFineTicket, listAllPenalties };

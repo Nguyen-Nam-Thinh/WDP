@@ -1,6 +1,16 @@
 const penaltyService = require('../services/penalty.service');
 const { sendSuccess } = require('../utils/response');
 
+async function listAll(req, res, next) {
+  try {
+    const { page, limit, status, raceId } = req.query;
+    const result = await penaltyService.listAllPenalties({ page, limit, status, raceId });
+    sendSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function listMine(req, res, next) {
   try {
     const tickets = await penaltyService.listMyPenalties(req.user._id, {
@@ -21,4 +31,4 @@ async function pay(req, res, next) {
   }
 }
 
-module.exports = { listMine, pay };
+module.exports = { listMine, pay, listAll };

@@ -200,9 +200,9 @@ export default function BetManagement() {
       {/* Header */}
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Quản lý Cược</h2>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Quản lý Dự Đoán</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Theo dõi và quyết toán toàn bộ lịch sử đặt cược.
+            Theo dõi và quyết toán toàn bộ lịch sử dự đoán.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -231,9 +231,6 @@ export default function BetManagement() {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 border border-blue-100">
               <BarChart3 size={18} className="text-blue-600" />
             </div>
-            <span className="inline-flex items-center gap-1 rounded bg-slate-50 border border-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-              <TrendingUp size={12} /> Hệ thống
-            </span>
           </div>
           <p className="text-2xl font-bold text-slate-900 mb-1">
             {loadingStats ? <span className="text-slate-300 text-xl animate-pulse">...</span> : stats.total.toLocaleString('vi-VN')}
@@ -246,9 +243,6 @@ export default function BetManagement() {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 border border-amber-100">
               <Coins size={18} className="text-amber-500" />
             </div>
-            <span className="inline-flex items-center gap-1 rounded bg-slate-50 border border-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-              <TrendingUp size={12} /> Đã đặt
-            </span>
           </div>
           <p className="text-2xl font-bold text-slate-900 mb-1">
             {loadingStats ? <span className="text-slate-300 text-xl animate-pulse">...</span> : `${stats.totalAmount.toLocaleString('vi-VN')} $`}
@@ -261,9 +255,6 @@ export default function BetManagement() {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 border border-emerald-100">
               <CheckCircle size={18} className="text-emerald-600" />
             </div>
-            <span className="inline-flex items-center gap-1 rounded bg-slate-50 border border-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-              <TrendingUp size={12} /> Đã trả
-            </span>
           </div>
           <p className="text-2xl font-bold text-slate-900 mb-1">
             {loadingStats ? <span className="text-slate-300 text-xl animate-pulse">...</span> : `${stats.totalPayout.toLocaleString('vi-VN')} $`}
@@ -276,14 +267,6 @@ export default function BetManagement() {
             <div className={`flex h-10 w-10 items-center justify-center rounded-lg border ${stats.pending > 0 ? 'bg-red-50 border-red-100' : 'bg-slate-50 border-slate-200'}`}>
               <Clock size={18} className={stats.pending > 0 ? 'text-red-600' : 'text-slate-400'} />
             </div>
-            <span className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-              stats.pending > 0
-                ? 'bg-red-50 border-red-200 text-red-700'
-                : 'bg-slate-50 border-slate-200 text-slate-500'
-            }`}>
-              {stats.pending > 0 ? <TrendingDown size={12} /> : <TrendingUp size={12} />}
-              {stats.pending > 0 ? 'Cần Quyết Toán' : 'Hoàn Tất'}
-            </span>
           </div>
           <p className={`text-2xl font-bold mb-1 ${stats.pending > 0 ? 'text-red-600' : 'text-slate-900'}`}>
             {loadingStats ? <span className="text-slate-300 text-xl animate-pulse">...</span> : stats.pending.toLocaleString('vi-VN')}
