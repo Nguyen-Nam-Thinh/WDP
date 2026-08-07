@@ -1243,11 +1243,11 @@ export function RefereeDashboard() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormControl fullWidth disabled={readOnly}>
                       <InputLabel sx={{ color: '#7A7468' }}>Điều kiện mặt đường *</InputLabel>
-                      <Select value={editTrack} displayEmpty label="Điều kiện mặt đường *"
+                      <Select value={editTrack} label="Điều kiện mặt đường *"
                         onChange={e => setEditTrack(e.target.value as TrackCondition | '')}
                         renderValue={selected => selected
                           ? (TRACK_OPTIONS.find((t) => t.value === selected)?.label || selected)
-                          : <span className="text-sm italic text-[#7A7468]">{EMPTY_NOTE}</span>}
+                          : ''}
                         sx={{ color: '#23201A', '& fieldset': { borderColor: '#C9C2B0' }, '& .MuiSelect-icon': { color: '#7A7468' } }}>
                         {TRACK_OPTIONS.map(option => <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>)}
                       </Select>

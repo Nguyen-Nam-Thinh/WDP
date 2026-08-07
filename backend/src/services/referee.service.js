@@ -992,11 +992,19 @@ function populateReport(report) {
 
 async function submitComplaint(raceId, userId, role, data) {
   const race = await Race.findById(raceId);
-  if (!race) throw new AppError(404, 'Race not found');
-  if (race.status === 'official') throw new AppError(400, 'Không thể khiếu nại cuộc đua đã Official');
+  if (!race) throw new AppError(404, 'Không tìm thấy cuộc đua');
+  if (race.status === 'official' || race.isOfficial) {
+    throw new AppError(400, 'Không thể khiếu nại cuộc đua đã Official');
+  }
 
-  const report = await RefereeReport.findOne({ raceId });
-  if (!report) throw new AppError(404, 'Biên bản trọng tài chưa được tạo');
+  let report = await RefereeReport.findOne({ raceId });
+  if (!report) {
+    report = await RefereeReport.create({
+      raceId,
+      refereeId: race.refereeId || userId,
+      status: 'draft',
+    });
+  }
 
   const { targetHorseId, reason } = data;
   if (!targetHorseId || !reason) throw new AppError(400, 'Thiếu thông tin khiếu nại');

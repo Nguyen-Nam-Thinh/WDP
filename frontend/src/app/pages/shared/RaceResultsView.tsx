@@ -1,12 +1,23 @@
 import { useEffect, useState, useCallback } from 'react';
 import { raceApi, type Race, type RaceResultEntry } from '../../api/race';
 import { betApi, type Bet } from '../../api/bet';
+import { horseApi } from '../../api/horse';
+import { useAuth } from '../../hooks/useAuth';
 import { toast } from 'sonner';
 import { 
   Trophy, Medal, Calendar, Flag, Clock, Coins, 
   Search, ChevronDown, ChevronUp, AlertCircle, 
-  CheckCircle2, XCircle, Sparkles, Filter 
+  CheckCircle2, XCircle, Sparkles, Filter,
+  ShieldAlert, Send, X, User
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  CircularProgress,
+} from '@mui/material';
 
 function formatFinishTime(ms: number): string {
   if (!ms || !Number.isFinite(ms)) return '—';
@@ -20,11 +31,15 @@ interface RaceDetailCache {
   loading: boolean;
 }
 
-export function RaceResultsView({ token }: { token: string }) {
+export function RaceResultsView({ token }: { token?: string | null }) {
+  const { user, token: authToken } = useAuth();
+  const effectiveToken = token || authToken;
+
   const [races, setRaces] = useState<Race[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [gradeFilter, setGradeFilter] = useState('All');
+  const [myHorseIds, setMyHorseIds] = useState<Set<string>>(new Set());
   
   // Expanded race IDs
   const [expandedRaceId, setExpandedRaceId] = useState<string | null>(null);
@@ -32,15 +47,34 @@ export function RaceResultsView({ token }: { token: string }) {
   // Cache for detailed results & bets of expanded races to avoid repeating API calls
   const [cache, setCache] = useState<Record<string, RaceDetailCache>>({});
 
+  // Complaint Modal states
+  const [complaintModalOpen, setComplaintModalOpen] = useState(false);
+  const [complaintTargetRace, setComplaintTargetRace] = useState<Race | null>(null);
+  const [complaintTargetHorse, setComplaintTargetHorse] = useState<{ id: string; name: string; jockeyName: string; isMyHorse?: boolean } | null>(null);
+  const [complaintReason, setComplaintReason] = useState('');
+  const [submittingComplaint, setSubmittingComplaint] = useState(false);
+
+  const canComplain = user && (user.role === 'owner' || user.role === 'jockey');
+
+  // Load owner's horses to identify owned horses
+  useEffect(() => {
+    if (effectiveToken && user?.role === 'owner') {
+      horseApi.getMyHorses(effectiveToken, 1, 100)
+        .then((res) => {
+          const ids = (res.horses || []).map((h: any) => h._id);
+          setMyHorseIds(new Set(ids));
+        })
+        .catch(() => {});
+    }
+  }, [effectiveToken, user?.role]);
+
   const loadRaces = useCallback(async () => {
-    if (!token) return;
+    if (!effectiveToken) return;
     setLoading(true);
     try {
       // Fetch both finished and cancelled races
-      const res = await raceApi.getRaces(token, { status: 'finished,cancelled', limit: 100 });
+      const res = await raceApi.getRaces(effectiveToken, { status: 'finished,cancelled', limit: 100 });
       // Show all finished races (results available) and cancelled races.
-      // isOfficial is only set true after payout is settled, so do NOT filter by it —
-      // races that have finished but not yet settled would be invisible otherwise.
       const officialRaces = (res.races || []).filter(
         (r) => r.status === 'finished' || r.status === 'cancelled'
       );
@@ -50,7 +84,7 @@ export function RaceResultsView({ token }: { token: string }) {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [effectiveToken]);
 
   useEffect(() => {
     loadRaces();
@@ -63,6 +97,7 @@ export function RaceResultsView({ token }: { token: string }) {
     }
 
     setExpandedRaceId(raceId);
+    if (!effectiveToken) return;
 
     // If already in cache, do not reload
     if (cache[raceId]) return;
@@ -76,8 +111,8 @@ export function RaceResultsView({ token }: { token: string }) {
     try {
       // Load race results and bets in parallel
       const [resultsRes, betsRes] = await Promise.all([
-        raceApi.getRaceResults(token, raceId),
-        betApi.getMyBets(token, { raceId, limit: 10 }).catch(() => ({ bets: [] }))
+        raceApi.getRaceResults(effectiveToken, raceId),
+        betApi.getMyBets(effectiveToken, { raceId, limit: 10 }).catch(() => ({ bets: [] }))
       ]);
 
       setCache(prev => ({
@@ -94,6 +129,35 @@ export function RaceResultsView({ token }: { token: string }) {
         ...prev,
         [raceId]: { results: [], bets: [], loading: false }
       }));
+    }
+  };
+
+  const handleOpenComplaint = (race: Race, horse: { id: string; name: string; jockeyName: string; isMyHorse?: boolean }) => {
+    setComplaintTargetRace(race);
+    setComplaintTargetHorse(horse);
+    setComplaintReason('');
+    setComplaintModalOpen(true);
+  };
+
+  const handleSubmitComplaint = async () => {
+    if (!effectiveToken || !complaintTargetRace || !complaintTargetHorse) return;
+    if (!complaintReason.trim()) {
+      toast.error('Vui lòng nhập lý do khiếu nại');
+      return;
+    }
+
+    setSubmittingComplaint(true);
+    try {
+      await raceApi.submitComplaint(effectiveToken, complaintTargetRace._id, {
+        targetHorseId: complaintTargetHorse.id,
+        reason: complaintReason.trim(),
+      });
+      toast.success('Gửi khiếu nại thành công! Ban Trọng tài sẽ tiếp nhận và xử lý biên bản.');
+      setComplaintModalOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || 'Gửi khiếu nại thất bại');
+    } finally {
+      setSubmittingComplaint(false);
     }
   };
 
@@ -454,11 +518,16 @@ export function RaceResultsView({ token }: { token: string }) {
                                   <th className="px-5 py-3 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Thời Gian</th>
                                   <th className="px-5 py-3 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Thưởng Hạng</th>
                                   <th className="px-5 py-3 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right w-24">Tích Lũy</th>
+                                  {canComplain && race.status === 'finished' && !race.isOfficial && (
+                                    <th className="px-5 py-3 text-xs font-bold text-amber-500 uppercase tracking-wider text-center w-28">Khiếu Nại</th>
+                                  )}
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-border">
                                 {detail.results.map((r) => {
                                   const position = r.position;
+                                  const horseIdStr = r.horseId._id || (r.horseId as any);
+                                  const isMyHorse = user?.role === 'owner' && myHorseIds.has(horseIdStr);
                                   
                                   const positionBadge = (pos: number | null) => {
                                     if (r.disqualified) return 'bg-rose-500/20 text-rose-500 border border-rose-500/30 font-extrabold';
@@ -469,15 +538,20 @@ export function RaceResultsView({ token }: { token: string }) {
                                   };
 
                                   return (
-                                    <tr key={r._id} className="hover:bg-muted/30 transition-colors">
+                                    <tr key={r._id} className={`hover:bg-muted/30 transition-colors ${isMyHorse ? 'bg-blue-500/5' : ''}`}>
                                       <td className="px-5 py-3.5 text-center">
                                         <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs ${positionBadge(position)}`}>
                                           {r.disqualified ? 'DQ' : (position || '—')}
                                         </span>
                                       </td>
                                       <td className="px-5 py-3.5">
-                                        <div className="font-semibold text-sm text-foreground flex items-center gap-2">
+                                        <div className="font-semibold text-sm text-foreground flex items-center gap-2 flex-wrap">
                                           {r.horseId.name}
+                                          {isMyHorse && (
+                                            <span className="bg-blue-500/10 text-blue-500 border border-blue-500/25 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide flex items-center gap-1">
+                                              <User className="w-3 h-3" /> Ngựa của bạn
+                                            </span>
+                                          )}
                                           {r.disqualified && (
                                             <span className="bg-rose-500/10 text-rose-500 border border-rose-500/20 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide">
                                               Bị loại
@@ -503,6 +577,28 @@ export function RaceResultsView({ token }: { token: string }) {
                                       <td className="px-5 py-3.5 text-sm text-right tabular-nums text-primary font-bold">
                                         {r.pointsEarned > 0 ? `+${r.pointsEarned} pts` : '—'}
                                       </td>
+                                      {canComplain && race.status === 'finished' && !race.isOfficial && (
+                                        <td className="px-5 py-3.5 text-center">
+                                          <button
+                                            type="button"
+                                            onClick={() => handleOpenComplaint(race, {
+                                              id: horseIdStr,
+                                              name: r.horseId.name,
+                                              jockeyName: r.jockeyId?.fullName || 'Không có kỵ sĩ',
+                                              isMyHorse,
+                                            })}
+                                            className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg transition-all shadow-sm ${
+                                              isMyHorse
+                                                ? 'text-blue-500 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30'
+                                                : 'text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30'
+                                            }`}
+                                            title={isMyHorse ? "Khiếu nại đối với ngựa của bạn" : "Khiếu nại kết quả hoặc vi phạm đối với ngựa này"}
+                                          >
+                                            <ShieldAlert className="w-3.5 h-3.5" />
+                                            Khiếu Nại
+                                          </button>
+                                        </td>
+                                      )}
                                     </tr>
                                   );
                                 })}
@@ -519,6 +615,127 @@ export function RaceResultsView({ token }: { token: string }) {
           })}
         </div>
       )}
+
+      {/* Complaint Modal Dialog */}
+      <Dialog
+        open={complaintModalOpen}
+        onClose={() => !submittingComplaint && setComplaintModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          style: {
+            backgroundColor: "#FFFFFF",
+            border: "1px solid #E3DCCB",
+            borderRadius: "16px",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            color: "#23201A",
+            fontWeight: 700,
+            borderBottom: "1px solid #E3DCCB",
+            pb: 2,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <span className="flex items-center gap-2 text-amber-600">
+            <ShieldAlert className="w-5 h-5" /> Gửi Khiếu Nại Cuộc Đua
+          </span>
+          <button
+            onClick={() => setComplaintModalOpen(false)}
+            disabled={submittingComplaint}
+            className="text-slate-400 hover:text-slate-600 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </DialogTitle>
+        <DialogContent sx={{ pt: "20px !important" }}>
+          <div className="space-y-4">
+            <div className="bg-amber-500/10 border border-amber-500/30 p-3.5 rounded-xl text-xs text-amber-800 space-y-1">
+              <p className="font-bold flex items-center gap-1.5">
+                <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" /> Quy trình xử lý khiếu nại:
+              </p>
+              <p>
+                Yêu cầu khiếu nại của bạn sẽ được gửi trực tiếp vào Biên Bản Trọng Tài. Ban Trọng tài & Admin sẽ thẩm tra thông tin trước khi duyệt kết quả chính thức (Official).
+              </p>
+            </div>
+
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-sm space-y-2 text-slate-700">
+              <div className="flex justify-between">
+                <span className="text-slate-400">Cuộc đua:</span>
+                <span className="font-bold text-slate-900">{complaintTargetRace?.name} ({complaintTargetRace?.grade})</span>
+              </div>
+              <div className="flex justify-between items-start">
+                <span className="text-slate-400">Đối tượng khiếu nại:</span>
+                <div className="text-right">
+                  <span className="font-bold text-amber-600 block">
+                    Ngựa {complaintTargetHorse?.name} ({complaintTargetHorse?.jockeyName})
+                  </span>
+                  {complaintTargetHorse?.isMyHorse && (
+                    <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 inline-flex items-center gap-1 mt-1">
+                      <User className="w-3 h-3" /> Đây là ngựa thuộc sở hữu của bạn
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Người gửi khiếu nại:</span>
+                <span className="font-semibold text-slate-900">
+                  {user?.fullName} ({user?.role === 'owner' ? 'Chủ Ngựa' : user?.role === 'jockey' ? 'Kỵ Sĩ' : user?.role})
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Nội dung / Lý do khiếu nại <span className="text-rose-500">*</span>
+              </label>
+              <textarea
+                value={complaintReason}
+                onChange={(e) => setComplaintReason(e.target.value)}
+                placeholder="Nêu rõ lý do (ví dụ: cản trở nguy hiểm, lấn làn thi đấu, nghi vấn vi phạm quy chế...)"
+                rows={4}
+                style={{ color: "#23201A", backgroundColor: "#FFFFFF" }}
+                className="w-full p-3 text-sm border border-slate-300 rounded-xl font-medium placeholder:text-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+              />
+            </div>
+          </div>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5, pt: 1, borderTop: "1px solid #E3DCCB" }}>
+          <Button
+            disabled={submittingComplaint}
+            onClick={() => setComplaintModalOpen(false)}
+            sx={{ color: "#7A7468", textTransform: "none", fontWeight: 600 }}
+          >
+            Hủy
+          </Button>
+          <Button
+            variant="contained"
+            disabled={submittingComplaint || !complaintReason.trim()}
+            onClick={handleSubmitComplaint}
+            sx={{
+              background: "#C9A227",
+              "&:hover": { background: "#B38F1F" },
+              textTransform: "none",
+              fontWeight: 700,
+              px: 3,
+            }}
+          >
+            {submittingComplaint ? (
+              <span className="flex items-center gap-2">
+                <CircularProgress size={16} sx={{ color: "white" }} /> Đang gửi...
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5">
+                <Send className="w-4 h-4" /> Gửi Khiếu Nại
+              </span>
+            )}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }
