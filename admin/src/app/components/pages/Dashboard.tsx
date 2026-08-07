@@ -1,35 +1,31 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import {
-  Users,
-  Trophy,
-  Flag,
-  ClipboardList,
-  TrendingUp,
-  TrendingDown,
-  CheckCircle,
-  Megaphone,
-  PlusCircle,
-  UserPlus,
-  ArrowRight,
-  MoreHorizontal,
-  RefreshCw,
-} from 'lucide-react';
+import { Users, Trophy, Flag, ClipboardList, TrendingUp, MoreHorizontal, RefreshCw, ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { dashboardApi, DashboardData } from '../../api/dashboard';
 
-const getIconForType = (type: string) => {
-  switch (type) {
-    case 'user':
-      return { icon: UserPlus, iconColor: 'text-purple-600', iconBg: 'bg-purple-100' };
-    case 'tournament':
-      return { icon: Trophy, iconColor: 'text-amber-600', iconBg: 'bg-amber-100' };
-    case 'registration':
-      return { icon: CheckCircle, iconColor: 'text-emerald-600', iconBg: 'bg-emerald-100' };
-    default:
-      return { icon: Megaphone, iconColor: 'text-blue-600', iconBg: 'bg-blue-100' };
-  }
+const COLORS: Record<string, string> = {
+  ongoing: '#10b981',
+  upcoming: '#3b82f6',
+  preparing: '#f59e0b',
+  finished: '#64748b',
+  cancelled: '#ef4444',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  ongoing: 'Đang diễn ra',
+  upcoming: 'Sắp diễn ra',
+  preparing: 'Chuẩn bị',
+  finished: 'Đã kết thúc',
+  cancelled: 'Đã hủy',
+};
+
+const STATUS_TABLE: Record<string, { label: string; textClass: string; bgClass: string }> = {
+  ongoing:  { label: 'Đang diễn ra', textClass: 'text-emerald-700', bgClass: 'bg-emerald-50' },
+  upcoming: { label: 'Sắp diễn ra',  textClass: 'text-blue-700',    bgClass: 'bg-blue-50'    },
+  finished: { label: 'Đã kết thúc',  textClass: 'text-slate-700',   bgClass: 'bg-slate-50'   },
+  cancelled:{ label: 'Đã hủy',       textClass: 'text-red-700',     bgClass: 'bg-red-50'     },
 };
 
 export default function Dashboard() {
@@ -37,13 +33,13 @@ export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const currentYear = new Date().getFullYear();
-  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  const [period, setPeriod] = useState<'week' | 'month' | 'year'>('year');
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const res = await dashboardApi.getAdminDashboard(selectedYear);
+        const res = await dashboardApi.getAdminDashboard(currentYear, period);
         setData(res);
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
@@ -52,46 +48,17 @@ export default function Dashboard() {
       }
     };
     fetchData();
-  }, [selectedYear]);
+  }, [period]);
 
   const statCards = [
-    {
-      label: 'Tổng người dùng',
-      value: loading ? '...' : (data?.stats.totalUsers ?? 0).toLocaleString('vi-VN'),
-      change: 'Toàn hệ thống',
-      up: true,
-      icon: Users,
-      onClick: () => navigate('/users'),
-    },
-    {
-      label: 'Giải đấu đang diễn ra',
-      value: loading ? '...' : (data?.stats.ongoingTournaments ?? 0).toString(),
-      change: 'Hoạt động',
-      up: true,
-      icon: Trophy,
-      onClick: () => navigate('/tournaments'),
-    },
-    {
-      label: 'Đăng ký chờ duyệt',
-      value: loading ? '...' : (data?.stats.activeRegistrations ?? 0).toLocaleString('vi-VN'),
-      change: 'Cần chú ý',
-      up: true,
-      icon: Flag,
-      onClick: () => navigate('/registrations'),
-    },
-    {
-      label: 'Cuộc đua mở ĐK',
-      value: loading ? '...' : (data?.stats.pendingRaces ?? 0).toString(),
-      change: 'Đang mở',
-      up: true,
-      icon: ClipboardList,
-      onClick: () => navigate('/races'),
-    },
+    { label: 'Tổng người dùng',       value: loading ? '...' : (data?.stats.totalUsers ?? 0).toLocaleString('vi-VN'), change: 'Toàn hệ thống', icon: Users,        onClick: () => navigate('/users')         },
+    { label: 'Giải đấu đang diễn ra', value: loading ? '...' : (data?.stats.ongoingTournaments ?? 0).toString(),      change: 'Hoạt động',     icon: Trophy,       onClick: () => navigate('/tournaments')    },
+    { label: 'Đăng ký chờ duyệt',     value: loading ? '...' : (data?.stats.activeRegistrations ?? 0).toLocaleString('vi-VN'), change: 'Cần chú ý', icon: Flag,  onClick: () => navigate('/registrations')  },
+    { label: 'Chặng đua mở ĐK',       value: loading ? '...' : (data?.stats.pendingRaces ?? 0).toString(),            change: 'Đang mở',       icon: ClipboardList, onClick: () => navigate('/races')         },
   ];
 
   return (
     <div className="mx-auto max-w-7xl pb-8">
-      {/* KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
         {statCards.map((s, i) => {
           const Icon = s.icon;
@@ -108,18 +75,13 @@ export default function Dashboard() {
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-50 border border-slate-100 text-slate-600 group-hover:bg-blue-50 group-hover:text-blue-600 group-hover:border-blue-100 transition-colors">
                   {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Icon className="h-5 w-5" />}
                 </div>
-                <div className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold ${
-                  s.up ? 'text-emerald-700 bg-emerald-50' : 'text-orange-700 bg-orange-50'
-                }`}>
-                  {s.up ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                <div className="flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold text-emerald-700 bg-emerald-50">
+                  <TrendingUp size={12} />
                   {s.change}
                 </div>
               </div>
-
               <div>
-                <h4 className="text-2xl font-bold text-slate-900 leading-tight">
-                  {s.value}
-                </h4>
+                <h4 className="text-2xl font-bold text-slate-900 leading-tight">{s.value}</h4>
                 <span className="text-xs font-medium text-slate-500 mt-1 block">{s.label}</span>
               </div>
             </motion.div>
@@ -128,7 +90,6 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 mb-6">
-        {/* Main Chart */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -138,19 +99,23 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-semibold text-slate-800">Tăng trưởng người dùng</h3>
-              <p className="text-[11px] text-slate-500 mt-0.5">Thống kê đăng ký {selectedYear === currentYear ? 'trong năm nay' : `năm ${selectedYear}`}</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                {period === 'week' ? 'Thống kê 7 ngày gần nhất' : period === 'month' ? 'Thống kê đăng ký trong tháng này' : 'Thống kê đăng ký trong năm nay'}
+              </p>
             </div>
-            <select 
-              value={selectedYear} 
-              onChange={(e) => setSelectedYear(Number(e.target.value))}
-              className="text-xs border border-slate-200 rounded-md bg-white px-2 py-1 text-slate-600 focus:outline-none focus:border-blue-500"
-            >
-              <option value={currentYear}>Năm nay ({currentYear})</option>
-              <option value={currentYear - 1}>Năm ngoái ({currentYear - 1})</option>
-              <option value={currentYear - 2}>{currentYear - 2}</option>
-            </select>
+            <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+              {(['week', 'month', 'year'] as const).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPeriod(p)}
+                  className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-all ${period === p ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  {p === 'week' ? 'Tuần' : p === 'month' ? 'Tháng' : 'Năm'}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="h-[260px] w-full flex-1">
+          <div className="h-[260px] w-full flex-1 mt-2">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={data?.chartData || []} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                 <defs>
@@ -160,18 +125,20 @@ export default function Dashboard() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} dy={10} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} dy={10} interval={period === 'year' ? 0 : 'preserveStartEnd'} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
-                <Tooltip
-                  contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
+                <RechartsTooltip
+                  cursor={{ stroke: '#94a3b8', strokeWidth: 1, strokeDasharray: '4 4' }}
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px', fontWeight: 500, padding: '8px 12px' }}
+                  labelStyle={{ color: '#64748b', marginBottom: '4px' }}
+                  itemStyle={{ color: '#2563eb', fontWeight: 600, padding: 0 }}
                 />
-                <Area type="monotone" dataKey="users" stroke="#2563eb" strokeWidth={2} fill="url(#colorUsers)" />
+                <Area type="monotone" dataKey="users" name="Người dùng mới" stroke="#2563eb" strokeWidth={2.5} fill="url(#colorUsers)" activeDot={{ r: 5, fill: '#2563eb', stroke: '#ffffff', strokeWidth: 2 }} animationDuration={1500} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </motion.div>
 
-        {/* Recent Activities */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -179,53 +146,45 @@ export default function Dashboard() {
           className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col"
         >
           <div className="flex items-center justify-between mb-5">
-            <h3 className="text-sm font-semibold text-slate-800">Nhật ký hệ thống</h3>
+            <h3 className="text-sm font-semibold text-slate-800">Trạng thái giải đấu</h3>
             <button className="text-slate-400 hover:text-slate-600 transition-colors">
               <MoreHorizontal size={16} />
             </button>
           </div>
-
-          <div className="flex-1 flex flex-col gap-4">
+          <div className="flex-1 flex flex-col justify-center items-center">
             {loading ? (
               <div className="flex justify-center py-8">
                 <RefreshCw className="animate-spin text-slate-400" size={24} />
               </div>
-            ) : data?.recentActivities.length === 0 ? (
-              <div className="text-center text-xs text-slate-500 py-8">Chưa có hoạt động nào</div>
+            ) : !data?.tournamentChartData || data.tournamentChartData.every(d => d.value === 0) ? (
+              <div className="text-center text-xs text-slate-500 py-8">Chưa có dữ liệu giải đấu</div>
             ) : (
-              data?.recentActivities.map((a, i) => {
-                const { icon: Icon, iconColor, iconBg } = getIconForType(a.type);
-                return (
-                  <div key={i} className="flex gap-3 relative">
-                    {i !== data.recentActivities.length - 1 && (
-                      <div className="absolute left-3.5 top-8 bottom-[-16px] w-[1px] bg-slate-100"></div>
-                    )}
-                    <div className={`relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${iconBg}`}>
-                      <Icon className={`h-3.5 w-3.5 ${iconColor}`} />
-                    </div>
-                    <div className="flex-1 pb-1">
-                      <div className="flex justify-between items-start">
-                        <h5 className="text-[13px] font-semibold text-slate-800">{a.title}</h5>
-                        <span className="text-[10px] text-slate-400">{a.time}</span>
-                      </div>
-                      <p className="text-[11px] text-slate-500 mt-0.5">{a.desc}</p>
-                    </div>
-                  </div>
-                );
-              })
+              <div className="h-[220px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={data.tournamentChartData.filter(d => d.value > 0)} cx="50%" cy="50%" innerRadius={65} outerRadius={85} paddingAngle={5} dataKey="value" stroke="none" animationDuration={1000}>
+                      {data.tournamentChartData.filter(d => d.value > 0).map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[entry.name] || '#94a3b8'} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip
+                      formatter={(value: number, name: string) => [value, STATUS_LABELS[name] || name]}
+                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
+                    />
+                    <Legend 
+                      verticalAlign="bottom" 
+                      iconType="circle" 
+                      wrapperStyle={{ paddingTop: '12px' }}
+                      formatter={(value) => <span className="text-[11px] text-slate-600 font-medium ml-1 mr-2">{STATUS_LABELS[value] || value}</span>} 
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             )}
           </div>
-
-          <button
-            onClick={() => navigate('/registrations')}
-            className="mt-4 w-full flex items-center justify-center gap-1.5 py-2 rounded-md border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
-          >
-            Xem tất cả <ArrowRight size={14} />
-          </button>
         </motion.div>
       </div>
 
-      {/* Upcoming Tournaments Table */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -233,9 +192,7 @@ export default function Dashboard() {
         className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden"
       >
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-          <div>
-            <h3 className="text-sm font-semibold text-slate-800">Giải đấu gần đây</h3>
-          </div>
+          <h3 className="text-sm font-semibold text-slate-800">Giải đấu gần đây</h3>
           <button
             onClick={() => navigate('/tournaments')}
             className="hidden sm:flex items-center gap-1.5 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 transition"
@@ -248,7 +205,7 @@ export default function Dashboard() {
             <div className="flex justify-center py-8">
               <RefreshCw className="animate-spin text-slate-400" size={24} />
             </div>
-          ) : data?.upcomingTournaments.length === 0 ? (
+          ) : !data?.upcomingTournaments?.length ? (
             <div className="py-8 text-center text-xs text-slate-500">Chưa có giải đấu nào</div>
           ) : (
             <table className="w-full text-left text-sm">
@@ -262,26 +219,18 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {data?.upcomingTournaments.map((t, i) => {
-                  let st = { label: 'Khác', textClass: 'text-slate-700', bgClass: 'bg-slate-50', dotClass: 'bg-slate-400' };
-                  if (t.status === 'ongoing') st = { label: 'Đang diễn ra', textClass: 'text-emerald-700', bgClass: 'bg-emerald-50', dotClass: 'bg-emerald-500' };
-                  if (t.status === 'upcoming') st = { label: 'Sắp diễn ra', textClass: 'text-blue-700', bgClass: 'bg-blue-50', dotClass: 'bg-blue-500' };
-                  if (t.status === 'finished') st = { label: 'Đã kết thúc', textClass: 'text-slate-700', bgClass: 'bg-slate-50', dotClass: 'bg-slate-400' };
-
+                {data.upcomingTournaments.map((t, i) => {
+                  const st = STATUS_TABLE[t.status] ?? { label: t.status, textClass: 'text-slate-700', bgClass: 'bg-slate-50' };
                   return (
-                    <tr key={t._id ?? i} className="hover:bg-slate-50/50 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-300 group cursor-pointer bg-white">
-                      <td className="px-5 py-3 font-medium text-slate-800 text-[13px]">
-                        {t.name}
-                      </td>
+                    <tr key={t._id ?? i} className="hover:bg-slate-50/50 transition-all duration-200 group cursor-pointer bg-white">
+                      <td className="px-5 py-3 font-medium text-slate-800 text-[13px]">{t.name}</td>
                       <td className="px-5 py-3 text-slate-600 text-[13px]">
                         {t.startDate ? new Date(t.startDate).toLocaleDateString('vi-VN') : '-'}
                         {t.endDate ? ` — ${new Date(t.endDate).toLocaleDateString('vi-VN')}` : ''}
                       </td>
-                      <td className="px-5 py-3 text-slate-600 text-[13px]">
-                        {t.location || '-'}
-                      </td>
+                      <td className="px-5 py-3 text-slate-600 text-[13px]">{t.location || '-'}</td>
                       <td className="px-5 py-3">
-                        <span className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-semibold border ${st.bgClass} ${st.textClass} border-${st.bgClass.split('-')[1]}-200`}>
+                        <span className={`inline-flex items-center rounded px-2 py-0.5 text-[10px] font-semibold ${st.bgClass} ${st.textClass}`}>
                           {st.label}
                         </span>
                       </td>

@@ -12,24 +12,24 @@ export interface ChartDataPoint {
   users: number;
 }
 
-export interface Activity {
-  type: string;
-  title: string;
-  desc: string;
-  time: string;
-  createdAt: string;
+export interface TournamentChartPoint {
+  name: string;
+  value: number;
 }
 
 export interface DashboardData {
   stats: DashboardStats;
   chartData: ChartDataPoint[];
-  recentActivities: Activity[];
+  tournamentChartData: TournamentChartPoint[];
   upcomingTournaments: any[];
 }
 
 export const dashboardApi = {
-  getAdminDashboard: (year?: number) => {
-    const query = year ? `?year=${year}` : '';
+  getAdminDashboard: (year?: number, period?: string) => {
+    const params = new URLSearchParams();
+    if (year) params.append('year', year.toString());
+    if (period) params.append('period', period);
+    const query = params.toString() ? `?${params.toString()}` : '';
     return apiRequest<DashboardData>(`/dashboard/admin${query}`);
   },
 };
