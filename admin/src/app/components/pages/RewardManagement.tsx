@@ -220,11 +220,12 @@ export default function RewardManagement() {
 
   // Filter redemptions
   const filteredRedemptions = redemptions.filter((r) => {
+    const q = searchQuery.toLowerCase();
     const userMatch =
-      r.userId?.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.userId?.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const voucherMatch = r.voucherCode.toLowerCase().includes(searchQuery.toLowerCase());
-    const rewardMatch = r.rewardId?.name.toLowerCase().includes(searchQuery.toLowerCase());
+      r.userId?.fullName?.toLowerCase().includes(q) ||
+      r.userId?.email?.toLowerCase().includes(q);
+    const voucherMatch = r.voucherCode?.toLowerCase().includes(q) ?? false;
+    const rewardMatch = r.rewardId?.name?.toLowerCase().includes(q) ?? false;
     return userMatch || voucherMatch || rewardMatch;
   });
 
@@ -465,9 +466,15 @@ export default function RewardManagement() {
                         {redemption.coinsSpent.toLocaleString('vi-VN')} $
                       </td>
                       <td className="py-4 px-5 text-center">
-                        <span className="font-mono text-sm font-bold bg-slate-100 border border-slate-200 text-slate-800 px-2.5 py-1 rounded shadow-sm">
-                          {redemption.voucherCode}
-                        </span>
+                        {redemption.voucherCode ? (
+                          <span className="font-mono text-sm font-bold bg-slate-100 border border-slate-200 text-slate-800 px-2.5 py-1 rounded shadow-sm">
+                            {redemption.voucherCode}
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-semibold text-slate-400 italic bg-slate-50 border border-slate-200 px-2 py-0.5 rounded">
+                            Không có mã
+                          </span>
+                        )}
                       </td>
                       <td className="py-4 px-5 text-right text-[11px] font-medium text-slate-500">
                         {new Date(redemption.createdAt).toLocaleString('vi-VN')}

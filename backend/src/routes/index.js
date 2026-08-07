@@ -13,6 +13,7 @@ const publicRoutes = require('./public.routes');
 const notificationRoutes = require('./notification.routes');
 const rewardRoutes = require('./reward.routes');
 const penaltyRoutes = require('./penalty.routes');
+const dashboardRoutes = require('./dashboard.routes');
 
 const router = Router();
 
@@ -30,5 +31,6 @@ router.use('/public', publicRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/rewards', rewardRoutes);
 router.use('/penalties', penaltyRoutes);
+router.use('/dashboard', dashboardRoutes);
 
 module.exports = router;

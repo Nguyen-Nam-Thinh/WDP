@@ -17,90 +17,55 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { userApi } from '../../api/user';
-import { tournamentApi } from '../../api/tournament';
-import { registrationApi } from '../../api/registration';
-import { raceApi } from '../../api/race';
+import { dashboardApi, DashboardData } from '../../api/dashboard';
 
-const chartData = [
-  { name: 'Th 1', users: 400, revenue: 240 },
-  { name: 'Th 2', users: 300, revenue: 139 },
-  { name: 'Th 3', users: 550, revenue: 380 },
-  { name: 'Th 4', users: 450, revenue: 390 },
-  { name: 'Th 5', users: 700, revenue: 480 },
-  { name: 'Th 6', users: 850, revenue: 600 },
-  { name: 'Th 7', users: 1245, revenue: 850 },
-];
-
-const recentActivities = [
-  { icon: CheckCircle, title: 'Đã duyệt đăng ký', desc: 'Ngựa: Thunder Bolt (ID: #4021)', time: '5 phút trước', iconColor: 'text-emerald-600', iconBg: 'bg-emerald-100' },
-  { icon: Megaphone, title: 'Công bố kết quả', desc: 'Vòng Final — Cúp Mùa Xuân', time: '1 giờ trước', iconColor: 'text-blue-600', iconBg: 'bg-blue-100' },
-  { icon: PlusCircle, title: 'Tạo giải đấu mới', desc: 'Cúp Mùa Hè 2026', time: '2 giờ trước', iconColor: 'text-amber-600', iconBg: 'bg-amber-100' },
-  { icon: UserPlus, title: 'Người dùng mới', desc: 'nguyen.van.a@email.com', time: '3 giờ trước', iconColor: 'text-purple-600', iconBg: 'bg-purple-100' },
-];
-
-const statusMap: Record<string, { label: string; textClass: string; bgClass: string; dotClass: string }> = {
-  upcoming: { label: 'Sắp diễn ra', textClass: 'text-blue-700', bgClass: 'bg-blue-50', dotClass: 'bg-blue-500' },
-  preparing: { label: 'Chuẩn bị', textClass: 'text-amber-700', bgClass: 'bg-amber-50', dotClass: 'bg-amber-500' },
-  ongoing: { label: 'Đang diễn ra', textClass: 'text-emerald-700', bgClass: 'bg-emerald-50', dotClass: 'bg-emerald-500' },
-  active: { label: 'Đang diễn ra', textClass: 'text-emerald-700', bgClass: 'bg-emerald-50', dotClass: 'bg-emerald-500' },
-  finished: { label: 'Đã kết thúc', textClass: 'text-slate-700', bgClass: 'bg-slate-50', dotClass: 'bg-slate-400' },
+const getIconForType = (type: string) => {
+  switch (type) {
+    case 'user':
+      return { icon: UserPlus, iconColor: 'text-purple-600', iconBg: 'bg-purple-100' };
+    case 'tournament':
+      return { icon: Trophy, iconColor: 'text-amber-600', iconBg: 'bg-amber-100' };
+    case 'registration':
+      return { icon: CheckCircle, iconColor: 'text-emerald-600', iconBg: 'bg-emerald-100' };
+    default:
+      return { icon: Megaphone, iconColor: 'text-blue-600', iconBg: 'bg-blue-100' };
+  }
 };
-
-interface DashboardStats {
-  totalUsers: number;
-  ongoingTournaments: number;
-  activeRegistrations: number;
-  pendingRaces: number;
-}
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loadingStats, setLoadingStats] = useState(true);
-  const [upcomingTournaments, setUpcomingTournaments] = useState<any[]>([]);
-  const [loadingTournaments, setLoadingTournaments] = useState(true);
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
 
   useEffect(() => {
-    const fetchStats = async () => {
-      setLoadingStats(true);
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        const [usersRes, ongoingRes, upcomingTRes, regsRes, racesOpenRes] = await Promise.all([
-          userApi.getUsers({ page: 1, limit: 1 }),
-          tournamentApi.list(1, 1, 'ongoing', true),
-          tournamentApi.list(1, 5, undefined, true),
-          registrationApi.list({ page: 1, limit: 1, status: 'active' }),
-          raceApi.list({ status: 'open', page: 1, limit: 1 }),
-        ]);
-        setStats({
-          totalUsers: usersRes.total,
-          ongoingTournaments: ongoingRes.total,
-          activeRegistrations: regsRes.total,
-          pendingRaces: racesOpenRes.total,
-        });
-        setUpcomingTournaments(upcomingTRes.tournaments.slice(0, 4));
-      } catch {
-        /* ignore errors */
+        const res = await dashboardApi.getAdminDashboard(selectedYear);
+        setData(res);
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error);
       } finally {
-        setLoadingStats(false);
-        setLoadingTournaments(false);
+        setLoading(false);
       }
     };
-    fetchStats();
-  }, []);
+    fetchData();
+  }, [selectedYear]);
 
   const statCards = [
     {
       label: 'Tổng người dùng',
-      value: loadingStats ? '...' : (stats?.totalUsers ?? 0).toLocaleString('vi-VN'),
-      change: 'Tăng 12%',
+      value: loading ? '...' : (data?.stats.totalUsers ?? 0).toLocaleString('vi-VN'),
+      change: 'Toàn hệ thống',
       up: true,
       icon: Users,
       onClick: () => navigate('/users'),
     },
     {
       label: 'Giải đấu đang diễn ra',
-      value: loadingStats ? '...' : (stats?.ongoingTournaments ?? 0).toString(),
+      value: loading ? '...' : (data?.stats.ongoingTournaments ?? 0).toString(),
       change: 'Hoạt động',
       up: true,
       icon: Trophy,
@@ -108,17 +73,17 @@ export default function Dashboard() {
     },
     {
       label: 'Đăng ký chờ duyệt',
-      value: loadingStats ? '...' : (stats?.activeRegistrations ?? 0).toLocaleString('vi-VN'),
-      change: 'Mới',
+      value: loading ? '...' : (data?.stats.activeRegistrations ?? 0).toLocaleString('vi-VN'),
+      change: 'Cần chú ý',
       up: true,
       icon: Flag,
       onClick: () => navigate('/registrations'),
     },
     {
       label: 'Cuộc đua mở ĐK',
-      value: loadingStats ? '...' : (stats?.pendingRaces ?? 0).toString(),
-      change: 'Cần chú ý',
-      up: false,
+      value: loading ? '...' : (data?.stats.pendingRaces ?? 0).toString(),
+      change: 'Đang mở',
+      up: true,
       icon: ClipboardList,
       onClick: () => navigate('/races'),
     },
@@ -141,7 +106,7 @@ export default function Dashboard() {
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-50 border border-slate-100 text-slate-600 group-hover:bg-blue-50 group-hover:text-blue-600 group-hover:border-blue-100 transition-colors">
-                  {loadingStats ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Icon className="h-5 w-5" />}
+                  {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Icon className="h-5 w-5" />}
                 </div>
                 <div className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold ${
                   s.up ? 'text-emerald-700 bg-emerald-50' : 'text-orange-700 bg-orange-50'
@@ -173,16 +138,21 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-semibold text-slate-800">Tăng trưởng người dùng</h3>
-              <p className="text-[11px] text-slate-500 mt-0.5">Thống kê đăng ký 7 tháng qua</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">Thống kê đăng ký {selectedYear === currentYear ? 'trong năm nay' : `năm ${selectedYear}`}</p>
             </div>
-            <select className="text-xs border border-slate-200 rounded-md bg-white px-2 py-1 text-slate-600 focus:outline-none focus:border-blue-500">
-              <option>Năm nay</option>
-              <option>Năm ngoái</option>
+            <select 
+              value={selectedYear} 
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="text-xs border border-slate-200 rounded-md bg-white px-2 py-1 text-slate-600 focus:outline-none focus:border-blue-500"
+            >
+              <option value={currentYear}>Năm nay ({currentYear})</option>
+              <option value={currentYear - 1}>Năm ngoái ({currentYear - 1})</option>
+              <option value={currentYear - 2}>{currentYear - 2}</option>
             </select>
           </div>
           <div className="h-[260px] w-full flex-1">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+              <AreaChart data={data?.chartData || []} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#2563eb" stopOpacity={0.15}/>
@@ -216,26 +186,34 @@ export default function Dashboard() {
           </div>
 
           <div className="flex-1 flex flex-col gap-4">
-            {recentActivities.map((a, i) => {
-              const Icon = a.icon;
-              return (
-                <div key={i} className="flex gap-3 relative">
-                  {i !== recentActivities.length - 1 && (
-                    <div className="absolute left-3.5 top-8 bottom-[-16px] w-[1px] bg-slate-100"></div>
-                  )}
-                  <div className={`relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${a.iconBg}`}>
-                    <Icon className={`h-3.5 w-3.5 ${a.iconColor}`} />
-                  </div>
-                  <div className="flex-1 pb-1">
-                    <div className="flex justify-between items-start">
-                      <h5 className="text-[13px] font-semibold text-slate-800">{a.title}</h5>
-                      <span className="text-[10px] text-slate-400">{a.time}</span>
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <RefreshCw className="animate-spin text-slate-400" size={24} />
+              </div>
+            ) : data?.recentActivities.length === 0 ? (
+              <div className="text-center text-xs text-slate-500 py-8">Chưa có hoạt động nào</div>
+            ) : (
+              data?.recentActivities.map((a, i) => {
+                const { icon: Icon, iconColor, iconBg } = getIconForType(a.type);
+                return (
+                  <div key={i} className="flex gap-3 relative">
+                    {i !== data.recentActivities.length - 1 && (
+                      <div className="absolute left-3.5 top-8 bottom-[-16px] w-[1px] bg-slate-100"></div>
+                    )}
+                    <div className={`relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${iconBg}`}>
+                      <Icon className={`h-3.5 w-3.5 ${iconColor}`} />
                     </div>
-                    <p className="text-[11px] text-slate-500 mt-0.5">{a.desc}</p>
+                    <div className="flex-1 pb-1">
+                      <div className="flex justify-between items-start">
+                        <h5 className="text-[13px] font-semibold text-slate-800">{a.title}</h5>
+                        <span className="text-[10px] text-slate-400">{a.time}</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-0.5">{a.desc}</p>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
 
           <button
@@ -266,11 +244,11 @@ export default function Dashboard() {
           </button>
         </div>
         <div className="overflow-x-auto">
-          {loadingTournaments ? (
+          {loading ? (
             <div className="flex justify-center py-8">
               <RefreshCw className="animate-spin text-slate-400" size={24} />
             </div>
-          ) : upcomingTournaments.length === 0 ? (
+          ) : data?.upcomingTournaments.length === 0 ? (
             <div className="py-8 text-center text-xs text-slate-500">Chưa có giải đấu nào</div>
           ) : (
             <table className="w-full text-left text-sm">
@@ -284,8 +262,12 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {upcomingTournaments.map((t, i) => {
-                  const st = statusMap[t.status] ?? statusMap.upcoming;
+                {data?.upcomingTournaments.map((t, i) => {
+                  let st = { label: 'Khác', textClass: 'text-slate-700', bgClass: 'bg-slate-50', dotClass: 'bg-slate-400' };
+                  if (t.status === 'ongoing') st = { label: 'Đang diễn ra', textClass: 'text-emerald-700', bgClass: 'bg-emerald-50', dotClass: 'bg-emerald-500' };
+                  if (t.status === 'upcoming') st = { label: 'Sắp diễn ra', textClass: 'text-blue-700', bgClass: 'bg-blue-50', dotClass: 'bg-blue-500' };
+                  if (t.status === 'finished') st = { label: 'Đã kết thúc', textClass: 'text-slate-700', bgClass: 'bg-slate-50', dotClass: 'bg-slate-400' };
+
                   return (
                     <tr key={t._id ?? i} className="hover:bg-slate-50/50 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-300 group cursor-pointer bg-white">
                       <td className="px-5 py-3 font-medium text-slate-800 text-[13px]">
