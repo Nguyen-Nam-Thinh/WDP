@@ -9,6 +9,10 @@ export interface Reward {
   stock: number;
   isActive: boolean;
   type: 'voucher' | 'physical';
+  voucherType?: 'external' | 'bet_multiplier' | 'coin_exchange';
+  rewardMultiplier?: number;
+  exchangeReceiveCoins?: number;
+  maxPerUser?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -19,7 +23,8 @@ export interface Redemption {
   rewardId: Reward | null;
   coinsSpent: number;
   status: 'pending' | 'completed' | 'cancelled';
-  voucherCode: string;
+  voucherCode: string | null;
+  isUsed: boolean;
   createdAt: string;
 }
 

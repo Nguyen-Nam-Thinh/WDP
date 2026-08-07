@@ -31,7 +31,7 @@ router.delete('/admin/:id', authorize('admin'), rewardController.deleteReward);
 
 // Player/Guest Reward routes
 router.get('/', rewardController.getRewards);
-router.post('/:id/redeem', rewardController.redeemReward);
 router.get('/my-redemptions', rewardController.getMyRedemptions);
+router.post('/:id/redeem', rewardController.redeemReward);
 
 module.exports = router;
